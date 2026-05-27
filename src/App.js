@@ -6,13 +6,15 @@ import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Zap, Settings,
   ChevronRight, AlertCircle, Trash2, Edit2, X, Plus, CheckCircle,
-  Play, HelpCircle, Download, Upload, Copy
+  Play, HelpCircle, Download, Upload, Copy, Info, ChevronLeft,
+  ChevronDown, BookOpen, Check
 } from "lucide-react";
 import {
   useStore, STEPS, ESP_COLORS, PRIO, ESPS_RES, ESPS_VEST, MEDCOF,
   todayStr, addDays, diffDays, fmtDate, fmtFull, fmtMonth,
   isOverdue, isDueToday, isDueSoon, buildRev,
   calcStreaks, calcBleedingScore, calcTrueRetention,
+
 } from "./useStore";
 
 // ─── STATUS HELPERS ───────────────────────────────────────────────────────────
@@ -79,11 +81,36 @@ function Select({ children, className = "", ...props }) {
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, info, children }) {
   return (
     <div>
-      <label className="block text-[11px] text-gray-500 font-semibold mb-1.5 tracking-wide uppercase">{label}</label>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <label className="block text-[11px] text-gray-500 font-semibold tracking-wide uppercase">{label}</label>
+        {info && <InfoTooltip texto={info} />}
+      </div>
       {children}
+    </div>
+  );
+}
+
+// ─── INFO TOOLTIP ─────────────────────────────────────────────────────────────
+function InfoTooltip({ texto }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative inline-flex items-center">
+      <button
+        onClick={(e) => { e.stopPropagation(); setShow(!show); }}
+        onBlur={() => setTimeout(() => setShow(false), 150)}
+        className="text-gray-700 hover:text-violet-400 transition-colors focus:outline-none"
+      >
+        <Info size={13} />
+      </button>
+      {show && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 bg-[#1a1a1e] border border-white/15 rounded-xl p-3 text-[11px] text-gray-300 shadow-2xl z-[60] leading-relaxed pointer-events-none">
+          {texto}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1a1a1e] border-r border-b border-white/15 rotate-45 -mt-[5px]" />
+        </div>
+      )}
     </div>
   );
 }
@@ -509,6 +536,7 @@ function Dashboard({ onStudy, onDelete, userName, onEditName }) {
               {pending > 0 && (
                 <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-2 py-0.5 leading-none">{pending}</span>
               )}
+              <InfoTooltip texto="Revisões com data vencida ou para hoje. Clique em 'Revisar' para registrar o acerto e avançar no ciclo FSRS (D0→D1→D4→D7→D21)." />
             </div>
             {pending === 0
               ? <div className="text-center text-gray-600 text-[13px] py-8 flex flex-col items-center gap-2"><CheckCircle size={28} className="text-emerald-400" /> Tudo em dia!</div>
@@ -550,7 +578,10 @@ function Dashboard({ onStudy, onDelete, userName, onEditName }) {
 
           {/* Acerto por intervalo */}
           <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
-            <h3 className="text-[13px] font-bold text-white">Acerto por intervalo (FSRS-Lite)</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-[13px] font-bold text-white">Acerto por intervalo (FSRS-Lite)</h3>
+              <InfoTooltip texto="Média de acerto em cada etapa de revisão. D0=primeiro estudo, D4=4 dias depois, D7=7 dias, D21=21 dias (retenção real a longo prazo)." />
+            </div>
             {stepStats.every((s) => s.n === 0)
               ? <p className="text-[13px] text-gray-600 py-4 text-center">{noData}</p>
               : stepStats.map((s) => {
@@ -599,7 +630,10 @@ function Dashboard({ onStudy, onDelete, userName, onEditName }) {
 
           {/* True Retention */}
           <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 flex flex-col gap-3">
-            <p className="text-[10.5px] text-gray-500 uppercase tracking-wider font-semibold">True Retention</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[10.5px] text-gray-500 uppercase tracking-wider font-semibold">True Retention</p>
+              <InfoTooltip texto="Acerto médio somente no D21 — o que realmente sobrou no longo prazo. Abaixo de 70% significa que o conteúdo não está sendo consolidado." />
+            </div>
             {trueRet == null
               ? <div className="flex-1 flex items-center py-2">{noData}</div>
               : <>
@@ -618,7 +652,10 @@ function Dashboard({ onStudy, onDelete, userName, onEditName }) {
 
           {/* Momentum */}
           <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 flex flex-col gap-3">
-            <p className="text-[10.5px] text-gray-500 uppercase tracking-wider font-semibold">Momentum</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[10.5px] text-gray-500 uppercase tracking-wider font-semibold">Momentum</p>
+              <InfoTooltip texto="Dias consecutivos com pelo menos uma revisão concluída. Manter a sequência ativa é o maior preditor de aprovação." />
+            </div>
             {streakCur === 0 && streakBest === 0
               ? <div className="py-2">{noData}</div>
               : <>
@@ -636,7 +673,10 @@ function Dashboard({ onStudy, onDelete, userName, onEditName }) {
 
           {/* Bleeding Score */}
           <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 flex flex-col gap-3">
-            <p className="text-[10.5px] text-gray-500 uppercase tracking-wider font-semibold">Pontos Críticos</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[10.5px] text-gray-500 uppercase tracking-wider font-semibold">Pontos Críticos</p>
+              <InfoTooltip texto="As 3 especialidades com pior % de acerto (mínimo 10 questões). Priorize revisão nessas áreas para subir o seu desempenho geral." />
+            </div>
             {bleeding.length === 0
               ? <div className="py-2">{noData}</div>
               : <div className="flex flex-col gap-2.5">
@@ -883,6 +923,7 @@ function Simulados() {
         <div className="flex items-center gap-3">
           <FileText size={20} className="text-gray-400" />
           <h2 className="text-[15px] font-bold text-gray-100">Simulados</h2>
+          <InfoTooltip texto="Registre seus simulados e acompanhe a evolução do % de acerto ao longo do tempo. Use para medir seu progresso real em condição de prova." />
         </div>
         <Btn onClick={() => setOpen(true)} className="gap-2"><Plus size={16} /> Registrar</Btn>
       </div>
@@ -967,6 +1008,7 @@ function AnkiAudit() {
         <div className="flex items-center gap-3">
           <Zap size={20} className="text-gray-400" />
           <h2 className="text-[15px] font-bold text-gray-100">Anki Audit</h2>
+          <InfoTooltip texto='Registre suas sessões diárias do Anki. "Again" são os cards que você errou — meta: manter abaixo de 15%. Acima disso, o deck precisa de auditoria.' />
         </div>
         <Btn onClick={() => setOpen(true)} className="gap-2"><Plus size={16} /> Registrar</Btn>
       </div>
@@ -1028,6 +1070,427 @@ function AnkiAudit() {
             <Btn variant="ghost" className="flex-1" onClick={() => setOpen(false)}>Cancelar</Btn>
           </div>
         </Modal>
+      )}
+    </div>
+  );
+}
+
+// ─── PDF PARSER ───────────────────────────────────────────────────────────────
+const DIAS_SEMANA = ["SEG","TER","QUA","QUI","SEX","SÁB","DOM"];
+const BLOCOS_TEMPLATE = [
+  { horario: "07:00–08:00", nome: "ANKI" },
+  { horario: "08:00–11:30", nome: "BLOCO 1 — Exatas" },
+  { horario: "11:30–12:30", nome: "ALMOÇO" },
+  { horario: "12:30–15:30", nome: "BLOCO 2 — Naturezas" },
+  { horario: "16:00–19:00", nome: "BLOCO 3 — Humanas/Ling" },
+];
+
+function parsePDFText(texto, titulo = "Cronograma") {
+  // Normaliza quebras de linha
+  const text = texto.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const semanas = [];
+
+  // Divide por marcadores de semana
+  const partes = text.split(/(?=SEMANA\s+\d+)/i);
+
+  for (const parte of partes) {
+    const mNum = parte.match(/SEMANA\s+(\d+)/i);
+    if (!mNum) continue;
+    const numero = parseInt(mNum[1]);
+
+    const mFase = parte.match(/FASE\s+(\d+)\s*[—–-]\s*([^\n·]+)/i);
+    const fase   = mFase ? `FASE ${mFase[1]}` : "";
+    const tituloFase = mFase ? mFase[2].trim() : "";
+    const mPer  = parte.match(/[·•]\s*([\d/]+\s*[–—-]\s*[\d/]+)/);
+    const periodo = mPer ? mPer[1].trim() : "";
+
+    // Detecta datas dos dias (ex: SEG 25/05 ou só 25/05)
+    const mDatas = [...parte.matchAll(/(?:SEG|TER|QUA|QUI|SEX|SÁB|DOM)\s+(\d{2}\/\d{2})/gi)];
+    // Fallback: só os números de data sem o dia
+    const mDatasAlt = [...parte.matchAll(/(\d{2}\/\d{2})/g)].slice(0, 7);
+
+    // Extrai conteúdo dos blocos de horário
+    const mBlocos = [...parte.matchAll(/(07:00|08:00|11:30|12:30|16:00)[–—-]\d{2}:\d{2}[\s\S]*?(?=(?:07:00|08:00|11:30|12:30|16:00)[–—-]|\n*SEMANA\s+\d+|$)/gi)];
+
+    // Monta estrutura dos 7 dias com 5 blocos cada
+    const dias = DIAS_SEMANA.map((dia, di) => {
+      const data = mDatas[di]?.[1] || mDatasAlt[di]?.[1] || "";
+      return {
+        dia,
+        data,
+        blocos: BLOCOS_TEMPLATE.map((b, bi) => {
+          // Tenta extrair conteúdo do bloco para este dia
+          let conteudo = "";
+          if (mBlocos[bi]) {
+            const blocoTexto = mBlocos[bi][0];
+            // Divide o conteúdo em 7 colunas tentando detectar separações
+            const linhas = blocoTexto.split("\n").filter(l => l.trim() && !/^\d{2}:\d{2}/.test(l.trim()));
+            const porDia = Math.ceil(linhas.length / 7);
+            const fatia  = linhas.slice(di * porDia, (di + 1) * porDia);
+            conteudo = fatia.join("\n").trim();
+          }
+          return { horario: b.horario, nome: b.nome, conteudo, concluido: false };
+        }),
+      };
+    });
+
+    semanas.push({ id: Date.now() + Math.random(), numero, fase, tituloFase, periodo, dias });
+  }
+
+  if (semanas.length === 0) return null;
+
+  return {
+    id: Date.now(),
+    titulo,
+    semanas,
+    criadoEm: todayStr(),
+  };
+}
+
+function gerarCronogramaVazio(titulo, dataInicio, numSemanas) {
+  const semanas = [];
+  for (let i = 0; i < numSemanas; i++) {
+    const base = new Date(dataInicio + "T12:00:00");
+    base.setDate(base.getDate() + i * 7);
+    const diasArr = DIAS_SEMANA.map((dia, di) => {
+      const d = new Date(base);
+      d.setDate(d.getDate() + di);
+      const data = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
+      return {
+        dia,
+        data,
+        blocos: BLOCOS_TEMPLATE.map(b => ({ ...b, conteudo: "", concluido: false })),
+      };
+    });
+    semanas.push({ id: Date.now() + Math.random() + i, numero: i+1, fase: "", tituloFase: "", periodo: "", dias: diasArr });
+  }
+  return { id: Date.now(), titulo, semanas, criadoEm: todayStr() };
+}
+
+// ─── DIA CARD (sub-component isolado para hooks corretos) ────────────────────
+function DiaCard({ dia, diaIdx, eHoje, semanaIdx, crono, plat, toggleBloco }) {
+  const [open, setOpen] = useState(eHoje);
+  const feitos = dia.blocos.filter(b => b.concluido).length;
+  const total  = dia.blocos.length;
+  const pct    = Math.round(feitos / total * 100);
+
+  return (
+    <div className={`bg-[#111113] border rounded-2xl overflow-hidden transition-all ${eHoje ? "border-violet-500/40 shadow-[0_0_20px_rgba(139,92,246,0.1)]" : "border-white/5"}`}>
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-3 p-4 text-left">
+        <div className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center shrink-0 ${eHoje ? "bg-violet-600" : "bg-white/5"}`}>
+          <span className="text-[9px] font-bold text-gray-400 leading-none">{dia.dia}</span>
+          <span className={`text-[13px] font-black leading-none mt-0.5 ${eHoje ? "text-white" : "text-gray-200"}`}>{dia.data?.split("/")[0] || ""}</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`text-[13px] font-semibold ${eHoje ? "text-violet-300" : "text-gray-300"}`}>
+              {dia.dia}{dia.data ? `, ${dia.data}` : ""}
+            </span>
+            {eHoje && <span className="text-[9px] bg-violet-600 text-white font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide">Hoje</span>}
+            {feitos === total && total > 0 && <span className="text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide">✓ Completo</span>}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+              <div className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-violet-500"}`} style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-[10px] text-gray-600 tabular-nums shrink-0">{feitos}/{total}</span>
+          </div>
+        </div>
+        <ChevronDown size={16} className={`text-gray-600 transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="border-t border-white/5 divide-y divide-white/5">
+          {dia.blocos.map((bloco, bi) => {
+            const isAlmoco = bloco.nome.toLowerCase().includes("almoço");
+            return (
+              <div key={bi} className={`flex gap-3 px-4 py-3 ${isAlmoco ? "opacity-40" : ""}`}>
+                <button
+                  onClick={() => !isAlmoco && toggleBloco(plat, crono.id, semanaIdx, diaIdx, bi)}
+                  disabled={isAlmoco}
+                  className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-all ${bloco.concluido ? "bg-emerald-500 border-emerald-500" : "border-white/20 hover:border-violet-500"}`}>
+                  {bloco.concluido && <Check size={12} className="text-white" strokeWidth={3} />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className={`text-[12px] font-bold ${bloco.concluido ? "text-emerald-400 line-through opacity-60" : "text-gray-200"}`}>
+                      {bloco.nome}
+                    </span>
+                    <span className="text-[10px] text-gray-700 font-mono">{bloco.horario}</span>
+                  </div>
+                  {bloco.conteudo && (
+                    <p className={`text-[11px] mt-1 leading-relaxed whitespace-pre-line ${bloco.concluido ? "text-gray-700" : "text-gray-400"}`}>
+                      {bloco.conteudo}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── CRONOGRAMA VESTIBULAR ────────────────────────────────────────────────────
+function CronogramaVest() {
+  const { plat, addCronograma, deleteCronograma, toggleBloco } = useStore();
+  const cronogramas = useStore((s) => (s[plat].cronogramas || []));
+
+  const [modo, setModo]           = useState("lista"); // lista | criar | ver
+  const [cronoAtivo, setCronoAtivo] = useState(null);
+  const [semanaIdx, setSemanaIdx]   = useState(0);
+  const [criarModal, setCriarModal] = useState(false);
+
+  // Criar form state
+  const [cfTitulo,    setCfTitulo]    = useState("Meu Cronograma");
+  const [cfDataIni,   setCfDataIni]   = useState(todayStr());
+  const [cfSemanas,   setCfSemanas]   = useState(22);
+  const [cfPDFText,   setCfPDFText]   = useState("");
+  const [cfModo,      setCfModo]      = useState("manual"); // manual | pdf
+
+  // Se o cronograma ativo foi deletado, volta à lista
+  useEffect(() => {
+    if (cronoAtivo && !cronogramas.find(c => c.id === cronoAtivo.id)) {
+      setCronoAtivo(null); setModo("lista");
+    }
+  }, [cronogramas, cronoAtivo]);
+
+  // Determina semana atual pelo calendar
+  const calcSemanaHoje = (crono) => {
+    if (!crono?.semanas?.length) return 0;
+    const hoje = todayStr();
+    for (let i = 0; i < crono.semanas.length; i++) {
+      const s = crono.semanas[i];
+      const primeiraData = s.dias[0]?.data; // "25/05"
+      if (!primeiraData) continue;
+      const ultimaData = s.dias[6]?.data;
+      if (!primeiraData || !ultimaData) continue;
+      // Converte "25/05" para data usando ano do hoje
+      const ano = new Date().getFullYear();
+      const toISO = (dd) => {
+        const [d, m] = dd.split("/");
+        return `${ano}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`;
+      };
+      if (hoje >= toISO(primeiraData) && hoje <= toISO(ultimaData)) return i;
+    }
+    return 0;
+  };
+
+  const handleVerCrono = (crono) => {
+    setCronoAtivo(crono);
+    setSemanaIdx(calcSemanaHoje(crono));
+    setModo("ver");
+  };
+
+  const handleCriar = () => {
+    let crono;
+    if (cfModo === "pdf" && cfPDFText.trim()) {
+      crono = parsePDFText(cfPDFText, cfTitulo);
+      if (!crono) { alert("Não foi possível detectar semanas no texto. Verifique o formato."); return; }
+    } else {
+      crono = gerarCronogramaVazio(cfTitulo, cfDataIni, cfSemanas);
+    }
+    addCronograma(plat, crono);
+    setCfTitulo("Meu Cronograma"); setCfPDFText(""); setCfSemanas(22);
+    setCriarModal(false);
+  };
+
+  // ── LISTA ──
+  if (modo === "lista") {
+    return (
+      <div className="flex flex-col gap-5 animate-fade-up">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-[15px] font-bold text-gray-100">Cronogramas</h2>
+            <InfoTooltip texto="Crie cronogramas de estudo semana a semana. Importe de um PDF ou monte manualmente. Marque blocos diários como concluídos para acompanhar o progresso." />
+          </div>
+          <Btn onClick={() => setCriarModal(true)} className="gap-2"><Plus size={16} /> Novo</Btn>
+        </div>
+
+        {cronogramas.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <BookOpen size={48} className="text-gray-700" />
+            <p className="text-[14px] text-gray-500 text-center">Nenhum cronograma.<br />Crie um ou importe de um PDF.</p>
+            <Btn onClick={() => setCriarModal(true)} className="gap-2"><Plus size={16} /> Criar cronograma</Btn>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {cronogramas.map((c) => {
+              const total  = c.semanas.reduce((a, s) => a + s.dias.reduce((b, d) => b + d.blocos.length, 0), 0);
+              const feitos = c.semanas.reduce((a, s) => a + s.dias.reduce((b, d) => b + d.blocos.filter(b2 => b2.concluido).length, 0), 0);
+              const pct    = total > 0 ? Math.round(feitos / total * 100) : 0;
+              return (
+                <div key={c.id} className="bg-[#111113] border border-white/5 rounded-2xl p-5 flex flex-col gap-3 hover:border-white/10 transition-colors cursor-pointer"
+                  onClick={() => handleVerCrono(c)}>
+                  <div className="flex items-start justify-between">
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-bold text-white truncate">{c.titulo}</p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">{c.semanas.length} semanas · Criado {fmtDate(c.criadoEm)}</p>
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); if (window.confirm("Excluir cronograma?")) deleteCronograma(plat, c.id); }}
+                      className="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center shrink-0 ml-2 transition-colors">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[10px] text-gray-600 mb-1">
+                      <span>Progresso geral</span>
+                      <span className="tabular-nums">{feitos}/{total} blocos</span>
+                    </div>
+                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-violet-500 to-cyan-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                    <p className="text-[10px] text-violet-400 mt-1 font-semibold">{pct}% concluído</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {criarModal && (
+          <Modal onClose={() => setCriarModal(false)} wide>
+            <h2 className="text-[15px] font-bold text-gray-100">Criar cronograma</h2>
+            <Field label="Título">
+              <Input value={cfTitulo} onChange={e => setCfTitulo(e.target.value)} placeholder="Ex: Vestibular 2026" />
+            </Field>
+
+            <div className="flex gap-1 bg-black/40 border border-white/10 rounded-xl p-1">
+              {[["manual","✏️ Manual"],["pdf","📄 Importar PDF"]].map(([v,l]) => (
+                <button key={v} onClick={() => setCfModo(v)}
+                  className={`flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all ${cfModo === v ? "bg-violet-600 text-white" : "text-gray-500 hover:text-gray-300"}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {cfModo === "manual" ? (
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Data de início">
+                  <Input type="date" value={cfDataIni} onChange={e => setCfDataIni(e.target.value)} />
+                </Field>
+                <Field label="Nº de semanas">
+                  <Input type="number" min={1} max={52} value={cfSemanas} onChange={e => setCfSemanas(+e.target.value)} />
+                </Field>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[11px] text-gray-500">Cole o texto copiado do PDF do cronograma:</p>
+                  <InfoTooltip texto="Abra seu PDF, selecione todo o texto (Ctrl+A), copie (Ctrl+C) e cole aqui. O app tentará detectar automaticamente as semanas, fases e dias." />
+                </div>
+                <Textarea
+                  rows={8}
+                  value={cfPDFText}
+                  onChange={e => setCfPDFText(e.target.value)}
+                  placeholder={"SEMANA 1 FASE 1 — Execução e Atenção · 25/05–31/05\nSEG 25/05 TER 26/05 QUA 27/05...\n\nCole aqui o texto completo do PDF..."}
+                  className="text-[11px] font-mono"
+                />
+                {cfPDFText && (
+                  <p className="text-[10px] text-violet-400">
+                    {(cfPDFText.match(/SEMANA\s+\d+/gi)||[]).length} semana(s) detectada(s) no texto.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <Btn className="flex-1" onClick={handleCriar} disabled={!cfTitulo}>Criar</Btn>
+              <Btn variant="ghost" className="flex-1" onClick={() => setCriarModal(false)}>Cancelar</Btn>
+            </div>
+          </Modal>
+        )}
+      </div>
+    );
+  }
+
+  // ── VER CRONOGRAMA ──
+  const crono   = cronogramas.find(c => c.id === cronoAtivo?.id) || cronoAtivo;
+  if (!crono) { setModo("lista"); return null; }
+  const semana  = crono.semanas[semanaIdx];
+  const hoje    = todayStr();
+
+  const diaHoje = (() => {
+    if (!semana) return -1;
+    const ano = new Date().getFullYear();
+    return semana.dias.findIndex(d => {
+      if (!d.data) return false;
+      const [dd, mm] = d.data.split("/");
+      return `${ano}-${mm.padStart(2,"0")}-${dd.padStart(2,"0")}` === hoje;
+    });
+  })();
+
+  return (
+    <div className="flex flex-col gap-4 animate-fade-up">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <button onClick={() => setModo("lista")} className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 transition-colors">
+          <ChevronLeft size={18} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-[14px] font-bold text-white truncate">{crono.titulo}</h2>
+          <p className="text-[11px] text-gray-500">{crono.semanas.length} semanas</p>
+        </div>
+      </div>
+
+      {/* Navegação de semana */}
+      <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <button onClick={() => setSemanaIdx(Math.max(0, semanaIdx - 1))}
+            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 disabled:opacity-30 transition-colors"
+            disabled={semanaIdx === 0}>
+            <ChevronLeft size={18} />
+          </button>
+
+          <div className="text-center">
+            <p className="text-[13px] font-bold text-white">Semana {semana?.numero}</p>
+            {semana?.fase && <p className="text-[10px] text-violet-400 font-semibold">{semana.fase} — {semana.tituloFase}</p>}
+            {semana?.periodo && <p className="text-[10px] text-gray-600 mt-0.5">{semana.periodo}</p>}
+          </div>
+
+          <button onClick={() => setSemanaIdx(Math.min(crono.semanas.length - 1, semanaIdx + 1))}
+            className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 disabled:opacity-30 transition-colors"
+            disabled={semanaIdx === crono.semanas.length - 1}>
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
+        {/* Seletor rápido de semana */}
+        <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-none">
+          {crono.semanas.map((s, i) => {
+            const ativa = i === semanaIdx;
+            const ehHoje = i === calcSemanaHoje(crono);
+            return (
+              <button key={i} onClick={() => setSemanaIdx(i)}
+                className={`shrink-0 w-8 h-8 rounded-lg text-[11px] font-bold transition-all ${ativa ? "bg-violet-600 text-white" : ehHoje ? "bg-violet-600/20 text-violet-400 ring-1 ring-violet-500/40" : "bg-white/5 text-gray-600 hover:text-gray-300"}`}>
+                {s.numero}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Dias da semana */}
+      {semana && (
+        <div className="flex flex-col gap-3">
+          {semana.dias.map((dia, di) => (
+            <DiaCard
+              key={di}
+              dia={dia}
+              diaIdx={di}
+              eHoje={di === diaHoje}
+              semanaIdx={semanaIdx}
+              crono={crono}
+              plat={plat}
+              toggleBloco={toggleBloco}
+            />
+          ))}
+        </div>
+      )}
+
+      {!semana && (
+        <p className="text-center text-gray-600 text-[13px] py-12">Nenhuma semana encontrada.</p>
       )}
     </div>
   );
@@ -1245,11 +1708,12 @@ export default function App() {
         {/* Área de scroll principal */}
         <main className="flex-1 overflow-y-auto px-4 py-5 md:px-7 md:py-6 pb-28 md:pb-6">
           {view === "dash"  && <Dashboard onStudy={handleStudy} onDelete={handleDeleteTema} userName={userName} onEditName={() => setEditName(true)} />}
-          {view === "crono" && (
+          {view === "crono" && plat === "res" && (
             <Cronograma
               onStep={(tId, sKey) => setMarking({ temaId: tId, stepKey: sKey })}
               onEdit={(t) => setTemaEdit(t)} />
           )}
+          {view === "crono" && plat === "vest" && <CronogramaVest />}
           {view === "banco" && <BancoDados />}
           {view === "sims"  && <Simulados />}
           {view === "anki"  && <AnkiAudit />}

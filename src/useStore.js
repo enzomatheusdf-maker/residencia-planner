@@ -624,7 +624,7 @@ export function calcTrueRetention(temas) {
 }
 
 // ─── STORE ────────────────────────────────────────────────────────────────────
-const initialPlat = () => ({ temas: [], simulados: [], ankiLog: [] });
+const initialPlat = () => ({ temas: [], simulados: [], ankiLog: [], cronogramas: [] });
 
 export const useStore = create(
   persist(
@@ -787,6 +787,47 @@ export const useStore = create(
       // ── Anki ──
       addAnki: (platKey, log) =>
         set((s) => ({ [platKey]: { ...s[platKey], ankiLog: [...s[platKey].ankiLog, { ...log, id: Date.now() }] } })),
+
+      // ── Cronogramas (vestibular) ──
+      addCronograma: (platKey, crono) =>
+        set((s) => ({
+          [platKey]: {
+            ...s[platKey],
+            cronogramas: [...(s[platKey].cronogramas || []), { ...crono, id: Date.now() }],
+          },
+        })),
+
+      deleteCronograma: (platKey, id) =>
+        set((s) => ({
+          [platKey]: {
+            ...s[platKey],
+            cronogramas: (s[platKey].cronogramas || []).filter((c) => c.id !== id),
+          },
+        })),
+
+      toggleBloco: (platKey, cronoId, semanaIdx, diaIdx, blocoIdx) =>
+        set((s) => {
+          const list = [...(s[platKey].cronogramas || [])];
+          const ci = list.findIndex((c) => c.id === cronoId);
+          if (ci === -1) return {};
+          const crono = JSON.parse(JSON.stringify(list[ci]));
+          const b = crono.semanas[semanaIdx]?.dias[diaIdx]?.blocos[blocoIdx];
+          if (b) b.concluido = !b.concluido;
+          list[ci] = crono;
+          return { [platKey]: { ...s[platKey], cronogramas: list } };
+        }),
+
+      updateBlocoConteudo: (platKey, cronoId, semanaIdx, diaIdx, blocoIdx, conteudo) =>
+        set((s) => {
+          const list = [...(s[platKey].cronogramas || [])];
+          const ci = list.findIndex((c) => c.id === cronoId);
+          if (ci === -1) return {};
+          const crono = JSON.parse(JSON.stringify(list[ci]));
+          const b = crono.semanas[semanaIdx]?.dias[diaIdx]?.blocos[blocoIdx];
+          if (b) b.conteudo = conteudo;
+          list[ci] = crono;
+          return { [platKey]: { ...s[platKey], cronogramas: list } };
+        }),
     }),
     {
       name:    "reviewflow-v5",
