@@ -1,4 +1,4 @@
-// App.jsx — ReviewFlow v5.1
+// App.jsx — medrev v5.1
 // Tailwind puro · FSRS-Lite · Dashboard com métricas de elite
 // Safe-area iOS · Campo PICO/Caso Clínico · Feedback tátil
 
@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Zap, Settings,
   ChevronRight, AlertCircle, Trash2, Edit2, X, Plus, CheckCircle,
-  Play
+  Play, HelpCircle, Download, Upload, Copy
 } from "lucide-react";
 import {
   useStore, STEPS, ESP_COLORS, PRIO, ESPS_RES, ESPS_VEST, MEDCOF,
@@ -377,7 +377,7 @@ function CronoCard({ tema, onStep, onEdit }) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 /* DASHBOARD ─────────────────────────────────────────────────────────────────── */
-function Dashboard({ onStudy, onDelete }) {
+function Dashboard({ onStudy, onDelete, userName, onEditName }) {
   const { plat, meta }  = useStore();
   const temas           = useStore((s) => s[plat].temas);
   const metaA           = meta.acerto || 80;
@@ -434,7 +434,12 @@ function Dashboard({ onStudy, onDelete }) {
 
       {/* Saudação + progresso */}
       <div>
-        <h1 className="text-2xl font-black text-white tracking-tight">{greeting}, Enzo.</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-black text-white tracking-tight">{greeting}, {userName}.</h1>
+          <button onClick={onEditName} className="text-gray-500 hover:text-gray-300 transition-colors">
+            <Edit2 size={18} />
+          </button>
+        </div>
         <div className="flex items-center gap-3 mt-3">
           <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
             <div className="h-full bg-gradient-to-r from-violet-500 to-cyan-400 rounded-full transition-all duration-700"
@@ -1038,7 +1043,7 @@ const NAV = [
 ];
 
 // ─── SIDEBAR (desktop) ────────────────────────────────────────────────────────
-function Sidebar({ view, setView, setAjustes, overdueCount }) {
+function Sidebar({ view, setView, setAjustes, overdueCount, setHelpModal, setSyncModal }) {
   const { plat, setPlat, meta } = useStore();
   const [collapsed, setCollapsed] = useState(false);
   const daysLeft = meta.dataProva ? diffDays(todayStr(), meta.dataProva) : null;
@@ -1048,7 +1053,7 @@ function Sidebar({ view, setView, setAjustes, overdueCount }) {
     <aside className={`hidden md:flex flex-col bg-black border-r border-white/5 shrink-0 transition-all duration-200 ${collapsed ? "w-[60px]" : "w-56"}`}>
 
       <div className={`flex items-center border-b border-white/5 p-3 gap-2 ${collapsed ? "justify-center" : "justify-between"}`}>
-        {!collapsed && <span className="text-[15px] font-black text-violet-400 tracking-tight select-none">ReviewFlow</span>}
+        {!collapsed && <span className="text-[15px] font-black text-violet-400 tracking-tight select-none">medrev</span>}
         <button onClick={() => setCollapsed(!collapsed)}
           className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-500 transition-colors shrink-0">
           {collapsed ? <ChevronRight size={16} /> : <ChevronRight size={16} style={{transform: 'scaleX(-1)'}} />}
@@ -1099,6 +1104,16 @@ function Sidebar({ view, setView, setAjustes, overdueCount }) {
             <p className="text-[10px] text-gray-600 mt-1">{fmtFull(meta.dataProva)}</p>
           </div>
         )}
+        <button onClick={() => setHelpModal(true)}
+          className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all ${collapsed ? "justify-center" : ""}`}>
+          <HelpCircle size={20} className="shrink-0" />
+          {!collapsed && <span className="text-[13px] font-medium">Ajuda</span>}
+        </button>
+        <button onClick={() => setSyncModal(true)}
+          className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all ${collapsed ? "justify-center" : ""}`}>
+          <Download size={20} className="shrink-0" />
+          {!collapsed && <span className="text-[13px] font-medium">Sincronizar</span>}
+        </button>
         <button onClick={() => setAjustes(true)}
           className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all ${collapsed ? "justify-center" : ""}`}>
           <Settings size={20} className="shrink-0" />
@@ -1136,14 +1151,18 @@ function BottomNav({ view, setView, overdueCount }) {
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const { plat, pushUndo, undo, markStep, addTema, updateTema, deleteTema } = useStore();
+  const { plat, setPlat, pushUndo, undo, markStep, addTema, updateTema, deleteTema, userName, setUserName, exportKey, importKey } = useStore();
   const temas = useStore((s) => s[plat].temas);
 
-  const [view,     setView]     = useState("dash");
-  const [toast,    setToast]    = useState(null);
-  const [marking,  setMarking]  = useState(null);
-  const [temaEdit, setTemaEdit] = useState(null);
-  const [ajustes,  setAjustes]  = useState(false);
+  const [view,        setView]        = useState("dash");
+  const [toast,       setToast]       = useState(null);
+  const [marking,     setMarking]     = useState(null);
+  const [temaEdit,    setTemaEdit]    = useState(null);
+  const [ajustes,     setAjustes]     = useState(false);
+  const [syncModal,   setSyncModal]   = useState(false);
+  const [helpModal,   setHelpModal]   = useState(false);
+  const [editName,    setEditName]    = useState(false);
+  const [searchQ,     setSearchQ]     = useState("");
 
   const overdueCount = temas.reduce(
     (a, t) => a + STEPS.filter((s) => isOverdue(t.rev[s.key].date) && !t.rev[s.key].done).length, 0
@@ -1189,28 +1208,43 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-black text-white font-sans antialiased overflow-hidden">
-      <Sidebar view={view} setView={setView} setAjustes={setAjustes} overdueCount={overdueCount} />
+      <Sidebar view={view} setView={setView} setAjustes={setAjustes} overdueCount={overdueCount} setHelpModal={setHelpModal} setSyncModal={setSyncModal} />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header mobile */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-black border-b border-white/5 shrink-0">
-          <span className="text-[15px] font-black text-violet-400 select-none">ReviewFlow</span>
-          <div className="flex items-center gap-2">
-            {overdueCount > 0 && (
-              <span className="bg-red-500/15 text-red-400 border border-red-500/25 text-[11px] font-bold rounded-full px-2.5 py-0.5">
-                {overdueCount} vencidas
-              </span>
-            )}
-            <button onClick={() => setAjustes(true)}
-              className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 transition-colors">
-              <Settings size={18} />
-            </button>
+        <header className="md:hidden flex flex-col gap-3 px-4 py-3 bg-black border-b border-white/5 shrink-0">
+          <div className="flex items-center justify-between">
+            <span className="text-[15px] font-black text-violet-400 select-none">medrev</span>
+            <div className="flex items-center gap-1.5">
+              {overdueCount > 0 && (
+                <span className="bg-red-500/15 text-red-400 border border-red-500/25 text-[10px] font-bold rounded-full px-2 py-0.5">
+                  {overdueCount}
+                </span>
+              )}
+              <button onClick={() => setHelpModal(true)} className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 transition-colors">
+                <HelpCircle size={16} />
+              </button>
+              <button onClick={() => setSyncModal(true)} className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 transition-colors">
+                <Download size={16} />
+              </button>
+              <button onClick={() => setAjustes(true)} className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 transition-colors">
+                <Settings size={16} />
+              </button>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {[["res","Residência"],["vest","Vestibular"]].map(([k, l]) => (
+              <button key={k} onClick={() => setPlat(k)}
+                className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${plat === k ? "bg-violet-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-300"}`}>
+                {l}
+              </button>
+            ))}
           </div>
         </header>
 
         {/* Área de scroll principal */}
         <main className="flex-1 overflow-y-auto px-4 py-5 md:px-7 md:py-6 pb-28 md:pb-6">
-          {view === "dash"  && <Dashboard onStudy={handleStudy} onDelete={handleDeleteTema} />}
+          {view === "dash"  && <Dashboard onStudy={handleStudy} onDelete={handleDeleteTema} userName={userName} onEditName={() => setEditName(true)} />}
           {view === "crono" && (
             <Cronograma
               onStep={(tId, sKey) => setMarking({ temaId: tId, stepKey: sKey })}
@@ -1232,6 +1266,65 @@ export default function App() {
         <TemaModal initial={temaEdit?.id ? temaEdit : null} platKey={plat} onSave={handleSaveTema} onCancel={() => setTemaEdit(null)} onDelete={handleDeleteTema} />
       )}
       {ajustes && <AjustesModal onClose={() => setAjustes(false)} overdueCount={overdueCount} />}
+
+      {syncModal && (
+        <Modal onClose={() => setSyncModal(false)} wide>
+          <h2 className="text-[15px] font-bold text-gray-100">💾 Sincronizar dados</h2>
+          <p className="text-[12px] text-gray-500">Copie a chave abaixo para backup ou compartilhe com outro dispositivo.</p>
+          <div className="bg-black/50 border border-white/10 rounded-xl p-3 font-mono text-[11px] text-gray-300 break-all max-h-24 overflow-y-auto">
+            {exportKey()}
+          </div>
+          <div className="flex gap-2">
+            <Btn className="flex-1 gap-2" onClick={() => { navigator.clipboard.writeText(exportKey()); showToast("✓ Chave copiada"); }}>
+              <Copy size={16} /> Copiar
+            </Btn>
+          </div>
+          <p className="text-[12px] text-gray-500 mt-4">Ou importe uma chave existente:</p>
+          <Textarea placeholder="Cole a chave aqui..." className="text-[12px]" id="importInput" />
+          <Btn variant="ghost" className="w-full gap-2" onClick={() => {
+            const input = document.getElementById("importInput");
+            if (importKey(input.value)) { showToast("✓ Dados importados"); setSyncModal(false); } else { showToast("✗ Chave inválida"); }
+          }}>
+            <Upload size={16} /> Importar
+          </Btn>
+        </Modal>
+      )}
+
+      {editName && (
+        <Modal onClose={() => setEditName(false)}>
+          <h2 className="text-[15px] font-bold text-gray-100">Seu nome</h2>
+          <Input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Ex: Enzo" />
+          <Btn className="w-full" onClick={() => setEditName(false)}>Pronto</Btn>
+        </Modal>
+      )}
+
+      {helpModal && (
+        <Modal onClose={() => setHelpModal(false)} wide>
+          <h2 className="text-[15px] font-bold text-gray-100 mb-3">📚 Como funciona</h2>
+          <div className="space-y-4 text-[12px] text-gray-400">
+            <div>
+              <p className="font-semibold text-gray-200 mb-1">📊 Dashboard</p>
+              <p>Visão geral do seu progresso hoje, com métricas de acerto, dominados e próximas revisões.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-200 mb-1">📋 Cronograma</p>
+              <p>26 blocos MEDCOF. Clique "Iniciar Hoje" em temas adormecidos ou revise os já iniciados.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-200 mb-1">📊 Banco de Dados</p>
+              <p>Todos os seus temas em uma tabela. Veja progresso, acerto % e próximas revisões.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-200 mb-1">📝 Simulados</p>
+              <p>Registre seus simulados e acompanhe a evolução da sua % de acerto.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-gray-200 mb-1">⚡ Anki Audit</p>
+              <p>Rastreie suas sessões Anki e a taxa de "Again" para otimizar o deck.</p>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       <Toast toast={toast} onUndo={handleUndo} onDismiss={dismissToast} />
     </div>

@@ -630,13 +630,31 @@ export const useStore = create(
   persist(
     (set, get) => ({
       plat:      "res",
+      userName:  "Enzo",
       meta:      { dataProva: "2026-10-25", acerto: 85 },
       res:       initialPlat(),
       vest:      initialPlat(),
       undoStack: [],
 
       setPlat: (p) => set({ plat: p }),
+      setUserName: (name) => set({ userName: name }),
       setMeta: (meta) => set({ meta }),
+
+      exportKey: () => {
+        const state = get();
+        const data = { userName: state.userName, plat: state.plat, meta: state.meta, res: state.res, vest: state.vest };
+        return btoa(JSON.stringify(data));
+      },
+
+      importKey: (key) => {
+        try {
+          const data = JSON.parse(atob(key));
+          set({ userName: data.userName, plat: data.plat, meta: data.meta, res: data.res, vest: data.vest });
+          return true;
+        } catch {
+          return false;
+        }
+      },
 
       // ── Temas ──
       addTema: (platKey, tema) =>
