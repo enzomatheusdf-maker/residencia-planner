@@ -4,6 +4,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
+  LayoutDashboard, Calendar, BarChart3, FileText, Zap, Settings,
+  ChevronRight, AlertCircle, Trash2, Edit2, X, Plus, CheckCircle,
+  Play
+} from "lucide-react";
+import {
   useStore, STEPS, ESP_COLORS, PRIO, ESPS_RES, ESPS_VEST, MEDCOF,
   todayStr, addDays, diffDays, fmtDate, fmtFull, fmtMonth,
   isOverdue, isDueToday, isDueSoon, buildRev,
@@ -94,8 +99,11 @@ function Modal({ children, onClose, wide = false }) {
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4"
       onClick={onClose}>
       <div
-        className={`bg-[#111113] border border-white/10 rounded-2xl p-6 w-full ${wide ? "max-w-xl" : "max-w-sm"} max-h-[92vh] flex flex-col gap-4 animate-slide-up overflow-y-auto`}
+        className={`bg-[#111113] border border-white/10 rounded-2xl p-6 w-full ${wide ? "max-w-xl" : "max-w-sm"} max-h-[92vh] flex flex-col gap-4 animate-slide-up overflow-y-auto relative`}
         onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 transition-colors">
+          <X size={20} />
+        </button>
         {children}
       </div>
     </div>
@@ -118,7 +126,9 @@ function Toast({ toast, onUndo, onDismiss }) {
           Desfazer
         </button>
       )}
-      <button onClick={onDismiss} className="text-gray-600 hover:text-gray-300 text-base leading-none transition-colors">✕</button>
+      <button onClick={onDismiss} className="text-gray-600 hover:text-gray-300 transition-colors shrink-0">
+        <X size={16} />
+      </button>
     </div>
   );
 }
@@ -242,7 +252,7 @@ function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
       <div className="flex gap-2 pt-1">
         <Btn className="flex-1" onClick={() => f.nome && onSave(f)} disabled={!f.nome}>Salvar</Btn>
         <Btn variant="ghost" className="flex-1" onClick={onCancel}>Cancelar</Btn>
-        {initial && <Btn variant="danger" onClick={() => onDelete(initial.id)}>🗑</Btn>}
+        {initial && <Btn variant="danger" onClick={() => onDelete(initial.id)}><Trash2 size={16} /></Btn>}
       </div>
     </Modal>
   );
@@ -324,8 +334,8 @@ function CronoCard({ tema, onStep, onEdit }) {
             <p className="text-lg font-semibold text-gray-100 leading-tight line-clamp-2">{tema.nome}</p>
           </div>
           <button onClick={(e) => { e.stopPropagation(); onEdit(tema); }}
-            className="rounded-full border border-white/10 bg-black px-3 py-1 text-[12px] font-semibold text-gray-400 hover:text-white transition-colors">
-            Editar
+            className="w-8 h-8 rounded-full border border-white/10 bg-black hover:border-white/30 transition-colors flex items-center justify-center shrink-0">
+            <Edit2 size={14} className="text-gray-400 hover:text-white" />
           </button>
         </div>
 
@@ -436,7 +446,7 @@ function Dashboard({ onStudy, onDelete }) {
 
       {overdue.length > 3 && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-3 flex items-center gap-3">
-          <span className="text-base shrink-0">⚠️</span>
+          <AlertCircle size={20} className="text-red-500 shrink-0" />
           <p className="text-[13px] text-gray-200">
             <strong className="text-red-400">{overdue.length} revisões vencidas.</strong>{" "}
             Ajustes → Otimizar para reagendar.
@@ -496,7 +506,7 @@ function Dashboard({ onStudy, onDelete }) {
               )}
             </div>
             {pending === 0
-              ? <p className="text-center text-gray-600 text-[13px] py-8">🎉 Tudo em dia!</p>
+              ? <div className="text-center text-gray-600 text-[13px] py-8 flex flex-col items-center gap-2"><CheckCircle size={28} className="text-emerald-400" /> Tudo em dia!</div>
               : <div className="flex flex-col divide-y divide-white/5">
                   {[...overdue, ...today_].map((r, i) => (
                     <div key={i} className="flex items-center gap-3 py-3">
@@ -520,8 +530,8 @@ function Dashboard({ onStudy, onDelete }) {
                         </button>
                         {r.temaObs?.includes("MEDCOF") && (
                           <button onClick={() => onDelete(r.temaId)}
-                            className="px-2 py-1.5 rounded-xl bg-red-600/20 text-red-300 text-[11px] font-semibold hover:bg-red-500/20 transition-colors">
-                            🗑
+                            className="w-8 h-8 rounded-xl bg-red-600/20 text-red-400 hover:bg-red-500/20 transition-colors flex items-center justify-center">
+                            <Trash2 size={16} />
                           </button>
                         )}
                         <span className={`text-[10px] font-bold ${isOverdue(r.date) ? "text-red-400" : "text-violet-400"}`}>
@@ -662,7 +672,7 @@ function Cronograma({ onStep, onEdit }) {
   return (
     <div className="flex flex-col gap-5 animate-fade-up">
       <div className="flex flex-wrap gap-2 items-center">
-        <Input placeholder="🔍 Buscar tema..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-[220px]" />
+        <Input placeholder="Buscar tema..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-[220px]" />
         <div className="flex gap-1 bg-[#111113] border border-white/5 rounded-xl p-1">
           {[["todos","Todos"],["iniciados","Iniciados"],["nao","Não iniciados"]].map(([v, l]) => (
             <button key={v} onClick={() => setFilter(v)}
@@ -672,7 +682,7 @@ function Cronograma({ onStep, onEdit }) {
           ))}
         </div>
         <div className="flex-1" />
-        <Btn onClick={() => onEdit({})} className="text-[12px]">+ Novo tema</Btn>
+        <Btn onClick={() => onEdit({})} className="text-[12px] gap-2"><Plus size={16} /> Novo tema</Btn>
       </div>
 
       {MEDCOF.map((bl) => {
@@ -734,8 +744,8 @@ function Cronograma({ onStep, onEdit }) {
                     </div>
                     <button
                       onClick={() => handleIniciar(nome, esp, prio, bl.b)}
-                      className="w-full py-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-violet-600/20 hover:border-violet-500/40 text-[12px] font-semibold text-gray-500 hover:text-violet-300 transition-all active:scale-95">
-                      ▶ Iniciar Hoje
+                      className="w-full py-2 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-violet-600/20 hover:border-violet-500/40 text-[12px] font-semibold text-gray-500 hover:text-violet-300 transition-all active:scale-95 flex items-center justify-center gap-2">
+                      <Play size={14} /> Iniciar Hoje
                     </button>
                   </div>
                 );
@@ -791,10 +801,10 @@ function BancoDados() {
   return (
     <div className="flex flex-col gap-4 animate-fade-up">
       <div className="flex items-center gap-3">
-        <Input placeholder="🔍 Buscar..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-[220px]" />
+        <Input placeholder="Buscar..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-[220px]" />
         <span className="text-[12px] text-gray-600">{rows.length} temas</span>
         <div className="flex-1" />
-        <Btn variant="ghost" onClick={exportCSV} className="text-[12px]">⬇ CSV</Btn>
+        <Btn variant="ghost" onClick={exportCSV} className="text-[12px] gap-2"><FileText size={16} /> CSV</Btn>
       </div>
       <div className="bg-[#111113] border border-white/5 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
@@ -865,8 +875,11 @@ function Simulados() {
   return (
     <div className="flex flex-col gap-4 animate-fade-up">
       <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-bold text-gray-100">📝 Simulados</h2>
-        <Btn onClick={() => setOpen(true)}>+ Registrar</Btn>
+        <div className="flex items-center gap-3">
+          <FileText size={20} className="text-gray-400" />
+          <h2 className="text-[15px] font-bold text-gray-100">Simulados</h2>
+        </div>
+        <Btn onClick={() => setOpen(true)} className="gap-2"><Plus size={16} /> Registrar</Btn>
       </div>
       {simulados.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
@@ -882,8 +895,8 @@ function Simulados() {
       )}
       <div className="flex flex-col gap-2">
         {simulados.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-5xl mb-4">📝</p>
+          <div className="text-center py-20 flex flex-col items-center gap-3">
+            <FileText size={48} className="text-gray-600" />
             <p className="text-[14px] text-gray-500">Nenhum simulado registrado.</p>
           </div>
         )}
@@ -903,7 +916,7 @@ function Simulados() {
               <div className="hidden sm:block w-24 h-1.5 bg-white/5 rounded-full shrink-0">
                 <div className={`h-full rounded-full ${bar}`} style={{ width: `${s.pct}%` }} />
               </div>
-              <button onClick={() => deleteSim(plat, s.id)} className="text-gray-700 hover:text-red-400 transition-colors text-[14px] shrink-0">🗑</button>
+              <button onClick={() => deleteSim(plat, s.id)} className="text-gray-700 hover:text-red-400 transition-colors shrink-0"><Trash2 size={18} /></button>
             </div>
           );
         })}
@@ -946,8 +959,11 @@ function AnkiAudit() {
   return (
     <div className="flex flex-col gap-4 animate-fade-up">
       <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-bold text-gray-100">🃏 Anki Audit</h2>
-        <Btn onClick={() => setOpen(true)}>+ Registrar sessão</Btn>
+        <div className="flex items-center gap-3">
+          <Zap size={20} className="text-gray-400" />
+          <h2 className="text-[15px] font-bold text-gray-100">Anki Audit</h2>
+        </div>
+        <Btn onClick={() => setOpen(true)} className="gap-2"><Plus size={16} /> Registrar</Btn>
       </div>
       {ankiLog.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
@@ -963,8 +979,8 @@ function AnkiAudit() {
       )}
       <div className="flex flex-col gap-2">
         {ankiLog.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-5xl mb-4">🃏</p>
+          <div className="text-center py-20 flex flex-col items-center gap-3">
+            <Zap size={48} className="text-gray-600" />
             <p className="text-[14px] text-gray-500">Nenhuma sessão registrada.</p>
           </div>
         )}
@@ -1014,11 +1030,11 @@ function AnkiAudit() {
 
 // ─── NAV ──────────────────────────────────────────────────────────────────────
 const NAV = [
-  { k: "dash",  icon: "⊞",  label: "Dashboard"     },
-  { k: "crono", icon: "📋", label: "Cronograma"     },
-  { k: "banco", icon: "📊", label: "Banco de Dados" },
-  { k: "sims",  icon: "📝", label: "Simulados"      },
-  { k: "anki",  icon: "🃏", label: "Anki Audit"     },
+  { k: "dash",  icon: LayoutDashboard, label: "Dashboard"     },
+  { k: "crono", icon: Calendar,        label: "Cronograma"     },
+  { k: "banco", icon: BarChart3,       label: "Banco de Dados" },
+  { k: "sims",  icon: FileText,        label: "Simulados"      },
+  { k: "anki",  icon: Zap,             label: "Anki Audit"     },
 ];
 
 // ─── SIDEBAR (desktop) ────────────────────────────────────────────────────────
@@ -1034,8 +1050,8 @@ function Sidebar({ view, setView, setAjustes, overdueCount }) {
       <div className={`flex items-center border-b border-white/5 p-3 gap-2 ${collapsed ? "justify-center" : "justify-between"}`}>
         {!collapsed && <span className="text-[15px] font-black text-violet-400 tracking-tight select-none">ReviewFlow</span>}
         <button onClick={() => setCollapsed(!collapsed)}
-          className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-500 text-[11px] transition-colors shrink-0">
-          {collapsed ? "▶" : "◀"}
+          className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-500 transition-colors shrink-0">
+          {collapsed ? <ChevronRight size={16} /> : <ChevronRight size={16} style={{transform: 'scaleX(-1)'}} />}
         </button>
       </div>
 
@@ -1051,23 +1067,26 @@ function Sidebar({ view, setView, setAjustes, overdueCount }) {
       )}
 
       <nav className="flex-1 p-2 pt-2 flex flex-col gap-0.5 overflow-y-auto">
-        {NAV.map((n) => (
-          <button key={n.k} onClick={() => setView(n.k)}
-            className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-all text-left ${view === n.k ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"} ${collapsed ? "justify-center" : ""}`}>
-            <span className="text-base shrink-0">{n.icon}</span>
-            {!collapsed && (
-              <>
-                <span className={`text-[13px] truncate flex-1 ${view === n.k ? "font-semibold" : "font-medium"}`}>{n.label}</span>
-                {n.k === "crono" && overdueCount > 0 && (
-                  <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">{overdueCount}</span>
-                )}
-              </>
-            )}
-            {collapsed && n.k === "crono" && overdueCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
-            )}
-          </button>
-        ))}
+        {NAV.map((n) => {
+          const Icon = n.icon;
+          return (
+            <button key={n.k} onClick={() => setView(n.k)}
+              className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-all text-left ${view === n.k ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"} ${collapsed ? "justify-center" : ""}`}>
+              <Icon size={20} className="shrink-0" />
+              {!collapsed && (
+                <>
+                  <span className={`text-[13px] truncate flex-1 ${view === n.k ? "font-semibold" : "font-medium"}`}>{n.label}</span>
+                  {n.k === "crono" && overdueCount > 0 && (
+                    <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">{overdueCount}</span>
+                  )}
+                </>
+              )}
+              {collapsed && n.k === "crono" && overdueCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
+              )}
+            </button>
+          );
+        })}
       </nav>
 
       <div className="p-2 border-t border-white/5 flex flex-col gap-1">
@@ -1082,7 +1101,7 @@ function Sidebar({ view, setView, setAjustes, overdueCount }) {
         )}
         <button onClick={() => setAjustes(true)}
           className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-all ${collapsed ? "justify-center" : ""}`}>
-          <span className="text-base shrink-0">⚙</span>
+          <Settings size={20} className="shrink-0" />
           {!collapsed && <span className="text-[13px] font-medium">Ajustes</span>}
         </button>
       </div>
@@ -1096,18 +1115,21 @@ function BottomNav({ view, setView, overdueCount }) {
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 bg-black/90 backdrop-blur-md border-t border-white/5 z-40 flex items-stretch justify-around pt-2"
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}>
-      {NAV.map((n) => (
-        <button key={n.k} onClick={() => setView(n.k)}
-          className={`relative flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all active:scale-90 ${view === n.k ? "text-violet-400" : "text-gray-600 active:text-gray-400"}`}>
-          <span className="text-[22px] leading-none">{n.icon}</span>
-          <span className={`text-[9px] font-semibold leading-none ${view === n.k ? "text-violet-400" : "text-gray-600"}`}>
-            {n.label.split(" ")[0]}
-          </span>
-          {n.k === "crono" && overdueCount > 0 && (
-            <span className="absolute top-0.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-1 ring-gray-900" />
-          )}
-        </button>
-      ))}
+      {NAV.map((n) => {
+        const Icon = n.icon;
+        return (
+          <button key={n.k} onClick={() => setView(n.k)}
+            className={`relative flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all active:scale-90 ${view === n.k ? "text-violet-400" : "text-gray-600 active:text-gray-400"}`}>
+            <Icon size={24} className="leading-none" />
+            <span className={`text-[9px] font-semibold leading-none ${view === n.k ? "text-violet-400" : "text-gray-600"}`}>
+              {n.label.split(" ")[0]}
+            </span>
+            {n.k === "crono" && overdueCount > 0 && (
+              <span className="absolute top-0.5 right-1.5 w-2 h-2 rounded-full bg-red-500 ring-1 ring-gray-900" />
+            )}
+          </button>
+        );
+      })}
     </nav>
   );
 }
@@ -1181,7 +1203,7 @@ export default function App() {
             )}
             <button onClick={() => setAjustes(true)}
               className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 transition-colors">
-              ⚙
+              <Settings size={18} />
             </button>
           </div>
         </header>
