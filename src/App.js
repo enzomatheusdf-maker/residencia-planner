@@ -951,7 +951,7 @@ function Cronograma({ onStep, onEdit, onIniciarTema }) {
 
 /* DASHBOARD (V6) ───────────────────────────────────────────────────────────── */// ─── DASHBOARD ───────────────────────────────────────────────────
 function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, concluidosHoje, totalFilaHoje }) {
-  const { plat, sprint }  = useStore();
+  const { plat, sprint, meta }  = useStore();
   const temas           = useStore((s) => s[plat].temas);
 
   const hour = new Date().getHours();
@@ -1279,6 +1279,7 @@ function BancoDados() {
           </table>
         </div>
 
+        {/* eslint-disable no-undef */}
         {modoSimples && (
           <div className="flex gap-2 justify-center mt-6 pb-4">
             <button
@@ -2412,7 +2413,7 @@ function BottomNav({ view, setView, overdueCount }) {
 
 /* APP ROOT MAIN ENTRY (V7 ARCHITECTURE) ──────────────────────────────────────── */
 export default function App() {
-  const { plat, setPlat, setMeta, pushUndo, undo, markStep, addTema, updateTema, deleteTema, userName, setUserName, onboardingDone, setOnboardingDone, resetOnboarding, exportKey, importKey, focusMode, toggleFocusMode, modoSimples, toggleModoSimples, setBrainDumpD1, addTemaStats, resetStore } = useStore();
+  const { plat, setPlat, meta, setMeta, pushUndo, undo, markStep, addTema, updateTema, deleteTema, userName, setUserName, onboardingDone, setOnboardingDone, resetOnboarding, exportKey, importKey, focusMode, toggleFocusMode, modoSimples, toggleModoSimples, setBrainDumpD1, addTemaStats, resetStore } = useStore();
   const temas = useStore((s) => s[plat]?.temas || []);
 
   // ─── AUTENTICAÇÃO FIREBASE ────────────────────────────────────────────────
