@@ -850,9 +850,10 @@ function CronoCard({ tema, onStep, onEdit, onIniciarTema }) {
       <div className="p-5 flex flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <p className="text-[10px] uppercase tracking-[0.35em] text-gray-500 truncate">{tema.esp}</p>
               {imp && <Badge color={imp.color}>{imp.label}</Badge>}
+              {next && <SBadge S={tema.rev[next.key]?.S} nextDate={tema.rev[next.key]?.date} />}
             </div>
             <p className="text-lg font-semibold text-gray-100 leading-tight line-clamp-2">{tema.nome}</p>
           </div>
