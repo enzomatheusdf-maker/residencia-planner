@@ -1198,7 +1198,7 @@ function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSim
 
 /* BANCO DE DADOS ─────────────────────────────────────────────────────────────── */
 function BancoDados() {
-  const { plat } = useStore();
+  const { plat, modoSimples, toggleModoSimples } = useStore();
   const temas    = useStore((s) => s[plat].temas);
   const [sort, setSort] = useState("nome");
   const [q, setQ]       = useState("");
