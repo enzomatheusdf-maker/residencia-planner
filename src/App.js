@@ -666,7 +666,7 @@ function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
       <div className="flex gap-2 pt-1">
         <Btn className="flex-1" onClick={() => f.nome && onSave(f)} disabled={!f.nome}>Salvar</Btn>
         <Btn variant="ghost" className="flex-1" onClick={onCancel}>Cancelar</Btn>
-        {initial && <Btn variant="danger" onClick={() => onDelete(initial.id)}><Trash2 size={16} /></Btn>}
+        {initial && <Btn variant="danger" onClick={() => { if (window.confirm(`Deletar "${initial.nome}"? Esta ação não pode ser desfeita facilmente.`)) onDelete(initial.id); }}><Trash2 size={16} /></Btn>}
       </div>
     </Modal>
   );
@@ -910,6 +910,16 @@ function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, conclui
   const doneDays = new Set(done.map((r) => r.date));
   const trueRet = calcTrueRetention(temasFiltrados);
   const bleeding = calcBleedingScore(temasFiltrados);
+
+  const acertoMedio = useMemo(() => {
+    const rs = done.filter(r => r.acerto != null);
+    return rs.length ? Math.round(rs.reduce((a, r) => a + r.acerto, 0) / rs.length * 100) : null;
+  }, [done]);
+
+  const emBreve = useMemo(
+    () => allRev.filter(r => isDueSoon(r.date) && !r.done).length,
+    [allRev]
+  );
   const filaInteligente = useMemo(() => calcFilaInteligente(temasFiltrados).slice(0, 5), [temasFiltrados]);
 
   const days = Array.from({ length: 35 }, (_, i) => {
@@ -940,7 +950,9 @@ function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, conclui
             Acerto Médio
             <button className="text-gray-600 hover:text-gray-400"><Info size={13} /></button>
           </p>
-          <p className="text-3xl font-black text-violet-400">—</p>
+          <p className={`text-3xl font-black tabular-nums ${acertoMedio == null ? "text-gray-600" : acertoMedio >= 80 ? "text-emerald-400" : acertoMedio >= 65 ? "text-violet-400" : "text-red-400"}`}>
+            {acertoMedio != null ? `${acertoMedio}%` : "—"}
+          </p>
           <div className="absolute bottom-full left-0 mb-2 w-48 bg-[#1a1a1e] border border-white/15 rounded-xl p-2.5 text-[10px] text-gray-300 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
             Taxa média de acerto em todas as revisões. Melhora conforme você completa ciclos FSRS.
           </div>
@@ -960,12 +972,24 @@ function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, conclui
             Em Breve
             <button className="text-gray-600 hover:text-gray-400"><Info size={13} /></button>
           </p>
-          <p className="text-3xl font-black text-cyan-400">+0</p>
+          <p className={`text-3xl font-black tabular-nums ${emBreve > 0 ? "text-cyan-400" : "text-gray-600"}`}>
+            {emBreve > 0 ? `+${emBreve}` : "0"}
+          </p>
           <div className="absolute bottom-full left-0 mb-2 w-48 bg-[#1a1a1e] border border-white/15 rounded-xl p-2.5 text-[10px] text-gray-300 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
             Temas agendados para revisão nos próximos 3 dias.
           </div>
         </div>
       </div>
+
+      {temasFiltrados.length === 0 && (
+        <div className="bg-gradient-to-br from-violet-500/10 to-pink-500/5 border border-violet-500/20 rounded-2xl p-6 flex flex-col gap-4 text-center">
+          <div className="text-3xl">🎯</div>
+          <div>
+            <p className="text-[15px] font-bold text-white">Tudo pronto! Agora inicie seu primeiro tema.</p>
+            <p className="text-[12px] text-gray-400 mt-1">Vá em <strong className="text-violet-400">Cronograma</strong> e clique em <strong className="text-violet-400">"Iniciar Ciclo Hoje"</strong> em qualquer tema para começar.</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className={`${focusMode ? "lg:col-span-12" : "lg:col-span-8"} flex flex-col gap-5`}>
@@ -2437,13 +2461,15 @@ export default function App() {
             <span className="hidden sm:inline-flex text-[10px] font-bold text-gray-600 bg-white/5 px-2 py-0.5 rounded border border-white/5">v7.1</span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-[11px] text-gray-500 font-mono font-bold">
-              <span>Hoje:</span>
-              <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                <div className="h-full bg-violet-600 transition-all" style={{ width: `${totalFilaHoje > 0 ? (concluidosHoje / (totalFilaHoje + concluidosHoje)) * 100 : 100}%` }} />
+            {!focusMode && (
+              <div className="flex items-center gap-2 text-[11px] text-gray-500 font-mono font-bold">
+                <span>Hoje:</span>
+                <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                  <div className="h-full bg-violet-600 transition-all" style={{ width: `${totalFilaHoje > 0 ? (concluidosHoje / (totalFilaHoje + concluidosHoje)) * 100 : 100}%` }} />
+                </div>
+                <span>{concluidosHoje}/{totalFilaHoje + concluidosHoje}</span>
               </div>
-              <span>{concluidosHoje}/{totalFilaHoje + concluidosHoje}</span>
-            </div>
+            )}
             <button type="button" onClick={toggleFocusMode}
               className={`px-3 py-1 rounded-xl text-[12px] font-bold transition-all border flex items-center gap-1 ${focusMode ? "bg-violet-600 text-white border-violet-500" : "bg-white/5 text-gray-400 border-white/10 hover:text-white"}`}>
               {focusMode ? <Eye size={13} /> : <EyeOff size={13} />}
@@ -2451,27 +2477,25 @@ export default function App() {
             </button>
 
             {/* Usuário logado e Logout */}
-            <div className="flex items-center gap-3 pl-4 border-l border-white/10">
-              <div className="text-right">
-                <p className="text-[11px] text-gray-500">Usuário</p>
-                <p className="text-[12px] font-bold text-white truncate max-w-[120px]">{usuarioLogado?.displayName || usuarioLogado?.email}</p>
+            <div className="flex items-center gap-2 pl-3 border-l border-white/10">
+              <div className="hidden sm:block text-right">
+                <p className="text-[10px] text-gray-600">logado como</p>
+                <p className="text-[11px] font-bold text-gray-300 truncate max-w-[100px]">{usuarioLogado?.displayName || usuarioLogado?.email?.split("@")[0]}</p>
               </div>
               <button
+                title="Sair"
                 onClick={async () => {
-                  // Sincronizar antes de sair
                   await sincronizarComFirebase(usuarioLogado.uid, {
-                    plat,
-                    userName,
-                    temas,
+                    plat, userName, temas,
                     meta: useStore.getState().meta,
                     ultimaSincronizacao: new Date().toISOString(),
                   });
-                  // Fazer logout
                   await fazerLogout();
                   setUsuarioLogado(null);
                 }}
-                className="px-2 py-1 rounded-lg text-[11px] font-bold bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-all border border-red-600/30">
-                Sair
+                className="p-1.5 rounded-lg text-[11px] font-bold bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-all border border-red-600/30 flex items-center gap-1">
+                <X size={14} />
+                <span className="hidden sm:inline">Sair</span>
               </button>
             </div>
           </div>

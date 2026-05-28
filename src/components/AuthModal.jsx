@@ -38,18 +38,27 @@ export default function AuthModal({ onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-[#111113] border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-2xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-black text-white mb-2">
-            {modo === "login" ? "Entrar" : "Criar Conta"}
-          </h1>
-          <p className="text-sm text-gray-500">
-            {modo === "login"
-              ? "Acesse sua conta pessoal"
-              : "Crie sua conta para começar"}
-          </p>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-[#111113] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        {/* Logo */}
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 via-violet-500 to-pink-500 flex items-center justify-center mx-auto mb-3">
+            <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
+              <rect x="9" y="2" width="6" height="20" rx="2" fill="white" opacity="0.95"/>
+              <rect x="2" y="9" width="20" height="6" rx="2" fill="white" opacity="0.95"/>
+            </svg>
+          </div>
+          <p className="text-[13px] font-black text-white"><span>Med</span><span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Rev</span></p>
+        </div>
+
+        {/* Tabs login/signup */}
+        <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/5 mb-6">
+          {[["login","Entrar"],["signup","Criar Conta"]].map(([k, l]) => (
+            <button key={k} type="button" onClick={() => { setModo(k); setErro(null); }}
+              className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${modo === k ? "bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow" : "text-gray-500 hover:text-gray-300"}`}>
+              {l}
+            </button>
+          ))}
         </div>
 
         {/* Form */}
@@ -140,21 +149,6 @@ export default function AuthModal({ onSuccess }) {
           </button>
         </form>
 
-        {/* Toggle modo */}
-        <div className="text-center mt-6 pt-6 border-t border-white/5">
-          <p className="text-sm text-gray-500">
-            {modo === "login" ? "Não tem conta? " : "Já tem conta? "}
-            <button
-              onClick={() => {
-                setModo(modo === "login" ? "signup" : "login");
-                setErro(null);
-              }}
-              className="text-violet-400 hover:text-violet-300 font-semibold transition-colors"
-            >
-              {modo === "login" ? "Criar agora" : "Entrar"}
-            </button>
-          </p>
-        </div>
       </div>
     </div>
   );

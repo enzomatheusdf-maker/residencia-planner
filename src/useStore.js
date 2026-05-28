@@ -352,7 +352,7 @@ export const useStore = create(
         set((state) => ({
           temaStats: {
             ...state.temaStats,
-            [temaId]: { ...stats, completedAt: new Date() }
+            [temaId]: [...(state.temaStats[temaId] || []), { ...stats, completedAt: new Date().toISOString() }]
           }
         })),
       setSprint:         (s)    => set({ sprint: s }),

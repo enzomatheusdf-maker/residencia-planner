@@ -62,7 +62,7 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
           
           <div>
             <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
-              <Target size={14} className="text-violet-400"/> Caso Clínico PICO (Âncora)
+              <Target size={14} className="text-violet-400"/> Caso Clínico PICO (Opcional)
             </label>
             <textarea
               rows={3}
