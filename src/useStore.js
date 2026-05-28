@@ -410,6 +410,23 @@ export const useStore = create(
           },
         })),
 
+      markD0FromCronograma: (platKey, temaId) =>
+        set((s) => {
+          const tema = s[platKey].temas.find(t => t.id === temaId);
+          if (!tema || tema.rev.d0.done) return {};
+          return {
+            [platKey]: {
+              ...s[platKey],
+              temas: s[platKey].temas.map(t =>
+                t.id !== temaId ? t : {
+                  ...t,
+                  rev: { ...t.rev, d0: { ...t.rev.d0, done: true, acerto: 1.0, questoes: 0, motivosErro: [] } }
+                }
+              )
+            }
+          };
+        }),
+
       importTemas: (platKey, items, d0) =>
         set((s) => ({ [platKey]: { ...s[platKey], temas: [...s[platKey].temas,
           ...items.map((it) => ({ id: Date.now() + Math.random(), nome: it.nome, esp: it.esp,

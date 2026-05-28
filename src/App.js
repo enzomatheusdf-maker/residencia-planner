@@ -674,6 +674,7 @@ function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
   const [f, setF] = useState(
     initial || { nome: "", esp: esps[0], d0: todayStr(), prio: "Alta", importancia: "ALTA", obs: "", pico: "", ankiDeck: "" }
   );
+  const [showOptional, setShowOptional] = useState(!!(initial?.ankiDeck || initial?.pico || initial?.obs));
 
   return (
     <Modal onClose={onCancel}>
@@ -714,22 +715,30 @@ function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
         </div>
       </div>
 
-      <Field label="Deck do Anki Correspondente (opcional)">
-        <Input value={f.ankiDeck || ""} onChange={(e) => setF({ ...f, ankiDeck: e.target.value })} placeholder="ex: Medicina::Cirurgia::Trauma" />
-      </Field>
+      <button type="button" onClick={() => setShowOptional(!showOptional)} className="text-[11px] text-gray-500 hover:text-gray-300 font-semibold flex items-center gap-1.5 py-2 transition-colors">
+        Campos opcionais {showOptional ? '▲' : '▼'}
+      </button>
 
-      <Field label="PICO / Caso Clínico (opcional)">
-        <Textarea
-          rows={2}
-          value={f.pico || ""}
-          onChange={(e) => setF({ ...f, pico: e.target.value })}
-          placeholder="ex: Paciente 25a, dor periumbilical migratória, febre leve. Conduta inicial?"
-        />
-      </Field>
+      {showOptional && (
+        <>
+          <Field label="Deck do Anki Correspondente (opcional)">
+            <Input value={f.ankiDeck || ""} onChange={(e) => setF({ ...f, ankiDeck: e.target.value })} placeholder="ex: Medicina::Cirurgia::Trauma" />
+          </Field>
 
-      <Field label="Fonte / obs (opcional)">
-        <Input value={f.obs} onChange={(e) => setF({ ...f, obs: e.target.value })} placeholder="ex: MEDCOF Bloco 2" />
-      </Field>
+          <Field label="PICO / Caso Clínico (opcional)">
+            <Textarea
+              rows={2}
+              value={f.pico || ""}
+              onChange={(e) => setF({ ...f, pico: e.target.value })}
+              placeholder="ex: Paciente 25a, dor periumbilical migratória, febre leve. Conduta inicial?"
+            />
+          </Field>
+
+          <Field label="Fonte / obs (opcional)">
+            <Input value={f.obs} onChange={(e) => setF({ ...f, obs: e.target.value })} placeholder="ex: MEDCOF Bloco 2" />
+          </Field>
+        </>
+      )}
 
       <div className="flex gap-2 pt-1">
         <Btn className="flex-1" onClick={() => f.nome && onSave(f)} disabled={!f.nome}>Salvar</Btn>
@@ -1193,9 +1202,21 @@ function BancoDados() {
   const temas    = useStore((s) => s[plat].temas);
   const [sort, setSort] = useState("nome");
   const [q, setQ]       = useState("");
+  const [filtro, setFiltro] = useState("todos");
 
   const rows = temas
     .filter((t) => !q || t.nome.toLowerCase().includes(q.toLowerCase()))
+    .filter((t) => {
+      const done    = STEPS.filter((s) => t.rev[s.key].done);
+      const doneN   = done.length;
+      const rs      = done.filter((s) => t.rev[s.key].acerto != null);
+      const acc     = rs.length ? Math.round(rs.reduce((a, s) => a + t.rev[s.key].acerto, 0) / rs.length * 100) : null;
+
+      if (filtro === "baixo_acerto") return acc != null && acc < 60 && doneN > 0;
+      if (filtro === "atrasados") return STEPS.some((s) => isOverdue(t.rev[s.key]?.date) && !t.rev[s.key]?.done);
+      if (filtro === "nunca_revisados") return doneN === 0;
+      return true;
+    })
     .map((t) => {
       const done    = STEPS.filter((s) => t.rev[s.key].done);
       const questoes= done.reduce((a, s) => a + (t.rev[s.key].questoes || 0), 0);
@@ -1235,6 +1256,15 @@ function BancoDados() {
         <div className="flex-1" />
         <Btn variant="ghost" onClick={exportCSV} className="text-[12px] gap-2"><FileText size={16} /> Exportar CSV</Btn>
       </div>
+
+      <div className="flex gap-1 flex-wrap">
+        {[["todos","Todos"],["baixo_acerto","Acerto < 60%"],["atrasados","Atrasados"],["nunca_revisados","Não Iniciados"]].map(([v, l]) => (
+          <button type="button" key={v} onClick={() => setFiltro(v)} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${filtro === v ? "bg-violet-600 text-white" : "text-gray-500 bg-white/5 hover:text-gray-300"}`}>
+            {l}
+          </button>
+        ))}
+      </div>
+
       <div className="bg-[#111113] border border-white/5 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
