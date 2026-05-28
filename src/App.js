@@ -18,7 +18,7 @@ import {
   todayStr, diffDays, fmtDate, fmtFull,
   isOverdue, isDueToday, isDueSoon,
   calcBleedingScore, calcTrueRetention,
-  calcFilaInteligente, migrarSim, calcMetricasElite, calcProjecao
+  calcFilaInteligente, migrarSim, calcMetricasElite, calcProjecao, calcStreaks
 } from "./useStore";
 
 // ─── DADOS ESTÁTICOS DE PROVAS (V7 CONSTANTS) ────────────────────────────────
@@ -321,6 +321,65 @@ function Toast({ toast, onUndo, onDismiss }) {
         <X size={16} />
       </button>
     </div>
+  );
+}
+
+// ─── CONFETTI OVERLAY ──────────────────────────────────────────────────────────
+function ConfettiOverlay() {
+  const pieces = useMemo(() => {
+    const colors = ["#ec4899", "#a855f7", "#8b5cf6", "#fb923c", "#fbbf24", "#34d399"];
+    return Array.from({ length: 20 }, () => ({
+      id: Math.random(),
+      left: Math.random() * 100,
+      delay: Math.random() * 0.2,
+      duration: 2.5 + Math.random() * 0.5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      swayAmount: -20 + Math.random() * 40,
+    }));
+  }, []);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-40">
+      {pieces.map(p => (
+        <div
+          key={p.id}
+          className="confetti-piece"
+          style={{
+            left: `${p.left}%`,
+            backgroundColor: p.color,
+            animation: `confetti-fall ${p.duration}s linear ${p.delay}s forwards, confetti-sway ${p.duration * 0.6}s ease-in-out ${p.delay}s forwards`,
+            "--sway-amount": `${p.swayAmount}px`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── CYCLE COMPLETE MODAL ──────────────────────────────────────────────────────
+function CycleCompleteModal({ tema, onClose }) {
+  const done = Object.values(tema.rev).filter(r => r.done && r.acerto != null);
+  const avgAcerto = done.length ? Math.round(done.reduce((a, r) => a + r.acerto, 0) / done.length * 100) : 0;
+
+  return (
+    <Modal onClose={onClose}>
+      <div className="text-center py-6">
+        <p className="text-6xl mb-4">🎉</p>
+        <h2 className="text-2xl font-black text-white mb-2">Ciclo Completo!</h2>
+        <p className="text-gray-400 text-sm mb-4">Você completou todos os passos de <span className="text-violet-400 font-bold">{tema.nome}</span></p>
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mt-4">
+          <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">Acerto Médio do Ciclo</p>
+          <p className={`text-3xl font-black ${avgAcerto >= 80 ? "text-emerald-400" : avgAcerto >= 65 ? "text-violet-400" : "text-red-400"}`}>
+            {avgAcerto}%
+          </p>
+        </div>
+        <button
+          onClick={onClose}
+          className="w-full mt-4 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-bold text-[13px] transition-all">
+          Continuar
+        </button>
+      </div>
+    </Modal>
   );
 }
 
@@ -908,6 +967,7 @@ function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, conclui
 
   const totalQ    = done.reduce((a, r) => a + (r.questoes || 0), 0);
   const doneDays = new Set(done.map((r) => r.date));
+  const { current: streakCurrent, best: streakBest } = useMemo(() => calcStreaks(doneDays), [doneDays]);
   const trueRet = calcTrueRetention(temasFiltrados);
   const bleeding = calcBleedingScore(temasFiltrados);
 
@@ -942,6 +1002,21 @@ function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, conclui
           </button>
         </div>
       </div>
+
+      {/* Streak Banner */}
+      {streakCurrent > 0 ? (
+        <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/30 rounded-2xl p-5 flex items-center gap-4">
+          <div className="text-5xl">🔥</div>
+          <div>
+            <p className="text-sm text-gray-400">Sequência</p>
+            <p className="text-2xl font-black text-orange-400">{streakCurrent} dias seguidos</p>
+          </div>
+        </div>
+      ) : streakBest > 0 ? (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center text-gray-500 text-sm">
+          Sua melhor sequência foi <span className="font-bold text-violet-400">{streakBest} dias</span>. Comece uma nova hoje!
+        </div>
+      ) : null}
 
       {/* Info Cards */}
       <div className="grid grid-cols-3 gap-3">
@@ -2333,11 +2408,13 @@ export default function App() {
   const [interactiveBrainDump, setInteractiveBrainDump] = useState(null);
   const [helpModal, setHelpModal] = useState(false);
 
-  const [toast,       setToast]       = useState(null);
-  const [marking,     setMarking]     = useState(null);
-  const [temaEdit,    setTemaEdit]    = useState(null);
-  const [ajustes,     setAjustes]     = useState(false);
-  const [editName,    setEditName]    = useState(false);
+  const [toast,          setToast]          = useState(null);
+  const [marking,        setMarking]        = useState(null);
+  const [temaEdit,       setTemaEdit]       = useState(null);
+  const [ajustes,        setAjustes]        = useState(false);
+  const [editName,       setEditName]       = useState(false);
+  const [showConfetti,   setShowConfetti]   = useState(false);
+  const [cycleComplete,  setCycleComplete]  = useState(null);
 
   // ─── MONITORAR AUTENTICAÇÃO ───────────────────────────────────────────────
   useEffect(() => {
@@ -2419,6 +2496,28 @@ export default function App() {
     pushUndo(plat);
     markStep(plat, marking.temaId, marking.stepKey, { acerto, questoes, motivosErro });
     addTemaStats(marking.temaId, { stepKey: marking.stepKey, acerto, questoes, motivosErro });
+
+    // Detectar D21 (mostrar confetes)
+    if (marking.stepKey === "d21") {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3500);
+    }
+
+    // Detectar ciclo completo (após postfix)
+    setTimeout(() => {
+      const state = useStore.getState();
+      const temaAtualizado = state[plat].temas.find(t => t.id === marking.temaId);
+      if (temaAtualizado && STEPS.every(s => temaAtualizado.rev[s.key].done)) {
+        setCycleComplete(temaAtualizado);
+      }
+    }, 100);
+
+    // Detectar milestones de streak
+    const allDone = Object.values(useStore.getState().temaStats).flat().length + 1;
+    if ([7, 14, 30, 100, 200].includes(allDone)) {
+      setTimeout(() => showToast(`🎯 Marco de ${allDone} revisões concluídas!`), 1500);
+    }
+
     setMarking(null);
     showToast(`✓ Etapa computada com sucesso!`, true);
   }, [marking, plat, pushUndo, markStep, showToast, addTemaStats]);
@@ -2557,6 +2656,8 @@ export default function App() {
       )}
       {ajustes && <AjustesModal onClose={() => setAjustes(false)} overdueCount={overdueCount} onResetOnboarding={resetOnboarding} />}
 
+      {showConfetti && <ConfettiOverlay />}
+      {cycleComplete && <CycleCompleteModal tema={cycleComplete} onClose={() => setCycleComplete(null)} />}
       {helpModal && <HelpModal onClose={() => setHelpModal(false)} />}
 
       {editName && (

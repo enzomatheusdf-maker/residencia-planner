@@ -322,7 +322,7 @@ export const useStore = create(
     (set, get) => ({
       plat:           "res",
       userName:       "Estudante",
-      meta:           { dataProva: "2026-10-25", acerto: 85 },
+      meta:           { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0 },
       res:            initialPlat(),
       vest:           initialVestibularPlat(),
       undoStack:      [],
@@ -331,7 +331,8 @@ export const useStore = create(
 
       // ─── ESTADOS DE MEMÓRIA V7 ─────────────────────────────────────────────
       focusMode: false,
-      brainDumpD1Data: {}, 
+      modoSimples: true,
+      brainDumpD1Data: {},
       temaStats: {},
       setPlat:           (p)    => set({ plat: p }),
       setUserName:       (name) => set({ userName: name }),
@@ -339,6 +340,7 @@ export const useStore = create(
       setOnboardingDone: ()     => set({ onboardingDone: true }),
       resetOnboarding:   ()     => set({ onboardingDone: false }),
       toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
+      toggleModoSimples: () => set((state) => ({ modoSimples: !state.modoSimples })),
 
       setBrainDumpD1: (temaId, data) =>
         set((state) => ({
@@ -500,9 +502,10 @@ export const useStore = create(
       resetStore: () => set({
         plat: "res",
         userName: "Estudante",
-        meta: { dataProva: "2026-10-25", acerto: 85 },
+        meta: { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0 },
         onboardingDone: false,
         focusMode: false,
+        modoSimples: true,
         brainDumpD1Data: {},
         temaStats: {},
       }),
@@ -512,12 +515,13 @@ export const useStore = create(
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({ plat: s.plat, meta: s.meta, res: s.res, vest: s.vest,
         userName: s.userName, onboardingDone: s.onboardingDone,
-        focusMode: s.focusMode, brainDumpD1Data: s.brainDumpD1Data, temaStats: s.temaStats }),
+        focusMode: s.focusMode, modoSimples: s.modoSimples, brainDumpD1Data: s.brainDumpD1Data, temaStats: s.temaStats }),
       merge: (persisted, initial) => ({
         ...initial, ...persisted,
         res:  { ...initial.res,  ...(persisted.res  || {}) },
         vest: { ...initial.vest, ...(persisted.vest || {}) },
         focusMode: persisted.focusMode ?? initial.focusMode,
+        modoSimples: persisted.modoSimples ?? initial.modoSimples,
         brainDumpD1Data: persisted.brainDumpD1Data ?? initial.brainDumpD1Data,
         temaStats: persisted.temaStats ?? initial.temaStats,
       }),
