@@ -764,6 +764,9 @@ function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
             <Input type="number" min={50} max={100} value={meta.acerto} onChange={(e) => setMeta({ ...meta, acerto: +e.target.value })} />
           </Field>
         </div>
+        <Field label="Meta diária de revisões (0 = ilimitada)">
+          <Input type="number" min={0} value={meta.metaDiaria || 0} onChange={(e) => setMeta({ ...meta, metaDiaria: +e.target.value })} />
+        </Field>
         {daysLeft != null && (
           <p className="text-[12px] text-gray-500">
             Faltam <strong className={urgency}>{daysLeft} dias</strong> · {fmtFull(meta.dataProva)}
@@ -947,7 +950,7 @@ function Cronograma({ onStep, onEdit, onIniciarTema }) {
 // ═════════════════════════════════════════════════════════════════════════════
 
 /* DASHBOARD (V6) ───────────────────────────────────────────────────────────── */// ─── DASHBOARD ───────────────────────────────────────────────────
-function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, concluidosHoje, totalFilaHoje }) {
+function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, concluidosHoje, totalFilaHoje }) {
   const { plat, sprint }  = useStore();
   const temas           = useStore((s) => s[plat].temas);
 
@@ -1086,32 +1089,34 @@ function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, conclui
             </div>
           )}
 
-          <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={16} className="text-cyan-400" />
-              <h3 className="text-[13px] font-bold text-white">Fila de Prioridade Inteligente (Score Algorítmico)</h3>
-            </div>
-            {filaInteligente.length === 0 ? (
-              <p className="text-[12px] text-gray-600 italic py-4 text-center">Nenhuma recomendação prioritária no momento.</p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {filaInteligente.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-white/[0.02] border border-white/5 rounded-xl">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded">Score: {item.score}</span>
-                        <p className="text-[13px] font-bold text-gray-200 truncate">{item.temaNome}</p>
-                      </div>
-                      <p className="text-[11px] text-gray-500 mt-0.5">{item.esp} · Etapa {item.step.label}</p>
-                    </div>
-                    <button type="button" onClick={() => onStudy(item.temaId, item.stepKey)} className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold transition-all">
-                      Focar
-                    </button>
-                  </div>
-                ))}
+          {!modoSimples && (
+            <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                <TrendingUp size={16} className="text-cyan-400" />
+                <h3 className="text-[13px] font-bold text-white">Fila de Prioridade Inteligente (Score Algorítmico)</h3>
               </div>
-            )}
-          </div>
+              {filaInteligente.length === 0 ? (
+                <p className="text-[12px] text-gray-600 italic py-4 text-center">Nenhuma recomendação prioritária no momento.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {filaInteligente.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-white/[0.02] border border-white/5 rounded-xl">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded">Score: {item.score}</span>
+                          <p className="text-[13px] font-bold text-gray-200 truncate">{item.temaNome}</p>
+                        </div>
+                        <p className="text-[11px] text-gray-500 mt-0.5">{item.esp} · Etapa {item.step.label}</p>
+                      </div>
+                      <button type="button" onClick={() => onStudy(item.temaId, item.stepKey)} className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold transition-all">
+                        Focar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 flex flex-col gap-3">
             <h3 className="text-[13px] font-bold text-white">Fila Cronológica Diária</h3>
@@ -1139,10 +1144,10 @@ function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, conclui
             )}
           </div>
 
-          <CronogramaWidget />
+          {!modoSimples && <CronogramaWidget />}
         </div>
 
-        {!focusMode && (
+        {!focusMode && !modoSimples && (
           <div className="lg:col-span-4 flex flex-col gap-4">
             <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 flex flex-col gap-3">
               <p className="text-[10.5px] text-gray-500 uppercase tracking-wider font-semibold">Consistência Diária</p>
@@ -1273,6 +1278,17 @@ function BancoDados() {
             </tbody>
           </table>
         </div>
+
+        {modoSimples && (
+          <div className="flex gap-2 justify-center mt-6 pb-4">
+            <button
+              type="button"
+              onClick={toggleModoSimples}
+              className="px-4 py-2 bg-violet-600/20 hover:bg-violet-600/30 text-violet-400 border border-violet-600/30 rounded-xl text-[12px] font-bold transition-all">
+              ▼ Ver modo avançado
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2396,7 +2412,7 @@ function BottomNav({ view, setView, overdueCount }) {
 
 /* APP ROOT MAIN ENTRY (V7 ARCHITECTURE) ──────────────────────────────────────── */
 export default function App() {
-  const { plat, setPlat, setMeta, pushUndo, undo, markStep, addTema, updateTema, deleteTema, userName, setUserName, onboardingDone, setOnboardingDone, resetOnboarding, exportKey, importKey, focusMode, toggleFocusMode, setBrainDumpD1, addTemaStats, resetStore } = useStore();
+  const { plat, setPlat, setMeta, pushUndo, undo, markStep, addTema, updateTema, deleteTema, userName, setUserName, onboardingDone, setOnboardingDone, resetOnboarding, exportKey, importKey, focusMode, toggleFocusMode, modoSimples, toggleModoSimples, setBrainDumpD1, addTemaStats, resetStore } = useStore();
   const temas = useStore((s) => s[plat]?.temas || []);
 
   // ─── AUTENTICAÇÃO FIREBASE ────────────────────────────────────────────────
@@ -2518,6 +2534,11 @@ export default function App() {
       setTimeout(() => showToast(`🎯 Marco de ${allDone} revisões concluídas!`), 1500);
     }
 
+    // Detectar meta diária atingida
+    if ((meta.metaDiaria || 0) > 0 && concluidosHoje + 1 >= meta.metaDiaria) {
+      setTimeout(() => showToast(`🎯 Meta diária atingida! Volte amanhã para manter o streak`), 1500);
+    }
+
     setMarking(null);
     showToast(`✓ Etapa computada com sucesso!`, true);
   }, [marking, plat, pushUndo, markStep, showToast, addTemaStats]);
@@ -2582,9 +2603,9 @@ export default function App() {
               <div className="flex items-center gap-2 text-[11px] text-gray-500 font-mono font-bold">
                 <span>Hoje:</span>
                 <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                  <div className="h-full bg-violet-600 transition-all" style={{ width: `${totalFilaHoje > 0 ? (concluidosHoje / (totalFilaHoje + concluidosHoje)) * 100 : 100}%` }} />
+                  <div className="h-full bg-violet-600 transition-all" style={{ width: `${(meta.metaDiaria || 0) > 0 ? (concluidosHoje / meta.metaDiaria) * 100 : (totalFilaHoje > 0 ? (concluidosHoje / (totalFilaHoje + concluidosHoje)) * 100 : 100)}%` }} />
                 </div>
-                <span>{concluidosHoje}/{totalFilaHoje + concluidosHoje}</span>
+                <span>{concluidosHoje}/{(meta.metaDiaria || 0) > 0 ? meta.metaDiaria : totalFilaHoje + concluidosHoje}</span>
               </div>
             )}
             <button type="button" onClick={toggleFocusMode}
@@ -2633,7 +2654,7 @@ export default function App() {
             />
           )}
 
-          {view === "dash"  && <Dashboard onStudy={handleStudyTrigger} onDelete={(id) => { deleteTema(plat, id); showToast("🗑 Tema deletado"); }} userName={userName} onEditName={() => setEditName(true)} focusMode={focusMode} concluidosHoje={concluidosHoje} totalFilaHoje={totalFilaHoje} />}
+          {view === "dash"  && <Dashboard onStudy={handleStudyTrigger} onDelete={(id) => { deleteTema(plat, id); showToast("🗑 Tema deletado"); }} userName={userName} onEditName={() => setEditName(true)} focusMode={focusMode} modoSimples={modoSimples} toggleModoSimples={toggleModoSimples} concluidosHoje={concluidosHoje} totalFilaHoje={totalFilaHoje} />}
           {view === "crono" && plat === "res" && <Cronograma onStep={handleStudyTrigger} onEdit={(t) => setTemaEdit(t)} onIniciarTema={(tema) => { setTemaParaIniciar(tema); setView("sessao"); }} />}
           {view === "crono" && plat === "vest" && <ErrorBoundary><CronogramaCecilia /></ErrorBoundary>}
           {view === "banco" && <BancoDados />}
