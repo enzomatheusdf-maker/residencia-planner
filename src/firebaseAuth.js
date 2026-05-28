@@ -67,9 +67,8 @@ export const fazerLogin = async (email, senha) => {
 export const fazerLogout = async () => {
   try {
     await signOut(auth);
-    // Limpar dados do localStorage (Zustand persist)
-    const storeKeys = Object.keys(localStorage).filter(k => k.startsWith('residencia-planner'));
-    storeKeys.forEach(k => localStorage.removeItem(k));
+    // Limpar TODOS os dados do localStorage
+    localStorage.clear();
     return { sucesso: true };
   } catch (erro) {
     console.error("Erro ao fazer logout:", erro);

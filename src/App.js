@@ -2324,7 +2324,7 @@ function BottomNav({ view, setView, overdueCount }) {
 
 /* APP ROOT MAIN ENTRY (V7 ARCHITECTURE) ──────────────────────────────────────── */
 export default function App() {
-  const { plat, setPlat, setMeta, pushUndo, undo, markStep, addTema, updateTema, deleteTema, userName, setUserName, onboardingDone, setOnboardingDone, resetOnboarding, exportKey, importKey, focusMode, toggleFocusMode, setBrainDumpD1, addTemaStats } = useStore();
+  const { plat, setPlat, setMeta, pushUndo, undo, markStep, addTema, updateTema, deleteTema, userName, setUserName, onboardingDone, setOnboardingDone, resetOnboarding, exportKey, importKey, focusMode, toggleFocusMode, setBrainDumpD1, addTemaStats, resetStore } = useStore();
   const temas = useStore((s) => s[plat]?.temas || []);
 
   // ─── AUTENTICAÇÃO FIREBASE ────────────────────────────────────────────────
@@ -2490,6 +2490,7 @@ export default function App() {
                     meta: useStore.getState().meta,
                   });
                   await fazerLogout();
+                  resetStore();
                   setUsuarioLogado(null);
                 }}
                 className="p-1.5 rounded-lg text-[11px] font-bold bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-all border border-red-600/30 flex items-center gap-1">

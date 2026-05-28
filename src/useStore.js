@@ -496,6 +496,16 @@ export const useStore = create(
           list[ci] = crono;
           return { [platKey]: { ...s[platKey], cronogramas: list } };
         }),
+
+      resetStore: () => set({
+        plat: "res",
+        userName: "Estudante",
+        meta: { dataProva: "2026-10-25", acerto: 85 },
+        onboardingDone: false,
+        focusMode: false,
+        brainDumpD1Data: {},
+        temaStats: {},
+      }),
     }),
     {
       name:    "reviewflow-v6",
