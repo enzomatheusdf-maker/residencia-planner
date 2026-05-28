@@ -129,7 +129,7 @@ export function CronogramaWidget() {
 }
 
 // ─── CRONOGRAMA PRINCIPAL ────────────────────────────────────────────────────
-export default function CronogramaCecilia({ onBlocoCompleted }) {
+export default function CronogramaCecilia() {
   const [semanaAtual, setSemanaAtual] = useState(1);
   const [modalAberto, setModalAberto] = useState(null);
   const [formData, setFormData] = useState({
@@ -341,7 +341,6 @@ export default function CronogramaCecilia({ onBlocoCompleted }) {
         foco: formData.foco,
         motivosErro: formData.motivos ? [formData.motivos] : [],
       });
-      if (onBlocoCompleted) onBlocoCompleted(tema.nome);
     }
 
     setModalAberto(null);
