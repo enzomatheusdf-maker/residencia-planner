@@ -392,6 +392,38 @@ function CycleCompleteModal({ tema, onClose }) {
   );
 }
 
+function SyncPromptModal({ temaId, temaName, onSync, onCancel }) {
+  const markD0FromCronograma = useStore((s) => s.markD0FromCronograma);
+  const plat = useStore((s) => s.plat);
+
+  const handleSync = () => {
+    markD0FromCronograma(plat, temaId);
+    onSync();
+  };
+
+  return (
+    <Modal onClose={onCancel}>
+      <div className="text-center py-6">
+        <p className="text-5xl mb-4">🔗</p>
+        <h2 className="text-xl font-black text-white mb-2">Sincronizar com FSRS?</h2>
+        <p className="text-gray-400 text-sm mb-6">Marcar D0 de <span className="text-violet-400 font-bold">{temaName}</span> como concluído?</p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/20 text-gray-300 rounded-xl font-bold text-[13px] transition-all">
+            Não, depois
+          </button>
+          <button
+            onClick={handleSync}
+            className="flex-1 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-bold text-[13px] transition-all">
+            Sim, sincronizar
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 // ─── ONBOARDING MODAL (V7 — SETUP COMPLETO) ──────────────────────────────────
 function OnboardingModal({ onComplete }) {
   const [step, setStep] = useState(1);
@@ -2148,6 +2180,7 @@ function CronogramaVest() {
   const [cronoAtivo, setCronoAtivo] = useState(null);
   const [semanaIdx, setSemanaIdx]   = useState(0);
   const [criarModal, setCriarModal] = useState(false);
+  const [syncPrompt, setSyncPrompt] = useState(null);
 
   const [cfTitulo, setCfTitulo]     = useState("Meu Cronograma Focal");
   const [cfDataIni, setCfDataIni]   = useState(todayStr());
@@ -2628,6 +2661,13 @@ export default function App() {
     showToast("🧠 Brain Dump consolidado e gravado no perfil!");
   };
 
+  const handleBlocoCompleted = (nomeTema) => {
+    const match = temas.find(t => t.nome?.toLowerCase().includes(nomeTema?.toLowerCase() || ""));
+    if (match) {
+      setSyncPrompt({ temaId: match.id, temaName: match.nome });
+    }
+  };
+
   return (
     <div className="flex h-screen bg-[#07070f] text-white font-sans antialiased overflow-hidden">
       {!onboardingDone && <OnboardingModal onComplete={(nome, foco, metaConfig) => { setUserName(nome); setPlat(foco); if (metaConfig) setMeta(metaConfig); setOnboardingDone(); }} />}
@@ -2697,7 +2737,7 @@ export default function App() {
 
           {view === "dash"  && <Dashboard onStudy={handleStudyTrigger} onDelete={(id) => { deleteTema(plat, id); showToast("🗑 Tema deletado"); }} userName={userName} onEditName={() => setEditName(true)} focusMode={focusMode} modoSimples={modoSimples} toggleModoSimples={toggleModoSimples} concluidosHoje={concluidosHoje} totalFilaHoje={totalFilaHoje} />}
           {view === "crono" && plat === "res" && <Cronograma onStep={handleStudyTrigger} onEdit={(t) => setTemaEdit(t)} onIniciarTema={(tema) => { setTemaParaIniciar(tema); setView("sessao"); }} />}
-          {view === "crono" && plat === "vest" && <ErrorBoundary><CronogramaCecilia /></ErrorBoundary>}
+          {view === "crono" && plat === "vest" && <ErrorBoundary><CronogramaCecilia onBlocoCompleted={handleBlocoCompleted} /></ErrorBoundary>}
           {view === "banco" && <BancoDados />}
           {view === "stats" && <StatsPanel />}
           {view === "sims"  && <ErrorBoundary><Simulados /></ErrorBoundary>}
@@ -2720,6 +2760,7 @@ export default function App() {
 
       {showConfetti && <ConfettiOverlay />}
       {cycleComplete && <CycleCompleteModal tema={cycleComplete} onClose={() => setCycleComplete(null)} />}
+      {syncPrompt && <SyncPromptModal temaId={syncPrompt.temaId} temaName={syncPrompt.temaName} onSync={() => { setSyncPrompt(null); showToast("✓ Sincronizado com FSRS!", true); }} onCancel={() => setSyncPrompt(null)} />}
       {helpModal && <HelpModal onClose={() => setHelpModal(false)} />}
 
       {editName && (
