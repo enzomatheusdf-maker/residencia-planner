@@ -1,15 +1,14 @@
 // src/components/Sidebar.jsx
 import React, { useState, useEffect } from "react";
 import {
-  LogIn, LayoutDashboard, Calendar, BarChart3, FileText, Target, Zap,
-  ChevronRight, Info, Settings
+  LayoutDashboard, Calendar, BarChart3, FileText, Target, Zap,
+  ChevronRight, Info, Settings, LogOut
 } from "lucide-react";
 import { useStore } from "../core/store";
 import { diffDays, todayStr } from "../core/fsrs";
 import { MedRevLogo } from "./Primitives";
 
 export const NAV = [
-  { k: "login", icon: LogIn,           label: "Login"          },
   { k: "dash",  icon: LayoutDashboard, label: "Dashboard"     },
   { k: "crono", icon: Calendar,        label: "Cronograma"     },
   { k: "banco", icon: BarChart3,       label: "Banco de Dados" },
@@ -18,7 +17,7 @@ export const NAV = [
   { k: "anki",  icon: Zap,             label: "Anki Audit"     }
 ];
 
-export default function Sidebar({ view, setView, setAjustes, overdueCount, setHelpModal }) {
+export default function Sidebar({ view, setView, setAjustes, overdueCount, setHelpModal, usuarioLogado, onLogout }) {
   const { plat, setPlat, meta, focusMode } = useStore();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -85,6 +84,35 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
         <button onClick={() => setAjustes(true)} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-gray-600 hover:text-gray-300 hover:bg-white/5 transition-all">
           <Settings size={16} className="shrink-0"/>{!collapsed && <span className="text-[12px]">Ajustes</span>}
         </button>
+
+        {/* User Profile Card */}
+        {usuarioLogado && (
+          <div className={`mt-2 pt-2 border-t border-white/5 flex items-center gap-2.5 ${collapsed ? "justify-center" : "px-2.5 py-1.5"}`}>
+            {/* Avatar / Iniciais */}
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 flex items-center justify-center font-bold text-white text-xs shrink-0 select-none shadow-md shadow-purple-950/50">
+              {(usuarioLogado.displayName || usuarioLogado.email || "US").substring(0, 2).toUpperCase()}
+            </div>
+            
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-[11.5px] font-bold text-gray-200 truncate leading-tight">
+                  {usuarioLogado.displayName || usuarioLogado.email?.split("@")[0]}
+                </p>
+                <p className="text-[9.5px] text-gray-500 truncate leading-none mt-0.5">
+                  {usuarioLogado.email}
+                </p>
+              </div>
+            )}
+            
+            <button
+              onClick={onLogout}
+              title="Sair da conta"
+              className={`p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-colors ${collapsed ? "" : "shrink-0"}`}
+            >
+              <LogOut size={14} />
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );

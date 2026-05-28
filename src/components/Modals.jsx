@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { useStore } from "../core/store";
 import {
-  STEPS, PRIO, IMPORTANCIA, ESPS_RES, ESPS_VEST,
+  STEPS, IMPORTANCIA, ESPS_RES, ESPS_VEST,
   todayStr, diffDays, fmtFull
 } from "../core/fsrs";
 import {
@@ -123,18 +123,22 @@ export function CycleCompleteModal({ tema, onClose }) {
 }
 
 // ─── ONBOARDING MODAL ──────────────────────────────────────────────────────────
+const PROVAS_RES = ["ENAMED", "USP-SP", "UNIFESP", "SCMSP", "SUS-SP", "UNICAMP", "UFRJ", "AMP"];
+const PROVAS_VEST = ["ENEM", "FUVEST", "UNICAMP", "UNESP", "UFG", "UERJ", "UFSC"];
+
 export function OnboardingModal({ onComplete }) {
   const [step, setStep] = useState(1);
   const [nome, setNome] = useState("");
   const [plataforma, setPlataforma] = useState("res");
   const [dataProva, setDataProva] = useState("2026-10-25");
   const [metaAcerto, setMetaAcerto] = useState(85);
+  const [provasAlvo, setProvasAlvo] = useState([]);
   const TOTAL_STEPS = 5;
 
   const next = () => {
     if (step === 2 && !nome.trim()) return;
     if (step < TOTAL_STEPS) setStep(step + 1);
-    else onComplete(nome.trim() || "Estudante", plataforma, { dataProva, acerto: metaAcerto });
+    else onComplete(nome.trim() || "Estudante", plataforma, { dataProva, acerto: metaAcerto, provasAlvo });
   };
   const prev = () => { if (step > 1) setStep(step - 1); };
 
@@ -253,6 +257,32 @@ export function OnboardingModal({ onComplete }) {
                   <div className="flex justify-between mt-1.5">
                     <span className="text-[10px] text-gray-700">50%</span>
                     <span className="text-[10px] text-gray-700">100%</span>
+                  </div>
+                </div>
+                {/* Provas Alvo */}
+                <div className="text-left mt-2">
+                  <span className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold block mb-2">Provas Alvo</span>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto border border-white/5 p-2 rounded-xl bg-black/40">
+                    {(plataforma === "res" ? PROVAS_RES : PROVAS_VEST).map((pr) => {
+                      const selected = provasAlvo.includes(pr);
+                      return (
+                        <button
+                          key={pr}
+                          type="button"
+                          onClick={() => {
+                            if (selected) setProvasAlvo(provasAlvo.filter(x => x !== pr));
+                            else setProvasAlvo([...provasAlvo, pr]);
+                          }}
+                          className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${
+                            selected
+                              ? "bg-purple-600 border-purple-500 text-white shadow-sm shadow-purple-900/30"
+                              : "bg-white/5 border-white/10 text-gray-400 hover:text-gray-200"
+                          }`}
+                        >
+                          {pr}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -392,12 +422,111 @@ export function MarkModal({ tema, stepKey, onConfirm, onCancel }) {
 }
 
 // ─── TEMA MODAL ───────────────────────────────────────────────────────────────
+const PROVA_STATS = {
+  "ENAMED": {
+    "Preventiva": { nivel: "Risco Crítico", msg: "Preventiva representa 25% da prova no ENAMED (peso altíssimo)." },
+    "Pediatria": { nivel: "Alta", msg: "Pediatria foca em Puericultura e Aleitamento." },
+    "Cirurgia": { nivel: "Média", msg: "Foco em Trauma Inicial." },
+    "Clínica Médica": { nivel: "Alta", msg: "Incidência distribuída em temas de atenção primária." },
+    "GO": { nivel: "Risco Crítico", msg: "Ginecologia tem altíssima repetição de temas." }
+  },
+  "USP-SP": {
+    "Cirurgia": { nivel: "Risco Crítico", msg: "Cirurgia Geral e do Trauma são extremamente puxadas na USP-SP." },
+    "Clínica Médica": { nivel: "Risco Crítico", msg: "Questões de Clínica Médica exigem alto nível de raciocínio diagnóstico." },
+    "Preventiva": { nivel: "Alta", msg: "Preventiva foca muito em epidemiologia molecular e bioestatística." },
+    "Pediatria": { nivel: "Alta", msg: "Questões de Pediatria com imagens e condutas neonatais avançadas." },
+    "GO": { nivel: "Média", msg: "Foco em Obstetrícia de alto risco." }
+  },
+  "UNIFESP": {
+    "Clínica Médica": { nivel: "Risco Crítico", msg: "Medicina baseada em evidências e nefrologia/cardiologia complexas." },
+    "Preventiva": { nivel: "Risco Crítico", msg: "Muito foco em SUS, saúde coletiva e portarias específicas." },
+    "Cirurgia": { nivel: "Alta", msg: "Foco em condutas cirúrgicas práticas de pronto-socorro." },
+    "Pediatria": { nivel: "Alta", msg: "Pediatria geral e terapia intensiva pediátrica." },
+    "GO": { nivel: "Alta", msg: "Uroginecologia e oncologia ginecológica recorrentes." }
+  },
+  "SUS-SP": {
+    "Preventiva": { nivel: "Risco Crítico", msg: "Epidemiologia e SUS clássico dominam a prova." },
+    "Clínica Médica": { nivel: "Alta", msg: "Clínica Geral com ênfase em emergência médica." },
+    "Cirurgia": { nivel: "Alta", msg: "Trauma e Cirurgia Geral básica." },
+    "Pediatria": { nivel: "Alta", msg: "Puericultura clássica e vacinas." },
+    "GO": { nivel: "Média", msg: "GO geral e pré-natal clássico." }
+  },
+  "SCMSP": {
+    "Cirurgia": { nivel: "Alta", msg: "Urgência cirúrgica clássica." },
+    "Clínica Médica": { nivel: "Alta", msg: "Semiologia médica refinada." }
+  },
+  "UNICAMP": {
+    "Clínica Médica": { nivel: "Risco Crítico", msg: "Questões discursivas e casos clínicos integrados complexos." },
+    "GO": { nivel: "Alta", msg: "Grande volume de obstetrícia fisiológica e patológica." }
+  },
+  "UFRJ": {
+    "Clínica Médica": { nivel: "Alta", msg: "Clínica clássica com condutas de enfermaria." }
+  },
+  "AMP": {
+    "Pediatria": { nivel: "Alta", msg: "Pediatria e vacinas têm alto peso na Região Sul." }
+  },
+  "ENEM": {
+    "Ciências da Natureza": { nivel: "Risco Crítico", msg: "Ecologia, Química Orgânica e Eletrodinâmica são recorrentes." },
+    "Redação": { nivel: "Risco Crítico", msg: "Redação nota 1000 representa peso decisivo." },
+    "Humanas": { nivel: "Alta", msg: "História do Brasil e Geografia física/humana do país." },
+    "Linguagens": { nivel: "Média", msg: "Interpretação textual intensa." },
+    "Exatas": { nivel: "Risco Crítico", msg: "Matemática básica, estatística e funções determinam a nota TRI." }
+  },
+  "FUVEST": {
+    "Exatas": { nivel: "Risco Crítico", msg: "Física e Matemática de nível altíssimo e analítico." },
+    "Ciências da Natureza": { nivel: "Risco Crítico", msg: "Biologia e Química teórica aprofundada." },
+    "Linguagens": { nivel: "Alta", msg: "Literatura com leitura obrigatória estrita." }
+  },
+  "UFG": {
+    "Humanas": { nivel: "Alta", msg: "História e Geografia de Goiás recorrentes." },
+    "Linguagens": { nivel: "Alta", msg: "Gêneros textuais específicos." }
+  }
+};
+
+const getRecomendacao = (esp, provasAlvo = []) => {
+  if (!provasAlvo || provasAlvo.length === 0) {
+    return { nivel: "Média", msg: "Nenhuma prova alvo selecionada em Ajustes. Defina suas metas para obter recomendações direcionadas." };
+  }
+
+  const matches = [];
+  provasAlvo.forEach((pr) => {
+    const pStat = PROVA_STATS[pr]?.[esp];
+    if (pStat) {
+      matches.push({ prova: pr, ...pStat });
+    }
+  });
+
+  if (matches.length === 0) {
+    return { nivel: "Média", msg: `Incidência regular nas provas selecionadas (${provasAlvo.join(", ")}).` };
+  }
+
+  const weight = { "Risco Crítico": 3, "Alta": 2, "Média": 1 };
+  matches.sort((a, b) => weight[b.nivel] - weight[a.nivel]);
+
+  const top = matches[0];
+  const otherCriticals = matches.slice(1).filter((m) => m.nivel === "Risco Crítico").map((m) => m.prova);
+
+  let label = `${top.prova}: ${top.msg}`;
+  if (otherCriticals.length > 0) {
+    label += ` (Também é crítico em: ${otherCriticals.join(", ")})`;
+  }
+
+  return { nivel: top.nivel, msg: label };
+};
+
 export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
   const esps = platKey === "res" ? ESPS_RES : ESPS_VEST;
+  const meta = useStore((s) => s.meta) || { provasAlvo: [] };
   const [f, setF] = useState(
     initial || { nome: "", esp: esps[0], d0: todayStr(), prio: "Alta", importancia: "ALTA", obs: "", pico: "", ankiDeck: "" }
   );
   const [showOptional, setShowOptional] = useState(!!(initial?.ankiDeck || initial?.pico || initial?.obs));
+
+  const rec = getRecomendacao(f.esp, meta.provasAlvo);
+
+  useEffect(() => {
+    setF((prev) => ({ ...prev, prio: rec.nivel }));
+  }, [f.esp, rec.nivel]);
 
   return (
     <Modal onClose={onCancel}>
@@ -419,13 +548,25 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <p className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold mb-1.5">Prioridade</p>
-          <Select value={f.prio} onChange={(e) => setF({ ...f, prio: e.target.value })}>
-            {Object.keys(PRIO).map((k) => <option key={k}>{k}</option>)}
-          </Select>
+        <div className="col-span-2">
+          <p className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold mb-1.5">
+            Recomendação Estratégica (Baseada nas Provas Alvo)
+          </p>
+          <div className={`p-3 rounded-xl border text-[11.5px] leading-relaxed transition-all ${
+            rec.nivel === "Risco Crítico"
+              ? "bg-red-500/5 border-red-500/20 text-red-300"
+              : rec.nivel === "Alta"
+              ? "bg-purple-500/5 border-purple-500/20 text-purple-300"
+              : "bg-white/5 border-white/10 text-gray-400"
+          }`}>
+            <span className="font-bold block mb-1">
+              {rec.nivel === "Risco Crítico" ? "🔴 " : rec.nivel === "Alta" ? "🟣 " : "⚪ "}
+              {rec.nivel.toUpperCase()}
+            </span>
+            {rec.msg}
+          </div>
         </div>
-        <div>
+        <div className="col-span-2">
           <p className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold mb-1.5">Importância Prova</p>
           <div className="flex gap-1 bg-black border border-white/10 rounded-xl p-0.5">
             {Object.entries(IMPORTANCIA).map(([k, v]) => (
@@ -508,6 +649,35 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
         <Field label="Meta diária de revisões (0 = ilimitada)">
           <Input type="number" min={0} value={meta.metaDiaria || 0} onChange={(e) => setMeta({ ...meta, metaDiaria: +e.target.value })} />
         </Field>
+
+        {/* Provas Alvo */}
+        <div>
+          <span className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold block mb-2">Provas Alvo</span>
+          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto border border-white/5 p-2 rounded-xl bg-black/40">
+            {(plat === "res" ? PROVAS_RES : PROVAS_VEST).map((pr) => {
+              const selected = (meta.provasAlvo || []).includes(pr);
+              return (
+                <button
+                  key={pr}
+                  type="button"
+                  onClick={() => {
+                    const current = meta.provasAlvo || [];
+                    const next = selected ? current.filter((x) => x !== pr) : [...current, pr];
+                    setMeta({ ...meta, provasAlvo: next });
+                  }}
+                  className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${
+                    selected
+                      ? "bg-purple-600 border-purple-500 text-white shadow-sm shadow-purple-900/30"
+                      : "bg-white/5 border-white/10 text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  {pr}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {daysLeft != null && (
           <p className="text-[12px] text-gray-500">
             Faltam <strong className={urgency}>{daysLeft} dias</strong> · {fmtFull(meta.dataProva)}

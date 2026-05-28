@@ -1,7 +1,7 @@
 // src/App.js
 // Main entry point for MedRev - Clean & Modular Architecture
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { AlertCircle, Eye, EyeOff, X } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
 
 // Camada Core & State
 import { useStore } from "./core/store";
@@ -373,7 +373,7 @@ export default function App() {
           onComplete={(nome, foco, metaConfig) => {
             setUserName(nome);
             setPlat(foco);
-            if (metaConfig) setMeta(metaConfig);
+            if (metaConfig) setMeta({ ...meta, ...metaConfig });
             setOnboardingDone();
           }}
         />
@@ -384,6 +384,26 @@ export default function App() {
         setAjustes={setAjustes}
         overdueCount={overdueCount}
         setHelpModal={setHelpModal}
+        usuarioLogado={usuarioLogado}
+        onLogout={async () => {
+          const state = useStore.getState();
+          await sincronizarComFirebase(usuarioLogado.uid, {
+            plat: state.plat,
+            userName: state.userName,
+            temas: state[state.plat]?.temas || [],
+            meta: state.meta,
+            res: state.res,
+            vest: state.vest,
+            onboardingDone: state.onboardingDone,
+            focusMode: state.focusMode,
+            modoSimples: state.modoSimples,
+            brainDumpD1Data: state.brainDumpD1Data,
+            temaStats: state.temaStats,
+          });
+          await fazerLogout();
+          resetStore();
+          setUsuarioLogado(null);
+        }}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -434,42 +454,6 @@ export default function App() {
               {focusMode ? <Eye size={13} /> : <EyeOff size={13} />}
               <span>{focusMode ? "Foco On" : "Modo Foco"}</span>
             </button>
-
-            {/* Perfil & Sair */}
-            <div className="flex items-center gap-2 pl-3 border-l border-white/10">
-              <div className="hidden sm:block text-right">
-                <p className="text-[10px] text-gray-600">logado como</p>
-                <p className="text-[11px] font-bold text-gray-300 truncate max-w-[100px]">
-                  {usuarioLogado?.displayName || usuarioLogado?.email?.split("@")[0]}
-                </p>
-              </div>
-              <button
-                title="Sair"
-                onClick={async () => {
-                  const state = useStore.getState();
-                  await sincronizarComFirebase(usuarioLogado.uid, {
-                    plat: state.plat,
-                    userName: state.userName,
-                    temas: state[state.plat]?.temas || [],
-                    meta: state.meta,
-                    res: state.res,
-                    vest: state.vest,
-                    onboardingDone: state.onboardingDone,
-                    focusMode: state.focusMode,
-                    modoSimples: state.modoSimples,
-                    brainDumpD1Data: state.brainDumpD1Data,
-                    temaStats: state.temaStats,
-                  });
-                  await fazerLogout();
-                  resetStore();
-                  setUsuarioLogado(null);
-                }}
-                className="p-1.5 rounded-lg text-[11px] font-bold bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-all border border-red-600/30 flex items-center gap-1"
-              >
-                <X size={14} />
-                <span className="hidden sm:inline">Sair</span>
-              </button>
-            </div>
           </div>
         </header>
 

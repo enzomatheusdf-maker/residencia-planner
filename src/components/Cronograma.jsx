@@ -1,6 +1,6 @@
 // src/components/Cronograma.jsx
 import React, { useState } from "react";
-import { Edit2, Plus, Play } from "lucide-react";
+import { Edit2, Plus, Play, ChevronDown } from "lucide-react";
 import { useStore } from "../core/store";
 import { ESP_COLORS, STEPS, IMPORTANCIA, MEDCOF } from "../core/fsrs";
 import { stepState, STATE_DOT, STATE_TW, Badge, SBadge, Btn, Input } from "./Primitives";
@@ -57,6 +57,14 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema }) {
   const [q, setQ]         = useState("");
   const [filter, setFilter] = useState("todos");
   const [impFilter, setImpFilter] = useState("TODAS");
+  const [openBlocks, setOpenBlocks] = useState({ 1: true });
+
+  const toggleBlock = (blockId) => {
+    setOpenBlocks((prev) => ({
+      ...prev,
+      [blockId]: !prev[blockId],
+    }));
+  };
 
   const temaMap = new Map(temas.map((t) => [t.nome, t]));
 
@@ -95,29 +103,49 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema }) {
         });
         if (blTemas.length === 0) return null;
 
-        return (
-          <div key={bl.b} className="space-y-4">
-            <h3 className="text-sm font-bold text-gray-400">Bloco {bl.b}</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {blTemas.map(([nome, esp, prio]) => {
-                const tema = temaMap.get(nome);
-                if (tema) return <CronoCard key={nome} tema={tema} onStep={onStep} onEdit={onEdit} onIniciarTema={onIniciarTema} />;
+        const isOpen = !!openBlocks[bl.b];
 
-                const espC  = ESP_COLORS[esp] || "#94a3b8";
-                return (
-                  <div key={nome} className="bg-[#111113]/60 rounded-3xl p-5 flex flex-col gap-4 border border-white/5 border-dashed" style={{ borderLeft: `4px dashed ${espC}` }}>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.25em] text-gray-500 mb-1">{esp}</p>
-                      <p className="text-[14px] font-semibold text-gray-300 line-clamp-2">{nome}</p>
+        return (
+          <div key={bl.b} className="border border-white/5 bg-[#111113]/25 rounded-3xl p-4 transition-all">
+            <button
+              type="button"
+              onClick={() => toggleBlock(bl.b)}
+              className="w-full flex items-center justify-between text-left select-none outline-none group py-1"
+            >
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-6 rounded-full bg-violet-600 group-hover:bg-pink-500 transition-colors" />
+                <h3 className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors">
+                  Bloco {bl.b}
+                </h3>
+              </div>
+              <ChevronDown
+                size={16}
+                className={`text-gray-400 group-hover:text-white transition-all duration-200 ${isOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {isOpen && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                {blTemas.map(([nome, esp, prio]) => {
+                  const tema = temaMap.get(nome);
+                  if (tema) return <CronoCard key={nome} tema={tema} onStep={onStep} onEdit={onEdit} onIniciarTema={onIniciarTema} />;
+
+                  const espC  = ESP_COLORS[esp] || "#94a3b8";
+                  return (
+                    <div key={nome} className="bg-[#111113]/60 rounded-3xl p-5 flex flex-col gap-4 border border-white/5 border-dashed" style={{ borderLeft: `4px dashed ${espC}` }}>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.25em] text-gray-500 mb-1">{esp}</p>
+                        <p className="text-[14px] font-semibold text-gray-300 line-clamp-2">{nome}</p>
+                      </div>
+                      <button type="button" onClick={() => onIniciarTema({ nome, esp, prio, importancia: "ALTA", obs: `MEDCOF Bloco ${bl.b}` })}
+                        className="w-full py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-violet-600/20 text-[12px] font-bold text-violet-400 flex items-center justify-center gap-1.5">
+                        <Play size={13} /> Iniciar Ciclo Hoje
+                      </button>
                     </div>
-                    <button type="button" onClick={() => onIniciarTema({ nome, esp, prio, importancia: "ALTA", obs: `MEDCOF Bloco ${bl.b}` })}
-                      className="w-full py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-violet-600/20 text-[12px] font-bold text-violet-400 flex items-center justify-center gap-1.5">
-                      <Play size={13} /> Iniciar Ciclo Hoje
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })}
