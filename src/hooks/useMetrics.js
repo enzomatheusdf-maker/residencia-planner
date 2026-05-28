@@ -1,0 +1,274 @@
+// src/hooks/useMetrics.js
+// Optimized math and analytics calculation engines for FSRS study data
+
+import { useMemo } from "react";
+import { STEPS, IMPORTANCIA, todayStr, diffDays } from "../core/fsrs";
+
+/**
+ * Calculates the FSRS active queue sorted by urgency score.
+ * Time Complexity: O(N) where N is total topics * steps.
+ * Optimized to cache the today string and avoid string/date realocations.
+ */
+export function calcFilaInteligente(temas) {
+  if (!temas || temas.length === 0) return [];
+  
+  const today = todayStr();
+  const items = [];
+  
+  for (let i = 0; i < temas.length; i++) {
+    const t = temas[i];
+    const rev = t.rev;
+    if (!rev) continue;
+    
+    // Calculate average score for the theme in a single pass
+    let sumAcertos = 0;
+    let doneStepsCount = 0;
+    
+    for (let j = 0; j < STEPS.length; j++) {
+      const stepKey = STEPS[j].key;
+      const r = rev[stepKey];
+      if (r && r.done && r.acerto != null) {
+        sumAcertos += r.acerto;
+        doneStepsCount++;
+      }
+    }
+    
+    const acertoMedia = doneStepsCount > 0 ? sumAcertos / doneStepsCount : 0.5;
+    const imp = t.importancia || "ALTA";
+    const peso = IMPORTANCIA[imp]?.peso || 2.0;
+    
+    for (let j = 0; j < STEPS.length; j++) {
+      const s = STEPS[j];
+      const r = rev[s.key];
+      if (!r || r.done) continue;
+      
+      const rDate = r.date;
+      if (!rDate) continue;
+      
+      const overdue = rDate < today;
+      const isToday = rDate === today;
+      if (!overdue && !isToday) continue;
+      
+      const urgencia = overdue ? 1.5 : 1.0;
+      const score = (1 - acertoMedia) * peso * urgencia;
+      
+      items.push({
+        temaId: t.id,
+        temaNome: t.nome,
+        esp: t.esp,
+        importancia: imp,
+        stepKey: s.key,
+        step: s,
+        date: rDate,
+        overdue,
+        score: +score.toFixed(2),
+      });
+    }
+  }
+  
+  return items.sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Calculates elite learning analytics on mock exam logs in a single O(N) pass.
+ */
+export function calcMetricasElite(simulados) {
+  if (!simulados || simulados.length === 0) {
+    return { indiceDescuido: null, velEficiente: null, taxaConversao: null, diagnostico: [], insights: [] };
+  }
+  
+  let totalErros = 0;
+  let descuidos = 0;
+  let simsComTempoCount = 0;
+  let sumVelEficiente = 0;
+  
+  let verificadasCount = 0;
+  let convertidasCount = 0;
+  
+  const porArea = {};
+  
+  for (let i = 0; i < simulados.length; i++) {
+    const s = simulados[i];
+    const questoesErradas = s.questoesErradas || [];
+    const tempoMin = s.tempoMin;
+    const acertos = s.acertos || 0;
+    
+    if (tempoMin > 0) {
+      sumVelEficiente += acertos / (tempoMin / 60);
+      simsComTempoCount++;
+    }
+    
+    const qErradasLength = questoesErradas.length;
+    totalErros += qErradasLength;
+    
+    for (let j = 0; j < qErradasLength; j++) {
+      const q = questoesErradas[j];
+      if (q.tipoErro === "descuido") {
+        descuidos++;
+      }
+      
+      if (q.corrigidaD7 != null) {
+        verificadasCount++;
+        if (q.corrigidaD7 === true) {
+          convertidasCount++;
+        }
+      }
+      
+      const esp = q.esp;
+      if (esp) {
+        let area = porArea[esp];
+        if (!area) {
+          area = { total: 0, lacuna: 0, raciocinio: 0, distractor: 0, descuido: 0, nao_visto: 0 };
+          porArea[esp] = area;
+        }
+        area.total++;
+        const tipoErro = q.tipoErro;
+        if (tipoErro && tipoErro in area) {
+          area[tipoErro]++;
+        }
+      }
+    }
+  }
+  
+  const indiceDescuido = totalErros >= 3 ? Math.round((descuidos / totalErros) * 100) : null;
+  const velEficiente = simsComTempoCount >= 2 ? +(sumVelEficiente / simsComTempoCount).toFixed(1) : null;
+  const taxaConversao = verificadasCount >= 3 ? Math.round((convertidasCount / verificadasCount) * 100) : null;
+  
+  const diagnostico = Object.keys(porArea).map((esp) => {
+    const v = porArea[esp];
+    const tipos = ["lacuna", "raciocinio", "distractor", "descuido", "nao_visto"];
+    let dominante = "lacuna";
+    let maxVal = -1;
+    for (let k = 0; k < tipos.length; k++) {
+      const val = v[tipos[k]] || 0;
+      if (val > maxVal) {
+        maxVal = val;
+        dominante = tipos[k];
+      }
+    }
+    return {
+      esp,
+      ...v,
+      dominante,
+      pctDescuido: v.total ? Math.round((v.descuido || 0) / v.total * 100) : 0,
+      pctRaciocinio: v.total ? Math.round((v.raciocinio || 0) / v.total * 100) : 0,
+    };
+  }).sort((a, b) => b.total - a.total);
+  
+  const insights = [];
+  if (indiceDescuido > 25) {
+    insights.push(`${indiceDescuido}% dos seus erros são descuido — o problema é atenção, não conteúdo.`);
+  }
+  if (velEficiente && velEficiente < 40) {
+    insights.push(`Velocidade: ${velEficiente} certas/hora. Meta ENAMED: 40/hora.`);
+  }
+  if (taxaConversao !== null && taxaConversao < 70) {
+    insights.push(`Taxa de conversão ${taxaConversao}% — abaixo de 70%. Revise o método de correção.`);
+  }
+  
+  return {
+    indiceDescuido,
+    velEficiente,
+    taxaConversao,
+    diagnostico,
+    insights: insights.slice(0, 3),
+  };
+}
+
+export function calcTrend(values) {
+  if (values.length < 2) return null;
+  const n = values.length;
+  const xs = values.map((_, i) => i);
+  const sumX = xs.reduce((a, b) => a + b, 0);
+  const sumY = values.reduce((a, b) => a + b, 0);
+  const sumXY = xs.reduce((a, x, i) => a + x * values[i], 0);
+  const sumX2 = xs.reduce((a, x) => a + x * x, 0);
+  const denom = n * sumX2 - sumX * sumX;
+  if (denom === 0) return 0;
+  return +((n * sumXY - sumX * sumY) / denom).toFixed(2);
+}
+
+export function calcProjecao(values, steps = 3) {
+  const trend = calcTrend(values);
+  if (trend === null) return null;
+  const last = values[values.length - 1];
+  return Math.min(100, Math.max(0, Math.round(last + trend * steps)));
+}
+
+export function calcStreaks(doneDays) {
+  if (!doneDays || !doneDays.size) return { current: 0, best: 0 };
+  const sorted = [...doneDays].sort();
+  let best = 1, cur = 1;
+  const today = todayStr();
+  
+  for (let i = 1; i < sorted.length; i++) {
+    const diff = diffDays(sorted[i - 1], sorted[i]);
+    if (diff === 1) {
+      cur++;
+      best = Math.max(best, cur);
+    } else if (diff > 1) {
+      cur = 1;
+    }
+  }
+  const sinceLast = diffDays(sorted[sorted.length - 1], today);
+  return { current: sinceLast <= 1 ? cur : 0, best };
+}
+
+export function calcBleedingScore(temas) {
+  const byEsp = {};
+  for (let i = 0; i < temas.length; i++) {
+    const t = temas[i];
+    if (!byEsp[t.esp]) byEsp[t.esp] = { total: 0, questoes: 0 };
+    
+    for (let j = 0; j < STEPS.length; j++) {
+      const s = STEPS[j];
+      const r = t.rev[s.key];
+      if (r && r.done && r.acerto != null && r.questoes) {
+        byEsp[t.esp].total += r.acerto * r.questoes;
+        byEsp[t.esp].questoes += r.questoes;
+      }
+    }
+  }
+  
+  return Object.entries(byEsp)
+    .filter(([, v]) => v.questoes >= 10)
+    .map(([esp, v]) => ({ esp, acc: Math.round((v.total / v.questoes) * 100) }))
+    .sort((a, b) => a.acc - b.acc)
+    .slice(0, 3);
+}
+
+export function calcTrueRetention(temas) {
+  const vals = [];
+  for (let i = 0; i < temas.length; i++) {
+    const t = temas[i];
+    for (let j = 0; j < STEPS.length; j++) {
+      const s = STEPS[j];
+      if (s.offset > 15) {
+        const r = t.rev[s.key];
+        if (r && r.done && r.acerto != null) {
+          vals.push(r.acerto);
+        }
+      }
+    }
+  }
+  if (!vals.length) return null;
+  return Math.round((vals.reduce((a, b) => a + b) / vals.length) * 100);
+}
+
+// ─── CUSTOM REACT HOOK WRAPPERS ──────────────────────────────────────────────
+
+export const migrarSim = (s) => ({
+  tipo: "pratica", tempoMin: null, ansiedade: null, cansaco: null,
+  turno: null, porArea: [],
+  ...s,
+  questoesErradas: s.questoesErradas || [],
+  statusCorrecao: s.statusCorrecao || "concluida",
+});
+
+export function useFilaInteligente(temas) {
+  return useMemo(() => calcFilaInteligente(temas), [temas]);
+}
+
+export function useMetricasElite(simulados) {
+  return useMemo(() => calcMetricasElite(simulados), [simulados]);
+}

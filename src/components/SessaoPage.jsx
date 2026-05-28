@@ -5,7 +5,7 @@ import {
   BookOpen, FileText, Brain, Target, PenTool, Layers, 
   ChevronLeft, ChevronRight, Zap, Play 
 } from 'lucide-react';
-import { ESP_COLORS } from '../useStore';
+import { ESP_COLORS } from '../core/fsrs';
 
 const STEP_ICONS = { pretest: FileText, leitura: BookOpen, esqueleto: Layers, braindump: Brain, questoes: PenTool, anki: Zap };
 
@@ -27,7 +27,7 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
   const handleNextStep = () => {
     if (isLastStep) {
       // Devolve o objeto atualizado com o PICO e o Anki salvos para o App.js processar
-      onComplete({ ...temaInicial, pico: pico.trim(), ankiDeck: ankiDeck.trim() });
+      onComplete?.({ ...temaInicial, pico: pico.trim(), ankiDeck: ankiDeck.trim() });
     } else {
       setCurrentStepIndex(currentStepIndex + 1);
       setExpandedJustification(null);
@@ -52,7 +52,7 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
             </span>
             <h2 className="text-2xl font-black text-white tracking-tight mt-1">{temaInicial.nome}</h2>
           </div>
-          <button type="button" onClick={onCancel} className="text-[13px] text-gray-500 hover:text-white transition-colors">
+          <button type="button" onClick={() => onCancel?.()} className="text-[13px] text-gray-500 hover:text-white transition-colors">
             Cancelar e Voltar
           </button>
         </div>

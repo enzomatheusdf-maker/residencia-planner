@@ -1,4 +1,6 @@
-// firebaseAuth.js - Configuração Firebase com Autenticação
+// src/services/firebase.js
+// Firebase initialization, authentication, and user data synchronization services
+
 import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
@@ -23,26 +25,31 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// ─── FUNÇÕES DE AUTENTICAÇÃO ──────────────────────────────────────────────────
+// ─── AUTHENTICATION OPERATIONS ───────────────────────────────────────────────
 
-// Criar nova conta
 export const criarConta = async (email, senha, nome) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
     const user = userCredential.user;
     
-    // Atualizar perfil com nome
     await updateProfile(user, { displayName: nome });
     
-    // Criar documento no Firestore com dados vazios
+    // Create initial user document in Firestore with baseline structures
     await setDoc(doc(db, "usuarios", user.uid), {
       uid: user.uid,
       email: email,
       nome: nome,
       criadoEm: new Date().toISOString(),
-      plat: "vest", // plataforma padrão
-      temas: [], // dados vazios, será preenchido pelo Zustand
-      meta: {},
+      plat: "res",
+      userName: nome,
+      meta: { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0 },
+      res: { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
+      vest: { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
+      focusMode: false,
+      modoSimples: true,
+      brainDumpD1Data: {},
+      temaStats: {},
+      onboardingDone: false,
     });
     
     return { sucesso: true, user, uid: user.uid };
@@ -52,7 +59,6 @@ export const criarConta = async (email, senha, nome) => {
   }
 };
 
-// Login
 export const fazerLogin = async (email, senha) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, senha);
@@ -63,11 +69,9 @@ export const fazerLogin = async (email, senha) => {
   }
 };
 
-// Logout
 export const fazerLogout = async () => {
   try {
     await signOut(auth);
-    // Limpar TODOS os dados do localStorage
     localStorage.clear();
     return { sucesso: true };
   } catch (erro) {
@@ -76,14 +80,12 @@ export const fazerLogout = async () => {
   }
 };
 
-// Monitorar autenticação
 export const monitorarAuth = (callback) => {
   return onAuthStateChanged(auth, callback);
 };
 
-// ─── FUNÇÕES DE SINCRONIZAÇÃO COM FIRESTORE ───────────────────────────────────
+// ─── FIRESTORE STORAGE SYNC OPERATIONS ────────────────────────────────────────
 
-// Salvar dados do usuário no Firestore
 export const salvarDadosUsuario = async (uid, dados) => {
   try {
     await setDoc(doc(db, "usuarios", uid), dados, { merge: true });
@@ -94,7 +96,6 @@ export const salvarDadosUsuario = async (uid, dados) => {
   }
 };
 
-// Carregar dados do usuário do Firestore
 export const carregarDadosUsuario = async (uid) => {
   try {
     const docSnap = await getDoc(doc(db, "usuarios", uid));
@@ -109,13 +110,16 @@ export const carregarDadosUsuario = async (uid) => {
   }
 };
 
-// Sincronizar estado local com Firestore (chamar periodicamente ou ao mudar dados)
 export const sincronizarComFirebase = async (uid, estadoZustand) => {
   try {
-    await setDoc(doc(db, "usuarios", uid), {
-      uid: uid,
-      ...estadoZustand,
-    }, { merge: true });
+    await setDoc(
+      doc(db, "usuarios", uid),
+      {
+        uid: uid,
+        ...estadoZustand,
+      },
+      { merge: true }
+    );
     return { sucesso: true };
   } catch (erro) {
     console.error("Erro ao sincronizar:", erro);
@@ -123,5 +127,16 @@ export const sincronizarComFirebase = async (uid, estadoZustand) => {
   }
 };
 
-const firebaseAuthExports = { auth, db, criarConta, fazerLogin, fazerLogout, monitorarAuth, salvarDadosUsuario, carregarDadosUsuario, sincronizarComFirebase };
-export default firebaseAuthExports;
+const firebaseService = {
+  auth,
+  db,
+  criarConta,
+  fazerLogin,
+  fazerLogout,
+  monitorarAuth,
+  salvarDadosUsuario,
+  carregarDadosUsuario,
+  sincronizarComFirebase,
+};
+
+export default firebaseService;

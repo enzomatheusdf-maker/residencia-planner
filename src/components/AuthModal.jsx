@@ -1,7 +1,7 @@
 // AuthModal.jsx - Modal de Login/Signup
 import React, { useState } from "react";
 import { Mail, Lock, User, Eye, EyeOff, Loader } from "lucide-react";
-import { criarConta, fazerLogin } from "../firebaseAuth";
+import { criarConta, fazerLogin } from "../services/firebase";
 
 export default function AuthModal({ onSuccess }) {
   const [modo, setModo] = useState("login"); // login ou signup

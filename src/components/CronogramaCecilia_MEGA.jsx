@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { useStore, todayStr } from "../useStore";
+import { useStore } from "../core/store";
+import { todayStr } from "../core/fsrs";
 import { Target } from "lucide-react";
 
 const FASES = [
@@ -43,8 +44,13 @@ const corFase = (faseId) => FASES.find(f => f.id === faseId)?.cor || "#6B7280";
 const calcularStats = (semana, temas) => {
   let feitos = 0, total = 0, questoes = 0, erros = 0, tempoMin = 0, ansiedade = 0;
   let blocoCount = 0;
-  
-  temas.forEach(t => {
+  // filter to only temas belonging to this semana to avoid cross-week stat pollution (exact matching)
+  const temasSemana = temas.filter(t => {
+    if (typeof t.id !== "string") return false;
+    const parts = t.id.split("-");
+    return parts[0] === "cronograma" && parseInt(parts[1], 10) === semana;
+  });
+  temasSemana.forEach(t => {
     ["b1", "b2", "b3"].forEach(bloco => {
       total++;
       const r = t.rev?.[bloco];
@@ -56,7 +62,6 @@ const calcularStats = (semana, temas) => {
         }
         if (r.tempoMin) tempoMin += r.tempoMin;
         if (r.ansiedade) { ansiedade += r.ansiedade; blocoCount++; }
-        // cansaco é armazenado mas não incluso nas métricas retornadas
       }
     });
   });
@@ -321,12 +326,15 @@ export default function CronogramaCecilia() {
     let tema = temas.find(t => t.id === temaId);
 
     if (!tema) {
+      // pass explicit id so the lookup below succeeds with fresh state
       addTema(plat, {
+        id: temaId,
         nome: `Sem${modalAberto.semana} Dia${modalAberto.dia + 1}`,
         esp: "Exatas",
         d0: todayStr(),
       });
-      tema = temas.find(t => t.id === temaId);
+      // use getState() to avoid stale temas closure after synchronous Zustand update
+      tema = useStore.getState()[plat]?.temas?.find(t => t.id === temaId);
     }
 
     if (tema) {
@@ -448,7 +456,7 @@ export default function CronogramaCecilia() {
                 if (bloco === "b1") {
                   return (
                     <div key={bloco} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      <div style={{ ...styles.bloco_almoco_anki = { padding: "5px 7px", borderRadius: 6, backgroundColor: "#0e0e16", border: "1px solid #1a1a25", fontSize: 9, color: "#555" } }}>
+                      <div style={{ padding: "5px 7px", borderRadius: 6, backgroundColor: "#0e0e16", border: "1px solid #1a1a25", fontSize: 9, color: "#555" }}>
                         07:00 ANKI
                       </div>
                       <div style={styles.blocoWrapper}>
@@ -606,7 +614,7 @@ export default function CronogramaCecilia() {
                 />
                 <div style={styles.sliderLabels}>
                   <span>Calmo</span>
-                  <span style={{ color: "#f59e0b", fontWeight: 700 }}>{"😌😐😰"[formData.ansiedade - 1]}</span>
+                  <span style={{ color: "#f59e0b", fontWeight: 700 }}>{"😌😐😰"[Math.min(2, formData.ansiedade - 1)]}</span>
                   <span>Pânico</span>
                 </div>
               </div>
