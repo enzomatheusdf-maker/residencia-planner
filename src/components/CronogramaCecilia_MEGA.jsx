@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { useStore, todayStr, STEPS } from "../useStore";
-import { TrendingUp, AlertCircle, Target } from "lucide-react";
+import { useStore, todayStr } from "../useStore";
+import { Target } from "lucide-react";
 
 const FASES = [
   { id: 1, nome: "Fase 1 — Execução e Atenção", cor: "#7C3AED" },
@@ -41,7 +41,7 @@ for (let i = 1; i <= 22; i++) {
 const corFase = (faseId) => FASES.find(f => f.id === faseId)?.cor || "#6B7280";
 
 const calcularStats = (semana, temas) => {
-  let feitos = 0, total = 0, questoes = 0, erros = 0, tempoMin = 0, ansiedade = 0, cansaco = 0;
+  let feitos = 0, total = 0, questoes = 0, erros = 0, tempoMin = 0, ansiedade = 0;
   let blocoCount = 0;
   
   temas.forEach(t => {
@@ -56,7 +56,7 @@ const calcularStats = (semana, temas) => {
         }
         if (r.tempoMin) tempoMin += r.tempoMin;
         if (r.ansiedade) { ansiedade += r.ansiedade; blocoCount++; }
-        if (r.cansaco) cansaco += r.cansaco;
+        // cansaco é armazenado mas não incluso nas métricas retornadas
       }
     });
   });

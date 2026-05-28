@@ -4,7 +4,9 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import SessaoPage from "./components/SessaoPage";
+import AuthModal from "./components/AuthModal";
 import CronogramaCecilia, { CronogramaWidget } from "./components/CronogramaCecilia_MEGA";
+import { monitorarAuth, sincronizarComFirebase, carregarDadosUsuario, fazerLogout } from "./firebaseAuth";
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Zap, Settings,
   ChevronRight, AlertCircle, Trash2, Edit2, X, Plus, CheckCircle,
@@ -2301,6 +2303,10 @@ export default function App() {
   const { plat, setPlat, setMeta, pushUndo, undo, markStep, addTema, updateTema, deleteTema, userName, setUserName, onboardingDone, setOnboardingDone, resetOnboarding, exportKey, importKey, focusMode, toggleFocusMode, setBrainDumpD1, addTemaStats } = useStore();
   const temas = useStore((s) => s[plat]?.temas || []);
 
+  // ─── AUTENTICAÇÃO FIREBASE ────────────────────────────────────────────────
+  const [usuarioLogado, setUsuarioLogado] = useState(null);
+  const [carregandoAuth, setCarregandoAuth] = useState(true);
+
   const [view, setView] = useState("dash");
   const [temaParaIniciar, setTemaParaIniciar] = useState(null);
   const [interactiveBrainDump, setInteractiveBrainDump] = useState(null);
@@ -2312,6 +2318,46 @@ export default function App() {
   const [ajustes,     setAjustes]     = useState(false);
   const [syncModal,   setSyncModal]   = useState(false);
   const [editName,    setEditName]    = useState(false);
+
+  // ─── MONITORAR AUTENTICAÇÃO ───────────────────────────────────────────────
+  useEffect(() => {
+    const unsubscribe = monitorarAuth(async (user) => {
+      if (user) {
+        setUsuarioLogado(user);
+        setUserName(user.displayName || user.email);
+        
+        // Carregar dados do Firebase
+        const resultado = await carregarDadosUsuario(user.uid);
+        if (resultado.sucesso) {
+          const dados = resultado.dados;
+          if (dados.plat) setPlat(dados.plat);
+          if (dados.meta) setMeta(dados.meta);
+        }
+      } else {
+        setUsuarioLogado(null);
+      }
+      setCarregandoAuth(false);
+    });
+
+    return unsubscribe;
+  }, [setUserName, setPlat, setMeta]);
+
+  // ─── SINCRONIZAR DADOS COM FIREBASE (A CADA 30 SEGUNDOS) ──────────────────
+  useEffect(() => {
+    if (!usuarioLogado) return;
+
+    const intervaloSincronizacao = setInterval(() => {
+      sincronizarComFirebase(usuarioLogado.uid, {
+        plat,
+        userName,
+        temas,
+        meta: useStore.getState().meta,
+        ultimaSincronizacao: new Date().toISOString(),
+      });
+    }, 30000);
+
+    return () => clearInterval(intervaloSincronizacao);
+  }, [usuarioLogado, plat, userName, temas]);
 
   const filaHoje = useMemo(() => calcFilaInteligente(temas), [temas]);
   const totalFilaHoje = filaHoje.length;
@@ -2325,6 +2371,39 @@ export default function App() {
 
   const showToast    = useCallback((msg, withUndo = false) => setToast({ msg, undo: withUndo }), []);
   const dismissToast = useCallback(() => setToast(null), []);
+
+  const handleMarkConfirm = useCallback(({ acerto, questoes, motivosErro }) => {
+    if (!marking) return;
+    pushUndo(plat);
+    markStep(plat, marking.temaId, marking.stepKey, { acerto, questoes, motivosErro });
+    addTemaStats(marking.temaId, { stepKey: marking.stepKey, acerto, questoes, motivosErro });
+    setMarking(null);
+    showToast(`✓ Etapa computada com sucesso!`, true);
+  }, [marking, plat, pushUndo, markStep, showToast, addTemaStats]);
+
+  const handleSaveTema = useCallback((f) => {
+    pushUndo(plat);
+    if (!temaEdit?.id) { addTema(plat, f);              showToast(`✓ "${f.nome}" acoplado à grade`, true); }
+    else               { updateTema(plat, temaEdit.id, f); showToast("✓ Configurações do tema atualizadas", true); }
+    setTemaEdit(null);
+  }, [plat, temaEdit, pushUndo, addTema, updateTema, showToast]);
+
+  // ─── SE ESTÁ CARREGANDO, MOSTRA LOADING ────────────────────────────────────
+  if (carregandoAuth) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#07070f]">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 animate-pulse" />
+          <p className="text-gray-400">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── SE NÃO ESTÁ LOGADO, MOSTRA MODAL DE LOGIN ────────────────────────────
+  if (!usuarioLogado) {
+    return <AuthModal onSuccess={(user) => setUsuarioLogado(user)} />;
+  }
 
   const handleStudyTrigger = (temaId, stepKey) => {
     const targetTema = temas.find(t => t.id === temaId);
@@ -2345,22 +2424,6 @@ export default function App() {
     setInteractiveBrainDump(null);
     showToast("🧠 Brain Dump consolidado e gravado no perfil!");
   };
-
-  const handleMarkConfirm = useCallback(({ acerto, questoes, motivosErro }) => {
-    if (!marking) return;
-    pushUndo(plat);
-    markStep(plat, marking.temaId, marking.stepKey, { acerto, questoes, motivosErro });
-    addTemaStats(marking.temaId, { stepKey: marking.stepKey, acerto, questoes, motivosErro });
-    setMarking(null);
-    showToast(`✓ Etapa computada com sucesso!`, true);
-  }, [marking, plat, pushUndo, markStep, showToast, addTemaStats]);
-
-  const handleSaveTema = useCallback((f) => {
-    pushUndo(plat);
-    if (!temaEdit?.id) { addTema(plat, f);              showToast(`✓ "${f.nome}" acoplado à grade`, true); }
-    else               { updateTema(plat, temaEdit.id, f); showToast("✓ Configurações do tema atualizadas", true); }
-    setTemaEdit(null);
-  }, [plat, temaEdit, pushUndo, addTema, updateTema, showToast]);
 
   return (
     <div className="flex h-screen bg-[#07070f] text-white font-sans antialiased overflow-hidden">
@@ -2386,6 +2449,31 @@ export default function App() {
               {focusMode ? <Eye size={13} /> : <EyeOff size={13} />}
               <span>{focusMode ? "Foco On" : "Modo Foco"}</span>
             </button>
+
+            {/* Usuário logado e Logout */}
+            <div className="flex items-center gap-3 pl-4 border-l border-white/10">
+              <div className="text-right">
+                <p className="text-[11px] text-gray-500">Usuário</p>
+                <p className="text-[12px] font-bold text-white truncate max-w-[120px]">{usuarioLogado?.displayName || usuarioLogado?.email}</p>
+              </div>
+              <button
+                onClick={async () => {
+                  // Sincronizar antes de sair
+                  await sincronizarComFirebase(usuarioLogado.uid, {
+                    plat,
+                    userName,
+                    temas,
+                    meta: useStore.getState().meta,
+                    ultimaSincronizacao: new Date().toISOString(),
+                  });
+                  // Fazer logout
+                  await fazerLogout();
+                  setUsuarioLogado(null);
+                }}
+                className="px-2 py-1 rounded-lg text-[11px] font-bold bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-all border border-red-600/30">
+                Sair
+              </button>
+            </div>
           </div>
         </header>
 

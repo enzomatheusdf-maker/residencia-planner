@@ -1,16 +1,15 @@
 // firebaseAuth.js - Configuração Firebase com Autenticação
-import { initializeApp } from "firebase/app";
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
+import { initializeApp, getApps, getApp } from "firebase/app";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   updateProfile
 } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
-// Sua configuração Firebase (já deve estar no seu projeto)
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -20,7 +19,7 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
@@ -123,4 +122,5 @@ export const sincronizarComFirebase = async (uid, estadoZustand) => {
   }
 };
 
-export default { auth, db, criarConta, fazerLogin, fazerLogout, monitorarAuth, salvarDadosUsuario, carregarDadosUsuario, sincronizarComFirebase };
+const firebaseAuthExports = { auth, db, criarConta, fazerLogin, fazerLogout, monitorarAuth, salvarDadosUsuario, carregarDadosUsuario, sincronizarComFirebase };
+export default firebaseAuthExports;
