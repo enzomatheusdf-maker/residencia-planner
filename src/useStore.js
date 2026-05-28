@@ -2,7 +2,7 @@
 // Zustand + persist — estado centralizado com FSRS-Lite integrado
 //
 // DADOS: tudo salvo automaticamente no localStorage via Zustand persist.
-// Use o botão "Sincronizar" para exportar/importar entre dispositivos.
+// Sincronização com Firebase automática a cada 3s de mudança.
 //
 // Chave mudada v5→v6: schema expandido. Dados v5 perdidos (aceitável).
 import { create } from "zustand";

@@ -10,7 +10,7 @@ import { monitorarAuth, sincronizarComFirebase, carregarDadosUsuario, fazerLogou
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Zap, Settings,
   ChevronRight, AlertCircle, Trash2, Edit2, X, Plus, CheckCircle,
-  Play, Download, Copy, Info, ChevronLeft,
+  Play, Info, ChevronLeft,
   ChevronDown, BookOpen, Check, TrendingUp, ShieldAlert, Award, EyeOff, Eye, Target
 } from "lucide-react";
 import {
@@ -2237,7 +2237,7 @@ const NAV = [
 ];
 
 /* SIDEBAR DESKTOP ────────────────────────────────────────────────────────────── */
-function Sidebar({ view, setView, setAjustes, overdueCount, setSyncModal, setHelpModal }) {
+function Sidebar({ view, setView, setAjustes, overdueCount, setHelpModal }) {
   const { plat, setPlat, meta } = useStore();
   const [collapsed, setCollapsed] = useState(false);
   const daysLeft = meta.dataProva ? diffDays(todayStr(), meta.dataProva) : null;
@@ -2290,9 +2290,6 @@ function Sidebar({ view, setView, setAjustes, overdueCount, setSyncModal, setHel
             <p className={`text-xl font-black tabular-nums ${urgency}`}>{daysLeft}d</p>
           </div>
         )}
-        <button onClick={() => setSyncModal(true)} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-gray-600 hover:text-gray-300 hover:bg-white/5 transition-all">
-          <Download size={16} className="shrink-0"/>{!collapsed && <span className="text-[12px]">Sincronizar</span>}
-        </button>
         <button onClick={() => setHelpModal(true)} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-gray-600 hover:text-purple-400 hover:bg-purple-500/5 transition-all">
           <Info size={16} className="shrink-0"/>{!collapsed && <span className="text-[12px]">Guia de Uso</span>}
         </button>
@@ -2340,7 +2337,6 @@ export default function App() {
   const [marking,     setMarking]     = useState(null);
   const [temaEdit,    setTemaEdit]    = useState(null);
   const [ajustes,     setAjustes]     = useState(false);
-  const [syncModal,   setSyncModal]   = useState(false);
   const [editName,    setEditName]    = useState(false);
 
   // ─── MONITORAR AUTENTICAÇÃO ───────────────────────────────────────────────
@@ -2474,7 +2470,7 @@ export default function App() {
   return (
     <div className="flex h-screen bg-[#07070f] text-white font-sans antialiased overflow-hidden">
       {!onboardingDone && <OnboardingModal onComplete={(nome, foco, metaConfig) => { setUserName(nome); setPlat(foco); if (metaConfig) setMeta(metaConfig); setOnboardingDone(); }} />}
-      <Sidebar view={view} setView={setView} setAjustes={setAjustes} overdueCount={overdueCount} setSyncModal={setSyncModal} setHelpModal={setHelpModal} />
+      <Sidebar view={view} setView={setView} setAjustes={setAjustes} overdueCount={overdueCount} setHelpModal={setHelpModal} />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="flex items-center justify-between px-4 py-3 bg-[#07070f]/95 border-b border-white/5 shrink-0 backdrop-blur-sm">
@@ -2562,18 +2558,6 @@ export default function App() {
       {ajustes && <AjustesModal onClose={() => setAjustes(false)} overdueCount={overdueCount} onResetOnboarding={resetOnboarding} />}
 
       {helpModal && <HelpModal onClose={() => setHelpModal(false)} />}
-      {syncModal && (
-        <Modal onClose={() => setSyncModal(false)}>
-          <h2 className="text-[15px] font-bold text-gray-100 mb-2">💾 Ecossistema de Sincronização</h2>
-          <div className="bg-black/50 border border-white/10 p-2 text-[10px] rounded-xl font-mono break-all max-h-20 overflow-y-auto mb-3 text-gray-300">{exportKey()}</div>
-          <Btn className="w-full gap-2 mb-4" onClick={() => { navigator.clipboard.writeText(exportKey()); showToast("✓ Backup copiado!"); }}><Copy size={14}/> Copiar Chave</Btn>
-          <Textarea placeholder="Cole uma chave v6 externa..." id="importInput" className="text-[11px] mb-2" rows={2} />
-          <Btn variant="ghost" className="w-full text-[12px]" onClick={() => {
-            const input = document.getElementById("importInput");
-            if (importKey(input?.value)) { showToast("✓ Banco sincronizado!"); setSyncModal(false); } else { showToast("✗ Chave corrompida"); }
-          }}>Importar Chave</Btn>
-        </Modal>
-      )}
 
       {editName && (
         <Modal onClose={() => setEditName(false)}>
