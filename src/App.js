@@ -462,6 +462,14 @@ export default function App() {
         </header>
 
         <main className="flex-1 overflow-y-auto px-4 py-5 md:px-7 md:py-6 pb-28 md:pb-6">
+          {view === "login" && (
+            <AuthModal
+              onSuccess={(user) => {
+                setUsuarioLogado(user);
+                setView("dash");
+              }}
+            />
+          )}
           {view === "sessao" && temaParaIniciar && (
             <SessaoPage
               temaInicial={temaParaIniciar}
