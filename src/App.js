@@ -135,7 +135,12 @@ export default function App() {
 
       if (user) {
         setUsuarioLogado(user);
-        setUserName(user.displayName || user.email);
+        
+        // Instant updates to Zustand state:
+        useStore.setState({
+          userName: user.displayName || user.email?.split("@")[0] || "Estudante",
+          userEmail: user.email || ""
+        });
 
         // Carregar dados completos do Firebase
         const resultado = await carregarDadosUsuario(user.uid);
@@ -143,7 +148,8 @@ export default function App() {
           const dados = resultado.dados;
           useStore.setState({
             plat: dados.plat || "res",
-            userName: dados.userName || dados.nome || "Estudante",
+            userName: dados.userName || user.displayName || user.email?.split("@")[0] || "Estudante",
+            userEmail: user.email || "",
             meta: dados.meta || { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0 },
             res: dados.res || { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
             vest: dados.vest || { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
@@ -334,9 +340,11 @@ export default function App() {
   if (carregandoAuth) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#07070f]">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4 animate-pulse" />
-          <p className="text-gray-400">Carregando...</p>
+        <div className="text-center flex flex-col items-center gap-4">
+          <div className="animate-pulse">
+            <MedRevLogo size="lg" showTagline />
+          </div>
+          <p className="text-[11px] text-gray-500 uppercase tracking-widest font-bold font-mono">Carregando perfil...</p>
         </div>
       </div>
     );
@@ -348,6 +356,10 @@ export default function App() {
       <AuthModal
         onSuccess={(user) => {
           setUsuarioLogado(user);
+          useStore.setState({
+            userName: user.displayName || user.email?.split("@")[0] || "Estudante",
+            userEmail: user.email || ""
+          });
           setView("dash");
         }}
       />
@@ -466,6 +478,10 @@ export default function App() {
             <AuthModal
               onSuccess={(user) => {
                 setUsuarioLogado(user);
+                useStore.setState({
+                  userName: user.displayName || user.email?.split("@")[0] || "Estudante",
+                  userEmail: user.email || ""
+                });
                 setView("dash");
               }}
             />

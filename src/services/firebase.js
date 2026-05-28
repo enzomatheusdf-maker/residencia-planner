@@ -8,7 +8,10 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence
 } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
 
@@ -27,8 +30,10 @@ export const db = getFirestore(app);
 
 // ─── AUTHENTICATION OPERATIONS ───────────────────────────────────────────────
 
-export const criarConta = async (email, senha, nome) => {
+export const criarConta = async (email, senha, nome, manterConectado = true) => {
   try {
+    const persistence = manterConectado ? browserLocalPersistence : browserSessionPersistence;
+    await setPersistence(auth, persistence);
     const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
     const user = userCredential.user;
     
@@ -59,8 +64,10 @@ export const criarConta = async (email, senha, nome) => {
   }
 };
 
-export const fazerLogin = async (email, senha) => {
+export const fazerLogin = async (email, senha, manterConectado = true) => {
   try {
+    const persistence = manterConectado ? browserLocalPersistence : browserSessionPersistence;
+    await setPersistence(auth, persistence);
     const userCredential = await signInWithEmailAndPassword(auth, email, senha);
     return { sucesso: true, user: userCredential.user, uid: userCredential.user.uid };
   } catch (erro) {

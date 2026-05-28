@@ -9,6 +9,7 @@ export default function AuthModal({ onSuccess }) {
   const [senha, setSenha] = useState("");
   const [nome, setNome] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [manterConectado, setManterConectado] = useState(true);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(null);
 
@@ -20,9 +21,9 @@ export default function AuthModal({ onSuccess }) {
     try {
       let resultado;
       if (modo === "signup") {
-        resultado = await criarConta(email, senha, nome);
+        resultado = await criarConta(email, senha, nome, manterConectado);
       } else {
-        resultado = await fazerLogin(email, senha);
+        resultado = await fazerLogin(email, senha, manterConectado);
       }
 
       if (resultado.sucesso) {
@@ -129,6 +130,20 @@ export default function AuthModal({ onSuccess }) {
                 Mínimo 6 caracteres
               </p>
             )}
+          </div>
+
+          {/* Manter Conectado */}
+          <div className="flex items-center gap-2 py-1">
+            <input
+              type="checkbox"
+              id="manterConectado"
+              checked={manterConectado}
+              onChange={(e) => setManterConectado(e.target.checked)}
+              className="w-4 h-4 rounded border-white/10 bg-white/5 text-violet-600 focus:ring-violet-500 accent-violet-600 cursor-pointer"
+            />
+            <label htmlFor="manterConectado" className="text-xs font-semibold text-gray-400 select-none cursor-pointer hover:text-gray-300 transition-colors">
+              Manter conectado
+            </label>
           </div>
 
           {/* Erro */}
