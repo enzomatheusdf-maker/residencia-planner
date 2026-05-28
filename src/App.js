@@ -2345,11 +2345,17 @@ export default function App() {
 
   // ─── MONITORAR AUTENTICAÇÃO ───────────────────────────────────────────────
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId;
+
     const unsubscribe = monitorarAuth(async (user) => {
+      if (!isMounted) return;
+      console.log("🔐 monitorarAuth callback:", user ? `Logado como ${user.email}` : "NÃO logado");
+
       if (user) {
         setUsuarioLogado(user);
         setUserName(user.displayName || user.email);
-        
+
         // Carregar dados do Firebase
         const resultado = await carregarDadosUsuario(user.uid);
         if (resultado.sucesso) {
@@ -2360,10 +2366,26 @@ export default function App() {
       } else {
         setUsuarioLogado(null);
       }
-      setCarregandoAuth(false);
+
+      if (isMounted) {
+        setCarregandoAuth(false);
+        clearTimeout(timeoutId);
+      }
     });
 
-    return unsubscribe;
+    // Timeout de segurança: se Firebase não responder em 5s, mostra AuthModal de qualquer forma
+    timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.log("⚠️ Firebase auth timeout - mostrando AuthModal");
+        setCarregandoAuth(false);
+      }
+    }, 5000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, [setUserName, setPlat, setMeta]);
 
   // ─── SINCRONIZAR DADOS COM FIREBASE (AO MUDAR DADOS) ────────────────────────
