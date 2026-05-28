@@ -67,6 +67,9 @@ export const fazerLogin = async (email, senha) => {
 export const fazerLogout = async () => {
   try {
     await signOut(auth);
+    // Limpar dados do localStorage (Zustand persist)
+    const storeKeys = Object.keys(localStorage).filter(k => k.startsWith('residencia-planner'));
+    storeKeys.forEach(k => localStorage.removeItem(k));
     return { sucesso: true };
   } catch (erro) {
     console.error("Erro ao fazer logout:", erro);
@@ -113,7 +116,6 @@ export const sincronizarComFirebase = async (uid, estadoZustand) => {
     await setDoc(doc(db, "usuarios", uid), {
       uid: uid,
       ...estadoZustand,
-      ultimaSincronizacao: new Date().toISOString(),
     }, { merge: true });
     return { sucesso: true };
   } catch (erro) {

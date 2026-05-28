@@ -2366,21 +2366,21 @@ export default function App() {
     return unsubscribe;
   }, [setUserName, setPlat, setMeta]);
 
-  // ─── SINCRONIZAR DADOS COM FIREBASE (A CADA 30 SEGUNDOS) ──────────────────
+  // ─── SINCRONIZAR DADOS COM FIREBASE (AO MUDAR DADOS) ────────────────────────
   useEffect(() => {
     if (!usuarioLogado) return;
 
-    const intervaloSincronizacao = setInterval(() => {
+    // Debounce de 3s para evitar múltiplas sincronizações
+    const timeout = setTimeout(() => {
       sincronizarComFirebase(usuarioLogado.uid, {
         plat,
         userName,
         temas,
         meta: useStore.getState().meta,
-        ultimaSincronizacao: new Date().toISOString(),
       });
-    }, 30000);
+    }, 3000);
 
-    return () => clearInterval(intervaloSincronizacao);
+    return () => clearTimeout(timeout);
   }, [usuarioLogado, plat, userName, temas]);
 
   const filaHoje = useMemo(() => calcFilaInteligente(temas), [temas]);
@@ -2488,7 +2488,6 @@ export default function App() {
                   await sincronizarComFirebase(usuarioLogado.uid, {
                     plat, userName, temas,
                     meta: useStore.getState().meta,
-                    ultimaSincronizacao: new Date().toISOString(),
                   });
                   await fazerLogout();
                   setUsuarioLogado(null);
