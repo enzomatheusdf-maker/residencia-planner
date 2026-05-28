@@ -95,6 +95,15 @@ function Badge({ color, children }) {
   );
 }
 
+function SBadge({ S, nextDate }) {
+  return (
+    <span title={`Estabilidade: ${Math.round(S||1)}d — próxima revisão ${fmtDate(nextDate)}`}
+      className="text-[9px] font-mono bg-violet-500/10 text-violet-400 border border-violet-500/20 px-1.5 py-0.5 rounded">
+      S:{Math.round(S||1)}d
+    </span>
+  );
+}
+
 // ─── MEDREV LOGO ─────────────────────────────────────────────────────────────
 function MedRevLogo({ collapsed = false, showTagline = false, size = "md" }) {
   const iconSizes = { sm: "w-7 h-7", md: "w-9 h-9", lg: "w-12 h-12" };
