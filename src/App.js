@@ -10,7 +10,7 @@ import { monitorarAuth, sincronizarComFirebase, carregarDadosUsuario, fazerLogou
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Zap, Settings,
   ChevronRight, AlertCircle, Trash2, Edit2, X, Plus, CheckCircle,
-  Play, Info, ChevronLeft,
+  Play, Info, ChevronLeft, LogIn,
   ChevronDown, BookOpen, Check, TrendingUp, ShieldAlert, Award, EyeOff, Eye, Target
 } from "lucide-react";
 import {
@@ -2360,6 +2360,7 @@ class ErrorBoundary extends React.Component {
 
 // ─── NAV INDEX ────────────────────────────────────────────────────────────────
 const NAV = [
+  { k: "login", icon: LogIn,           label: "Login"          },
   { k: "dash",  icon: LayoutDashboard, label: "Dashboard"     },
   { k: "crono", icon: Calendar,        label: "Cronograma"     },
   { k: "banco", icon: BarChart3,       label: "Banco de Dados" },
@@ -2460,7 +2461,7 @@ export default function App() {
   const [usuarioLogado, setUsuarioLogado] = useState(null);
   const [carregandoAuth, setCarregandoAuth] = useState(true);
 
-  const [view, setView] = useState("dash");
+  const [view, setView] = useState("login");
   const [temaParaIniciar, setTemaParaIniciar] = useState(null);
   const [interactiveBrainDump, setInteractiveBrainDump] = useState(null);
   const [helpModal, setHelpModal] = useState(false);
@@ -2605,7 +2606,7 @@ export default function App() {
 
   // ─── SE NÃO ESTÁ LOGADO, MOSTRA MODAL DE LOGIN ────────────────────────────
   if (!usuarioLogado) {
-    return <AuthModal onSuccess={(user) => setUsuarioLogado(user)} />;
+    return <AuthModal onSuccess={(user) => { setUsuarioLogado(user); setView("dash"); }} />;
   }
 
   const handleStudyTrigger = (temaId, stepKey) => {
@@ -2681,6 +2682,7 @@ export default function App() {
         </header>
 
         <main className="flex-1 overflow-y-auto px-4 py-5 md:px-7 md:py-6 pb-28 md:pb-6">
+          {view === "login" && <AuthModal onSuccess={(user) => { setUsuarioLogado(user); setView("dash"); }} />}
           {view === "sessao" && temaParaIniciar && (
             <SessaoPage 
               temaInicial={temaParaIniciar}
