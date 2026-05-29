@@ -75,7 +75,7 @@ export const useStore = create(
         plat: "res",
       userName: "Estudante",
       userEmail: "",
-      meta: { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0, provasAlvo: [], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false },
+      meta: { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0, provasAlvo: [], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false },
       res: initialPlat(),
       vest: initialVestibularPlat(),
       undoStack: [],

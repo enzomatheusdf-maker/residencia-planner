@@ -371,7 +371,7 @@ export function CycleCompleteModal({ tema, onClose }) {
 
 // ─── ONBOARDING MODAL ──────────────────────────────────────────────────────────
 const PROVAS_RES = ["ENAMED", "USP-SP", "UNIFESP", "SCMSP", "SUS-SP", "UNICAMP", "UFRJ", "AMP"];
-const PROVAS_VEST = ["ENEM", "FUVEST", "UNICAMP", "UNESP", "UFG", "UERJ", "UFSC"];
+const PROVAS_VEST = ["ENEM", "FUVEST", "UNICAMP", "UNESP", "UFG", "UERJ", "UFSC", "UnB", "UFU"];
 
 export function OnboardingModal({ onComplete }) {
   const [step, setStep] = useState(1);
@@ -386,7 +386,9 @@ export function OnboardingModal({ onComplete }) {
   // Vestibular-specific
   const [isSegundaTentativa, setIsSegundaTentativa] = useState(false);
   const [areaPuxouBaixo, setAreaPuxouBaixo] = useState("");
-  const [notaCorteAlvo, setNotaCorteAlvo] = useState(0);
+  const [acertosAlvo, setAcertosAlvo] = useState("");
+  const [totalQuestoesAlvo, setTotalQuestoesAlvo] = useState("");
+  const [customPlat, setCustomPlat] = useState("");
 
   // Internal steps: 1 (identificação), 2 (vest context — skipped for res), 3 (rotina), 4 (plataforma)
   const TOTAL_STEPS = plataforma === "vest" ? 4 : 3;
@@ -394,18 +396,32 @@ export function OnboardingModal({ onComplete }) {
 
   const next = () => {
     if (step === 1 && !nome.trim()) return;
-    if (step === 1 && plataforma === "res") { setStep(3); return; } // skip vestibular step
+    if (step === 1 && plataforma === "res") {
+      if (plataformaQuestoes === "MedEvo") setPlataformaQuestoes("MedEvo");
+      setStep(3);
+      return;
+    }
+    if (step === 2 && plataforma === "vest" && +acertosAlvo > +totalQuestoesAlvo) {
+      alert("O número de acertos não pode ser maior que o total de questões!");
+      return;
+    }
     if (step === 4) {
+      const finalPlatQuestoes = plataformaQuestoes === "Outro" ? (customPlat.trim() || "Outro") : plataformaQuestoes;
+      const tot = +totalQuestoesAlvo || 0;
+      const acert = +acertosAlvo || 0;
+      const calculatedNotaCorte = tot > 0 ? parseFloat(((acert / tot) * 100).toFixed(2)) : 0;
       onComplete(nome.trim() || "Estudante", plataforma, {
         dataProva,
         acerto: metaAcerto,
         provasAlvo,
         horarioPreferido,
         tempoDisponivel,
-        plataformaQuestoes,
+        plataformaQuestoes: finalPlatQuestoes,
         isSegundaTentativa,
         areaPuxouBaixo,
-        notaCorteAlvo,
+        acertosAlvo: acert,
+        totalQuestoesAlvo: tot,
+        notaCorteAlvo: calculatedNotaCorte,
         notasTentativaAnterior: {},
       });
       return;
@@ -450,7 +466,12 @@ export function OnboardingModal({ onComplete }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Foco de Estudo">
-                  <Select value={plataforma} onChange={(e) => { setPlataforma(e.target.value); setProvasAlvo([]); }}>
+                  <Select value={plataforma} onChange={(e) => {
+                    const val = e.target.value;
+                    setPlataforma(val);
+                    setProvasAlvo([]);
+                    setPlataformaQuestoes(val === "vest" ? "Estuda.com" : "MedEvo");
+                  }}>
                     <option value="res">Residência Médica</option>
                     <option value="vest">Vestibular / ENEM</option>
                   </Select>
@@ -462,12 +483,22 @@ export function OnboardingModal({ onComplete }) {
 
               <div>
                 <div className="flex justify-between items-baseline mb-1">
-                  <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold">Meta de acerto</span>
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold">Meta de acerto (%)</span>
                   <span className="text-sm font-black text-emerald-400 font-mono">{metaAcerto}%</span>
                 </div>
-                <input type="range" min={50} max={100} step={5} value={metaAcerto}
-                  onChange={(e) => setMetaAcerto(+e.target.value)}
-                  className="w-full accent-purple-500 cursor-pointer h-1" />
+                <Input
+                  type="number"
+                  min={50}
+                  max={100}
+                  step={0.1}
+                  value={metaAcerto}
+                  onChange={(e) => setMetaAcerto(parseFloat(e.target.value) || 50)}
+                  placeholder="Ex: 87.5"
+                  className="py-2 text-xs"
+                />
+                <p className="text-[9.5px] text-gray-500 mt-1 pl-1">
+                  💡 Recomendado: manter a meta de acerto entre 85% e 90% para otimização da retenção e estabilidade da curva no FSRS.
+                </p>
               </div>
 
               <div>
@@ -523,20 +554,40 @@ export function OnboardingModal({ onComplete }) {
                 </div>
               </div>
 
-              <div>
-                <div className="flex justify-between items-baseline mb-1">
-                  <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold">Nota de corte alvo (estimada)</span>
-                  <span className="text-sm font-black text-emerald-400 font-mono">{notaCorteAlvo > 0 ? notaCorteAlvo : "–"}</span>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Meta de acertos (Nº Qs)">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={acertosAlvo}
+                      onChange={(e) => setAcertosAlvo(e.target.value)}
+                      placeholder="Ex: 75"
+                    />
+                  </Field>
+                  <Field label="Total questões prova">
+                    <Input
+                      type="number"
+                      min={1}
+                      value={totalQuestoesAlvo}
+                      onChange={(e) => setTotalQuestoesAlvo(e.target.value)}
+                      placeholder="Ex: 90"
+                    />
+                  </Field>
                 </div>
-                <input
-                  type="number"
-                  min={0}
-                  max={1000}
-                  value={notaCorteAlvo || ""}
-                  onChange={(e) => setNotaCorteAlvo(+e.target.value)}
-                  placeholder="ex: 680 pontos"
-                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white text-xs focus:outline-none focus:border-purple-500 transition-colors"
-                />
+                {+totalQuestoesAlvo > 0 && +acertosAlvo >= 0 && (
+                  <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl space-y-1.5">
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-[10px] text-gray-500 uppercase font-semibold">Aproveitamento Alvo</span>
+                      <span className="text-sm font-black text-emerald-400 font-mono">
+                        {((+acertosAlvo / +totalQuestoesAlvo) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <p className="text-[9.5px] text-gray-500 leading-normal">
+                      💡 Recomendado: manter entre 85% e 90% para otimização da retenção e estabilidade da curva no FSRS.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {isSegundaTentativa && (
@@ -614,18 +665,18 @@ export function OnboardingModal({ onComplete }) {
 
           {/* TELA 4: Plataforma de Questões */}
           {step === 4 && (
-            <div className="w-full flex flex-col gap-5 text-left mt-2">
+            <div className="w-full flex flex-col gap-5 text-left mt-2 animate-fade-in">
               <div className="text-center">
                 <span className="text-3xl">💻</span>
                 <h2 className="text-xl font-black text-white mt-3">Banco de Questões</h2>
                 <p className="text-[11px] text-gray-500 mt-1">Onde você resolve questões práticas de prova.</p>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Plataforma principal utilizada</span>
                 <div className="grid grid-cols-2 gap-2">
                   {(plataforma === "vest"
-                    ? ["Descomplica", "Khan Academy", "Gabarito", "Vestibulares (PDF)", "Outro"]
+                    ? ["Descomplica", "Estuda.com", "Khan Academy", "Gabarito", "Vestibulares (PDF)", "Outro"]
                     : ["MedEvo", "Medgrupo", "Sanar", "Estratégia", "Outro"]
                   ).map(platOpt => (
                     <button
@@ -642,6 +693,18 @@ export function OnboardingModal({ onComplete }) {
                     </button>
                   ))}
                 </div>
+
+                {plataformaQuestoes === "Outro" && (
+                  <div className="mt-2 animate-fade-in">
+                    <Field label="Escreva o nome do outro banco/plataforma">
+                      <Input
+                        placeholder="Ex: Banco do Cursinho"
+                        value={customPlat}
+                        onChange={(e) => setCustomPlat(e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1294,9 +1357,12 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                   <Input type="date" value={meta.dataProva} onChange={(e) => setMeta({ ...meta, dataProva: e.target.value })} />
                 </Field>
                 <Field label="Meta de acerto (%)">
-                  <Input type="number" min={50} max={100} value={meta.acerto} onChange={(e) => setMeta({ ...meta, acerto: +e.target.value })} />
+                  <Input type="number" min={50} max={100} step={0.1} value={meta.acerto} onChange={(e) => setMeta({ ...meta, acerto: parseFloat(e.target.value) || 85 })} />
                 </Field>
               </div>
+              <p className="text-[9.5px] text-gray-500 pl-1 -mt-2">
+                💡 Recomendação: manter a meta de acerto entre 85% e 90% para melhor retenção e estabilidade da curva no FSRS.
+              </p>
               <Field label="Meta diária de revisões (0 = ilimitada)">
                 <Input type="number" min={0} value={meta.metaDiaria || 0} onChange={(e) => setMeta({ ...meta, metaDiaria: +e.target.value })} />
               </Field>
@@ -1406,9 +1472,39 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                     />
                     <span>Segunda tentativa / Mais de um ano estudando</span>
                   </label>
-                  <Field label="Nota de corte alvo (ou nota desejada)">
-                    <Input type="number" min={0} value={meta.notaCorteAlvo || 0} onChange={(e) => setMeta({ ...meta, notaCorteAlvo: +e.target.value })} placeholder="Ex: 820" />
-                  </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Meta de Acertos (Nº Qs)">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={meta.acertosAlvo || 0}
+                        onChange={(e) => {
+                          const val = +e.target.value;
+                          const tot = meta.totalQuestoesAlvo || 100;
+                          const pct = tot > 0 ? parseFloat(((val / tot) * 100).toFixed(2)) : 0;
+                          setMeta({ ...meta, acertosAlvo: val, notaCorteAlvo: pct });
+                        }}
+                        placeholder="Ex: 75"
+                      />
+                    </Field>
+                    <Field label="Total Questões Prova">
+                      <Input
+                        type="number"
+                        min={1}
+                        value={meta.totalQuestoesAlvo || 100}
+                        onChange={(e) => {
+                          const tot = +e.target.value;
+                          const val = meta.acertosAlvo || 0;
+                          const pct = tot > 0 ? parseFloat(((val / tot) * 100).toFixed(2)) : 0;
+                          setMeta({ ...meta, totalQuestoesAlvo: tot, notaCorteAlvo: pct });
+                        }}
+                        placeholder="Ex: 90"
+                      />
+                    </Field>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1 pl-1">
+                    Sua meta equivale a <strong className="text-emerald-400">{meta.notaCorteAlvo || 0}%</strong> de acerto. Recomendamos manter entre 85% e 90% para otimização da retenção no FSRS.
+                  </p>
                   <Field label="Área de maior dificuldade">
                     <Select
                       value={meta.areaPuxouBaixo || ""}

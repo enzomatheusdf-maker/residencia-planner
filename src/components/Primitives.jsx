@@ -1,5 +1,6 @@
 // src/components/Primitives.jsx
 import React, { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Info, X } from "lucide-react";
 import { isOverdue, isDueToday, isDueSoon, fmtDate } from "../core/fsrs";
 import { useStore } from "../core/store";
@@ -267,7 +268,7 @@ export function ProgressiveTooltip({ tooltipId, text, children }) {
 
 // ─── TOUR BALLOON (WALKTHROUGH POPUPS) ──────────────────────────────────────────
 export function TourBalloon({ text, onNext, nextLabel = "Continuar →" }) {
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[300] bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-4">
       <div className="w-full max-w-sm bg-gradient-to-br from-[#12121e] to-[#0a0a0f] border border-purple-500/30 rounded-2xl p-5 shadow-2xl shadow-purple-900/10 animate-slide-up text-left relative overflow-hidden">
         <div className="absolute -right-8 -top-8 w-20 h-20 rounded-full bg-purple-500/5 blur-xl pointer-events-none" />
@@ -290,7 +291,8 @@ export function TourBalloon({ text, onNext, nextLabel = "Continuar →" }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
