@@ -1,6 +1,7 @@
 // src/components/SessaoPage.jsx
-import React, { useState } from 'react';
-import { STEP_DEFINITIONS } from '../constants/stepDefinitions';
+import React, { useState, useMemo } from 'react';
+import { getStepDefinitions } from '../constants/stepDefinitions';
+import { useStore } from '../core/store';
 import { 
   BookOpen, FileText, Brain, Target, PenTool, Layers, 
   ChevronLeft, ChevronRight, Zap, Play 
@@ -10,6 +11,9 @@ import { ESP_COLORS } from '../core/fsrs';
 const STEP_ICONS = { pretest: FileText, leitura: BookOpen, esqueleto: Layers, braindump: Brain, questoes: PenTool, anki: Zap };
 
 export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
+  const { plat } = useStore();
+  const platformName = useStore((s) => s.meta?.plataformaQuestoes) || (plat === "res" ? "MedEvo" : "Estuda Mais");
+  
   // 1. Estados locais do componente (Hooks no topo)
   const [started, setStarted] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -20,13 +24,18 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
   // 2. Trava de segurança contra renderização sem objeto
   if (!temaInicial) return null;
 
-  const currentStep = STEP_DEFINITIONS[currentStepIndex];
-  const isLastStep = currentStepIndex === STEP_DEFINITIONS.length - 1;
+  const formatText = (text) => {
+    if (!text) return "";
+    return text.replace(/MedEvo/g, platformName);
+  };
+
+  const stepDefinitions = useMemo(() => getStepDefinitions(plat, temaInicial.esp), [plat, temaInicial.esp]);
+  const currentStep = stepDefinitions[currentStepIndex];
+  const isLastStep = currentStepIndex === stepDefinitions.length - 1;
   const espColor = ESP_COLORS[temaInicial.esp] || "#8b5cf6";
 
   const handleNextStep = () => {
     if (isLastStep) {
-      // Devolve o objeto atualizado com o PICO e o Anki salvos para o App.js processar
       onComplete?.({ ...temaInicial, pico: pico.trim(), ankiDeck: ankiDeck.trim() });
     } else {
       setCurrentStepIndex(currentStepIndex + 1);
@@ -52,7 +61,7 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
             </span>
             <h2 className="text-2xl font-black text-white tracking-tight mt-1">{temaInicial.nome}</h2>
           </div>
-          <button type="button" onClick={() => onCancel?.()} className="text-[13px] text-gray-500 hover:text-white transition-colors">
+          <button type="button" onClick={() => onCancel?.()} className="text-[13px] text-gray-500 hover:text-white transition-colors border-none p-0 bg-transparent cursor-pointer">
             Cancelar e Voltar
           </button>
         </div>
@@ -89,7 +98,7 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
           <button
             type="button"
             onClick={() => setStarted(true)}
-            className="w-full px-4 py-3.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-[13px] transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-violet-900/20"
+            className="w-full px-4 py-3.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-[13px] transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-violet-900/20 border-none cursor-pointer"
           >
             <Play size={15} /> Confirmar e Iniciar D0
           </button>
@@ -98,8 +107,8 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
     );
   }
 
-  // ─── TELA 2: FLUXO DAS 6 MICROTAREFAS CIENTÍFICAS ─────────────────────────
-  const StepIconComponent = STEP_ICONS[currentStep.id] || FileText;
+  // ─── TELA 2: FLUXO DAS MICROTAREFAS CIENTÍFICAS ─────────────────────────
+  const StepIconComponent = STEP_ICONS[currentStep?.id] || FileText;
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6 animate-fade-up text-left">
@@ -109,7 +118,7 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
           <h3 className="text-[14px] font-bold text-white truncate mt-0.5">{temaInicial.nome}</h3>
         </div>
         <span className="text-[10px] font-bold text-gray-500 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md font-mono">
-          v7 • 1.07
+          v11
         </span>
       </div>
 
@@ -117,12 +126,12 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
         <div className="bg-white/5 rounded-full h-1.5 overflow-hidden border border-white/5">
           <div
             className="bg-violet-600 h-full transition-all duration-300"
-            style={{ width: `${((currentStepIndex + 1) / STEP_DEFINITIONS.length) * 100}%` }}
+            style={{ width: `${((currentStepIndex + 1) / stepDefinitions.length) * 100}%` }}
           />
         </div>
         <div className="flex justify-between text-[11px] font-semibold text-gray-600 uppercase tracking-wider font-mono">
-          <span>Passo {currentStepIndex + 1} de {STEP_DEFINITIONS.length}</span>
-          <span>{Math.round(((currentStepIndex + 1) / STEP_DEFINITIONS.length) * 100)}%</span>
+          <span>Passo {currentStepIndex + 1} de {stepDefinitions.length}</span>
+          <span>{Math.round(((currentStepIndex + 1) / stepDefinitions.length) * 100)}%</span>
         </div>
       </div>
 
@@ -134,30 +143,30 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
             <StepIconComponent size={24} />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-white tracking-tight">{currentStep.title}</h3>
-            <p className="text-[12.5px] text-gray-400 mt-0.5 leading-relaxed">{currentStep.description}</p>
+            <h3 className="text-lg font-bold text-white tracking-tight">{formatText(currentStep?.title)}</h3>
+            <p className="text-[12.5px] text-gray-400 mt-0.5 leading-relaxed">{formatText(currentStep?.description)}</p>
           </div>
         </div>
 
         <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4">
           <p className="whitespace-pre-line text-[13px] leading-relaxed font-medium text-gray-300">
-            {currentStep.instruction}
+            {formatText(currentStep?.instruction)}
           </p>
         </div>
 
         <div className="border-t border-white/5 pt-2">
           <button
             type="button"
-            onClick={() => setExpandedJustification(expandedJustification === currentStep.id ? null : currentStep.id)}
-            className="text-[11px] text-violet-400 hover:text-violet-300 font-bold flex items-center gap-1.5 py-1"
+            onClick={() => setExpandedJustification(expandedJustification === currentStep?.id ? null : currentStep?.id)}
+            className="text-[11px] text-violet-400 hover:text-violet-300 font-bold flex items-center gap-1.5 py-1 border-none bg-transparent cursor-pointer"
           >
-            <span>{expandedJustification === currentStep.id ? '▼' : '▶'}</span>
+            <span>{expandedJustification === currentStep?.id ? '▼' : '▶'}</span>
             Análise de Evidência Científica
           </button>
-          {expandedJustification === currentStep.id && (
+          {expandedJustification === currentStep?.id && (
             <div className="bg-violet-500/[0.02] border-l-2 border-violet-500/30 p-4 rounded-r-xl mt-2 w-full animate-fade-up">
               <p className="text-[11.5px] leading-relaxed whitespace-pre-line text-gray-500 italic">
-                {currentStep.justification}
+                {formatText(currentStep?.justification)}
               </p>
             </div>
           )}
@@ -169,7 +178,7 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
           type="button"
           onClick={handlePrevStep}
           disabled={currentStepIndex === 0}
-          className="px-4 bg-[#111113] hover:bg-white/5 text-gray-400 disabled:opacity-20 border border-white/5 rounded-xl font-bold text-[13px] transition-all flex items-center justify-center gap-1 shrink-0"
+          className="px-4 bg-[#111113] hover:bg-white/5 text-gray-400 disabled:opacity-20 border border-white/5 rounded-xl font-bold text-[13px] transition-all flex items-center justify-center gap-1 shrink-0 border-none cursor-pointer"
         >
           <ChevronLeft size={16} /> Voltar
         </button>
@@ -177,9 +186,9 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
         <button
           type="button"
           onClick={handleNextStep}
-          className="flex-1 px-4 py-3.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-[13px] transition-all active:scale-[0.98] shadow-lg shadow-violet-900/20 flex items-center justify-center gap-1.5"
+          className="flex-1 px-4 py-3.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-[13px] transition-all active:scale-[0.98] shadow-lg shadow-violet-900/20 flex items-center justify-center gap-1.5 border-none cursor-pointer"
         >
-          {isLastStep ? 'Fiz todos os passos → Finalizar D0' : `Concluir ${currentStep.title}`} <ChevronRight size={16} />
+          {isLastStep ? 'Fiz todos os passos → Finalizar D0' : `Concluir ${currentStep?.title}`} <ChevronRight size={16} />
         </button>
       </div>
     </div>

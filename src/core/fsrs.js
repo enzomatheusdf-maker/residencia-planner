@@ -62,7 +62,8 @@ export function updateStability(S_prev, acerto) {
 
 export function nextInterval(S, baseOffset) {
   const raw = (S / FSRS_FACTOR) * (DESIRED_RETENTION ** (1 / FSRS_DECAY) - 1);
-  return Math.round(Math.min(Math.max(raw, baseOffset * 0.5), baseOffset * 1.8));
+  const floor = Math.max(1, Math.round(baseOffset * 0.5));
+  return Math.round(Math.max(raw, floor)); // sem teto
 }
 
 // ─── STEPS DEFINITION ────────────────────────────────────────────────────────
@@ -83,10 +84,26 @@ export function buildRev(d0) {
 }
 
 export function recalcAfterMark(rev, doneKey, acerto) {
+  const rating = toRating(acerto);
+  const S_new = updateStability(rev[doneKey].S ?? S_BASE[doneKey], acerto);
+
+  if (rating === "again") {
+    return {
+      ...rev,
+      [doneKey]: {
+        ...rev[doneKey],
+        S: S_new,
+        done: false,
+        date: addDays(todayStr(), 1),
+        acerto: null,
+        questoes: null,
+      },
+    };
+  }
+
   const doneIdx = STEPS.findIndex((s) => s.key === doneKey);
   const nextStep = STEPS[doneIdx + 1];
   if (!nextStep) return rev;
-  const S_new = updateStability(rev[doneKey].S ?? S_BASE[doneKey], acerto);
   const interval = nextInterval(S_new, nextStep.offset);
   const baseDate = rev[doneKey].date >= todayStr() ? rev[doneKey].date : todayStr();
   return {
@@ -94,6 +111,24 @@ export function recalcAfterMark(rev, doneKey, acerto) {
     [doneKey]: { ...rev[doneKey], S: S_new },
     [nextStep.key]: { ...rev[nextStep.key], date: addDays(baseDate, interval) },
   };
+}
+
+export function normalizeTema(t) {
+  if (!t) return t;
+  const rev = { ...t.rev };
+  STEPS.forEach((s) => {
+    if (!rev[s.key]) {
+      rev[s.key] = {
+        date: t.d0 ? addDays(t.d0, s.offset) : todayStr(),
+        done: false,
+        acerto: null,
+        questoes: null,
+        S: S_BASE[s.key],
+        motivosErro: [],
+      };
+    }
+  });
+  return { ...t, rev };
 }
 
 // ─── DOMAIN CONFIGURATIONS & COLORS ──────────────────────────────────────────

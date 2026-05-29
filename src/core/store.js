@@ -3,7 +3,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { buildRev, recalcAfterMark, STEPS, S_BASE, todayStr, addDays } from "./fsrs";
+import { buildRev, recalcAfterMark, STEPS, S_BASE, todayStr, addDays, normalizeTema } from "./fsrs";
 
 const initialPlat = () => ({ temas: [], simulados: [], ankiLog: [], cronogramas: [] });
 
@@ -50,13 +50,32 @@ const initialVestibularPlat = () => {
   return { temas, simulados: [], ankiLog: [], cronogramas: [] };
 };
 
+const timestampMiddleware = (config) => (set, get, api) => {
+  const newSet = (entropy, replace) => {
+    const current = get();
+    const nextState = typeof entropy === "function" ? entropy(current) : entropy;
+
+    const hasDataKeys = nextState && Object.keys(nextState).some((key) =>
+      ["res", "vest", "meta", "userName", "onboardingDone", "brainDumpD1Data", "temaStats", "vistos"].includes(key)
+    );
+
+    if (hasDataKeys && (!nextState || !nextState.hasOwnProperty("updatedAt"))) {
+      set({ ...nextState, updatedAt: Date.now() }, replace);
+    } else {
+      set(nextState, replace);
+    }
+  };
+  return config(newSet, get, api);
+};
+
 export const useStore = create(
   persist(
-    (set, get) => ({
-      plat: "res",
+    timestampMiddleware(
+      (set, get) => ({
+        plat: "res",
       userName: "Estudante",
       userEmail: "",
-      meta: { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0, provasAlvo: [] },
+      meta: { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0, provasAlvo: [], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false },
       res: initialPlat(),
       vest: initialVestibularPlat(),
       undoStack: [],
@@ -68,6 +87,8 @@ export const useStore = create(
       modoSimples: true,
       brainDumpD1Data: {},
       temaStats: {},
+      vistos: [],
+      tourStep: null,
       setPlat: (p) => set({ plat: p }),
       setUserName: (name) => set({ userName: name }),
       setUserEmail: (email) => set({ userEmail: email }),
@@ -76,6 +97,13 @@ export const useStore = create(
       resetOnboarding: () => set({ onboardingDone: false }),
       toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
       toggleModoSimples: () => set((state) => ({ modoSimples: !state.modoSimples })),
+      adicionarVisto: (id) => set((state) => {
+        if (state.vistos?.includes(id)) return {};
+        return { vistos: [...(state.vistos || []), id] };
+      }),
+      setTourStep: (step) => set({ tourStep: step }),
+      useStreakFreeze: () => set((state) => ({ meta: { ...state.meta, streakFreezeAvailable: false, streakFreezeUsed: true } })),
+      resetStreakFreeze: () => set((state) => ({ meta: { ...state.meta, streakFreezeAvailable: true, streakFreezeUsed: false } })),
 
       setBrainDumpD1: (temaId, data) =>
         set((state) => ({
@@ -149,10 +177,10 @@ export const useStore = create(
           if (fields.d0 && fields.d0 !== old.d0) {
             newRev = buildRev(fields.d0);
             STEPS.forEach((step) => {
-              newRev[step.key].done = old.rev[step.key].done;
-              newRev[step.key].acerto = old.rev[step.key].acerto;
-              newRev[step.key].questoes = old.rev[step.key].questoes;
-              newRev[step.key].S = old.rev[step.key].S ?? S_BASE[step.key];
+              newRev[step.key].done = old.rev?.[step.key]?.done ?? false;
+              newRev[step.key].acerto = old.rev?.[step.key]?.acerto ?? null;
+              newRev[step.key].questoes = old.rev?.[step.key]?.questoes ?? null;
+              newRev[step.key].S = old.rev?.[step.key]?.S ?? S_BASE[step.key];
             });
           }
           return {
@@ -166,7 +194,7 @@ export const useStore = create(
       deleteTema: (platKey, id) =>
         set((s) => ({ [platKey]: { ...s[platKey], temas: s[platKey].temas.filter((t) => t.id !== id) } })),
 
-      markStep: (platKey, temaId, stepKey, { acerto, questoes, motivosErro, tempoMin, ansiedade, cansaco, confianca, dificuldade, foco }) =>
+      markStep: (platKey, temaId, stepKey, { acerto, questoes, motivosErro, erros, tempoMin, ansiedade, cansaco, confianca, dificuldade, foco }) =>
         set((s) => ({
           [platKey]: {
             ...s[platKey],
@@ -180,6 +208,7 @@ export const useStore = create(
                   acerto,
                   questoes,
                   motivosErro: motivosErro || [],
+                  erros: erros || [],
                   tempoMin: tempoMin ?? t.rev[stepKey].tempoMin,
                   ansiedade: ansiedade ?? t.rev[stepKey].ansiedade,
                   cansaco: cansaco ?? t.rev[stepKey].cansaco,
@@ -192,25 +221,6 @@ export const useStore = create(
             }),
           },
         })),
-
-      markD0FromCronograma: (platKey, temaId) =>
-        set((s) => {
-          const tema = s[platKey].temas.find((t) => t.id === temaId);
-          if (!tema || tema.rev.d0.done) return {};
-          return {
-            [platKey]: {
-              ...s[platKey],
-              temas: s[platKey].temas.map((t) =>
-                t.id !== temaId
-                  ? t
-                  : {
-                      ...t,
-                      rev: { ...t.rev, d0: { ...t.rev.d0, done: true, acerto: 1.0, questoes: 0, motivosErro: [] } },
-                    }
-              ),
-            },
-          };
-        }),
 
       importTemas: (platKey, items, d0) =>
         set((s) => ({
@@ -239,15 +249,40 @@ export const useStore = create(
           [platKey]: {
             ...s[platKey],
             temas: s[platKey].temas.map((t) => {
+              if (t.unstarted) return t;
               const nr = { ...t.rev };
-              let lastDate = todayStr();
-              STEPS.forEach((step, i) => {
-                if (!nr[step.key].done && nr[step.key].date < todayStr()) {
-                  nr[step.key] = { ...nr[step.key], date: i === 0 ? todayStr() : addDays(lastDate, 1) };
-                } else if (nr[step.key].done) {
-                  lastDate = nr[step.key].date || lastDate;
+
+              const firstUndoneStepIdx = STEPS.findIndex(
+                (step) => nr[step.key] && !nr[step.key].done && nr[step.key].date <= todayStr()
+              );
+
+              if (firstUndoneStepIdx !== -1) {
+                const firstStep = STEPS[firstUndoneStepIdx];
+                if (nr[firstStep.key].date < todayStr()) {
+                  nr[firstStep.key] = {
+                    ...nr[firstStep.key],
+                    date: todayStr(),
+                  };
                 }
-              });
+
+                let prevDate = nr[firstStep.key].date;
+                for (let i = firstUndoneStepIdx + 1; i < STEPS.length; i++) {
+                  const step = STEPS[i];
+                  const prevStep = STEPS[i - 1];
+                  const minInterval = step.offset - prevStep.offset;
+
+                  if (nr[step.key] && !nr[step.key].done) {
+                    const minDate = addDays(prevDate, minInterval);
+                    if (nr[step.key].date < minDate) {
+                      nr[step.key] = {
+                        ...nr[step.key],
+                        date: minDate,
+                      };
+                    }
+                    prevDate = nr[step.key].date;
+                  }
+                }
+              }
               return { ...t, rev: nr };
             }),
           },
@@ -376,8 +411,11 @@ export const useStore = create(
           modoSimples: true,
           brainDumpD1Data: {},
           temaStats: {},
+          vistos: [],
+          tourStep: null,
         }),
-    }),
+      })
+    ),
     {
       name: "reviewflow-v6",
       storage: createJSONStorage(() => localStorage),
@@ -393,18 +431,41 @@ export const useStore = create(
         modoSimples: s.modoSimples,
         brainDumpD1Data: s.brainDumpD1Data,
         temaStats: s.temaStats,
+        vistos: s.vistos,
+        updatedAt: s.updatedAt,
       }),
-      merge: (persisted, initial) => ({
-        ...initial,
-        ...persisted,
-        res: { ...initial.res, ...(persisted.res || {}) },
-        vest: { ...initial.vest, ...(persisted.vest || {}) },
-        userEmail: persisted.userEmail ?? initial.userEmail,
-        focusMode: persisted.focusMode ?? initial.focusMode,
-        modoSimples: persisted.modoSimples ?? initial.modoSimples,
-        brainDumpD1Data: persisted.brainDumpD1Data ?? initial.brainDumpD1Data,
-        temaStats: persisted.temaStats ?? initial.temaStats,
-      }),
+      merge: (persisted, initial) => {
+        const persistedVest = persisted.vest || {};
+        const resolvedVest = (persistedVest.temas?.length > 0)
+          ? { ...initial.vest, ...persistedVest }
+          : { ...initial.vest, ...persistedVest, temas: initial.vest.temas };
+
+        const normalizePlatTemas = (platObj) => {
+          if (!platObj || !Array.isArray(platObj.temas)) return platObj;
+          return {
+            ...platObj,
+            temas: platObj.temas.map(t => normalizeTema(t))
+          };
+        };
+
+        const mergedRes = normalizePlatTemas({ ...initial.res, ...(persisted.res || {}) });
+        const mergedVest = normalizePlatTemas(resolvedVest);
+
+        return {
+          ...initial,
+          ...persisted,
+          res: mergedRes,
+          vest: mergedVest,
+          userEmail: persisted.userEmail ?? initial.userEmail,
+          focusMode: persisted.focusMode ?? initial.focusMode,
+          modoSimples: persisted.modoSimples ?? initial.modoSimples,
+          brainDumpD1Data: persisted.brainDumpD1Data ?? initial.brainDumpD1Data,
+          temaStats: persisted.temaStats ?? initial.temaStats,
+          vistos: persisted.vistos ?? initial.vistos,
+          onboardingDone: persisted.onboardingDone ?? initial.onboardingDone,
+          updatedAt: persisted.updatedAt ?? initial.updatedAt,
+        };
+      },
     }
   )
 );

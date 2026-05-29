@@ -13,6 +13,7 @@ export default function BancoDados() {
   const [filtro, setFiltro] = useState("todos");
 
   const rows = temas
+    .filter((t) => !t.unstarted)
     .filter((t) => !q || t.nome.toLowerCase().includes(q.toLowerCase()))
     .filter((t) => {
       const done    = STEPS.filter((s) => t.rev[s.key].done);

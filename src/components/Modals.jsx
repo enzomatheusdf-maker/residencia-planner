@@ -1,9 +1,10 @@
 // src/components/Modals.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Zap, Target, BookOpen, 
-  TrendingUp, Award, Edit2, Trash2
+  TrendingUp, Award, Edit2, Trash2, Search
 } from "lucide-react";
+import { CATALOGO_RES, CATALOGO_VEST, getSubtopics } from "../constants/catalogos";
 import { useStore } from "../core/store";
 import {
   STEPS, IMPORTANCIA, ESPS_RES, ESPS_VEST,
@@ -12,6 +13,10 @@ import {
 import {
   Modal, Btn, Input, Textarea, Select, Field, MedRevLogo
 } from "./Primitives";
+import { calcFilaInteligente } from "../hooks/useMetrics";
+import { getMentorPhrase, getRecentPhrases, trackRecentPhrase } from "../core/mentor";
+import { Brain } from "lucide-react";
+import { auth, excluirUsuarioEDados } from "../services/firebase";
 
 // ─── HELP MODAL ──────────────────────────────────────────────────────────────
 export function HelpModal({ onClose }) {
@@ -43,7 +48,7 @@ export function HelpModal({ onClose }) {
         </div>
 
         <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
-          {[["secoes","Seções"], ["fluxo","Fluxo FSRS"]].map(([k,l]) => (
+          {[["secoes","Seções"], ["fluxo","Fluxo FSRS"], ["glossario","Glossário"]].map(([k,l]) => (
             <button key={k} onClick={() => setTab(k)} className={`flex-1 py-1.5 rounded-lg text-[12px] font-bold transition-all ${tab === k ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white" : "text-gray-500 hover:text-gray-300"}`}>{l}</button>
           ))}
         </div>
@@ -89,6 +94,41 @@ export function HelpModal({ onClose }) {
           </div>
         )}
 
+        {tab === "glossario" && (
+          <div className="flex flex-col gap-3 max-h-[350px] overflow-y-auto pr-1">
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+              <span className="text-xs font-black text-violet-400 font-mono">FSRS (Free Spaced Repetition Scheduler)</span>
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                Algoritmo matemático de repetição espaçada que estima o nível de estabilidade da memória baseado nas suas taxas de acertos e calcula a data ideal de revisão para garantir 90% de retenção (True Retention).
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+              <span className="text-xs font-black text-violet-400 font-mono">D0 → D21 (Ciclo Espaçado)</span>
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                Intervalos fixados cientificamente: D0 (estudo inicial ativo), D1 (recuperação ativa no dia seguinte via Brain Dump), D4 (reforço de questões), D7 (questões e flashcards) e D21 (revisão interleaved misturada).
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+              <span className="text-xs font-black text-violet-400 font-mono">True Retention D21+</span>
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                A porcentagem real de acertos nas revisões de longo prazo (etapas D21 em diante). É a métrica mais pura do seu nível de aprendizado real. Ideal acima de 80%.
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+              <span className="text-xs font-black text-violet-400 font-mono">Fila Inteligente</span>
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                Score dinâmico que ordena seus temas na fila considerando a urgência do FSRS (atraso) combinada com a importância da especialidade nas provas e seu peso de dificuldade.
+              </p>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
+              <span className="text-xs font-black text-violet-400 font-mono">Viés Metacognitivo</span>
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                A diferença entre a confiança estimada pelo estudante (percepção de domínio) e a taxa de acerto real nas questões. Um delta alto de excesso de confiança indica que o estudante está negligenciando lacunas graves.
+              </p>
+            </div>
+          </div>
+        )}
+
         <Btn className="w-full" onClick={onClose}>Entendido — vamos estudar!</Btn>
       </div>
     </Modal>
@@ -97,25 +137,232 @@ export function HelpModal({ onClose }) {
 
 // ─── CYCLE COMPLETE MODAL ─────────────────────────────────────────────────────
 export function CycleCompleteModal({ tema, onClose }) {
+  const { plat } = useStore();
+  const userName = useStore((s) => s.userName || "Estudante");
+  const temas = useStore((s) => s[plat]?.temas || []);
+
   const done = Object.values(tema.rev).filter(r => r.done && r.acerto != null);
   const avgAcerto = done.length ? Math.round(done.reduce((a, r) => a + r.acerto, 0) / done.length * 100) : 0;
 
+  // Specialty average accuracy
+  const espTemas = temas.filter(t => t.esp === tema.esp);
+  let sumEsp = 0;
+  let countEsp = 0;
+  espTemas.forEach(t => {
+    Object.values(t.rev).forEach(r => {
+      if (r.done && r.acerto != null) {
+        sumEsp += r.acerto;
+        countEsp++;
+      }
+    });
+  });
+  const avgEsp = countEsp > 0 ? Math.round((sumEsp / countEsp) * 100) : null;
+
+  // Curve analysis & Mentor phrase
+  const d0 = tema.rev.d0?.acerto;
+  const d21 = tema.rev.d21?.acerto || tema.rev.d7?.acerto || tema.rev.d4?.acerto;
+  
+  let curveMsg = "";
+  let curveStatus = "normal"; // normal, positive, negative
+  
+  if (d0 != null && d21 != null) {
+    const d0Pct = Math.round(d0 * 100);
+    const d21Pct = Math.round(d21 * 100);
+    if (d21Pct > d0Pct) {
+      curveStatus = "positive";
+      curveMsg = `Evolução positiva! Seu rendimento subiu de ${d0Pct}% no D0 para ${d21Pct}% no final do ciclo. O espaçamento FSRS consolidou o tema.`;
+    } else if (d21Pct < d0Pct) {
+      curveStatus = "negative";
+      curveMsg = `Atenção: queda de rendimento detectada (de ${d0Pct}% no D0 para ${d21Pct}% no final). Revise os distractors e force revisões extras.`;
+    } else {
+      curveMsg = `Desempenho estável: você manteve a precisão constante em ${d21Pct}% do início ao fim do ciclo.`;
+    }
+  } else {
+    curveMsg = `Ciclo concluído com média sólida de ${avgAcerto}%. Continue mantendo a constância!`;
+  }
+
+  // Mentor phrase selection (pure)
+  const recent = getRecentPhrases();
+  let situation = "sessao_concluida_mid";
+  if (avgAcerto >= 80) situation = "sessao_concluida_high";
+  else if (avgAcerto < 60) situation = "sessao_concluida_low";
+  
+  const { text: mentorText, id: phraseId } = getMentorPhrase(situation, {
+    userName,
+    tema: tema.nome,
+    acerto: avgAcerto,
+    data: "hoje"
+  }, recent);
+  
+  // Track selected phrase to avoid repetition
+  useEffect(() => {
+    if (phraseId) {
+      trackRecentPhrase(phraseId);
+    }
+  }, [phraseId]);
+
+  // Recommended next action
+  const nextFila = calcFilaInteligente(temas).filter(item => item.temaId !== tema.id);
+  const nextRecomendacao = nextFila.length > 0 ? nextFila[0] : null;
+
+  // Steps data for SVG chart
+  const stepsData = [
+    { key: "d0", label: "D0" },
+    { key: "d1", label: "D1" },
+    { key: "d4", label: "D4" },
+    { key: "d7", label: "D7" },
+    { key: "d21", label: "D21" }
+  ].map(s => {
+    const revItem = tema.rev[s.key];
+    return {
+      label: s.label,
+      done: !!revItem?.done,
+      acerto: revItem?.acerto != null ? Math.round(revItem.acerto * 100) : null
+    };
+  });
+
+  // Chart coordinates
+  const xCoords = [35, 95, 155, 215, 275];
+  const chartWidth = 310;
+  const chartHeight = 110;
+  const getY = (val) => val === null ? 90 : 90 - (val / 100) * 75; // 0% is at Y=90, 100% is at Y=15
+
+  const linePoints = stepsData
+    .map((s, idx) => s.acerto !== null ? `${xCoords[idx]},${getY(s.acerto)}` : null)
+    .filter(Boolean)
+    .join(" ");
+
+  const firstPointIdx = stepsData.findIndex(s => s.acerto !== null);
+  const lastPointIdx = [...stepsData].reverse().findIndex(s => s.acerto !== null);
+  const correctedLastIdx = lastPointIdx === -1 ? -1 : stepsData.length - 1 - lastPointIdx;
+  
+  let fillPoints = "";
+  if (firstPointIdx !== -1 && correctedLastIdx !== -1) {
+    fillPoints = `${xCoords[firstPointIdx]},90 ` + linePoints + ` ${xCoords[correctedLastIdx]},90`;
+  }
+
   return (
-    <Modal onClose={onClose}>
-      <div className="text-center py-6">
-        <p className="text-6xl mb-4">🎉</p>
-        <h2 className="text-2xl font-black text-white mb-2">Ciclo Completo!</h2>
-        <p className="text-gray-400 text-sm mb-4">Você completou todos os passos de <span className="text-violet-400 font-bold">{tema.nome}</span></p>
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 mt-4">
-          <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">Acerto Médio do Ciclo</p>
-          <p className={`text-3xl font-black ${avgAcerto >= 80 ? "text-emerald-400" : avgAcerto >= 65 ? "text-violet-400" : "text-red-400"}`}>
-            {avgAcerto}%
-          </p>
+    <Modal onClose={onClose} wide>
+      <div className="text-center py-2 space-y-4 max-w-md mx-auto text-left">
+        <div className="text-center">
+          <p className="text-5xl mb-2 animate-pulse">🎉</p>
+          <h2 className="text-xl font-black text-white">Ciclo Finalizado!</h2>
+          <p className="text-[12px] text-gray-400 mt-1">Você concluiu todas as etapas da curva FSRS para:</p>
+          <p className="text-sm text-violet-400 font-bold mt-0.5">{tema.nome}</p>
         </div>
+
+        {/* Chart Card */}
+        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex flex-col gap-2">
+          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Curva de Evolução de Acertos</p>
+          
+          <div className="w-full overflow-x-auto select-none">
+            <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full min-w-[280px] h-28 mt-1">
+              <defs>
+                <linearGradient id="modalChartGlow" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              
+              {/* Threshold Lines */}
+              <line x1="30" y1={getY(80)} x2="280" y2={getY(80)} stroke="#10b981" strokeWidth="1" strokeDasharray="3 3" opacity="0.3" />
+              <text x="285" y={getY(80) + 3} fill="#10b981" fontSize="7.5" className="font-bold font-mono">80%</text>
+
+              <line x1="30" y1={getY(60)} x2="280" y2={getY(60)} stroke="#ef4444" strokeWidth="1" strokeDasharray="3 3" opacity="0.3" />
+              
+              {/* Fill */}
+              {fillPoints && (
+                <polygon points={fillPoints} fill="url(#modalChartGlow)" />
+              )}
+
+              {/* Line */}
+              {linePoints && (
+                <polyline points={linePoints} fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              )}
+
+              {/* Dots & labels */}
+              {stepsData.map((s, idx) => {
+                const x = xCoords[idx];
+                const y = getY(s.acerto);
+                return (
+                  <g key={s.label}>
+                    {s.acerto !== null ? (
+                      <>
+                        <circle cx={x} cy={y} r="3" fill="#a78bfa" stroke="#0d0d18" strokeWidth="1.5" />
+                        <text x={x} y={y - 7} fill="#ffffff" fontSize="8" fontWeight="bold" textAnchor="middle" className="font-mono">
+                          {s.acerto}%
+                        </text>
+                      </>
+                    ) : (
+                      <circle cx={x} cy="90" r="2" fill="#374151" />
+                    )}
+                    <text x={x} y="103" fill="#4b5563" fontSize="8" fontWeight="bold" textAnchor="middle">
+                      {s.label}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+        </div>
+
+        {/* Analytics Grid */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-white/5 border border-white/5 rounded-xl p-3">
+            <p className="text-[9px] text-gray-500 uppercase tracking-wider font-bold">Média do Ciclo</p>
+            <p className={`text-xl font-black mt-0.5 ${avgAcerto >= 80 ? "text-emerald-400" : avgAcerto >= 65 ? "text-violet-400" : "text-red-400"}`}>
+              {avgAcerto}%
+            </p>
+          </div>
+          <div className="bg-white/5 border border-white/5 rounded-xl p-3">
+            <p className="text-[9px] text-gray-500 uppercase tracking-wider font-bold">Média em {tema.esp}</p>
+            <p className="text-xl font-black text-gray-200 mt-0.5">
+              {avgEsp !== null ? `${avgEsp}%` : "—"}
+            </p>
+          </div>
+        </div>
+
+        {/* Mentor Advice */}
+        <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed space-y-1.5 ${
+          curveStatus === "positive" 
+            ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-300"
+            : curveStatus === "negative"
+            ? "bg-red-500/5 border-red-500/10 text-red-300"
+            : "bg-white/5 border-white/5 text-gray-300"
+        }`}>
+          <div className="flex items-center gap-1.5 font-bold">
+            <Brain size={13} className="text-violet-400" />
+            <span>Conselho do Mentor</span>
+          </div>
+          <p className="font-semibold text-[12px]">{curveMsg}</p>
+          {mentorText && (
+            <p className="text-[11px] text-gray-400 italic border-t border-white/5 pt-1.5 mt-1 leading-relaxed">
+              "{mentorText}"
+            </p>
+          )}
+        </div>
+
+        {/* Recommended Next Action */}
+        <div className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] text-gray-500 uppercase tracking-wider font-bold">Próxima Recomendação FSRS</p>
+            <p className="text-xs font-bold text-gray-200 truncate mt-0.5">
+              {nextRecomendacao ? nextRecomendacao.temaNome : "Fila zerada por hoje!"}
+            </p>
+          </div>
+          {nextRecomendacao && (
+            <div className="text-[9px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-1 rounded shrink-0">
+              Etapa {nextRecomendacao.stepKey.toUpperCase()}
+            </div>
+          )}
+        </div>
+
         <button
+          type="button"
           onClick={onClose}
-          className="w-full mt-4 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-bold text-[13px] transition-all">
-          Continuar
+          className="w-full py-3 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-bold text-[12.5px] transition-all hover:scale-[1.01] active:scale-[0.99] shadow-lg shadow-purple-900/10"
+        >
+          Continuar Planejamento
         </button>
       </div>
     </Modal>
@@ -133,196 +380,280 @@ export function OnboardingModal({ onComplete }) {
   const [dataProva, setDataProva] = useState("2026-10-25");
   const [metaAcerto, setMetaAcerto] = useState(85);
   const [provasAlvo, setProvasAlvo] = useState([]);
-  const TOTAL_STEPS = 5;
+  const [horarioPreferido, setHorarioPreferido] = useState("Manhã");
+  const [tempoDisponivel, setTempoDisponivel] = useState(2);
+  const [plataformaQuestoes, setPlataformaQuestoes] = useState("MedEvo");
+  // Vestibular-specific
+  const [isSegundaTentativa, setIsSegundaTentativa] = useState(false);
+  const [areaPuxouBaixo, setAreaPuxouBaixo] = useState("");
+  const [notaCorteAlvo, setNotaCorteAlvo] = useState(0);
+
+  // Internal steps: 1 (identificação), 2 (vest context — skipped for res), 3 (rotina), 4 (plataforma)
+  const TOTAL_STEPS = plataforma === "vest" ? 4 : 3;
+  const visibleStep = plataforma === "vest" ? step : Math.max(1, step - (step > 1 ? 1 : 0));
 
   const next = () => {
-    if (step === 2 && !nome.trim()) return;
-    if (step < TOTAL_STEPS) setStep(step + 1);
-    else onComplete(nome.trim() || "Estudante", plataforma, { dataProva, acerto: metaAcerto, provasAlvo });
+    if (step === 1 && !nome.trim()) return;
+    if (step === 1 && plataforma === "res") { setStep(3); return; } // skip vestibular step
+    if (step === 4) {
+      onComplete(nome.trim() || "Estudante", plataforma, {
+        dataProva,
+        acerto: metaAcerto,
+        provasAlvo,
+        horarioPreferido,
+        tempoDisponivel,
+        plataformaQuestoes,
+        isSegundaTentativa,
+        areaPuxouBaixo,
+        notaCorteAlvo,
+        notasTentativaAnterior: {},
+      });
+      return;
+    }
+    setStep(step + 1);
   };
-  const prev = () => { if (step > 1) setStep(step - 1); };
+  const prev = () => {
+    if (step <= 1) return;
+    if (step === 3 && plataforma === "res") { setStep(1); return; } // skip vestibular step backwards
+    setStep(step - 1);
+  };
 
   return (
     <div className="fixed inset-0 bg-[#05050d]/97 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-      <div className="bg-[#0d0d18] border border-white/10 rounded-3xl p-6 w-full max-w-md flex flex-col gap-5 shadow-2xl shadow-purple-900/20 animate-slide-up">
+      <div className="bg-[#0d0d18] border border-white/10 rounded-3xl p-6 w-full max-w-md flex flex-col gap-5 shadow-2xl shadow-purple-900/20 animate-slide-up max-h-[92vh] overflow-y-auto">
         {/* Progress bar */}
-        <div className="flex gap-1">
+        <div className="flex gap-1 shrink-0">
           {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <div key={i} className={`flex-1 h-1 rounded-full transition-all duration-300 ${i < step ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-white/10"}`} />
+            <div key={i} className={`flex-1 h-1 rounded-full transition-all duration-300 ${i < visibleStep ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-white/10"}`} />
           ))}
         </div>
 
-        <div className="flex flex-col items-center text-center gap-4 py-1 min-h-[340px]">
+        <div className="flex flex-col items-center text-center gap-4 py-1 min-h-[360px]">
+          {/* TELA 1: Identificação e Metas */}
           {step === 1 && (
-            <div className="w-full flex flex-col items-center gap-4">
-              <div className="mt-2">
-                <MedRevLogo size="lg" showTagline />
+            <div className="w-full flex flex-col gap-4 text-left">
+              <div className="text-center">
+                <MedRevLogo size="md" showTagline />
+                <h2 className="text-xl font-black text-white mt-4">Monte seu Perfil Clínico</h2>
+                <p className="text-[11px] text-gray-500 mt-1">Identificação, foco de estudo e metas de aprovação.</p>
               </div>
+
+              <Field label="Nome completo ou como prefere ser chamado">
+                <Input
+                  autoFocus
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  placeholder="Seu primeiro nome"
+                  className="py-2.5 text-xs"
+                />
+              </Field>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Foco de Estudo">
+                  <Select value={plataforma} onChange={(e) => { setPlataforma(e.target.value); setProvasAlvo([]); }}>
+                    <option value="res">Residência Médica</option>
+                    <option value="vest">Vestibular / ENEM</option>
+                  </Select>
+                </Field>
+                <Field label="Data da Prova">
+                  <Input type="date" value={dataProva} onChange={(e) => setDataProva(e.target.value)} className="py-2 text-xs" />
+                </Field>
+              </div>
+
               <div>
-                <h2 className="text-2xl font-black text-white mt-3">Bem-vindo ao MedRev</h2>
-                <p className="text-[13px] text-gray-400 mt-2 leading-relaxed">
-                  O sistema de performance científica para quem leva a residência médica a sério.
+                <div className="flex justify-between items-baseline mb-1">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold">Meta de acerto</span>
+                  <span className="text-sm font-black text-emerald-400 font-mono">{metaAcerto}%</span>
+                </div>
+                <input type="range" min={50} max={100} step={5} value={metaAcerto}
+                  onChange={(e) => setMetaAcerto(+e.target.value)}
+                  className="w-full accent-purple-500 cursor-pointer h-1" />
+              </div>
+
+              <div>
+                <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold block mb-1.5">Instituições / Provas Alvo</span>
+                <div className="flex flex-wrap gap-1 border border-white/5 p-2 rounded-xl bg-black/40 max-h-24 overflow-y-auto">
+                  {(plataforma === "res" ? PROVAS_RES : PROVAS_VEST).map((pr) => {
+                    const selected = provasAlvo.includes(pr);
+                    return (
+                      <button
+                        key={pr}
+                        type="button"
+                        onClick={() => {
+                          if (selected) setProvasAlvo(provasAlvo.filter(x => x !== pr));
+                          else setProvasAlvo([...provasAlvo, pr]);
+                        }}
+                        className={`text-[9.5px] font-bold px-2 py-1 rounded-lg border transition-all ${
+                          selected
+                            ? "bg-purple-600 border-purple-500 text-white"
+                            : "bg-white/5 border-white/10 text-gray-400 hover:text-gray-200"
+                        }`}
+                      >
+                        {pr}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TELA 2: Contexto Vestibular (somente para vest) */}
+          {step === 2 && plataforma === "vest" && (
+            <div className="w-full flex flex-col gap-5 text-left mt-2">
+              <div className="text-center">
+                <span className="text-3xl">🎯</span>
+                <h2 className="text-xl font-black text-white mt-3">Contexto do Vestibular</h2>
+                <p className="text-[11px] text-gray-500 mt-1">Vamos calibrar sua estratégia com base no seu histórico.</p>
+              </div>
+
+              <div className="space-y-2">
+                <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-semibold">É uma segunda tentativa?</span>
+                <div className="grid grid-cols-2 gap-2 bg-black border border-white/10 rounded-xl p-0.5">
+                  {[["Sim, já prestei antes", true], ["Não, é minha primeira vez", false]].map(([lbl, val]) => (
+                    <button
+                      key={String(val)}
+                      type="button"
+                      onClick={() => setIsSegundaTentativa(val)}
+                      className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${isSegundaTentativa === val ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"}`}
+                    >
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-baseline mb-1">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold">Nota de corte alvo (estimada)</span>
+                  <span className="text-sm font-black text-emerald-400 font-mono">{notaCorteAlvo > 0 ? notaCorteAlvo : "–"}</span>
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  max={1000}
+                  value={notaCorteAlvo || ""}
+                  onChange={(e) => setNotaCorteAlvo(+e.target.value)}
+                  placeholder="ex: 680 pontos"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-white text-xs focus:outline-none focus:border-purple-500 transition-colors"
+                />
+              </div>
+
+              {isSegundaTentativa && (
+                <div>
+                  <span className="block text-[10px] text-gray-500 uppercase tracking-wide font-semibold mb-1.5">Área que mais te derrubou</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {["Exatas", "Ciências da Natureza", "Linguagens", "Humanas"].map(area => (
+                      <button
+                        key={area}
+                        type="button"
+                        onClick={() => setAreaPuxouBaixo(area === areaPuxouBaixo ? "" : area)}
+                        className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all ${
+                          areaPuxouBaixo === area
+                            ? "bg-red-500/20 border-red-500/50 text-red-300"
+                            : "bg-white/5 border-white/10 text-gray-400 hover:text-gray-200"
+                        }`}
+                      >
+                        {area}
+                      </button>
+                    ))}
+                  </div>
+                  {areaPuxouBaixo && (
+                    <p className="text-[10px] text-amber-400/80 mt-2 pl-1">⚡ A fila inteligente vai priorizar {areaPuxouBaixo} automaticamente.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TELA 3: Rotina de Estudos */}
+          {step === 3 && (
+            <div className="w-full flex flex-col gap-5 text-left mt-2">
+              <div className="text-center">
+                <span className="text-3xl">📅</span>
+                <h2 className="text-xl font-black text-white mt-3">Sua Rotina de Estudos</h2>
+                <p className="text-[11px] text-gray-500 mt-1">Defina quando estuda e por quanto tempo.</p>
+              </div>
+
+              <div className="space-y-2">
+                <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Horário preferido de estudo</span>
+                <div className="grid grid-cols-3 gap-2 bg-black border border-white/10 rounded-xl p-0.5">
+                  {["Manhã", "Tarde", "Noite"].map(h => (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={() => setHorarioPreferido(h)}
+                      className={`py-2 rounded-lg text-xs font-bold transition-all ${horarioPreferido === h ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"}`}
+                    >
+                      {h === "Manhã" ? "🌅 Manhã" : h === "Tarde" ? "☀️ Tarde" : "🌙 Noite"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Tempo disponível para estudos por dia</span>
+                <div className="grid grid-cols-5 gap-2 bg-black border border-white/10 rounded-xl p-0.5">
+                  {[1, 2, 3, 4, 5].map(hr => (
+                    <button
+                      key={hr}
+                      type="button"
+                      onClick={() => setTempoDisponivel(hr)}
+                      className={`py-2 rounded-lg text-xs font-mono font-bold transition-all ${tempoDisponivel === hr ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"}`}
+                    >
+                      {hr}h{hr === 5 && "+"}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-600 leading-normal pl-1">
+                  O Mentor adaptará os lembretes de estudos e as sessões FSRS baseado no seu tempo disponível.
                 </p>
               </div>
-              <div className="w-full flex flex-col gap-2 mt-1">
-                {[
-                  { icon: "🧠", text: "Algoritmo FSRS-Lite com espaçamento por curva de esquecimento" },
-                  { icon: "📊", text: "Métricas de elite: True Retention, Bleeding Score e Elite Analytics" },
-                  { icon: "🎯", text: "Fila inteligente priorizada por importância × urgência × acerto" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 bg-white/[0.03] border border-white/5 rounded-xl text-left">
-                    <span className="text-lg shrink-0">{item.icon}</span>
-                    <p className="text-[12px] text-gray-300 leading-tight">{item.text}</p>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 
-          {step === 2 && (
-            <div className="w-full flex flex-col items-center gap-4 mt-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-3xl shadow-lg shadow-purple-500/20">
-                👋
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-white mb-1">Como te chamamos?</h2>
-                <p className="text-[12px] text-gray-400">Personalizamos a experiência para você.</p>
-              </div>
-              <Input
-                autoFocus
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && nome.trim() && next()}
-                placeholder="Seu primeiro nome"
-                className="text-center text-sm py-3 max-w-xs"
-              />
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="w-full flex flex-col items-center gap-4 mt-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-3xl shadow-lg shadow-blue-500/20">
-                🎯
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-white mb-1">Qual o seu foco?</h2>
-                <p className="text-[12px] text-gray-400">Define especialidades e currículo do painel.</p>
-              </div>
-              <div className="flex flex-col gap-3 w-full">
-                <button onClick={() => setPlataforma("res")} className={`p-4 rounded-2xl border text-left transition-all ${plataforma === "res" ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-900/20" : "border-white/10 bg-white/[0.02] hover:border-white/20"}`}>
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">🏥</span>
-                    <div className="flex-1">
-                      <p className="text-[13px] font-bold text-white">Residência Médica</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">Cirurgia · Clínica · GO · Pediatria · Preventiva</p>
-                    </div>
-                    {plataforma === "res" && <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0" />}
-                  </div>
-                </button>
-                <button onClick={() => setPlataforma("vest")} className={`p-4 rounded-2xl border text-left transition-all ${plataforma === "vest" ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-900/20" : "border-white/10 bg-white/[0.02] hover:border-white/20"}`}>
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">📚</span>
-                    <div className="flex-1">
-                      <p className="text-[13px] font-bold text-white">Vestibular / ENEM</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">Exatas · Humanas · Linguagens · Natureza · Redação</p>
-                    </div>
-                    {plataforma === "vest" && <div className="w-4 h-4 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0" />}
-                  </div>
-                </button>
-              </div>
-            </div>
-          )}
-
+          {/* TELA 4: Plataforma de Questões */}
           {step === 4 && (
-            <div className="w-full flex flex-col items-center gap-4 mt-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-3xl shadow-lg shadow-emerald-500/20">
-                ⚙️
+            <div className="w-full flex flex-col gap-5 text-left mt-2">
+              <div className="text-center">
+                <span className="text-3xl">💻</span>
+                <h2 className="text-xl font-black text-white mt-3">Banco de Questões</h2>
+                <p className="text-[11px] text-gray-500 mt-1">Onde você resolve questões práticas de prova.</p>
               </div>
-              <div>
-                <h2 className="text-xl font-black text-white mb-1">Configure suas metas</h2>
-                <p className="text-[12px] text-gray-400">Usamos para calcular urgência e projeção.</p>
-              </div>
-              <div className="flex flex-col gap-4 w-full">
-                <Field label="Data da prova">
-                  <Input type="date" value={dataProva} onChange={(e) => setDataProva(e.target.value)} />
-                </Field>
-                <div>
-                  <div className="flex justify-between items-baseline mb-2.5">
-                    <span className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold">Meta de acerto</span>
-                    <span className={`text-2xl font-black tabular-nums ${metaAcerto >= 85 ? "text-emerald-400" : metaAcerto >= 70 ? "text-yellow-400" : "text-red-400"}`}>{metaAcerto}%</span>
-                  </div>
-                  <input type="range" min={50} max={100} step={5} value={metaAcerto}
-                    onChange={(e) => setMetaAcerto(+e.target.value)}
-                    className="w-full accent-purple-500 cursor-pointer h-1" />
-                  <div className="flex justify-between mt-1.5">
-                    <span className="text-[10px] text-gray-700">50%</span>
-                    <span className="text-[10px] text-gray-700">100%</span>
-                  </div>
-                </div>
-                {/* Provas Alvo */}
-                <div className="text-left mt-2">
-                  <span className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold block mb-2">Provas Alvo</span>
-                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto border border-white/5 p-2 rounded-xl bg-black/40">
-                    {(plataforma === "res" ? PROVAS_RES : PROVAS_VEST).map((pr) => {
-                      const selected = provasAlvo.includes(pr);
-                      return (
-                        <button
-                          key={pr}
-                          type="button"
-                          onClick={() => {
-                            if (selected) setProvasAlvo(provasAlvo.filter(x => x !== pr));
-                            else setProvasAlvo([...provasAlvo, pr]);
-                          }}
-                          className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${
-                            selected
-                              ? "bg-purple-600 border-purple-500 text-white shadow-sm shadow-purple-900/30"
-                              : "bg-white/5 border-white/10 text-gray-400 hover:text-gray-200"
-                          }`}
-                        >
-                          {pr}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {step === 5 && (
-            <div className="w-full flex flex-col items-center gap-4 mt-2">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-3xl shadow-lg shadow-violet-500/20">
-                🚀
-              </div>
-              <div>
-                <h2 className="text-xl font-black text-white mb-1">Tudo pronto{nome ? `, ${nome}` : ""}!</h2>
-                <p className="text-[12px] text-gray-400">O ciclo de revisão funciona assim:</p>
-              </div>
-              <div className="flex flex-col gap-2 w-full text-left">
-                {[
-                  { step: "D0", emoji: "📖", label: "Estude + resolva questões, marque o acerto" },
-                  { step: "D1", emoji: "✍️", label: "Brain dump de memória (5 min, sem material)" },
-                  { step: "D4", emoji: "📝", label: "Revisão ativa com questões focadas no tema" },
-                  { step: "D7", emoji: "🔄", label: "Questões + Anki + corrija erros do simulado" },
-                  { step: "D21", emoji: "🎯", label: "Revisão interleaved — ciclo completo!" },
-                ].map((item) => (
-                  <div key={item.step} className="flex items-center gap-3 p-2.5 bg-white/[0.03] border border-white/5 rounded-xl">
-                    <span className="text-base shrink-0">{item.emoji}</span>
-                    <span className="text-[10px] font-black font-mono text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded shrink-0">{item.step}</span>
-                    <p className="text-[12px] text-gray-300 leading-tight">{item.label}</p>
-                  </div>
-                ))}
+              <div className="space-y-2">
+                <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Plataforma principal utilizada</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {(plataforma === "vest"
+                    ? ["Descomplica", "Khan Academy", "Gabarito", "Vestibulares (PDF)", "Outro"]
+                    : ["MedEvo", "Medgrupo", "Sanar", "Estratégia", "Outro"]
+                  ).map(platOpt => (
+                    <button
+                      key={platOpt}
+                      type="button"
+                      onClick={() => setPlataformaQuestoes(platOpt)}
+                      className={`p-4 rounded-xl border text-center transition-all ${
+                        plataformaQuestoes === platOpt
+                          ? "border-purple-500 bg-purple-500/10 text-white shadow-lg font-bold"
+                          : "border-white/10 bg-white/[0.02] text-gray-400 hover:border-white/20 hover:text-gray-200"
+                      }`}
+                    >
+                      {platOpt}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        <div className="flex gap-2">
+        {/* Action buttons */}
+        <div className="flex gap-2 shrink-0">
           {step > 1 && (
             <Btn variant="ghost" onClick={prev} className="flex-none px-4">←</Btn>
           )}
-          <Btn className="flex-1" onClick={next} disabled={step === 2 && !nome.trim()}>
-            {step === TOTAL_STEPS ? "🚀 Entrar no MedRev" : "Continuar →"}
+          <Btn className="flex-1" onClick={next} disabled={step === 1 && !nome.trim()}>
+            {step === 4 ? "🏁 Finalizar Perfil" : "Continuar →"}
           </Btn>
         </div>
       </div>
@@ -330,28 +661,162 @@ export function OnboardingModal({ onComplete }) {
   );
 }
 
-// ─── MARK MODAL ───────────────────────────────────────────────────────────────
-export function MarkModal({ tema, stepKey, onConfirm, onCancel }) {
-  const step    = STEPS.find((s) => s.key === stepKey);
-  const [acerto,   setAcerto]   = useState(75);
-  const [questoes, setQuestoes] = useState("");
-  const [motivos, setMotivos]   = useState([]);
-  const isD1  = step.checkbox;
-  const col   = acerto >= 90 ? "text-emerald-400" : acerto >= 75 ? "text-violet-400" : acerto >= 55 ? "text-yellow-400" : "text-red-400";
-  const label = acerto >= 90 ? "Domínio sólido 🎯" : acerto >= 75 ? "Bom progresso" : acerto >= 55 ? "Em consolidação" : "Ponto fraco — revise mais";
+// ─── STRUCTURED ERRORS LIST ──────────────────────────────────────────────────
+export function StructuredErrorsList({ erros, onChange, plat, esp }) {
+  const subtopics = useMemo(() => getSubtopics(plat, esp), [plat, esp]);
+
+  const addErro = () => {
+    const newErro = {
+      id: Date.now() + Math.random(),
+      subtopico: subtopics[0] || "",
+      tipoErro: "lacuna",
+      anotacao: "",
+      virouCard: false,
+      revisado: false
+    };
+    onChange([...erros, newErro]);
+  };
+
+  const removeErro = (id) => {
+    onChange(erros.filter(e => e.id !== id));
+  };
+
+  const updateErro = (id, fields) => {
+    onChange(erros.map(e => e.id === id ? { ...e, ...fields } : e));
+  };
 
   const tiposErro = [
     { k: "lacuna", l: "Lacuna de Conteúdo" },
     { k: "raciocinio", l: "Erro de Raciocínio" },
     { k: "distractor", l: "Caiu em Distrator" },
-    { k: "descuido", l: "Falta de Atenção / Descuido" },
-    { k: "nao_visto", l: "Conteúdo Não Visto" }
+    { k: "descuido", l: "Descuido / Falta de Atenção" },
+    { k: "nao_visto", l: "Conteúdo Não Visto" },
+    ...(plat === "vest" ? [{ k: "interpretacao", l: "Erro de Interpretação" }] : [])
   ];
 
-  const toggleMotivo = (k) => {
-    if (motivos.includes(k)) setMotivos(motivos.filter(m => m !== k));
-    else setMotivos([...motivos, k]);
-  };
+  return (
+    <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl space-y-3 animate-fade-up">
+      <div className="flex justify-between items-center">
+        <p className="text-[11px] text-amber-400 font-bold uppercase tracking-wide">🔍 Mapeamento de Erros Estruturados:</p>
+        <button
+          type="button"
+          onClick={addErro}
+          className="px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white rounded text-[10px] font-bold transition-all"
+        >
+          + Adicionar Erro
+        </button>
+      </div>
+
+      {erros.length === 0 ? (
+        <p className="text-[11px] text-gray-500 italic text-center">Nenhum erro registrado. Clique em "+ Adicionar Erro".</p>
+      ) : (
+        <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+          {erros.map((e, idx) => (
+            <div key={e.id} className="p-3 bg-black/40 border border-white/5 rounded-lg space-y-2 relative">
+              <button
+                type="button"
+                onClick={() => removeErro(e.id)}
+                className="absolute top-2 right-2 text-gray-500 hover:text-red-400 text-xs"
+                title="Excluir erro"
+              >
+                ✕
+              </button>
+              
+              <div className="text-[10px] text-gray-400 font-bold font-mono">ERRO #{idx + 1}</div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="block text-[9px] text-gray-500 uppercase font-bold">Subtópico</label>
+                  {subtopics.length > 0 ? (
+                    <select
+                      value={e.subtopico}
+                      onChange={(evt) => updateErro(e.id, { subtopico: evt.target.value })}
+                      className="w-full bg-[#111] border border-white/10 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-violet-500"
+                    >
+                      {subtopics.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={e.subtopico}
+                      onChange={(evt) => updateErro(e.id, { subtopico: evt.target.value })}
+                      placeholder="Ex: Fórmula tal"
+                      className="w-full bg-[#111] border border-white/10 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-violet-500"
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[9px] text-gray-500 uppercase font-bold">Tipo de Erro</label>
+                  <select
+                    value={e.tipoErro}
+                    onChange={(evt) => updateErro(e.id, { tipoErro: evt.target.value })}
+                    className="w-full bg-[#111] border border-white/10 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-violet-500"
+                  >
+                    {tiposErro.map(t => <option key={t.k} value={t.k}>{t.l}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[9px] text-gray-500 uppercase font-bold">Anotação / O que errou?</label>
+                <input
+                  type="text"
+                  value={e.anotacao}
+                  onChange={(evt) => updateErro(e.id, { anotacao: evt.target.value })}
+                  placeholder="Ex: Confundi sinal na fórmula..."
+                  className="w-full bg-[#111] border border-white/10 rounded px-2 py-1 text-[11px] text-white outline-none focus:border-violet-500"
+                />
+              </div>
+
+              <div className="flex gap-4 pt-1">
+                <label className="flex items-center gap-1.5 text-[10.5px] text-gray-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={e.virouCard}
+                    onChange={(evt) => updateErro(e.id, { virouCard: evt.target.checked })}
+                    className="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black"
+                  />
+                  <span>Criou card?</span>
+                </label>
+
+                <label className="flex items-center gap-1.5 text-[10.5px] text-gray-300 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={e.revisado}
+                    onChange={(evt) => updateErro(e.id, { revisado: evt.target.checked })}
+                    className="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black"
+                  />
+                  <span>Revisado?</span>
+                </label>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── MARK MODAL ───────────────────────────────────────────────────────────────
+export function MarkModal({ tema, stepKey, onConfirm, onCancel }) {
+  const step    = STEPS.find((s) => s.key === stepKey);
+  const plat    = useStore((s) => s.plat);
+  const [questoes, setQuestoes] = useState("");
+  const [acertos, setAcertos]   = useState("");
+  const [erros, setErros]       = useState([]);
+
+  const isD1  = step.checkbox;
+
+  const totalQuestoes = +questoes || 0;
+  const certasQuestoes = +acertos || 0;
+  const pct = totalQuestoes > 0 ? Math.round((certasQuestoes / totalQuestoes) * 100) : 0;
+  const showErroBox = pct < 75 && totalQuestoes > 0;
+
+  const col   = pct >= 90 ? "text-emerald-400" : pct >= 75 ? "text-violet-400" : pct >= 55 ? "text-yellow-400" : "text-red-400";
+  const label = pct >= 90 ? "Domínio sólido 🎯" : pct >= 75 ? "Bom progresso" : pct >= 55 ? "Em consolidação" : "Ponto fraco — revise mais";
+  const isInvalid = totalQuestoes <= 0 || certasQuestoes > totalQuestoes;
+  const confirmDisabled = !isD1 && isInvalid;
 
   return (
     <Modal onClose={onCancel}>
@@ -376,43 +841,44 @@ export function MarkModal({ tema, stepKey, onConfirm, onCancel }) {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <Field label="Questões resolvidas nesta sessão">
-            <Input type="number" value={questoes} onChange={(e) => setQuestoes(e.target.value)} placeholder="ex: 30" />
-          </Field>
-          <div>
-            <div className="flex justify-between items-baseline mb-2.5">
-              <span className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold">% de acerto</span>
-              <span className={`text-3xl font-black font-mono tabular-nums ${col}`}>{acerto}%</span>
-            </div>
-            <input type="range" min={0} max={100} value={acerto}
-              onChange={(e) => setAcerto(+e.target.value)}
-              className="w-full accent-violet-500 h-1 cursor-pointer" />
-            <div className="flex justify-between mt-2">
-              <span className="text-[10px] text-gray-700">0%</span>
-              <span className={`text-[11px] font-semibold ${col}`}>{label}</span>
-              <span className="text-[10px] text-gray-700">100%</span>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Questões resolvidas">
+              <Input type="number" min={0} value={questoes} onChange={(e) => setQuestoes(e.target.value)} placeholder="ex: 20" />
+            </Field>
+            <Field label="Quantas acertou?">
+              <Input type="number" min={0} value={acertos} onChange={(e) => setAcertos(e.target.value)} placeholder="ex: 15" />
+            </Field>
           </div>
 
-          {acerto < 75 && (
-            <div className="bg-white/5 p-3 rounded-xl border border-white/5 animate-fade-up">
-              <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wide mb-2">🔍 Auditoria de Causa de Erros:</p>
-              <div className="flex flex-col gap-1.5">
-                {tiposErro.map(t => (
-                  <label key={t.k} className="flex items-center gap-2 text-[12px] text-gray-300 cursor-pointer select-none">
-                    <input type="checkbox" checked={motivos.includes(t.k)} onChange={() => toggleMotivo(t.k)} className="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black" />
-                    {t.l}
-                  </label>
-                ))}
+          {totalQuestoes > 0 && (
+            <div>
+              <div className="flex justify-between items-baseline mb-2">
+                <span className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold">Acerto calculado</span>
+                <span className={`text-3xl font-black font-mono tabular-nums ${col}`}>{pct}%</span>
               </div>
+              <div className="text-[11px] text-right text-gray-500 italic">{label}</div>
             </div>
+          )}
+
+          {isInvalid && totalQuestoes > 0 && (
+            <p className="text-[11px] text-red-400 italic">Número de acertos não pode ser maior que o total de questões.</p>
+          )}
+
+          {showErroBox && (
+            <StructuredErrorsList erros={erros} onChange={setErros} plat={plat} esp={tema.esp} />
           )}
         </div>
       )}
 
       <div className="flex gap-2 pt-1">
         <Btn className="flex-1"
-          onClick={() => onConfirm({ acerto: isD1 ? null : acerto / 100, questoes: questoes ? +questoes : null, motivosErro: motivos })}>
+          disabled={confirmDisabled}
+          onClick={() => onConfirm({
+            acerto: isD1 ? null : pct / 100,
+            questoes: totalQuestoes || null,
+            motivosErro: showErroBox ? erros.map(e => e.tipoErro) : [],
+            erros: showErroBox ? erros : []
+          })}>
           ✓ Confirmar
         </Btn>
         <Btn variant="ghost" className="flex-1" onClick={onCancel}>Cancelar</Btn>
@@ -517,9 +983,19 @@ const getRecomendacao = (esp, provasAlvo = []) => {
 export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
   const esps = platKey === "res" ? ESPS_RES : ESPS_VEST;
   const meta = useStore((s) => s.meta) || { provasAlvo: [] };
-  const [f, setF] = useState(
-    initial || { nome: "", esp: esps[0], d0: todayStr(), prio: "Alta", importancia: "ALTA", obs: "", pico: "", ankiDeck: "" }
-  );
+  const [f, setF] = useState(() => {
+    const defaults = {
+      nome: "",
+      esp: esps[0],
+      d0: todayStr(),
+      prio: "Alta",
+      importancia: "ALTA",
+      obs: "",
+      pico: "",
+      ankiDeck: ""
+    };
+    return { ...defaults, ...initial };
+  });
   const [showOptional, setShowOptional] = useState(!!(initial?.ankiDeck || initial?.pico || initial?.obs));
 
   const rec = getRecomendacao(f.esp, meta.provasAlvo);
@@ -530,7 +1006,9 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
 
   return (
     <Modal onClose={onCancel}>
-      <h2 className="text-[15px] font-bold text-gray-100">{initial ? "Editar tema" : "Novo tema"}</h2>
+      <h2 className="text-[15px] font-bold text-gray-100">
+        {initial?.id ? "Editar tema" : initial?.unstarted ? "Priorizar Tópico" : "Novo tema"}
+      </h2>
 
       <Field label="Nome do tema">
         <Input value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder="ex: Trauma de Tórax" />
@@ -589,14 +1067,16 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
             <Input value={f.ankiDeck || ""} onChange={(e) => setF({ ...f, ankiDeck: e.target.value })} placeholder="ex: Medicina::Cirurgia::Trauma" />
           </Field>
 
-          <Field label="PICO / Caso Clínico (opcional)">
-            <Textarea
-              rows={2}
-              value={f.pico || ""}
-              onChange={(e) => setF({ ...f, pico: e.target.value })}
-              placeholder="ex: Paciente 25a, dor periumbilical migratória, febre leve. Conduta inicial?"
-            />
-          </Field>
+           {platKey !== "vest" && (
+            <Field label="PICO / Caso Clínico (opcional)">
+              <Textarea
+                rows={2}
+                value={f.pico || ""}
+                onChange={(e) => setF({ ...f, pico: e.target.value })}
+                placeholder="ex: Paciente 25a, dor periumbilical migratória, febre leve. Conduta inicial?"
+              />
+            </Field>
+          )}
 
           <Field label="Fonte / obs (opcional)">
             <Input value={f.obs} placeholder="ex: MEDCOF Bloco 2" onChange={(e) => setF({ ...f, obs: e.target.value })} />
@@ -615,10 +1095,18 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
 
 // ─── AJUSTES MODAL ────────────────────────────────────────────────────────────
 export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
-  const { meta, setMeta, plat, optimize, sprint, setSprint } = useStore();
+  const { meta, setMeta, plat, optimize, sprint, setSprint, userName, setUserName, userEmail, setUserEmail } = useStore();
+  const [activeTab, setActiveTab] = useState("perfil");
   const esps = plat === "res" ? ESPS_RES : ESPS_VEST;
   const daysLeft = meta.dataProva ? diffDays(todayStr(), meta.dataProva) : null;
   const urgency  = daysLeft == null ? "" : daysLeft <= 30 ? "text-red-400" : daysLeft <= 90 ? "text-yellow-400" : "text-violet-400";
+
+  const tabs = [
+    { k: "perfil", label: "👤 Perfil" },
+    { k: "ajustes", label: "⚙ Ajustes" },
+    { k: "dados", label: "📚 Estudos" },
+    { k: "conta", label: "🔒 Conta" }
+  ];
 
   const toggleSprintEsp = (esp) => {
     const currentEsps = sprint?.esps || [];
@@ -629,107 +1117,353 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
     }
   };
 
+  const handleExportBackup = () => {
+    const state = useStore.getState();
+    const backupData = {
+      plat: state.plat,
+      userName: state.userName,
+      meta: state.meta,
+      res: state.res,
+      vest: state.vest,
+      onboardingDone: state.onboardingDone,
+      focusMode: state.focusMode,
+      modoSimples: state.modoSimples,
+      brainDumpD1Data: state.brainDumpD1Data,
+      temaStats: state.temaStats,
+      vistos: state.vistos || [],
+      updatedAt: state.updatedAt || Date.now(),
+      version: "reviewflow-v6-backup"
+    };
+    
+    const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+      JSON.stringify(backupData, null, 2)
+    )}`;
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", jsonString);
+    downloadAnchor.setAttribute("download", `medrev_backup_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleImportBackup = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const backup = JSON.parse(e.target.result);
+        if (backup.version !== "reviewflow-v6-backup") {
+          alert("Arquivo de backup inválido.");
+          return;
+        }
+        
+        const confirmImport = window.confirm("Deseja importar este backup? Seus dados atuais serão sobrescritos.");
+        if (!confirmImport) return;
+
+        useStore.setState({
+          plat: backup.plat ?? "res",
+          userName: backup.userName ?? "Estudante",
+          meta: backup.meta ?? { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0 },
+          res: backup.res ?? { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
+          vest: backup.vest ?? { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
+          onboardingDone: backup.onboardingDone ?? false,
+          focusMode: backup.focusMode ?? false,
+          modoSimples: backup.modoSimples ?? true,
+          brainDumpD1Data: backup.brainDumpD1Data ?? {},
+          temaStats: backup.temaStats ?? {},
+          vistos: backup.vistos ?? [],
+          updatedAt: Date.now(),
+        });
+
+        alert("Backup importado com sucesso!");
+        onClose();
+      } catch (err) {
+        alert("Erro ao processar o arquivo de backup: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleExcluirConta = async () => {
+    if (!auth.currentUser) {
+      alert("Nenhum usuário logado.");
+      return;
+    }
+    const confirm1 = window.confirm("ATENÇÃO: Você tem certeza que deseja excluir sua conta permanentemente? Todos os seus dados de estudos e revisões serão apagados e não poderão ser recuperados.");
+    if (!confirm1) return;
+    const confirm2 = window.confirm("Confirmação final: Para excluir seus dados definitivamente da nossa base de dados, clique em OK.");
+    if (!confirm2) return;
+
+    try {
+      const res = await excluirUsuarioEDados(auth.currentUser.uid);
+      if (res.sucesso) {
+        alert("Sua conta foi excluída com sucesso.");
+        useStore.getState().resetStore();
+        onClose();
+      } else {
+        if (res.erro && res.erro.includes("requires-recent-login")) {
+          alert("Por motivos de segurança, esta ação requer um login recente. Por favor, saia da conta, faça o login novamente e tente excluir a conta em seguida.");
+        } else {
+          alert(`Erro ao excluir conta: ${res.erro}`);
+        }
+      }
+    } catch (e) {
+      alert(`Erro: ${e.message}`);
+    }
+  };
+
+  const questPlatforms = plat === "res"
+    ? ["MedEvo", "Medgrupo", "Sanar", "Estratégia", "Outro"]
+    : ["Estuda Mais", "Revolução Vestibulares", "Descomplica", "Ferretto", "Outro"];
+
   return (
-    <Modal onClose={onClose}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-bold text-gray-100">⚙ Ajustes</h2>
+    <Modal onClose={onClose} wide>
+      <div className="flex items-center justify-between border-b border-white/5 pb-3">
+        <h2 className="text-[16px] font-black text-gray-100 flex items-center gap-2">
+          <span>⚙ Perfil & Configurações</span>
+        </h2>
         <button onClick={onClose} className="text-gray-600 hover:text-gray-300 text-lg transition-colors">✕</button>
       </div>
 
-      <div className="bg-white/5 rounded-2xl p-4 flex flex-col gap-3">
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">🎯 Metas</p>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Data da prova">
-            <Input type="date" value={meta.dataProva} onChange={(e) => setMeta({ ...meta, dataProva: e.target.value })} />
-          </Field>
-          <Field label="Meta de acerto (%)">
-            <Input type="number" min={50} max={100} value={meta.acerto} onChange={(e) => setMeta({ ...meta, acerto: +e.target.value })} />
-          </Field>
-        </div>
-        <Field label="Meta diária de revisões (0 = ilimitada)">
-          <Input type="number" min={0} value={meta.metaDiaria || 0} onChange={(e) => setMeta({ ...meta, metaDiaria: +e.target.value })} />
-        </Field>
-
-        {/* Provas Alvo */}
-        <div>
-          <span className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold block mb-2">Provas Alvo</span>
-          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto border border-white/5 p-2 rounded-xl bg-black/40">
-            {(plat === "res" ? PROVAS_RES : PROVAS_VEST).map((pr) => {
-              const selected = (meta.provasAlvo || []).includes(pr);
-              return (
-                <button
-                  key={pr}
-                  type="button"
-                  onClick={() => {
-                    const current = meta.provasAlvo || [];
-                    const next = selected ? current.filter((x) => x !== pr) : [...current, pr];
-                    setMeta({ ...meta, provasAlvo: next });
-                  }}
-                  className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${
-                    selected
-                      ? "bg-purple-600 border-purple-500 text-white shadow-sm shadow-purple-900/30"
-                      : "bg-white/5 border-white/10 text-gray-400 hover:text-gray-200"
-                  }`}
-                >
-                  {pr}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {daysLeft != null && (
-          <p className="text-[12px] text-gray-500">
-            Faltam <strong className={urgency}>{daysLeft} dias</strong> · {fmtFull(meta.dataProva)}
-          </p>
-        )}
-      </div>
-
-      {/* Módulo Volátil Sprint Semanal Focado */}
-      <div className="bg-white/5 rounded-2xl p-4 flex flex-col gap-3">
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
-          <span>🏃‍♂️ Sprint Semanal de Foco</span>
-          <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${sprint?.ativa ? "bg-emerald-500/20 text-emerald-400" : "bg-white/5 text-gray-500"}`}>
-            {sprint?.ativa ? "ATIVO" : "INATIVO"}
-          </span>
-        </p>
-        <div className="flex items-center gap-2">
-          <Input placeholder="Nome da Sprint (ex: Semana 1)" value={sprint?.semana || ""} onChange={(e) => setSprint({ ...sprint, semana: e.target.value })} className="flex-1" />
-          <button onClick={() => setSprint({ ...sprint, ativa: !sprint?.ativa })}
-            className={`px-3 py-2 rounded-xl text-[12px] font-bold transition-all ${sprint?.ativa ? "bg-red-600/20 text-red-400 border border-red-600/30" : "bg-violet-600 text-white"}`}>
-            {sprint?.ativa ? "Desativar" : "Ativar"}
+      {/* Tabs Header */}
+      <div className="flex border-b border-white/5">
+        {tabs.map(t => (
+          <button
+            key={t.k}
+            onClick={() => setActiveTab(t.k)}
+            className={`flex-1 py-3 text-center text-xs font-bold transition-all border-b-2 ${
+              activeTab === t.k
+                ? "border-violet-500 text-white bg-white/[0.02]"
+                : "border-transparent text-gray-500 hover:text-gray-300 hover:bg-white/[0.01]"
+            }`}
+          >
+            {t.label}
           </button>
-        </div>
-        <p className="text-[10px] text-gray-500">Filtrar painel para estas especialidades foco:</p>
-        <div className="grid grid-cols-2 gap-1 max-h-24 overflow-y-auto border border-white/5 p-2 rounded-xl bg-black/40">
-          {esps.map(esp => (
-            <label key={esp} className="flex items-center gap-2 text-[11px] text-gray-300 cursor-pointer">
-              <input type="checkbox" checked={sprint?.esps?.includes(esp) || false} onChange={() => toggleSprintEsp(esp)} className="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black" />
-              <span className="truncate">{esp}</span>
-            </label>
-          ))}
-        </div>
+        ))}
       </div>
 
-      <div className="bg-white/5 rounded-2xl p-4 flex flex-col gap-3">
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">⚡ Reordenar ciclo</p>
-        <p className="text-[12px] text-gray-500 leading-relaxed">
-          Reagenda revisões vencidas preservando os tempos algorítmicos.
-          {overdueCount > 0 ? <> Você tem <strong className="text-red-400">{overdueCount} vencidas</strong>.</> : " Tudo regularizado."}
-        </p>
-        <Btn onClick={() => { optimize(plat); onClose(); }} disabled={overdueCount === 0} className="w-full">
-          Otimizar Filas {overdueCount > 0 ? `(${overdueCount})` : ""}
-        </Btn>
-      </div>
+      {/* Tab Contents */}
+      <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+        
+        {/* TABA 1: PERFIL */}
+        {activeTab === "perfil" && (
+          <div className="space-y-4 animate-fade-up">
+            <div className="flex items-center gap-4 bg-white/[0.01] border border-white/5 p-4 rounded-2xl">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-pink-500 flex items-center justify-center font-black text-white text-2xl select-none shadow-xl shadow-purple-950/60">
+                {(userName || "US").substring(0, 2).toUpperCase()}
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-white leading-tight">{userName || "Estudante"}</h3>
+                <p className="text-[10px] text-gray-500 font-mono">{userEmail || "Sem email cadastrado"}</p>
+                <span className="inline-block text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-violet-600/20 text-violet-400 border border-violet-600/30">
+                  PLATAFORMA: {plat === "res" ? "Residência" : "Vestibular"}
+                </span>
+              </div>
+            </div>
 
-      <div className="bg-white/5 rounded-2xl p-4 flex flex-col gap-3">
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">ℹ️ Tutoriais</p>
-        <p className="text-[12px] text-gray-500 leading-relaxed">
-          Reveja o guia de onboarding e aprenda mais sobre como usar o MedRev.
-        </p>
-        <Btn variant="ghost" onClick={() => { onResetOnboarding(); onClose(); }} className="w-full">
-          Ver Guia de Boas-vindas
-        </Btn>
+            <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Identificação</p>
+              <Field label="Nome de exibição">
+                <Input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Seu nome" />
+              </Field>
+              <Field label="Endereço de email">
+                <Input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} placeholder="email@exemplo.com" />
+              </Field>
+            </div>
+          </div>
+        )}
+
+        {/* TABA 2: AJUSTES & METAS */}
+        {activeTab === "ajustes" && (
+          <div className="space-y-4 animate-fade-up">
+            <div className="bg-white/5 rounded-2xl p-4 space-y-4">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">🎯 Planejamento Geral</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Data da prova">
+                  <Input type="date" value={meta.dataProva} onChange={(e) => setMeta({ ...meta, dataProva: e.target.value })} />
+                </Field>
+                <Field label="Meta de acerto (%)">
+                  <Input type="number" min={50} max={100} value={meta.acerto} onChange={(e) => setMeta({ ...meta, acerto: +e.target.value })} />
+                </Field>
+              </div>
+              <Field label="Meta diária de revisões (0 = ilimitada)">
+                <Input type="number" min={0} value={meta.metaDiaria || 0} onChange={(e) => setMeta({ ...meta, metaDiaria: +e.target.value })} />
+              </Field>
+
+              {daysLeft != null && (
+                <p className="text-[11px] text-gray-500 italic">
+                  Faltam <strong className={urgency}>{daysLeft} dias</strong> para a prova em {fmtFull(meta.dataProva)}.
+                </p>
+              )}
+            </div>
+
+            {/* Otimizador FSRS */}
+            <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">⚡ Otimizador de Ciclos FSRS</p>
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                Reagenda revisões vencidas acumuladas distribuindo-as no tempo e preservando os pesos de retenção.
+                {overdueCount > 0 ? <> Você possui <strong className="text-red-400">{overdueCount} pendentes</strong>.</> : " Nenhuma pendência atualmente."}
+              </p>
+              <Btn onClick={() => { optimize(plat); onClose(); }} disabled={overdueCount === 0} className="w-full">
+                Otimizar Filas {overdueCount > 0 ? `(${overdueCount})` : ""}
+              </Btn>
+            </div>
+
+            {/* Sprint Semanal */}
+            <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                <span>🏃‍♂️ Sprint Semanal de Foco</span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${sprint?.ativa ? "bg-emerald-500/20 text-emerald-400" : "bg-white/5 text-gray-500"}`}>
+                  {sprint?.ativa ? "ATIVO" : "INATIVO"}
+                </span>
+              </p>
+              <div className="flex items-center gap-2">
+                <Input placeholder="Nome da Sprint (ex: Semana 1)" value={sprint?.semana || ""} onChange={(e) => setSprint({ ...sprint, semana: e.target.value })} className="flex-1" />
+                <button onClick={() => setSprint({ ...sprint, ativa: !sprint?.ativa })}
+                  className={`px-3 py-2 rounded-xl text-[12px] font-bold transition-all ${sprint?.ativa ? "bg-red-600/20 text-red-400 border border-red-600/30" : "bg-violet-600 text-white"}`}>
+                  {sprint?.ativa ? "Desativar" : "Ativar"}
+                </button>
+              </div>
+              <p className="text-[10px] text-gray-500">Filtrar painel para estas especialidades foco:</p>
+              <div className="grid grid-cols-2 gap-1 max-h-24 overflow-y-auto border border-white/5 p-2 rounded-xl bg-black/40">
+                {esps.map(esp => (
+                  <label key={esp} className="flex items-center gap-2 text-[11px] text-gray-300 cursor-pointer">
+                    <input type="checkbox" checked={sprint?.esps?.includes(esp) || false} onChange={() => toggleSprintEsp(esp)} className="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black" />
+                    <span className="truncate">{esp}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TABA 3: DADOS DE ESTUDO */}
+        {activeTab === "dados" && (
+          <div className="space-y-4 animate-fade-up">
+            <div className="bg-white/5 rounded-2xl p-4 space-y-4">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">📚 Dados e Provas Alvo</p>
+              
+              <div>
+                <span className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold block mb-2">Exames Alvo</span>
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto border border-white/5 p-2 rounded-xl bg-black/40">
+                  {(plat === "res" ? PROVAS_RES : PROVAS_VEST).map((pr) => {
+                    const selected = (meta.provasAlvo || []).includes(pr);
+                    return (
+                      <button
+                        key={pr}
+                        type="button"
+                        onClick={() => {
+                          const current = meta.provasAlvo || [];
+                          const next = selected ? current.filter((x) => x !== pr) : [...current, pr];
+                          setMeta({ ...meta, provasAlvo: next });
+                        }}
+                        className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${
+                          selected
+                            ? "bg-purple-600 border-purple-500 text-white shadow-sm shadow-purple-900/30"
+                            : "bg-white/5 border-white/10 text-gray-400 hover:text-gray-200"
+                        }`}
+                      >
+                        {pr}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Plataforma de questões preferida">
+                  <Select
+                    value={meta.plataformaQuestoes || questPlatforms[0]}
+                    onChange={(e) => setMeta({ ...meta, plataformaQuestoes: e.target.value })}
+                  >
+                    {questPlatforms.map(p => <option key={p} value={p}>{p}</option>)}
+                  </Select>
+                </Field>
+                <Field label="Horas disponíveis / dia">
+                  <Input type="number" min={1} max={24} value={meta.tempoDisponivel || 2} onChange={(e) => setMeta({ ...meta, tempoDisponivel: +e.target.value })} />
+                </Field>
+              </div>
+
+              {plat === "vest" && (
+                <div className="space-y-3 pt-2 border-t border-white/5">
+                  <label className="flex items-center gap-2 text-[12px] text-gray-300 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={meta.isSegundaTentativa || false}
+                      onChange={(e) => setMeta({ ...meta, isSegundaTentativa: e.target.checked })}
+                      className="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black"
+                    />
+                    <span>Segunda tentativa / Mais de um ano estudando</span>
+                  </label>
+                  <Field label="Nota de corte alvo (ou nota desejada)">
+                    <Input type="number" min={0} value={meta.notaCorteAlvo || 0} onChange={(e) => setMeta({ ...meta, notaCorteAlvo: +e.target.value })} placeholder="Ex: 820" />
+                  </Field>
+                  <Field label="Área de maior dificuldade">
+                    <Select
+                      value={meta.areaPuxouBaixo || ""}
+                      onChange={(e) => setMeta({ ...meta, areaPuxouBaixo: e.target.value })}
+                    >
+                      <option value="">Nenhuma selecionada</option>
+                      {esps.map(e => <option key={e} value={e}>{e}</option>)}
+                    </Select>
+                  </Field>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "conta" && (
+          <div className="space-y-4 animate-fade-up">
+            <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">📁 Portabilidade de Dados</p>
+              <p className="text-[11.5px] text-gray-500 leading-relaxed">
+                Exporte seu progresso estruturado ou restaure a partir de um backup JSON.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleExportBackup}
+                  className="px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-[11px] font-bold transition-all"
+                >
+                  Exportar Backup
+                </button>
+                <label className="px-3 py-2 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 rounded-xl text-[11px] font-bold transition-all text-center cursor-pointer flex items-center justify-center">
+                  Importar Backup
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportBackup}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">ℹ Onboarding & Guia</p>
+              <Btn variant="ghost" onClick={() => { onResetOnboarding(); onClose(); }} className="w-full">
+                Ver Guia de Onboarding Novamente
+              </Btn>
+            </div>
+
+            <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-red-400">⚠️ Conta (LGPD)</p>
+              <p className="text-[11.5px] text-gray-500 leading-relaxed">
+                Isso excluirá permanentemente sua conta no banco de dados e todos os dados associados. Esta ação não poderá ser desfeita.
+              </p>
+              <button
+                type="button"
+                onClick={handleExcluirConta}
+                className="w-full py-2 bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-600/20 text-[11.5px] font-bold rounded-xl transition-all"
+              >
+                Excluir Definitivamente Minha Conta
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </Modal>
   );
@@ -774,6 +1508,124 @@ export function BrainDumpD1Modal({ tema, onConfirm, onCancel }) {
         <Btn className="flex-1 bg-emerald-600 hover:bg-emerald-500" onClick={() => onConfirm(fields)}>✓ Concluir Brain Dump</Btn>
         <Btn variant="ghost" onClick={() => setTimerActive(!timerActive)}>{timerActive ? "Pausar" : "Retomar"}</Btn>
         <Btn variant="danger" onClick={onCancel}>Cancelar</Btn>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── GLOBAL SEARCH MODAL (Ctrl + K) ──────────────────────────────────────────
+export function GlobalSearchModal({ onClose, temas, plat, onSelectTema, onIniciarTema }) {
+  const [q, setQ] = useState("");
+  
+  const catalog = plat === "vest" ? CATALOGO_VEST : CATALOGO_RES;
+  
+  const allCatalogTopics = useMemo(() => {
+    return catalog.flatMap(b => 
+      b.t.map(topic => ({
+        nome: topic[0],
+        esp: topic[1],
+        prio: topic[2],
+        blockName: b.nome || `Bloco ${b.b}`
+      }))
+    );
+  }, [catalog]);
+
+  const results = useMemo(() => {
+    if (!q.trim()) return [];
+    const query = q.toLowerCase();
+    
+    const matched = allCatalogTopics.filter(t => 
+      t.nome.toLowerCase().includes(query) || 
+      t.esp.toLowerCase().includes(query) ||
+      t.blockName.toLowerCase().includes(query)
+    );
+    
+    return matched.map(m => {
+      const activeTema = temas.find(t => t.nome === m.nome);
+      return {
+        ...m,
+        active: activeTema,
+      };
+    });
+  }, [q, allCatalogTopics, temas]);
+
+  return (
+    <Modal onClose={onClose} wide>
+      <div className="flex items-center gap-2.5 border-b border-white/5 pb-3">
+        <Search size={18} className="text-gray-500 shrink-0" />
+        <input
+          autoFocus
+          type="text"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Busque por qualquer matéria ou tema (ex: Cardiologia, Cinemática)..."
+          className="w-full bg-transparent text-sm text-white placeholder-gray-600 outline-none"
+        />
+      </div>
+
+      <div className="my-2 max-h-[50vh] overflow-y-auto pr-1 space-y-2 text-left">
+        {q.trim() === "" ? (
+          <div className="py-12 text-center text-gray-500 text-xs">
+            Digite algo para pesquisar no catálogo completo do {plat === "vest" ? "Vestibular" : "MedRev"}.
+          </div>
+        ) : results.length === 0 ? (
+          <div className="py-12 text-center text-gray-500 text-xs">
+            Nenhum resultado encontrado para "{q}".
+          </div>
+        ) : (
+          results.map((r, idx) => (
+            <div
+              key={idx}
+              className="bg-white/[0.01] border border-white/5 hover:border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[9px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-white/5 text-gray-400">
+                    {r.esp} · {r.blockName}
+                  </span>
+                  {r.active && !r.active.unstarted ? (
+                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      Iniciado
+                    </span>
+                  ) : (
+                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-white/5 text-gray-500">
+                      Disponível
+                    </span>
+                  )}
+                </div>
+                <h4 className="text-sm font-bold text-white mt-1.5 truncate">{r.nome}</h4>
+              </div>
+
+              <div className="shrink-0">
+                {r.active && !r.active.unstarted ? (
+                  <button
+                    onClick={() => {
+                      onSelectTema(r.active);
+                      onClose();
+                    }}
+                    className="px-3.5 py-2 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-semibold rounded-xl border border-white/10 transition-all active:scale-[0.98]"
+                  >
+                    Ver Painel
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      onIniciarTema(r);
+                      onClose();
+                    }}
+                    className="px-3.5 py-2 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white text-xs font-bold rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-purple-900/10"
+                  >
+                    Iniciar Ciclo
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+      
+      <div className="text-[9.5px] text-gray-600 text-center border-t border-white/5 pt-2 font-mono">
+        Pressione ESC para fechar a busca global.
       </div>
     </Modal>
   );

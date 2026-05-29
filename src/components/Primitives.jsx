@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Info, X } from "lucide-react";
 import { isOverdue, isDueToday, isDueSoon, fmtDate } from "../core/fsrs";
+import { useStore } from "../core/store";
 
 export function stepState(r) {
   if (!r) return "future";
@@ -218,6 +219,116 @@ export function ConfettiOverlay() {
           }}
         />
       ))}
+    </div>
+  );
+}
+
+// ─── PROGRESSIVE TOOLTIP (USE STORE TO REGISTER VISTOS) ────────────────────────
+export function ProgressiveTooltip({ tooltipId, text, children }) {
+  const vistos = useStore((s) => s.vistos || []);
+  const adicionarVisto = useStore((s) => s.adicionarVisto);
+  const [open, setOpen] = useState(false);
+
+  const visto = vistos.includes(tooltipId);
+
+  useEffect(() => {
+    if (!visto) {
+      const timer = setTimeout(() => setOpen(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [visto]);
+
+  if (visto) return children;
+
+  return (
+    <div className="relative inline-block w-full">
+      {children}
+      {open && (
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2.5 w-64 bg-gradient-to-br from-[#1b1035] to-[#0c0c14] border border-violet-500/35 rounded-xl p-3 shadow-2xl z-[100] animate-slide-up text-left">
+          <p className="text-[11px] leading-relaxed text-gray-200 font-semibold">{text}</p>
+          <div className="flex justify-end mt-2 border-t border-white/5 pt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                adicionarVisto(tooltipId);
+                setOpen(false);
+              }}
+              className="px-3 py-1 bg-violet-600 hover:bg-violet-500 text-white text-[9.5px] font-black rounded-lg transition-all"
+            >
+              Entendido
+            </button>
+          </div>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#0c0c14] border-r border-b border-violet-500/35 rotate-45 -mt-[6px]" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── TOUR BALLOON (WALKTHROUGH POPUPS) ──────────────────────────────────────────
+export function TourBalloon({ text, onNext, nextLabel = "Continuar →" }) {
+  return (
+    <div className="fixed inset-0 z-[300] bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-gradient-to-br from-[#12121e] to-[#0a0a0f] border border-purple-500/30 rounded-2xl p-5 shadow-2xl shadow-purple-900/10 animate-slide-up text-left relative overflow-hidden">
+        <div className="absolute -right-8 -top-8 w-20 h-20 rounded-full bg-purple-500/5 blur-xl pointer-events-none" />
+        
+        <div className="flex items-center gap-2 mb-3 border-b border-white/5 pb-2">
+          <span className="text-base">🧠</span>
+          <span className="text-[10px] font-black uppercase text-purple-400 tracking-wider">Mentor do MedRev</span>
+        </div>
+        
+        <p className="text-[12.5px] text-gray-200 leading-relaxed font-semibold">
+          {text}
+        </p>
+        
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={onNext}
+            className="px-4 py-2 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white text-[11px] font-bold rounded-xl shadow-lg shadow-purple-900/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            {nextLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function playTick() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.value = 1400;
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.02);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.08);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.08);
+  } catch (e) {
+    // Ignore audio context blocks
+  }
+}
+
+export function CheckmarkOverlay({ onComplete }) {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 1200);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <div className="fixed inset-0 bg-[#05050d]/85 backdrop-blur-sm flex items-center justify-center z-[500] animate-fade-in">
+      <div className="bg-[#111113] border border-white/10 rounded-3xl p-8 flex flex-col items-center gap-4 animate-scale-up shadow-2xl shadow-emerald-500/10">
+        <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" className="animate-draw-checkmark" />
+          </svg>
+        </div>
+        <p className="text-xs font-black text-gray-200 uppercase tracking-widest">Etapa Concluída</p>
+      </div>
     </div>
   );
 }

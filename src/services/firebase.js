@@ -11,9 +11,11 @@ import {
   updateProfile,
   setPersistence,
   browserLocalPersistence,
-  browserSessionPersistence
+  browserSessionPersistence,
+  sendPasswordResetEmail,
+  deleteUser
 } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -79,7 +81,7 @@ export const fazerLogin = async (email, senha, manterConectado = true) => {
 export const fazerLogout = async () => {
   try {
     await signOut(auth);
-    localStorage.clear();
+    localStorage.removeItem("reviewflow-v6");
     return { sucesso: true };
   } catch (erro) {
     console.error("Erro ao fazer logout:", erro);
@@ -134,6 +136,30 @@ export const sincronizarComFirebase = async (uid, estadoZustand) => {
   }
 };
 
+export const resetarSenha = async (email) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return { sucesso: true };
+  } catch (erro) {
+    console.error("Erro ao enviar email de redefinição:", erro);
+    return { sucesso: false, erro: erro.message };
+  }
+};
+
+export const excluirUsuarioEDados = async (uid) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error("Nenhum usuário autenticado encontrado.");
+    await deleteDoc(doc(db, "usuarios", uid));
+    await deleteUser(user);
+    localStorage.removeItem("reviewflow-v6");
+    return { sucesso: true };
+  } catch (erro) {
+    console.error("Erro ao excluir conta:", erro);
+    return { sucesso: false, erro: erro.message };
+  }
+};
+
 const firebaseService = {
   auth,
   db,
@@ -144,6 +170,8 @@ const firebaseService = {
   salvarDadosUsuario,
   carregarDadosUsuario,
   sincronizarComFirebase,
+  resetarSenha,
+  excluirUsuarioEDados,
 };
 
 export default firebaseService;

@@ -1,14 +1,15 @@
 // src/App.js
 // Main entry point for MedRev - Clean & Modular Architecture
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Settings } from "lucide-react";
 
 // Camada Core & State
 import { useStore } from "./core/store";
-import { STEPS, isOverdue, todayStr } from "./core/fsrs";
+import { STEPS, isOverdue, todayStr, normalizeTema } from "./core/fsrs";
 
 // Camada de Hooks/Estatísticas
 import { calcFilaInteligente } from "./hooks/useMetrics";
+import { getMentorPhrase, getRecentPhrases } from "./core/mentor";
 
 // Camada de Serviços
 import {
@@ -23,12 +24,12 @@ import Sidebar from "./components/Sidebar";
 import BottomNav from "./components/BottomNav";
 import Dashboard from "./components/Dashboard";
 import Cronograma from "./components/Cronograma";
-import CronogramaCecilia from "./components/CronogramaCecilia_MEGA";
+import CronogramaVestHub from "./components/CronogramaVestHub";
 import BancoDados from "./components/BancoDados";
 import StatsPanel from "./components/StatsPanel";
 import Simulados from "./components/Simulados";
 import AnkiAudit from "./components/AnkiAudit";
-import SessaoPage from "./components/SessaoPage";
+import FocusMode from "./components/FocusMode";
 import AuthModal from "./components/AuthModal";
 
 // Modais e Primitivos
@@ -36,10 +37,9 @@ import {
   HelpModal,
   CycleCompleteModal,
   OnboardingModal,
-  MarkModal,
   TemaModal,
   AjustesModal,
-  BrainDumpD1Modal
+  GlobalSearchModal
 } from "./components/Modals";
 
 import {
@@ -48,7 +48,9 @@ import {
   Input,
   Toast,
   ConfettiOverlay,
-  Modal
+  Modal,
+  playTick,
+  CheckmarkOverlay
 } from "./components/Primitives";
 
 /* ERROR BOUNDARY ─────────────────────────────────────────────────────────────── */
@@ -94,7 +96,6 @@ export default function App() {
     userName,
     setUserName,
     onboardingDone,
-    setOnboardingDone,
     resetOnboarding,
     focusMode,
     toggleFocusMode,
@@ -102,7 +103,9 @@ export default function App() {
     toggleModoSimples,
     setBrainDumpD1,
     addTemaStats,
-    resetStore
+    resetStore,
+    tourStep,
+    setTourStep
   } = useStore();
 
   const temas = useStore((s) => s[plat]?.temas || []);
@@ -112,19 +115,40 @@ export default function App() {
   const [carregandoAuth, setCarregandoAuth] = useState(true);
 
   const [view, setView] = useState("login");
-  const [temaParaIniciar, setTemaParaIniciar] = useState(null);
-  const [interactiveBrainDump, setInteractiveBrainDump] = useState(null);
   const [helpModal, setHelpModal] = useState(false);
 
   const [toast, setToast] = useState(null);
-  const [marking, setMarking] = useState(null);
   const [temaEdit, setTemaEdit] = useState(null);
   const [ajustes, setAjustes] = useState(false);
   const [editName, setEditName] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showCheckmark, setShowCheckmark] = useState(false);
   const [cycleComplete, setCycleComplete] = useState(null);
+  const [targetedFocusItem, setTargetedFocusItem] = useState(null);
+  const [syncStatus, setSyncStatus] = useState(navigator.onLine ? "saved" : "offline");
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
 
-  // ─── MONITORAR AUTENTICAÇÃO E CARREGAR DADOS DO FIREBASE ───────────────────
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setShowGlobalSearch((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const handleOnline = () => setSyncStatus("saved");
+    const handleOffline = () => setSyncStatus("offline");
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
   useEffect(() => {
     let isMounted = true;
     let timeoutId;
@@ -146,19 +170,65 @@ export default function App() {
         const resultado = await carregarDadosUsuario(user.uid);
         if (resultado.sucesso) {
           const dados = resultado.dados;
-          useStore.setState({
-            plat: dados.plat || "res",
-            userName: dados.userName || user.displayName || user.email?.split("@")[0] || "Estudante",
-            userEmail: user.email || "",
-            meta: dados.meta || { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0 },
-            res: dados.res || { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
-            vest: dados.vest || { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
-            onboardingDone: dados.onboardingDone ?? false,
-            focusMode: dados.focusMode ?? false,
-            modoSimples: dados.modoSimples ?? true,
-            brainDumpD1Data: dados.brainDumpD1Data || {},
-            temaStats: dados.temaStats || {},
-          });
+          const currentState = useStore.getState();
+
+          const remoteTime = dados.updatedAt || 0;
+          const localTime = currentState.updatedAt || 0;
+
+          if (remoteTime > localTime) {
+            console.log("📥 Dados remotos do Firebase são mais recentes. Atualizando Zustand.");
+
+            const normalizePlatTemas = (platObj, initialPlatObj) => {
+              if (!platObj) return initialPlatObj;
+              const temasList = Array.isArray(platObj.temas) ? platObj.temas : [];
+              return {
+                ...initialPlatObj,
+                ...platObj,
+                temas: temasList.map(t => normalizeTema(t))
+              };
+            };
+
+            const resolvedOnboardingDone = currentState.onboardingDone || (dados.onboardingDone ?? false);
+
+            const firebaseVest = dados.vest || {};
+            const resolvedVest = (firebaseVest.temas?.length > 0)
+              ? firebaseVest
+              : { ...currentState.vest, ...(firebaseVest || {}), temas: currentState.vest.temas };
+
+            useStore.setState({
+              plat: dados.plat || "res",
+              userName: dados.userName || user.displayName || user.email?.split("@")[0] || "Estudante",
+              userEmail: user.email || "",
+              meta: dados.meta || { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0 },
+              res: normalizePlatTemas(dados.res, currentState.res),
+              vest: normalizePlatTemas(resolvedVest, currentState.vest),
+              onboardingDone: resolvedOnboardingDone,
+              focusMode: dados.focusMode ?? false,
+              modoSimples: dados.modoSimples ?? true,
+              brainDumpD1Data: dados.brainDumpD1Data || {},
+              temaStats: dados.temaStats || {},
+              vistos: dados.vistos || [],
+              updatedAt: remoteTime,
+            });
+          } else {
+            console.log("📤 Estado do localStorage é mais recente ou igual. Sincronizando com Firebase.");
+            const stateToSave = {
+              plat: currentState.plat,
+              meta: currentState.meta,
+              res: currentState.res,
+              vest: currentState.vest,
+              userName: currentState.userName,
+              onboardingDone: currentState.onboardingDone,
+              focusMode: currentState.focusMode,
+              modoSimples: currentState.modoSimples,
+              brainDumpD1Data: currentState.brainDumpD1Data,
+              temaStats: currentState.temaStats,
+              vistos: currentState.vistos || [],
+              updatedAt: localTime || Date.now(),
+            };
+            sincronizarComFirebase(user.uid, stateToSave)
+              .catch((err) => console.error("Erro ao sincronizar dados locais mais recentes:", err));
+          }
           setView("dash");
         } else {
           setView("dash");
@@ -194,7 +264,10 @@ export default function App() {
     if (!usuarioLogado) return;
 
     let timeoutId;
+    let lastSavedJSON = "";
+
     const unsubscribe = useStore.subscribe((state) => {
+      setSyncStatus((current) => (current === "offline" ? "offline" : "saving"));
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         const stateToSave = {
@@ -208,10 +281,32 @@ export default function App() {
           modoSimples: state.modoSimples,
           brainDumpD1Data: state.brainDumpD1Data,
           temaStats: state.temaStats,
+          vistos: state.vistos || [],
+          updatedAt: state.updatedAt || Date.now(),
         };
+
+        const { updatedAt, ...dataToCompare } = stateToSave;
+        const currentJSON = JSON.stringify(dataToCompare);
+        if (currentJSON === lastSavedJSON) {
+          setSyncStatus("saved");
+          return;
+        }
+
+        lastSavedJSON = currentJSON;
+        setSyncStatus("saving");
         sincronizarComFirebase(usuarioLogado.uid, stateToSave)
-          .catch((err) => console.error("Erro na sincronização reativa:", err));
-      }, 3000); // 3 seconds debounce
+          .then((res) => {
+            if (res.sucesso) {
+              setSyncStatus("saved");
+            } else {
+              setSyncStatus("offline");
+            }
+          })
+          .catch((err) => {
+            console.error("Erro na sincronização reativa:", err);
+            setSyncStatus("offline");
+          });
+      }, 3000);
     });
 
     return () => {
@@ -220,12 +315,37 @@ export default function App() {
     };
   }, [usuarioLogado]);
 
-  // ─── BLINDAGEM DE TRANSIÇÃO (EVITAR TELA PRETA) ────────────────────────────
+  // ─── GARANTIR FLUSH ANTES DE SAIR DA PÁGINA ───────────────────────────────
   useEffect(() => {
-    if (view === "sessao" && !temaParaIniciar) {
-      setView("dash");
-    }
-  }, [view, temaParaIniciar]);
+    if (!usuarioLogado) return;
+
+    const handleFlush = () => {
+      const state = useStore.getState();
+      const stateToSave = {
+        plat: state.plat,
+        meta: state.meta,
+        res: state.res,
+        vest: state.vest,
+        userName: state.userName,
+        onboardingDone: state.onboardingDone,
+        focusMode: state.focusMode,
+        modoSimples: state.modoSimples,
+        brainDumpD1Data: state.brainDumpD1Data,
+        temaStats: state.temaStats,
+        vistos: state.vistos || [],
+        updatedAt: state.updatedAt || Date.now(),
+      };
+      sincronizarComFirebase(usuarioLogado.uid, stateToSave)
+        .catch((err) => console.error("Erro no flush beforeunload:", err));
+    };
+
+    window.addEventListener("beforeunload", handleFlush);
+    return () => {
+      window.removeEventListener("beforeunload", handleFlush);
+    };
+  }, [usuarioLogado]);
+
+
 
   const filaHoje = useMemo(() => calcFilaInteligente(temas), [temas]);
   const totalFilaHoje = filaHoje.length;
@@ -248,46 +368,103 @@ export default function App() {
   const showToast = useCallback((msg, withUndo = false) => setToast({ msg, undo: withUndo }), []);
   const dismissToast = useCallback(() => setToast(null), []);
 
-  const handleMarkConfirm = useCallback(
-    ({ acerto, questoes, motivosErro }) => {
-      if (!marking) return;
-      pushUndo(plat);
-      markStep(plat, marking.temaId, marking.stepKey, { acerto, questoes, motivosErro });
-      addTemaStats(marking.temaId, { stepKey: marking.stepKey, acerto, questoes, motivosErro });
+  const handleFocusModeCompleteStep = useCallback(
+    (temaId, stepKey, markData) => {
+      playTick();
+      setShowCheckmark(true);
 
-      // Detectar D21 (mostrar confetes)
-      if (marking.stepKey === "d21") {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 3500);
+      if (stepKey === "d1") {
+        pushUndo(plat);
+        setBrainDumpD1(temaId, {
+          ...markData.fields,
+          completedAt: new Date().toISOString(),
+        });
+        addTemaStats(temaId, {
+          stepKey: "d1",
+          brainDump: true,
+          ...markData.fields,
+        });
+        markStep(plat, temaId, "d1", {
+          acerto: 1.0,
+          questoes: 1,
+          motivosErro: [],
+        });
+        showToast("🧠 Brain Dump consolidado e gravado no perfil!");
+      } else if (stepKey === "d0") {
+        pushUndo(plat);
+        markStep(plat, temaId, "d0", {
+          acerto: markData.acerto !== undefined ? markData.acerto : 1.0,
+          questoes: markData.questoes !== undefined ? markData.questoes : 0,
+          motivosErro: markData.motivosErro || [],
+          erros: markData.erros || [],
+        });
+        addTemaStats(temaId, {
+          stepKey: "d0",
+          acerto: markData.acerto !== undefined ? markData.acerto : 1.0,
+          questoes: markData.questoes !== undefined ? markData.questoes : 0,
+          motivosErro: markData.motivosErro || [],
+          erros: markData.erros || [],
+        });
+        updateTema(plat, temaId, {
+          pico: markData.pico || "",
+          ankiDeck: markData.ankiDeck || "",
+        });
+        showToast("✓ Tema iniciado com sucesso!");
+      } else {
+        pushUndo(plat);
+        markStep(plat, temaId, stepKey, {
+          acerto: markData.acerto,
+          questoes: markData.questoes,
+          motivosErro: markData.motivosErro,
+          erros: markData.erros || [],
+        });
+        addTemaStats(temaId, {
+          stepKey,
+          acerto: markData.acerto,
+          questoes: markData.questoes,
+          motivosErro: markData.motivosErro,
+          erros: markData.erros || [],
+        });
+
+        // Confetti for D21
+        if (stepKey === "d21") {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 3500);
+          
+          setTimeout(() => {
+            const state = useStore.getState();
+            const temaAtualizado = state[plat].temas.find((t) => t.id === temaId);
+            if (temaAtualizado && STEPS.every((s) => temaAtualizado.rev[s.key].done)) {
+              setCycleComplete(temaAtualizado);
+            }
+          }, 100);
+        }
+
+        showToast(`✓ Etapa computada com sucesso!`, true);
       }
 
-      // Detectar ciclo completo (após postfix)
-      setTimeout(() => {
-        const state = useStore.getState();
-        const temaAtualizado = state[plat].temas.find((t) => t.id === marking.temaId);
-        if (temaAtualizado && STEPS.every((s) => temaAtualizado.rev[s.key].done)) {
-          setCycleComplete(temaAtualizado);
-        }
-      }, 100);
-
-      // Detectar milestones de streak
+      // Milestone check
       const allDone = Object.values(useStore.getState().temaStats).flat().length + 1;
       if ([7, 14, 30, 100, 200].includes(allDone)) {
         setTimeout(() => showToast(`🎯 Marco de ${allDone} revisões concluídas!`), 1500);
       }
 
-      // Detectar meta diária atingida
-      if ((meta.metaDiaria || 0) > 0 && concluidosHoje + 1 >= meta.metaDiaria) {
-        setTimeout(
-          () => showToast(`🎯 Meta diária atingida! Volte amanhã para manter o streak`),
-          1500
-        );
+      // Meta diária check
+      if ((meta.metaDiaria || 0) > 0 && concluidosHoje + 1 === meta.metaDiaria) {
+        setTimeout(() => {
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 3000);
+          
+          const recent = getRecentPhrases();
+          const { text } = getMentorPhrase("meta_diaria", {
+            userName: useStore.getState().userName || "Estudante",
+            totalQuestoes: markData.questoes || 15
+          }, recent);
+          showToast(`🎯 Meta Cumprida: "${text}"`);
+        }, 1500);
       }
-
-      setMarking(null);
-      showToast(`✓ Etapa computada com sucesso!`, true);
     },
-    [marking, plat, pushUndo, markStep, showToast, addTemaStats, meta.metaDiaria, concluidosHoje]
+    [plat, pushUndo, setBrainDumpD1, addTemaStats, markStep, updateTema, showToast, meta.metaDiaria, concluidosHoje]
   );
 
   const handleSaveTema = useCallback(
@@ -295,7 +472,7 @@ export default function App() {
       pushUndo(plat);
       if (!temaEdit?.id) {
         addTema(plat, f);
-        showToast(`✓ "${f.nome}" acoplado à grade`, true);
+        showToast(f.unstarted ? `✓ "${f.nome}" priorizado no catálogo` : `✓ "${f.nome}" acoplado à grade`, true);
       } else {
         updateTema(plat, temaEdit.id, f);
         showToast("✓ Configurações do tema atualizadas", true);
@@ -306,34 +483,8 @@ export default function App() {
   );
 
   const handleStudyTrigger = (temaId, stepKey) => {
-    const targetTema = temas.find((t) => t.id === temaId);
-    if (!targetTema) return;
-    if (stepKey === "d1") {
-      setInteractiveBrainDump({ tema: targetTema, stepKey });
-    } else {
-      setMarking({ temaId, stepKey });
-    }
-  };
-
-  const handleBrainDumpComplete = (fields) => {
-    if (!interactiveBrainDump) return;
-    pushUndo(plat);
-    setBrainDumpD1(interactiveBrainDump.tema.id, {
-      ...fields,
-      completedAt: new Date().toISOString(),
-    });
-    addTemaStats(interactiveBrainDump.tema.id, {
-      stepKey: interactiveBrainDump.stepKey,
-      brainDump: true,
-      ...fields,
-    });
-    markStep(plat, interactiveBrainDump.tema.id, interactiveBrainDump.stepKey, {
-      acerto: 1.0,
-      questoes: 1,
-      motivosErro: [],
-    });
-    setInteractiveBrainDump(null);
-    showToast("🧠 Brain Dump consolidado e gravado no perfil!");
+    setTargetedFocusItem({ temaId, stepKey });
+    useStore.setState({ focusMode: true });
   };
 
   // ─── CARREGANDO AUTH ───────────────────────────────────────────────────────
@@ -366,15 +517,50 @@ export default function App() {
     );
   }
 
+  if (focusMode) {
+    return (
+      <div className="flex h-screen bg-[#07070f] text-white font-sans antialiased overflow-hidden">
+        {!onboardingDone && !tourStep && (
+          <OnboardingModal
+            onComplete={(nome, foco, metaConfig) => {
+              setUserName(nome);
+              setPlat(foco);
+              if (metaConfig) setMeta({ ...meta, ...metaConfig });
+              setTourStep("crono");
+              setView("crono");
+            }}
+          />
+        )}
+        <FocusMode
+          targetedItem={targetedFocusItem}
+          temas={temas}
+          plat={plat}
+          onExit={() => {
+            setTargetedFocusItem(null);
+            useStore.setState({ focusMode: false });
+            if (useStore.getState().tourStep === "dash") {
+              setView("dash");
+            }
+          }}
+          onCompleteStep={(temaId, stepKey, markData) => {
+            handleFocusModeCompleteStep(temaId, stepKey, markData);
+            setTargetedFocusItem(null);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-[#07070f] text-white font-sans antialiased overflow-hidden">
-      {!onboardingDone && (
+      {!onboardingDone && !tourStep && (
         <OnboardingModal
           onComplete={(nome, foco, metaConfig) => {
             setUserName(nome);
             setPlat(foco);
             if (metaConfig) setMeta({ ...meta, ...metaConfig });
-            setOnboardingDone();
+            setTourStep("crono");
+            setView("crono");
           }}
         />
       )}
@@ -385,12 +571,12 @@ export default function App() {
         overdueCount={overdueCount}
         setHelpModal={setHelpModal}
         usuarioLogado={usuarioLogado}
+        syncStatus={syncStatus}
         onLogout={async () => {
           const state = useStore.getState();
-          await sincronizarComFirebase(usuarioLogado.uid, {
+          const stateToSave = {
             plat: state.plat,
             userName: state.userName,
-            temas: state[state.plat]?.temas || [],
             meta: state.meta,
             res: state.res,
             vest: state.vest,
@@ -399,7 +585,10 @@ export default function App() {
             modoSimples: state.modoSimples,
             brainDumpD1Data: state.brainDumpD1Data,
             temaStats: state.temaStats,
-          });
+            vistos: state.vistos || [],
+            updatedAt: state.updatedAt || Date.now(),
+          };
+          await sincronizarComFirebase(usuarioLogado.uid, stateToSave);
           await fazerLogout();
           resetStore();
           setUsuarioLogado(null);
@@ -412,9 +601,6 @@ export default function App() {
             <div className="md:hidden">
               <MedRevLogo size="sm" />
             </div>
-            <span className="hidden sm:inline-flex text-[10px] font-bold text-gray-600 bg-white/5 px-2 py-0.5 rounded border border-white/5">
-              v7.1
-            </span>
           </div>
           <div className="flex items-center gap-4">
             {!focusMode && (
@@ -440,6 +626,22 @@ export default function App() {
                     ? meta.metaDiaria
                     : totalFilaHoje + concluidosHoje}
                 </span>
+              </div>
+            )}
+            {!focusMode && (
+              <div className="flex items-center gap-2">
+                {syncStatus === 'saving' && <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" title="Sincronizando..." />}
+                {syncStatus === 'saved' && <span className="w-2 h-2 rounded-full bg-emerald-500" title="Sincronizado com nuvem ✓" />}
+                {syncStatus === 'offline' && <span className="w-2 h-2 rounded-full bg-red-500" title="Modo Offline" />}
+
+                <button
+                  type="button"
+                  onClick={() => setAjustes(true)}
+                  className="md:hidden p-1.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white flex items-center justify-center"
+                  title="Ajustes"
+                >
+                  <Settings size={13} />
+                </button>
               </div>
             )}
             <button
@@ -470,22 +672,7 @@ export default function App() {
               }}
             />
           )}
-          {view === "sessao" && temaParaIniciar && (
-            <SessaoPage
-              temaInicial={temaParaIniciar}
-              onCancel={() => {
-                setTemaParaIniciar(null);
-                setView("crono");
-              }}
-              onComplete={(temaCompletado) => {
-                const novoId = Date.now();
-                addTema(plat, { ...temaCompletado, id: novoId, d0: todayStr() });
-                setMarking({ temaId: novoId, stepKey: "d0" });
-                setTemaParaIniciar(null);
-                setView("dash");
-              }}
-            />
-          )}
+
 
           {view === "dash" && (
             <Dashboard
@@ -501,21 +688,53 @@ export default function App() {
               toggleModoSimples={toggleModoSimples}
               concluidosHoje={concluidosHoje}
               totalFilaHoje={totalFilaHoje}
+              setView={setView}
             />
           )}
           {view === "crono" && plat === "res" && (
             <Cronograma
               onStep={handleStudyTrigger}
               onEdit={(t) => setTemaEdit(t)}
-              onIniciarTema={(tema) => {
-                setTemaParaIniciar(tema);
-                setView("sessao");
+              onIniciarTema={(temaConfig) => {
+                if (temaConfig.id) {
+                  updateTema(plat, temaConfig.id, { unstarted: false, d0: todayStr() });
+                  handleStudyTrigger(temaConfig.id, "d0");
+                } else {
+                  const existing = temas.find(t => t.nome === temaConfig.nome);
+                  if (existing) {
+                    updateTema(plat, existing.id, { unstarted: false, d0: todayStr() });
+                    handleStudyTrigger(existing.id, "d0");
+                  } else {
+                    const novoId = Date.now();
+                    addTema(plat, { ...temaConfig, id: novoId, d0: todayStr() });
+                    handleStudyTrigger(novoId, "d0");
+                  }
+                }
               }}
             />
           )}
           {view === "crono" && plat === "vest" && (
             <ErrorBoundary>
-              <CronogramaCecilia />
+              <CronogramaVestHub
+                onStep={handleStudyTrigger}
+                onEdit={(t) => setTemaEdit(t)}
+                onIniciarTema={(temaConfig) => {
+                  if (temaConfig.id) {
+                    updateTema(plat, temaConfig.id, { unstarted: false, d0: todayStr() });
+                    handleStudyTrigger(temaConfig.id, "d0");
+                  } else {
+                    const existing = temas.find(t => t.nome === temaConfig.nome);
+                    if (existing) {
+                      updateTema(plat, existing.id, { unstarted: false, d0: todayStr() });
+                      handleStudyTrigger(existing.id, "d0");
+                    } else {
+                      const novoId = Date.now();
+                      addTema(plat, { ...temaConfig, id: novoId, d0: todayStr() });
+                      handleStudyTrigger(novoId, "d0");
+                    }
+                  }
+                }}
+              />
             </ErrorBoundary>
           )}
           {view === "banco" && <BancoDados />}
@@ -532,24 +751,9 @@ export default function App() {
       <BottomNav view={view} setView={setView} />
 
       {/* Renderização de Modais */}
-      {marking && temas.find((t) => t.id === marking.temaId) && (
-        <MarkModal
-          tema={temas.find((t) => t.id === marking.temaId)}
-          stepKey={marking.stepKey}
-          onConfirm={handleMarkConfirm}
-          onCancel={() => setMarking(null)}
-        />
-      )}
-      {interactiveBrainDump && (
-        <BrainDumpD1Modal
-          tema={interactiveBrainDump.tema}
-          onConfirm={handleBrainDumpComplete}
-          onCancel={() => setInteractiveBrainDump(null)}
-        />
-      )}
       {temaEdit !== null && (
         <TemaModal
-          initial={temaEdit?.id ? temaEdit : null}
+          initial={temaEdit}
           platKey={plat}
           onSave={handleSaveTema}
           onCancel={() => setTemaEdit(null)}
@@ -569,6 +773,9 @@ export default function App() {
       )}
 
       {showConfetti && <ConfettiOverlay />}
+      {showCheckmark && (
+        <CheckmarkOverlay onComplete={() => setShowCheckmark(false)} />
+      )}
       {cycleComplete && (
         <CycleCompleteModal tema={cycleComplete} onClose={() => setCycleComplete(null)} />
       )}
@@ -586,6 +793,38 @@ export default function App() {
             Atualizar
           </Btn>
         </Modal>
+      )}
+
+      {showGlobalSearch && (
+        <GlobalSearchModal
+          onClose={() => setShowGlobalSearch(false)}
+          temas={temas}
+          plat={plat}
+          onSelectTema={(t) => {
+            const firstUndoneStep = STEPS.find(s => !t.rev[s.key]?.done);
+            if (firstUndoneStep) {
+              handleStudyTrigger(t.id, firstUndoneStep.key);
+            } else {
+              setView("banco");
+              showToast(`Tema concluído! Abrindo Banco de Dados.`);
+            }
+          }}
+          onIniciarTema={(catalogItem) => {
+            const novoId = Date.now();
+            addTema(plat, {
+              nome: catalogItem.nome,
+              esp: catalogItem.esp,
+              prio: catalogItem.prio || "Média",
+              importancia: "ALTA",
+              obs: catalogItem.blockName,
+              pico: "",
+              ankiDeck: "",
+              id: novoId,
+              d0: todayStr(),
+            });
+            handleStudyTrigger(novoId, "d0");
+          }}
+        />
       )}
 
       <Toast

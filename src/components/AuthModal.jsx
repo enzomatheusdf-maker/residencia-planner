@@ -1,10 +1,10 @@
 // AuthModal.jsx - Modal de Login/Signup
 import React, { useState } from "react";
 import { Mail, Lock, User, Eye, EyeOff, Loader } from "lucide-react";
-import { criarConta, fazerLogin } from "../services/firebase";
+import { criarConta, fazerLogin, resetarSenha } from "../services/firebase";
 
 export default function AuthModal({ onSuccess }) {
-  const [modo, setModo] = useState("login"); // login ou signup
+  const [modo, setModo] = useState("login"); // login, signup ou reset
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [nome, setNome] = useState("");
@@ -12,24 +12,35 @@ export default function AuthModal({ onSuccess }) {
   const [manterConectado, setManterConectado] = useState(true);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(null);
+  const [mensagemSucesso, setMensagemSucesso] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErro(null);
+    setMensagemSucesso(null);
     setCarregando(true);
 
     try {
-      let resultado;
-      if (modo === "signup") {
-        resultado = await criarConta(email, senha, nome, manterConectado);
+      if (modo === "reset") {
+        const resultado = await resetarSenha(email);
+        if (resultado.sucesso) {
+          setMensagemSucesso("E-mail de redefinição de senha enviado com sucesso! Verifique sua caixa de entrada.");
+        } else {
+          setErro(resultado.erro);
+        }
       } else {
-        resultado = await fazerLogin(email, senha, manterConectado);
-      }
+        let resultado;
+        if (modo === "signup") {
+          resultado = await criarConta(email, senha, nome, manterConectado);
+        } else {
+          resultado = await fazerLogin(email, senha, manterConectado);
+        }
 
-      if (resultado.sucesso) {
-        onSuccess(resultado.user);
-      } else {
-        setErro(resultado.erro);
+        if (resultado.sucesso) {
+          onSuccess(resultado.user);
+        } else {
+          setErro(resultado.erro);
+        }
       }
     } catch (err) {
       setErro("Erro ao processar. Tente novamente.");
@@ -52,15 +63,22 @@ export default function AuthModal({ onSuccess }) {
           <p className="text-[13px] font-black text-white"><span>Med</span><span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Rev</span></p>
         </div>
 
-        {/* Tabs login/signup */}
-        <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/5 mb-6">
-          {[["login","Entrar"],["signup","Criar Conta"]].map(([k, l]) => (
-            <button key={k} type="button" onClick={() => { setModo(k); setErro(null); }}
-              className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${modo === k ? "bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow" : "text-gray-500 hover:text-gray-300"}`}>
-              {l}
-            </button>
-          ))}
-        </div>
+        {/* Tabs login/signup (hidden in reset mode) */}
+        {modo !== "reset" ? (
+          <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/5 mb-6">
+            {[["login","Entrar"],["signup","Criar Conta"]].map(([k, l]) => (
+              <button key={k} type="button" onClick={() => { setModo(k); setErro(null); setMensagemSucesso(null); }}
+                className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${modo === k ? "bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow" : "text-gray-500 hover:text-gray-300"}`}>
+                {l}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center mb-6">
+            <h3 className="text-[14px] font-bold text-gray-200">Recuperar Senha</h3>
+            <p className="text-[11px] text-gray-500 mt-1">Informe seu e-mail cadastrado para redefinir sua senha.</p>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -102,49 +120,66 @@ export default function AuthModal({ onSuccess }) {
             </div>
           </div>
 
-          {/* Senha */}
-          <div>
-            <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">
-              Senha
-            </label>
-            <div className="relative">
-              <Lock size={16} className="absolute left-3 top-3 text-gray-600" />
-              <input
-                type={mostrarSenha ? "text" : "password"}
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-10 py-2.5 text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-colors"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setMostrarSenha(!mostrarSenha)}
-                className="absolute right-3 top-3 text-gray-600 hover:text-gray-400"
-              >
-                {mostrarSenha ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+          {/* Senha (hidden in reset mode) */}
+          {modo !== "reset" && (
+            <div>
+              <label className="text-xs font-bold text-gray-400 uppercase mb-2 block">
+                Senha
+              </label>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3 top-3 text-gray-600" />
+                <input
+                  type={mostrarSenha ? "text" : "password"}
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-10 py-2.5 text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-colors"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha(!mostrarSenha)}
+                  className="absolute right-3 top-3 text-gray-600 hover:text-gray-400"
+                >
+                  {mostrarSenha ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <div className="flex justify-between items-center mt-1.5">
+                {modo === "signup" ? (
+                  <p className="text-xs text-gray-500">
+                    Mínimo 6 caracteres
+                  </p>
+                ) : (
+                  <div />
+                )}
+                {modo === "login" && (
+                  <button
+                    type="button"
+                    onClick={() => { setModo("reset"); setErro(null); setMensagemSucesso(null); }}
+                    className="text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors"
+                  >
+                    Esqueceu a senha?
+                  </button>
+                )}
+              </div>
             </div>
-            {modo === "signup" && (
-              <p className="text-xs text-gray-500 mt-1">
-                Mínimo 6 caracteres
-              </p>
-            )}
-          </div>
+          )}
 
-          {/* Manter Conectado */}
-          <div className="flex items-center gap-2 py-1">
-            <input
-              type="checkbox"
-              id="manterConectado"
-              checked={manterConectado}
-              onChange={(e) => setManterConectado(e.target.checked)}
-              className="w-4 h-4 rounded border-white/10 bg-white/5 text-violet-600 focus:ring-violet-500 accent-violet-600 cursor-pointer"
-            />
-            <label htmlFor="manterConectado" className="text-xs font-semibold text-gray-400 select-none cursor-pointer hover:text-gray-300 transition-colors">
-              Manter conectado
-            </label>
-          </div>
+          {/* Manter Conectado (hidden in reset mode) */}
+          {modo !== "reset" && (
+            <div className="flex items-center gap-2 py-1">
+              <input
+                type="checkbox"
+                id="manterConectado"
+                checked={manterConectado}
+                onChange={(e) => setManterConectado(e.target.checked)}
+                className="w-4 h-4 rounded border-white/10 bg-white/5 text-violet-600 focus:ring-violet-500 accent-violet-600 cursor-pointer"
+              />
+              <label htmlFor="manterConectado" className="text-xs font-semibold text-gray-400 select-none cursor-pointer hover:text-gray-300 transition-colors">
+                Manter conectado
+              </label>
+            </div>
+          )}
 
           {/* Erro */}
           {erro && (
@@ -153,17 +188,34 @@ export default function AuthModal({ onSuccess }) {
             </div>
           )}
 
+          {/* Mensagem Sucesso */}
+          {mensagemSucesso && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3">
+              <p className="text-xs text-emerald-400">{mensagemSucesso}</p>
+            </div>
+          )}
+
           {/* Botão Submit */}
           <button
             type="submit"
             disabled={carregando}
-            className="w-full bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 text-xs"
           >
             {carregando && <Loader size={16} className="animate-spin" />}
-            {modo === "login" ? "Entrar" : "Criar Conta"}
+            {modo === "login" ? "Entrar" : modo === "signup" ? "Criar Conta" : "Enviar E-mail de Redefinição"}
           </button>
         </form>
 
+        {/* Voltar ao login no reset mode */}
+        {modo === "reset" && (
+          <button
+            type="button"
+            onClick={() => { setModo("login"); setErro(null); setMensagemSucesso(null); }}
+            className="w-full text-center text-xs font-semibold text-gray-500 hover:text-gray-300 transition-colors mt-4"
+          >
+            Voltar para o login
+          </button>
+        )}
       </div>
     </div>
   );

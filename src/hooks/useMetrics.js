@@ -4,12 +4,66 @@
 import { useMemo } from "react";
 import { STEPS, IMPORTANCIA, todayStr, diffDays } from "../core/fsrs";
 
+// ─── VESTIBULAR WEIGHTS & SCORE ──────────────────────────────────────────────
+
+/** Weights (%) per area per exam. Used to compute marginal-return priority. */
+export const PESOS_PROVA_VEST = {
+  ENEM: { "Exatas": 25, "Ciências da Natureza": 25, "Humanas": 25, "Linguagens": 20, "Redação": 5 },
+  FUVEST: { "Exatas": 35, "Ciências da Natureza": 30, "Linguagens": 20, "Humanas": 15, "Redação": 0 },
+  UNICAMP: { "Linguagens": 30, "Exatas": 22, "Ciências da Natureza": 22, "Humanas": 18, "Redação": 8 },
+  "EEAR / ESA": { "Exatas": 55, "Linguagens": 25, "Ciências da Natureza": 10, "Humanas": 10, "Redação": 0 },
+  "ITA / IME": { "Exatas": 70, "Ciências da Natureza": 20, "Linguagens": 10, "Humanas": 0, "Redação": 0 },
+};
+
+/**
+ * Returns a priority multiplier based on how close the user is to the cutoff.
+ * Areas near the cutoff have higher return per study hour.
+ */
+function calcRetornoMarginal(notaAtual, notaCorte, peso) {
+  if (!notaCorte || notaCorte <= 0) return 1.0;
+  const diferenca = notaCorte - notaAtual;
+  if (diferenca <= 0) return 0.5; // já passou
+  if (diferenca <= peso * 0.2) return 2.0;
+  if (diferenca <= peso * 0.5) return 1.5;
+  return 1.0;
+}
+
+/**
+ * Vestibular-specific score for a (tema, step) pair.
+ */
+function scoreVestibular(t, s, today, meta) {
+  const provaAlvo = (meta?.provasAlvo || [])[0] || "ENEM";
+  const pesos = PESOS_PROVA_VEST[provaAlvo] || PESOS_PROVA_VEST.ENEM;
+  const peso = (pesos[t.esp] || 10) / 100; // normalize to 0–1
+
+  const notasAnterior = meta?.notasTentativaAnterior || {};
+  const notaAtual = notasAnterior[t.esp] ?? 50; // default 50%
+  const notaCorte = meta?.notaCorteAlvo || 60;
+  const retornoMarginal = calcRetornoMarginal(notaAtual, notaCorte, peso * 100);
+
+  // Average acerto for this theme
+  const revVals = STEPS.map(st => t.rev[st.key]).filter(r => r && r.done && r.acerto != null);
+  const acertoMedia = revVals.length > 0
+    ? revVals.reduce((a, r) => a + r.acerto, 0) / revVals.length
+    : 0.5;
+
+  const r = t.rev[s.key];
+  const rDate = r.date;
+  const overdue = rDate < today;
+  const urgencia = overdue ? 1.5 : 1.0;
+  const lacuna = 1 - acertoMedia;
+
+  return +(lacuna * peso * urgencia * retornoMarginal).toFixed(3);
+}
+
 /**
  * Calculates the FSRS active queue sorted by urgency score.
  * Time Complexity: O(N) where N is total topics * steps.
  * Optimized to cache the today string and avoid string/date realocations.
+ * Accepts optional plat and meta for vestibular-aware scoring.
  */
-export function calcFilaInteligente(temas) {
+export function calcFilaInteligente(temas, plat, meta) {
+
   if (!temas || temas.length === 0) return [];
   
   const today = todayStr();
@@ -17,6 +71,7 @@ export function calcFilaInteligente(temas) {
   
   for (let i = 0; i < temas.length; i++) {
     const t = temas[i];
+    if (t.unstarted) continue;
     const rev = t.rev;
     if (!rev) continue;
     
@@ -35,7 +90,7 @@ export function calcFilaInteligente(temas) {
     
     const acertoMedia = doneStepsCount > 0 ? sumAcertos / doneStepsCount : 0.5;
     const imp = t.importancia || "ALTA";
-    const peso = IMPORTANCIA[imp]?.peso || 2.0;
+    const pesoImp = IMPORTANCIA[imp]?.peso || 2.0;
     
     for (let j = 0; j < STEPS.length; j++) {
       const s = STEPS[j];
@@ -49,8 +104,9 @@ export function calcFilaInteligente(temas) {
       const isToday = rDate === today;
       if (!overdue && !isToday) continue;
       
-      const urgencia = overdue ? 1.5 : 1.0;
-      const score = (1 - acertoMedia) * peso * urgencia;
+      const score = plat === "vest"
+        ? scoreVestibular(t, s, today, meta)
+        : (() => { const urgencia = overdue ? 1.5 : 1.0; return (1 - acertoMedia) * pesoImp * urgencia; })();
       
       items.push({
         temaId: t.id,
@@ -218,6 +274,7 @@ export function calcBleedingScore(temas) {
   const byEsp = {};
   for (let i = 0; i < temas.length; i++) {
     const t = temas[i];
+    if (t.unstarted) continue;
     if (!byEsp[t.esp]) byEsp[t.esp] = { total: 0, questoes: 0 };
     
     for (let j = 0; j < STEPS.length; j++) {
@@ -241,6 +298,7 @@ export function calcTrueRetention(temas) {
   const vals = [];
   for (let i = 0; i < temas.length; i++) {
     const t = temas[i];
+    if (t.unstarted) continue;
     for (let j = 0; j < STEPS.length; j++) {
       const s = STEPS[j];
       if (s.offset > 15) {
@@ -265,8 +323,8 @@ export const migrarSim = (s) => ({
   statusCorrecao: s.statusCorrecao || "concluida",
 });
 
-export function useFilaInteligente(temas) {
-  return useMemo(() => calcFilaInteligente(temas), [temas]);
+export function useFilaInteligente(temas, plat, meta) {
+  return useMemo(() => calcFilaInteligente(temas, plat, meta), [temas, plat, meta]);
 }
 
 export function useMetricasElite(simulados) {
