@@ -4,6 +4,7 @@ import Cronograma from "./Cronograma";
 import CronogramaVest from "./CronogramaVest";
 import { BookOpen, Calendar } from "lucide-react";
 import { Tabs } from "./Primitives";
+import { CATALOGO_VEST } from "../constants/catalogos";
 
 export default function CronogramaVestHub({ onStep, onEdit, onIniciarTema }) {
   const [subView, setSubView] = useState("catalogo"); // "catalogo" | "semanal"
