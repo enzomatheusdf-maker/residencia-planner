@@ -62,7 +62,7 @@ export function parsePDFText(texto, titulo = "Cronograma") {
     const mPer  = parte.match(/[·•]\s*([\d/]+\s*[–—-]\s*[\d/]+)/);
     const periodo = mPer ? mPer[1].trim() : "";
 
-    const mDatas = [...partideMatchAll ? parte.matchAll(/(?:SEG|TER|QUA|QUI|SEX|SÁB|DOM)\s+(\d{2}\/\d{2})/gi) : []];
+    const mDatas = [...(parte.matchAll ? parte.matchAll(/(?:SEG|TER|QUA|QUI|SEX|SÁB|DOM)\s+(\d{2}\/\d{2})/gi) : [])];
     const mDatasAlt = [...(parte.match(/(\d{2}\/\d{2})/g) || [])].slice(0, 7);
     const mBlocos = [...(parte.match(/(07:00|08:00|11:30|12:30|16:00)[–—-]\d{2}:\d{2}[\s\S]*?(?=(?:07:00|08:00|11:30|12:30|16:00)[–—-]|\n*SEMANA\s+\d+|$)/gi) || [])];
 

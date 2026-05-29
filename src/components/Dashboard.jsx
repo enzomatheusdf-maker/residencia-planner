@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Edit2, Info, TrendingUp, CheckCircle, ChevronDown, ChevronUp, Brain, Flame, Calendar, AlertTriangle, X, Zap, BookOpen } from "lucide-react";
 import { useStore } from "../core/store";
-import { STEPS, ESP_COLORS, isOverdue, isDueToday, todayStr } from "../core/fsrs";
+import { STEPS, ESP_COLORS, isOverdue, isDueToday, todayStr, fmtDate } from "../core/fsrs";
 import { calcStreaks, calcTrueRetention, calcBleedingScore, calcFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
 import { getMentorDiagnosis } from "../core/mentor";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip } from "./Primitives";
@@ -399,6 +399,27 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     return map[esp] || esp.slice(0, 2).toUpperCase();
   };
 
+  const triggerStreakFreeze = useStore((s) => s.useStreakFreeze);
+  const resetStreakFreeze = useStore((s) => s.resetStreakFreeze);
+
+  const concluidosHoje = useMemo(() => {
+    return done.filter(r => r.date === todayStr()).length;
+  }, [done]);
+
+  const [hasTriggeredConfetti, setHasTriggeredConfetti] = useState(false);
+
+  useEffect(() => {
+    if (pending === 0 && concluidosHoje > 0 && !hasTriggeredConfetti) {
+      setShowConfettiLocal(true);
+      setHasTriggeredConfetti(true);
+      setTimeout(() => setShowConfettiLocal(false), 5000);
+    }
+  }, [pending, concluidosHoje, hasTriggeredConfetti]);
+
+  const showMilestoneCelebration = useMemo(() => {
+    return streakCurrent > 0 && (streakCurrent === 7 || streakCurrent === 30 || streakCurrent === 100);
+  }, [streakCurrent]);
+
   // 📌 ESTADO VAZIO: Mostrar apenas o CTA de onboarding se não houver temas cadastrados
   if (temasFiltrados.length === 0) {
     return (
@@ -433,27 +454,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       </div>
     );
   }
-
-  const useStreakFreeze = useStore((s) => s.useStreakFreeze);
-  const resetStreakFreeze = useStore((s) => s.resetStreakFreeze);
-
-  const concluidosHoje = useMemo(() => {
-    return done.filter(r => r.date === todayStr()).length;
-  }, [done]);
-
-  const [hasTriggeredConfetti, setHasTriggeredConfetti] = useState(false);
-
-  useEffect(() => {
-    if (pending === 0 && concluidosHoje > 0 && !hasTriggeredConfetti) {
-      setShowConfettiLocal(true);
-      setHasTriggeredConfetti(true);
-      setTimeout(() => setShowConfettiLocal(false), 5000);
-    }
-  }, [pending, concluidosHoje, hasTriggeredConfetti]);
-
-  const showMilestoneCelebration = useMemo(() => {
-    return streakCurrent > 0 && (streakCurrent === 7 || streakCurrent === 30 || streakCurrent === 100);
-  }, [streakCurrent]);
 
   return (
     <div className="flex flex-col gap-5 animate-fade-up text-left max-w-5xl mx-auto">
@@ -490,7 +490,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               type="button"
               onClick={() => {
                 if (window.confirm("Deseja usar o seu Streak Freeze semanal para proteger a ofensiva hoje?")) {
-                  useStreakFreeze();
+                  triggerStreakFreeze();
                 }
               }}
               className="px-2 py-0.5 rounded-full bg-blue-600/10 hover:bg-blue-600 hover:text-white text-blue-400 text-[9.5px] font-bold border border-blue-500/25 transition-all cursor-pointer"
