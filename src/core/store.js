@@ -159,6 +159,7 @@ export const useStore = create(
             temas: [
               ...s[platKey].temas,
               {
+                parentTopic: null,
                 ...tema,
                 id: tema.id || Date.now(), // Fixed the bug: preserve ID if provided
                 importancia: tema.importancia || "ALTA",
@@ -432,6 +433,7 @@ export const useStore = create(
         brainDumpD1Data: s.brainDumpD1Data,
         temaStats: s.temaStats,
         vistos: s.vistos,
+        sprint: s.sprint,
         updatedAt: s.updatedAt,
       }),
       merge: (persisted, initial) => {
@@ -462,6 +464,7 @@ export const useStore = create(
           brainDumpD1Data: persisted.brainDumpD1Data ?? initial.brainDumpD1Data,
           temaStats: persisted.temaStats ?? initial.temaStats,
           vistos: persisted.vistos ?? initial.vistos,
+          sprint: persisted.sprint ?? initial.sprint,
           onboardingDone: persisted.onboardingDone ?? initial.onboardingDone,
           updatedAt: persisted.updatedAt ?? initial.updatedAt,
         };

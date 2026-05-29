@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Zap, Target, BookOpen, 
-  TrendingUp, Award, Edit2, Trash2, Search
+  TrendingUp, Award, Edit2, Trash2, Search, User, Settings, Lock
 } from "lucide-react";
 import { CATALOGO_RES, CATALOGO_VEST, getSubtopics } from "../constants/catalogos";
 import { useStore } from "../core/store";
@@ -11,7 +11,7 @@ import {
   todayStr, diffDays, fmtFull
 } from "../core/fsrs";
 import {
-  Modal, Btn, Input, Textarea, Select, Field, MedRevLogo
+  Modal, Btn, Input, Textarea, Select, Field, MedRevLogo, Tabs
 } from "./Primitives";
 import { calcFilaInteligente } from "../hooks/useMetrics";
 import { getMentorPhrase, getRecentPhrases, trackRecentPhrase } from "../core/mentor";
@@ -192,7 +192,7 @@ export function CycleCompleteModal({ tema, onClose }) {
     tema: tema.nome,
     acerto: avgAcerto,
     data: "hoje"
-  }, recent);
+  }, recent, plat);
   
   // Track selected phrase to avoid repetition
   useEffect(() => {
@@ -1095,17 +1095,17 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
 
 // ─── AJUSTES MODAL ────────────────────────────────────────────────────────────
 export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
-  const { meta, setMeta, plat, optimize, sprint, setSprint, userName, setUserName, userEmail, setUserEmail } = useStore();
+  const { meta, setMeta, plat, setPlat, optimize, sprint, setSprint, userName, setUserName, userEmail, setUserEmail } = useStore();
   const [activeTab, setActiveTab] = useState("perfil");
   const esps = plat === "res" ? ESPS_RES : ESPS_VEST;
   const daysLeft = meta.dataProva ? diffDays(todayStr(), meta.dataProva) : null;
   const urgency  = daysLeft == null ? "" : daysLeft <= 30 ? "text-red-400" : daysLeft <= 90 ? "text-yellow-400" : "text-violet-400";
 
   const tabs = [
-    { k: "perfil", label: "👤 Perfil" },
-    { k: "ajustes", label: "⚙ Ajustes" },
-    { k: "dados", label: "📚 Estudos" },
-    { k: "conta", label: "🔒 Conta" }
+    { k: "perfil", label: "Perfil", icon: User },
+    { k: "ajustes", label: "Ajustes", icon: Settings },
+    { k: "dados", label: "Estudos", icon: BookOpen },
+    { k: "conta", label: "Conta", icon: Lock }
   ];
 
   const toggleSprintEsp = (esp) => {
@@ -1228,20 +1228,8 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
       </div>
 
       {/* Tabs Header */}
-      <div className="flex border-b border-white/5">
-        {tabs.map(t => (
-          <button
-            key={t.k}
-            onClick={() => setActiveTab(t.k)}
-            className={`flex-1 py-3 text-center text-xs font-bold transition-all border-b-2 ${
-              activeTab === t.k
-                ? "border-violet-500 text-white bg-white/[0.02]"
-                : "border-transparent text-gray-500 hover:text-gray-300 hover:bg-white/[0.01]"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="mb-4">
+        <Tabs items={tabs} active={activeTab} onChange={setActiveTab} />
       </div>
 
       {/* Tab Contents */}
@@ -1257,7 +1245,7 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-white leading-tight">{userName || "Estudante"}</h3>
                 <p className="text-[10px] text-gray-500 font-mono">{userEmail || "Sem email cadastrado"}</p>
-                <span className="inline-block text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-violet-600/20 text-violet-400 border border-violet-600/30">
+                <span className="inline-block text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-violet-600/20 text-violet-400 border border-violet-600/30 font-mono">
                   PLATAFORMA: {plat === "res" ? "Residência" : "Vestibular"}
                 </span>
               </div>
@@ -1271,6 +1259,27 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
               <Field label="Endereço de email">
                 <Input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} placeholder="email@exemplo.com" />
               </Field>
+            </div>
+
+            <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Foco de Estudo Ativo</p>
+              <div className="grid grid-cols-2 gap-2 bg-black/40 rounded-xl p-1">
+                {[["res","Residência"],["vest","Vestibular"]].map(([k,l]) => (
+                  <button
+                    type="button"
+                    key={k}
+                    onClick={() => setPlat(k)}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
+                      plat === k
+                        ? "bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow-md shadow-violet-900/25"
+                        : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02] bg-transparent border border-transparent"
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-500 mt-1 leading-normal">Trocar o foco muda todo o painel, cronograma e métricas.</p>
             </div>
           </div>
         )}

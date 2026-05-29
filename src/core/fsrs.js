@@ -9,7 +9,7 @@ export const todayStr = () => {
 export function addDays(dateStr, n) {
   const d = new Date(dateStr + "T12:00:00");
   d.setDate(d.getDate() + Math.round(n));
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export const diffDays = (a, b) => Math.round((new Date(b) - new Date(a)) / 86_400_000);
@@ -41,11 +41,24 @@ export const isDueSoon = (s) => {
 };
 
 // ─── FSRS-LITE ENGINE ────────────────────────────────────────────────────────
-const FSRS_DECAY = -0.5;
-const FSRS_FACTOR = 0.9 ** (1 / FSRS_DECAY) - 1;
-const DESIRED_RETENTION = 0.90;
+export const FSRS_DECAY = -0.5;
+export const FSRS_FACTOR = 0.9 ** (1 / FSRS_DECAY) - 1;
+export const DESIRED_RETENTION = 0.90;
 
 export const S_BASE = { d0: 1, d1: 1, d4: 4, d7: 7, d21: 21 };
+
+export const DEMO_TEMA_ID = (plat) => plat === "vest" ? "demo-funcoes" : "demo-apendicite";
+
+export function getRetrievability(tema, stepKey) {
+  if (stepKey === "d0") return 1.0;
+  const stepIdx = STEPS.findIndex((s) => s.key === stepKey);
+  if (stepIdx <= 0) return 1.0;
+  const prevKey = STEPS[stepIdx - 1].key;
+  const lastDate = tema.rev[prevKey]?.date || tema.d0 || todayStr();
+  const t = Math.max(0, diffDays(lastDate, todayStr()));
+  const S = tema.rev[stepKey]?.S || S_BASE[stepKey] || 1;
+  return (1 + FSRS_FACTOR * t / S) ** FSRS_DECAY;
+}
 
 export function toRating(acerto) {
   if (acerto == null) return "good";

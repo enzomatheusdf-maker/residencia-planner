@@ -1,10 +1,10 @@
 // src/components/Simulados.jsx
 import React, { useState, useMemo } from "react";
-import { Target, Plus, X, Trash2, ShieldAlert, Award } from "lucide-react";
+import { Target, Plus, X, Trash2, ShieldAlert, Award, BarChart3 } from "lucide-react";
 import { useStore } from "../core/store";
 import { todayStr, fmtDate, fmtFull, ESPS_RES, ESPS_VEST } from "../core/fsrs";
 import { calcMetricasElite, calcProjecao, migrarSim } from "../hooks/useMetrics";
-import { Btn, Modal, Field, Input, Select } from "./Primitives";
+import { Btn, Modal, Field, Input, Select, Tabs } from "./Primitives";
 
 export function SimRegistroModal({ onClose, onSave, platKey }) {
   const [page, setPage] = useState(1);
@@ -41,24 +41,76 @@ export function SimRegistroModal({ onClose, onSave, platKey }) {
       {page === 1 ? (
         <div className="flex flex-col gap-3">
           <Field label="Data de Realização"><Input type="date" value={f.data} onChange={e => setF({...f, data: e.target.value})} /></Field>
+          
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Total Questões"><Input type="number" value={f.total} onChange={e => setF({...f, total: +e.target.value})} /></Field>
-            <Field label="Total Acertos"><Input type="number" value={f.acertos} onChange={e => setF({...f, acertos: +e.target.value})} /></Field>
+            <Field label="Total Questões"><Input type="number" value={f.total} onChange={e => setF({...f, total: e.target.value === "" ? "" : +e.target.value})} /></Field>
+            <Field label="Total Acertos"><Input type="number" value={f.acertos} onChange={e => setF({...f, acertos: e.target.value === "" ? "" : +e.target.value})} /></Field>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <Field label="Tempo (Min)"><Input type="number" placeholder="ex: 240" value={f.tempoMin} onChange={e => setF({...f, tempoMin: +e.target.value})} /></Field>
+
+          {f.acertos > f.total && (
+            <p className="text-red-400 text-xs font-bold mt-1 bg-red-500/10 border border-red-500/25 p-2 rounded-xl">
+              ⚠️ O número de acertos não pode ser maior que o total de questões.
+            </p>
+          )}
+
+          {f.total > 0 && f.acertos !== "" && f.acertos <= f.total && (
+            <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-4 py-2.5">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Aproveitamento</span>
+              <span className="text-sm font-black text-emerald-400">
+                {Math.round((+f.acertos / +f.total) * 100)}%
+              </span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field label="Tempo (Min)"><Input type="number" placeholder="ex: 240" value={f.tempoMin} onChange={e => setF({...f, tempoMin: e.target.value === "" ? "" : +e.target.value})} /></Field>
+            
             <Field label="Ansiedade">
-              <Select value={f.ansiedade} onChange={e => setF({...f, ansiedade: e.target.value})}>
-                <option>Baixa</option><option>Normal</option><option>Alta</option>
-              </Select>
+              <div className="flex gap-1.5 bg-black/40 rounded-xl p-1 border border-white/10">
+                {["Baixa", "Normal", "Alta"].map(level => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setF({ ...f, ansiedade: level })}
+                    className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border-none ${
+                      f.ansiedade === level
+                        ? "bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow"
+                        : "text-gray-400 hover:text-gray-200 bg-transparent"
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
             </Field>
+
             <Field label="Cansaço">
-              <Select value={f.cansaco} onChange={e => setF({...f, cansaco: e.target.value})}>
-                <option>Baixo</option><option>Normal</option><option>Alto</option>
-              </Select>
+              <div className="flex gap-1.5 bg-black/40 rounded-xl p-1 border border-white/10">
+                {["Baixo", "Normal", "Alto"].map(level => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setF({ ...f, cansaco: level })}
+                    className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer border-none ${
+                      f.cansaco === level
+                        ? "bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow"
+                        : "text-gray-400 hover:text-gray-200 bg-transparent"
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
             </Field>
           </div>
-          <Btn className="w-full mt-2" onClick={() => setPage(2)} disabled={!f.total || !f.acertos}>Próxima Etapa (Mapear Erros)</Btn>
+          
+          <Btn 
+            className="w-full mt-2" 
+            onClick={() => setPage(2)} 
+            disabled={!f.total || f.acertos === "" || f.acertos > f.total}
+          >
+            Próxima Etapa (Mapear Erros)
+          </Btn>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -115,6 +167,13 @@ export default function Simulados() {
   const pcts = useMemo(() => simulados.map(s => s.pct), [simulados]);
   const projecao = useMemo(() => calcProjecao(pcts, 2), [pcts]);
 
+  const tabs = [
+    { k: "painel", label: "Painel Geral", icon: Target },
+    { k: "correcao", label: "Revisão D7", icon: Award },
+    { k: "area", label: "Por Área", icon: BarChart3 },
+    { k: "metricas", label: "Elite", icon: ShieldAlert }
+  ];
+
   return (
     <div className="flex flex-col gap-4 animate-fade-up">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-2">
@@ -126,18 +185,8 @@ export default function Simulados() {
       </div>
 
       {/* Tabs Menu */}
-      <div className="flex gap-1 overflow-x-auto bg-white/5 p-1 rounded-xl border border-white/5 shrink-0">
-        {[
-          {id:"painel", l:"Painel Geral"},
-          {id:"correcao", l:"Revisão D7"},
-          {id:"area", l:"Por Área"},
-          {id:"metricas", l:"Elite"}
-        ].map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={`px-3 py-1.5 rounded-lg text-[12px] font-bold transition-all whitespace-nowrap ${activeTab === t.id ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white" : "text-gray-500 hover:text-gray-300"}`}>
-            {t.l}
-          </button>
-        ))}
+      <div className="mb-2">
+        <Tabs items={tabs} active={activeTab} onChange={setActiveTab} />
       </div>
 
       {/* Conteúdo Aba 1: Painel Geral */}
@@ -148,7 +197,9 @@ export default function Simulados() {
               <Target size={44} className="text-gray-700" />
               <div>
                 <p className="text-[14px] font-bold text-gray-400">Nenhum simulado registrado ainda</p>
-                <p className="text-[12px] text-gray-600 mt-1">Clique em "Registrar Simulado" para começar a mapear seu desempenho.</p>
+                <p className="text-[12px] text-gray-500 mt-2 max-w-md mx-auto leading-relaxed">
+                  Registrar seus simulados alimenta o motor do mentor com métricas cruciais de tempo, ansiedade e cansaço, calibrando alertas e permitindo o diagnóstico inteligente de padrões de erros.
+                </p>
               </div>
               <Btn onClick={() => setModalOpen(true)} className="gap-1.5"><Plus size={16} /> Registrar primeiro simulado</Btn>
             </div>

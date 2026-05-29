@@ -208,6 +208,7 @@ export default function App() {
               brainDumpD1Data: dados.brainDumpD1Data || {},
               temaStats: dados.temaStats || {},
               vistos: dados.vistos || [],
+              sprint: dados.sprint || currentState.sprint || { esps: [], ativa: false, semana: "" },
               updatedAt: remoteTime,
             });
           } else {
@@ -224,6 +225,7 @@ export default function App() {
               brainDumpD1Data: currentState.brainDumpD1Data,
               temaStats: currentState.temaStats,
               vistos: currentState.vistos || [],
+              sprint: currentState.sprint,
               updatedAt: localTime || Date.now(),
             };
             sincronizarComFirebase(user.uid, stateToSave)
@@ -282,6 +284,7 @@ export default function App() {
           brainDumpD1Data: state.brainDumpD1Data,
           temaStats: state.temaStats,
           vistos: state.vistos || [],
+          sprint: state.sprint,
           updatedAt: state.updatedAt || Date.now(),
         };
 
@@ -333,6 +336,7 @@ export default function App() {
         brainDumpD1Data: state.brainDumpD1Data,
         temaStats: state.temaStats,
         vistos: state.vistos || [],
+        sprint: state.sprint,
         updatedAt: state.updatedAt || Date.now(),
       };
       sincronizarComFirebase(usuarioLogado.uid, stateToSave)
@@ -459,7 +463,7 @@ export default function App() {
           const { text } = getMentorPhrase("meta_diaria", {
             userName: useStore.getState().userName || "Estudante",
             totalQuestoes: markData.questoes || 15
-          }, recent);
+          }, recent, plat);
           showToast(`🎯 Meta Cumprida: "${text}"`);
         }, 1500);
       }
@@ -586,6 +590,7 @@ export default function App() {
             brainDumpD1Data: state.brainDumpD1Data,
             temaStats: state.temaStats,
             vistos: state.vistos || [],
+            sprint: state.sprint,
             updatedAt: state.updatedAt || Date.now(),
           };
           await sincronizarComFirebase(usuarioLogado.uid, stateToSave);
@@ -675,21 +680,23 @@ export default function App() {
 
 
           {view === "dash" && (
-            <Dashboard
-              onStudy={handleStudyTrigger}
-              onDelete={(id) => {
-                deleteTema(plat, id);
-                showToast("🗑 Tema deletado");
-              }}
-              userName={userName}
-              onEditName={() => setEditName(true)}
-              focusMode={focusMode}
-              modoSimples={modoSimples}
-              toggleModoSimples={toggleModoSimples}
-              concluidosHoje={concluidosHoje}
-              totalFilaHoje={totalFilaHoje}
-              setView={setView}
-            />
+            <ErrorBoundary>
+              <Dashboard
+                onStudy={handleStudyTrigger}
+                onDelete={(id) => {
+                  deleteTema(plat, id);
+                  showToast("🗑 Tema deletado");
+                }}
+                userName={userName}
+                onEditName={() => setEditName(true)}
+                focusMode={focusMode}
+                modoSimples={modoSimples}
+                toggleModoSimples={toggleModoSimples}
+                concluidosHoje={concluidosHoje}
+                totalFilaHoje={totalFilaHoje}
+                setView={setView}
+              />
+            </ErrorBoundary>
           )}
           {view === "crono" && plat === "res" && (
             <Cronograma
@@ -738,7 +745,11 @@ export default function App() {
             </ErrorBoundary>
           )}
           {view === "banco" && <BancoDados />}
-          {view === "stats" && <StatsPanel />}
+          {view === "stats" && (
+            <ErrorBoundary>
+              <StatsPanel />
+            </ErrorBoundary>
+          )}
           {view === "sims" && (
             <ErrorBoundary>
               <Simulados />

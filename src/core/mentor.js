@@ -2,6 +2,7 @@
 // Pure functional engine for Mentor feedback and diagnosis logic
 
 import { calcTrend, calcProjecao } from "../hooks/useMetrics";
+import { detectErrorPatterns } from "./errorPatterns";
 
 const PHRASES = {
   sessao_concluida_high: [
@@ -49,6 +50,15 @@ const PHRASES = {
     { id: "md_2", text: "Meta cumprida! {totalQuestoes} questões resolvidas. O Mentor está orgulhoso. Aproveite o descanso, amanhã tem mais." },
     { id: "md_3", text: "Fila limpa com sucesso, {userName}. {totalQuestoes} questões feitas. Consistência é o segredo. Até amanhã!" }
   ],
+  sessao_interleaved: [
+    { id: "si_1", text: "Você concluiu uma sessão intercalada para os subtemas de {parentTopic}. A ciência da aprendizagem (Firth et al., 2021) sugere que misturar assuntos melhora a diferenciação mental em exames cumulativos." },
+    { id: "si_2", text: "Prática intercalada concluída! A evidência sugere que contrastar conceitos similares de {parentTopic} ajuda a evitar confusões na hora da prova." }
+  ],
+  erro_padrao_detectado: [
+    { id: "epd_lacuna", text: "Seus erros em {especialidade} são de base, não de raciocínio. Volte ao conteúdo-base, não faça apenas questões (Ericsson, 1993)." },
+    { id: "epd_raciocinio", text: "Você sabe o conteúdo de {especialidade} mas erra na lógica. Foque em revisar questões comentadas em vez de reler a teoria (Deng et al., 2015)." },
+    { id: "epd_distracao", text: "Identifiquei muitos erros por desatenção/distração em {especialidade}. Reveja seu horário de estudos e nível de cansaço." }
+  ],
   // ─── VESTIBULAR-SPECIFIC ────────────────────────────────────────────────────
   vest_acerto_alto: [
     { id: "va_high_1", text: "{userName}, {acerto}% em {tema} é top. Com esse acerto, essa área não vai te derrubar na {prova}. O FSRS agendou o reforço para {data}." },
@@ -90,7 +100,7 @@ export function interpolate(template, vars) {
  * Pures selects a randomized phrase for a situation, avoiding recent ones.
  * Updates local storage history when called (if browser context is available).
  */
-export function getMentorPhrase(situation, vars, recentPhrases = []) {
+export function getMentorPhrase(situation, vars, recentPhrases = [], plat = "res") {
   const options = PHRASES[situation];
   if (!options || options.length === 0) return { text: "", id: "" };
 
@@ -100,8 +110,18 @@ export function getMentorPhrase(situation, vars, recentPhrases = []) {
   }
 
   const selected = available[Math.floor(Math.random() * available.length)];
+  let text = selected.text;
+
+  if (plat === "vest") {
+    // Purge medical jargon: replace "especialidade" with "matéria" / "área", and "sangrando" with "crítico"
+    text = text.replace(/\{especialidade\}/g, "{materia}");
+    text = text.replace(/especialidade/g, "área");
+    text = text.replace(/sangrando/g, "com lacunas críticas");
+    text = text.replace(/MedRev/g, "Bro");
+  }
+
   return {
-    text: interpolate(selected.text, vars),
+    text: interpolate(text, { ...vars, materia: vars.especialidade || vars.materia }),
     id: selected.id
   };
 }
@@ -274,7 +294,9 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
     if (meta?.isSegundaTentativa && totalSessions < 15) {
       insights.push({
         type: "horario",
-        text: `Segunda tentativa com método, ${userName}. Você conhece o ${provaAlvo} — agora o FSRS vai eliminar as lacunas com precisão cirúrgica.`
+        text: plat === "vest"
+          ? `Segunda tentativa com método, ${userName}. Você conhece o ${provaAlvo} — agora o FSRS vai eliminar as lacunas com precisão absoluta.`
+          : `Segunda tentativa com método, ${userName}. Você conhece o ${provaAlvo} — agora o FSRS vai eliminar as lacunas com precisão cirúrgica.`
       });
     }
 
@@ -297,6 +319,15 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
       });
     }
   }
+
+  // Insight EP: Error pattern detection
+  const errPatterns = detectErrorPatterns(doneReviews);
+  errPatterns.forEach(pat => {
+    insights.push({
+      type: "tendencia_baixa",
+      text: pat.text
+    });
+  });
 
   // Fallback se não disparar nenhum insight específico
   if (insights.length === 0) {

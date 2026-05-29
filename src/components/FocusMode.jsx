@@ -2,12 +2,35 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { Play, Pause, X, Brain, Plus, PenTool, Target, Layers, Zap, BookOpen, FileText } from "lucide-react";
 import { calcFilaInteligente } from "../hooks/useMetrics";
 import { getStepDefinitions, getBrainDumpFields } from "../constants/stepDefinitions";
-import { ESP_COLORS } from "../core/fsrs";
+import { ESP_COLORS, DEMO_TEMA_ID } from "../core/fsrs";
 import { useStore } from "../core/store";
 import { TourBalloon, ProgressiveTooltip } from "./Primitives";
 import { StructuredErrorsList } from "./Modals";
 
 const STEP_ICONS = { pretest: FileText, leitura: BookOpen, esqueleto: Layers, braindump: Brain, questoes: PenTool, anki: Zap };
+
+const getDemoItem = (plat, stepKey = "d0") => {
+  const isVest = plat === "vest";
+  const demoId = DEMO_TEMA_ID(plat);
+  return {
+    tema: {
+      id: demoId,
+      nome: isVest ? "Funções e Gráficos [DEMO]" : "Apendicite Aguda [DEMO]",
+      esp: isVest ? "Matemática" : "Cirurgia",
+      importancia: "ALTA",
+      pico: "",
+      ankiDeck: "",
+      rev: {
+        d0: { done: false, date: "2026-05-28" },
+        d1: { done: false, date: "2026-05-29" },
+        d4: { done: false, date: "2026-06-01" },
+        d7: { done: false, date: "2026-06-04" },
+        d21: { done: false, date: "2026-06-18" }
+      }
+    },
+    stepKey
+  };
+};
 
 export default function FocusMode({ onExit, plat, temas, onCompleteStep, targetedItem }) {
   const tourStep = useStore((s) => s.tourStep);
@@ -16,29 +39,15 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
 
   const activeReviewItem = useMemo(() => {
     if (tourStep === "focus") {
-      const isVest = plat === "vest";
-      return {
-        tema: {
-          id: isVest ? "demo-funcoes" : "demo-apendicite",
-          nome: isVest ? "Funções e Gráficos [DEMO]" : "Apendicite Aguda [DEMO]",
-          esp: isVest ? "Matemática" : "Cirurgia",
-          importancia: "ALTA",
-          pico: "",
-          ankiDeck: "",
-          rev: {
-            d0: { done: false, date: "2026-05-28" },
-            d1: { done: false, date: "2026-05-29" },
-            d4: { done: false, date: "2026-06-01" },
-            d7: { done: false, date: "2026-06-04" },
-            d21: { done: false, date: "2026-06-18" }
-          }
-        },
-        stepKey: "d0"
-      };
+      return getDemoItem(plat, "d0");
     }
     if (targetedItem) {
       const t = temas.find(x => x.id === targetedItem.temaId);
       if (t) return { tema: t, stepKey: targetedItem.stepKey };
+      if (String(targetedItem.temaId).startsWith("demo-")) {
+        return getDemoItem(plat, targetedItem.stepKey || "d0");
+      }
+      console.warn("FocusMode: targetedItem sem tema correspondente", targetedItem);
     }
     if (intelligentQueue.length > 0) {
       const top = intelligentQueue[0];
@@ -80,6 +89,13 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const [questoes, setQuestoes] = useState("");
   const [acertos, setAcertos] = useState("");
   const [erros, setErros] = useState([]);
+  const [interleaved, setInterleaved] = useState(false);
+
+  const canInterleave = useMemo(() => {
+    if (!tema || !tema.parentTopic) return false;
+    const siblingCount = temas.filter(t => t.parentTopic === tema.parentTopic).length;
+    return siblingCount >= 3;
+  }, [tema, temas]);
 
   // Derived accuracy
   const totalQuestoes = +questoes || 0;
@@ -178,7 +194,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
       acerto: pct != null ? pct / 100 : null,
       questoes: totalQuestoes || null,
       motivosErro: showErroBox ? erros.map(e => e.tipoErro) : [],
-      erros: showErroBox ? erros : []
+      erros: showErroBox ? erros : [],
+      interleaved: interleaved
     });
     resetSessionStates();
   };
@@ -190,6 +207,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
     setQuestoes("");
     setAcertos("");
     setErros([]);
+    setInterleaved(false);
     setExpandedJustification(false);
     setShowD0StatsForm(false);
   };
@@ -297,6 +315,23 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                     className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-all"
                   />
                 </div>
+
+                {canInterleave && (
+                  <div className="bg-violet-950/20 border border-violet-500/20 rounded-xl p-3 flex items-start gap-3">
+                    <input
+                      type="checkbox"
+                      id="interleave-toggle-d0"
+                      checked={interleaved}
+                      onChange={(e) => setInterleaved(e.target.checked)}
+                      className="mt-1 rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black/40 h-4 w-4 cursor-pointer"
+                    />
+                    <label htmlFor="interleave-toggle-d0" className="text-xs leading-relaxed text-gray-300 cursor-pointer">
+                      <span className="font-bold text-violet-400 block mb-0.5">🔀 Prática Intercalada (Opcional)</span>
+                      Você tem {temas.filter(t => t.parentTopic === tema.parentTopic).length} subtemas ativos em <strong className="text-white">{tema.parentTopic}</strong>.
+                      A evidência sugere que misturar questões de múltiplos subsegmentos melhora a retenção de longo prazo (Brunmair & Richter, 2019). <em className="text-[10px] text-gray-500">Nota: efeitos em provas cumulativas podem variar.</em>
+                    </label>
+                  </div>
+                )}
               </div>
 
               <button
@@ -438,7 +473,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                       motivosErro: showErroBox ? erros.map(e => e.tipoErro) : [],
                       erros: showErroBox ? erros : [],
                       pico,
-                      ankiDeck
+                      ankiDeck,
+                      interleaved: interleaved
                     });
                     resetSessionStates();
                   }}
@@ -532,6 +568,23 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                   setAcertos={setAcertos}
                   pct={pct}
                 />
+
+                {canInterleave && (
+                  <div className="bg-violet-950/20 border border-violet-500/20 rounded-xl p-3 flex items-start gap-3 mt-2">
+                    <input
+                      type="checkbox"
+                      id="interleave-toggle-rev"
+                      checked={interleaved}
+                      onChange={(e) => setInterleaved(e.target.checked)}
+                      className="mt-1 rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black/40 h-4 w-4 cursor-pointer"
+                    />
+                    <label htmlFor="interleave-toggle-rev" className="text-xs leading-relaxed text-gray-300 cursor-pointer">
+                      <span className="font-bold text-violet-400 block mb-0.5">🔀 Prática Intercalada (Opcional)</span>
+                      Você tem {temas.filter(t => t.parentTopic === tema.parentTopic).length} subtemas ativos em <strong className="text-white">{tema.parentTopic}</strong>.
+                      A evidência sugere que misturar questões de múltiplos subsegmentos melhora a retenção de longo prazo (Brunmair & Richter, 2019). <em className="text-[10px] text-gray-500">Nota: efeitos em provas cumulativas podem variar.</em>
+                    </label>
+                  </div>
+                )}
 
                 {pct != null && pct < 75 && (
                   <StructuredErrorsList erros={erros} onChange={setErros} plat={plat} esp={tema.esp} />

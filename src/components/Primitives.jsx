@@ -332,3 +332,29 @@ export function CheckmarkOverlay({ onComplete }) {
     </div>
   );
 }
+
+export function Tabs({ items, active, onChange }) {
+  return (
+    <div className="flex bg-black/40 rounded-xl p-1 overflow-x-auto snap-x scrollbar-none gap-1 w-full">
+      {items.map((t) => {
+        const Icon = t.icon;
+        const isActive = active === t.k;
+        return (
+          <button
+            key={t.k}
+            type="button"
+            onClick={() => onChange(t.k)}
+            className={`flex-1 snap-start py-2.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
+              isActive
+                ? "bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow-md shadow-violet-900/25"
+                : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02] bg-transparent border border-transparent"
+            }`}
+          >
+            {Icon && <Icon size={14} className={isActive ? "text-white" : "text-gray-500"} />}
+            <span>{t.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}

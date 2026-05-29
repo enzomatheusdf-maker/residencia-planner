@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Edit2, Info, TrendingUp, CheckCircle, ChevronDown, ChevronUp, Brain, Flame, Calendar, AlertTriangle, X, Zap, BookOpen } from "lucide-react";
 import { useStore } from "../core/store";
-import { STEPS, ESP_COLORS, isOverdue, isDueToday, todayStr, fmtDate } from "../core/fsrs";
+import { STEPS, ESP_COLORS, isOverdue, isDueToday, todayStr, fmtDate, getRetrievability } from "../core/fsrs";
 import { calcStreaks, calcTrueRetention, calcBleedingScore, calcFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
 import { getMentorDiagnosis } from "../core/mentor";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip } from "./Primitives";
@@ -154,96 +154,259 @@ function WelcomePopup({ userName, pending, streakCurrent, totalSessions, onClose
   );
 }
 
-function MiniCronogramaWidget({ plat, setView }) {
+function MiniCronogramaWidget({ plat, setView, onStudy, overdue = [], today_ = [] }) {
   const cronogramas = useStore((s) => s[plat]?.cronogramas || []);
   const activeCrono = useMemo(() => cronogramas[0] || null, [cronogramas]);
   const toggleBloco = useStore((s) => s.toggleBloco);
-  
-  if (!activeCrono) {
-    return (
-      <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 text-center flex flex-col items-center gap-3">
-        <Calendar size={20} className="text-gray-500" />
-        <p className="text-[11.5px] text-gray-400">Nenhum cronograma ativo.</p>
-        <button
-          onClick={() => setView && setView("crono")}
-          className="text-[10px] bg-violet-600/20 text-violet-400 border border-violet-500/25 px-2.5 py-1.5 rounded-xl font-bold border-none"
-        >
-          Criar Cronograma
-        </button>
-      </div>
-    );
-  }
+
+  const dueTodayItems = useMemo(() => {
+    return [...overdue, ...today_];
+  }, [overdue, today_]);
 
   const hoje = todayStr();
-  let currentSemana = activeCrono.semanas[0];
+  let currentSemana = activeCrono?.semanas[0];
   let semanaIdx = 0;
-  for (let i = 0; i < activeCrono.semanas.length; i++) {
-    const s = activeCrono.semanas[i];
-    const d0 = s.dias[0]?.isoDate || "";
-    const d6 = s.dias[6]?.isoDate || "";
-    if (d0 && d6 && hoje >= d0 && hoje <= d6) {
-      currentSemana = s;
-      semanaIdx = i;
-      break;
+  if (activeCrono) {
+    for (let i = 0; i < activeCrono.semanas.length; i++) {
+      const s = activeCrono.semanas[i];
+      const d0 = s.dias[0]?.isoDate || "";
+      const d6 = s.dias[6]?.isoDate || "";
+      if (d0 && d6 && hoje >= d0 && hoje <= d6) {
+        currentSemana = s;
+        semanaIdx = i;
+        break;
+      }
     }
   }
 
   const diaHoje = currentSemana?.dias.find(d => d.isoDate === hoje);
-  const total = activeCrono.semanas.reduce((a, s) => a + s.dias.reduce((b, d) => b + d.blocos.length, 0), 0);
-  const feitos = activeCrono.semanas.reduce((a, s) => a + s.dias.reduce((b, d) => b + d.blocos.filter(b2 => b2.concluido).length, 0), 0);
+  const total = activeCrono ? activeCrono.semanas.reduce((a, s) => a + s.dias.reduce((b, d) => b + d.blocos.length, 0), 0) : 0;
+  const feitos = activeCrono ? activeCrono.semanas.reduce((a, s) => a + s.dias.reduce((b, d) => b + d.blocos.filter(b2 => b2.concluido).length, 0), 0) : 0;
   const pct = total > 0 ? Math.round(feitos / total * 100) : 0;
 
   return (
-    <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 flex flex-col gap-3 shadow-md relative overflow-hidden text-left">
+    <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col gap-3 shadow-md relative overflow-hidden text-left">
       <div className="absolute -right-8 -top-8 w-20 h-20 rounded-full bg-violet-600/5 blur-2xl pointer-events-none" />
+      
       <div className="flex items-center justify-between border-b border-white/5 pb-2">
         <div className="flex items-center gap-2">
-          <Calendar size={15} className="text-violet-400" />
-          <span className="text-[10.5px] font-black uppercase text-gray-300 tracking-wider">Cronograma: {activeCrono.titulo}</span>
+          <Calendar size={14} className="text-violet-400" />
+          <span className="text-[10.5px] font-black uppercase text-gray-300 tracking-wider">
+            Quadro de Revisão & Cronograma
+          </span>
         </div>
-        <button
-          onClick={() => setView && setView("crono")}
-          className="text-[9.5px] font-bold text-violet-400 hover:text-violet-300 transition-colors border-none p-0 bg-transparent cursor-pointer"
-        >
-          Ver Completo
-        </button>
+        {activeCrono && (
+          <button
+            onClick={() => setView && setView("crono")}
+            className="text-[9.5px] font-bold text-violet-400 hover:text-violet-300 transition-colors border-none p-0 bg-transparent cursor-pointer"
+          >
+            Ver Completo
+          </button>
+        )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3 flex flex-col justify-center">
-          <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Progresso Geral</span>
-          <p className="text-lg font-black text-white mt-0.5">{pct}%</p>
-          <span className="text-[8.5px] text-gray-600 mt-0.5">{feitos}/{total} blocos</span>
-        </div>
-        
-        <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3 flex flex-col justify-center">
-          <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Semana Atual</span>
-          <p className="text-sm font-black text-violet-400 mt-0.5">Semana {currentSemana?.numero || 1}</p>
-          <span className="text-[8.5px] text-gray-600 mt-0.5 truncate">{currentSemana?.fase || "Fase de Estudos"}</span>
-        </div>
-      </div>
-
-      {diaHoje && (
-        <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3 space-y-2">
-          <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Blocos de Hoje ({diaHoje.dia})</span>
-          <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto pr-1">
-            {diaHoje.blocos.map((bloco, idx) => (
-              <div key={idx} className="flex items-center justify-between p-1.5 bg-black/20 rounded-lg text-[10.5px]">
-                <div className="min-w-0 flex-1 pr-2">
-                  <p className={`font-semibold truncate ${bloco.concluido ? "line-through text-gray-600" : "text-gray-200"}`}>{bloco.nome}</p>
-                  <p className="text-[9px] text-gray-500 font-mono mt-0.5">{bloco.horario}</p>
-                </div>
-                <button
-                  onClick={() => toggleBloco(plat, activeCrono.id, semanaIdx, currentSemana.dias.indexOf(diaHoje), idx)}
-                  className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 border-none cursor-pointer ${bloco.concluido ? "bg-emerald-500 border-emerald-500" : "border-white/20"}`}
-                >
-                  {bloco.concluido && <Check size={10} className="text-white" strokeWidth={3} />}
-                </button>
-              </div>
-            ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Column 1: FSRS Due Today */}
+        <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3 space-y-2 flex flex-col justify-between min-h-[145px]">
+          <div className="space-y-1">
+            <span className="text-[9.5px] text-gray-500 font-bold uppercase tracking-wider block">
+              Revisões FSRS de Hoje ({dueTodayItems.length})
+            </span>
+            <div className="flex flex-col gap-1.5 max-h-28 overflow-y-auto pr-1">
+              {dueTodayItems.length === 0 ? (
+                <p className="text-[10.5px] text-gray-500 italic py-4 text-center">Fila zerada! Parabéns. 🎉</p>
+              ) : (
+                dueTodayItems.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-1.5 bg-black/20 rounded-lg text-[10.5px]">
+                    <div className="min-w-0 flex-1 pr-2">
+                      <p className="font-semibold text-gray-200 truncate" title={item.temaNome}>{item.temaNome}</p>
+                      <p className="text-[9px] text-gray-500 mt-0.5 uppercase">{item.esp} · {item.step.label}</p>
+                    </div>
+                    <button
+                      onClick={() => onStudy && onStudy(item.temaId, item.step.key)}
+                      className="px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white rounded text-[9.5px] font-bold transition-all shrink-0 cursor-pointer border-none"
+                    >
+                      Focar
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Column 2: Weekly Schedule Blocks */}
+        <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3 space-y-2 flex flex-col justify-between min-h-[145px]">
+          {activeCrono ? (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[9.5px] text-gray-500 font-bold uppercase tracking-wider">
+                  Blocos de Hoje ({diaHoje ? diaHoje.dia : "Sem aulas"})
+                </span>
+                <span className="text-[9px] text-violet-400 font-bold uppercase">Semana {currentSemana?.numero || 1} ({pct}%)</span>
+              </div>
+              
+              {diaHoje && diaHoje.blocos.length > 0 ? (
+                <div className="flex flex-col gap-1.5 max-h-28 overflow-y-auto pr-1">
+                  {diaHoje.blocos.map((bloco, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-1.5 bg-black/20 rounded-lg text-[10.5px]">
+                      <div className="min-w-0 flex-1 pr-2">
+                        <p className={`font-semibold truncate ${bloco.concluido ? "line-through text-gray-600" : "text-gray-200"}`}>{bloco.nome}</p>
+                        <p className="text-[9px] text-gray-500 font-mono mt-0.5">{bloco.horario}</p>
+                      </div>
+                      <button
+                        onClick={() => toggleBloco(plat, activeCrono.id, semanaIdx, currentSemana.dias.indexOf(diaHoje), idx)}
+                        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 border-none cursor-pointer ${bloco.concluido ? "bg-emerald-500 border-emerald-500" : "border-white/20"}`}
+                      >
+                        {bloco.concluido && <Check size={10} className="text-white" strokeWidth={3} />}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[10.5px] text-gray-500 italic py-4 text-center">Nenhum bloco de cronograma hoje.</p>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center p-3 gap-2">
+              <Calendar size={16} className="text-gray-600" />
+              <p className="text-[9.5px] text-gray-500">Nenhum cronograma semanal configurado.</p>
+              <button
+                onClick={() => setView && setView("crono")}
+                className="text-[9px] bg-violet-600/20 text-violet-400 border border-violet-500/25 px-2 py-1 rounded-xl font-bold border-none cursor-pointer"
+              >
+                Criar Cronograma
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MetacognitiveChart({ doneReviews }) {
+  const chartData = useMemo(() => {
+    if (!doneReviews) return [];
+    return doneReviews
+      .filter(r => r.confianca != null && r.acerto != null)
+      .slice(-8)
+      .map(r => ({
+        label: r.step.label + " " + r.temaNome.slice(0, 10) + "...",
+        conf: r.confianca * 20,
+        acerto: Math.round(r.acerto * 100)
+      }));
+  }, [doneReviews]);
+
+  if (chartData.length < 2) {
+    return (
+      <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center min-h-[140px] text-center">
+        <TrendingUp size={16} className="text-gray-600 mb-1" />
+        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Calibração Metacognitiva</p>
+        <p className="text-[10px] text-gray-600 mt-1 max-w-xs leading-relaxed">
+          Dados insuficientes. Faça mais revisões declarando sua confiança para ver o gráfico de calibração.
+        </p>
+      </div>
+    );
+  }
+
+  // SVG dimensions
+  const width = 300;
+  const height = 120;
+  const padding = 20;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+
+  // X & Y scaling
+  const getX = (index) => padding + (index / (chartData.length - 1)) * chartWidth;
+  const getY = (val) => height - padding - (val / 100) * chartHeight;
+
+  // Path generators
+  const confPoints = chartData.map((d, i) => `${getX(i)},${getY(d.conf)}`).join(" ");
+  const acertoPoints = chartData.map((d, i) => `${getX(i)},${getY(d.acerto)}`).join(" ");
+
+  return (
+    <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Calibração: Confiança vs Acerto</p>
+        <div className="flex items-center gap-3 text-[9px] font-bold">
+          <span className="flex items-center gap-1 text-violet-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-violet-400" /> Confiança
+          </span>
+          <span className="flex items-center gap-1 text-pink-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-pink-400" /> Acerto Real
+          </span>
+        </div>
+      </div>
+
+      <div className="relative">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
+          {/* Y Axis grid lines */}
+          {[0, 25, 50, 75, 100].map((v) => (
+            <g key={v} className="opacity-20">
+              <line
+                x1={padding}
+                y1={getY(v)}
+                x2={width - padding}
+                y2={getY(v)}
+                stroke="#fff"
+                strokeWidth={0.5}
+                strokeDasharray="2,2"
+              />
+              <text
+                x={padding - 5}
+                y={getY(v) + 2}
+                fill="#fff"
+                fontSize={6}
+                textAnchor="end"
+              >
+                {v}%
+              </text>
+            </g>
+          ))}
+
+          {/* Lines */}
+          <polyline
+            fill="none"
+            stroke="#8b5cf6"
+            strokeWidth={1.5}
+            points={confPoints}
+            className="drop-shadow"
+          />
+          <polyline
+            fill="none"
+            stroke="#ec4899"
+            strokeWidth={1.5}
+            points={acertoPoints}
+            className="drop-shadow"
+          />
+
+          {/* Dots */}
+          {chartData.map((d, i) => (
+            <g key={i}>
+              <circle
+                cx={getX(i)}
+                cy={getY(d.conf)}
+                r={2.5}
+                fill="#8b5cf6"
+                stroke="#0e0e18"
+                strokeWidth={0.5}
+              />
+              <circle
+                cx={getX(i)}
+                cy={getY(d.acerto)}
+                r={2.5}
+                fill="#ec4899"
+                stroke="#0e0e18"
+                strokeWidth={0.5}
+              />
+            </g>
+          ))}
+        </svg>
+      </div>
+      <p className="text-[8.5px] text-gray-600 leading-normal">
+        Idealmente, as linhas devem andar juntas. Se a linha de <strong>Confiança</strong> estiver muito acima da de <strong>Acerto</strong>, você está subestimando a dificuldade (excesso de confiança).
+      </p>
     </div>
   );
 }
@@ -261,6 +424,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [showConfettiLocal, setShowConfettiLocal] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showCompleto, setShowCompleto] = useState(false);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
@@ -373,17 +537,53 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
   // ZONA 1 Target Foco
   const topFilaItem = useMemo(() => {
-    if (filaInteligente.length > 0) return filaInteligente[0];
+    // If we have items in the optimal FSRS retrievability window, prioritize them!
+    const optimalFila = [...overdue, ...today_].filter(item => {
+      const tema = temasFiltrados.find(t => t.id === item.temaId);
+      if (!tema) return false;
+      const R = getRetrievability(tema, item.step.key);
+      return R >= 0.85 && R <= 0.90;
+    });
+    if (optimalFila.length > 0) {
+      return {
+        temaId: optimalFila[0].temaId,
+        stepKey: optimalFila[0].step.key,
+        temaNome: optimalFila[0].temaNome,
+        isOptimal: true
+      };
+    }
+    if (filaInteligente.length > 0) {
+      const first = filaInteligente[0];
+      const tema = temasFiltrados.find(t => t.id === first.temaId);
+      const R = tema ? getRetrievability(tema, first.stepKey) : 1.0;
+      return {
+        ...first,
+        isOptimal: R >= 0.85 && R <= 0.90
+      };
+    }
     const chronoFila = [...overdue, ...today_];
     if (chronoFila.length > 0) {
+      const first = chronoFila[0];
+      const tema = temasFiltrados.find(t => t.id === first.temaId);
+      const R = tema ? getRetrievability(tema, first.step.key) : 1.0;
       return {
-        temaId: chronoFila[0].temaId,
-        stepKey: chronoFila[0].step.key,
-        temaNome: chronoFila[0].temaNome
+        temaId: first.temaId,
+        stepKey: first.step.key,
+        temaNome: first.temaNome,
+        isOptimal: R >= 0.85 && R <= 0.90
       };
     }
     return null;
-  }, [filaInteligente, overdue, today_]);
+  }, [filaInteligente, overdue, today_, temasFiltrados]);
+
+  const optimalItemsCount = useMemo(() => {
+    return [...overdue, ...today_].filter(item => {
+      const tema = temasFiltrados.find(t => t.id === item.temaId);
+      if (!tema) return false;
+      const R = getRetrievability(tema, item.step.key);
+      return R >= 0.85 && R <= 0.90;
+    }).length;
+  }, [overdue, today_, temasFiltrados]);
 
   const diag = useMemo(() => {
     return getMentorDiagnosis(userName, temasFiltrados, done, temaStats, plat, meta);
@@ -555,110 +755,176 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       )}
 
       {/* 3. 4 KPIs ABOVE THE FOLD WITH TOOLTIPS */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 select-none">
+      <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 gap-3 select-none">
         {/* 1. Revisões Hoje */}
-        <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 relative group">
-          <p className="text-[9.5px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1 cursor-help">
-            Pendentes Hoje
-            <Info size={11} className="text-gray-600 hover:text-gray-400 transition-colors" />
-          </p>
-          <p className={`text-xl font-black tabular-nums ${pending > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-            {pending}
-          </p>
+        <div className="bg-[#111113] border border-white/5 rounded-2xl p-3 relative group flex flex-col justify-between">
+          <div>
+            <p className="text-[9px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1 cursor-help">
+              Pendentes Hoje
+              <Info size={10} className="text-gray-600 hover:text-gray-400 transition-colors" />
+            </p>
+            <p className={`text-lg font-black tabular-nums ${pending > 0 ? "text-amber-400" : "text-emerald-400"}`}>
+              {pending}
+            </p>
+          </div>
           <div className="absolute bottom-full left-0 mb-2 w-52 bg-[#141417] border border-white/10 rounded-xl p-3 text-[10px] text-gray-400 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none leading-relaxed">
             Total de revisões programadas pelo algoritmo de repetição espaçada FSRS para o dia atual.
           </div>
         </div>
 
         {/* 2. Acerto Médio */}
-        <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 relative group">
-          <p className="text-[9.5px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1 cursor-help">
-            Acerto Médio
-            <Info size={11} className="text-gray-600 hover:text-gray-400 transition-colors" />
-          </p>
-          <p className={`text-xl font-black tabular-nums ${acertoMedio != null ? (acertoMedio >= 80 ? "text-emerald-400" : acertoMedio >= 65 ? "text-violet-400" : "text-red-400") : "text-gray-500"}`}>
-            {acertoMedio != null ? `${acertoMedio}%` : "—"}
-          </p>
+        <div className="bg-[#111113] border border-white/5 rounded-2xl p-3 relative group flex flex-col justify-between">
+          <div>
+            <p className="text-[9px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1 cursor-help">
+              Acerto Médio
+              <Info size={10} className="text-gray-600 hover:text-gray-400 transition-colors" />
+            </p>
+            <p className={`text-lg font-black tabular-nums ${acertoMedio != null ? (acertoMedio >= 80 ? "text-emerald-400" : acertoMedio >= 65 ? "text-violet-400" : "text-red-400") : "text-gray-500"}`}>
+              {acertoMedio != null ? `${acertoMedio}%` : "—"}
+            </p>
+          </div>
           <div className="absolute bottom-full left-0 mb-2 w-52 bg-[#141417] border border-white/10 rounded-xl p-3 text-[10px] text-gray-400 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none leading-relaxed">
             Precisão média ponderada das questões resolvidas nas etapas D0/revisão concluídas.
           </div>
         </div>
 
         {/* 3. Dominados (D21) */}
-        <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 relative group">
-          <p className="text-[9.5px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1 cursor-help">
-            Dominados (D21)
-            <Info size={11} className="text-gray-600 hover:text-gray-400 transition-colors" />
-          </p>
-          <p className="text-xl font-black text-emerald-400">
-            {temasFiltrados.length > 0 ? `${temasFiltrados.filter(t => STEPS.every(s => t.rev[s.key].done)).length}/${temasFiltrados.length}` : "0"}
-          </p>
+        <div className="bg-[#111113] border border-white/5 rounded-2xl p-3 relative group flex flex-col justify-between">
+          <div>
+            <p className="text-[9px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1 cursor-help">
+              Dominados (D21)
+              <Info size={10} className="text-gray-600 hover:text-gray-400 transition-colors" />
+            </p>
+            <p className="text-lg font-black text-emerald-400">
+              {temasFiltrados.length > 0 ? `${temasFiltrados.filter(t => STEPS.every(s => t.rev[s.key].done)).length}/${temasFiltrados.length}` : "0"}
+            </p>
+          </div>
           <div className="absolute bottom-full left-0 mb-2 w-52 bg-[#141417] border border-white/10 rounded-xl p-3 text-[10px] text-gray-400 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none leading-relaxed">
             Número de temas cadastrados que completaram o ciclo completo de fixação no FSRS.
           </div>
         </div>
 
         {/* 4. True Retention */}
-        <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 relative group">
-          <p className="text-[9.5px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1 cursor-help">
-            True Retention
-            <Info size={11} className="text-gray-600 hover:text-gray-400 transition-colors" />
-          </p>
-          <p className={`text-xl font-black tabular-nums ${trueRet != null ? (trueRet >= 80 ? "text-emerald-400" : trueRet >= 65 ? "text-violet-400" : "text-red-400") : "text-gray-500"}`}>
-            {trueRet != null ? `${trueRet}%` : "—"}
-          </p>
+        <div className="bg-[#111113] border border-white/5 rounded-2xl p-3 relative group flex flex-col justify-between">
+          <div>
+            <p className="text-[9px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1 cursor-help">
+              True Retention
+              <Info size={10} className="text-gray-600 hover:text-gray-400 transition-colors" />
+            </p>
+            <p className={`text-lg font-black tabular-nums ${trueRet != null ? (trueRet >= 80 ? "text-emerald-400" : trueRet >= 65 ? "text-violet-400" : "text-red-400") : "text-gray-500"}`}>
+              {trueRet != null ? `${trueRet}%` : "—"}
+            </p>
+          </div>
           <div className="absolute bottom-full left-0 mb-2 w-52 bg-[#141417] border border-white/10 rounded-xl p-3 text-[10px] text-gray-400 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none leading-relaxed">
             Taxa de acerto real medida apenas em etapas com intervalos maiores de 15 dias (D21+).
           </div>
         </div>
-      </div>
 
-      {/* 4. ACTION CARD / QUEUE ZERO */}
-      {pending > 0 ? (
-        <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 relative overflow-hidden shadow-sm">
-          <div className="absolute -right-16 -top-16 w-36 h-36 rounded-full bg-violet-600/5 blur-3xl pointer-events-none" />
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-[9px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">Ação Recomendada</p>
-              <h2 className="text-base font-black text-white leading-tight">Você tem {pending} revisão agendada para hoje.</h2>
-              {topFilaItem && (
-                <p className="text-[11.5px] text-gray-400 mt-0.5 truncate">
-                  Sugestão de impacto: <strong className="text-violet-400">{topFilaItem.temaNome}</strong> ({topFilaItem.stepKey.toUpperCase()})
-                </p>
-              )}
-            </div>
-            
-            {topFilaItem && (
+        {/* 5. Ação Recomendada CTA (only visible on xl screens) */}
+        <div className="hidden xl:flex bg-gradient-to-br from-violet-950/40 via-[#111113] to-pink-950/20 border border-violet-500/20 rounded-2xl p-3 relative overflow-hidden flex-col justify-between shadow-sm">
+          <div className="absolute -right-8 -top-8 w-16 h-16 rounded-full bg-violet-600/10 blur-xl pointer-events-none" />
+          <div className="min-w-0">
+            <p className="text-[9px] text-violet-400 uppercase tracking-wider font-bold mb-0.5">Ação Recomendada</p>
+            {pending > 0 ? (
+              <>
+                <h4 className="text-[11px] font-black text-white leading-tight">Você tem {pending} revisões.</h4>
+                {topFilaItem && (
+                  <div className="mt-1">
+                    <p className="text-[10px] text-gray-300 font-semibold truncate" title={topFilaItem.temaNome}>
+                      Focar: {topFilaItem.temaNome}
+                    </p>
+                    {topFilaItem.isOptimal && (
+                      <span className="text-[8px] text-amber-400 font-extrabold uppercase tracking-wide block mt-0.5">
+                        🎯 Ponto Exato de Esquecimento
+                      </span>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <h4 className="text-[11px] font-black text-emerald-400 leading-tight">Fila Zerada! 🎉</h4>
+                <p className="text-[9.5px] text-gray-400 mt-1 leading-snug">Curva protegida.</p>
+              </>
+            )}
+          </div>
+          <div className="mt-2 shrink-0">
+            {pending > 0 && topFilaItem ? (
               <button
                 type="button"
                 onClick={() => onStudy(topFilaItem.temaId, topFilaItem.stepKey)}
-                className="px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white font-black text-[11.5px] shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0 border-none cursor-pointer"
+                className="w-full py-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white font-black text-[9.5px] shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] border-none cursor-pointer"
               >
                 ⚡ Iniciar Foco
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setView && setView("crono")}
+                className="w-full py-1.5 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/40 text-emerald-400 hover:text-white border border-emerald-500/25 text-[9.5px] font-black transition-all cursor-pointer"
+              >
+                Novo Tema
               </button>
             )}
           </div>
         </div>
-      ) : (
-        <div className="bg-[#111113] border border-emerald-500/10 rounded-2xl p-5 relative overflow-hidden shadow-sm text-center flex flex-col items-center justify-center gap-3 py-6">
-          <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-lg animate-bounce select-none">
-            🏆
+      </div>
+
+      {/* 4. ACTION CARD / QUEUE ZERO (hidden on xl screens) */}
+      <div className="xl:hidden">
+        {pending > 0 ? (
+          <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 relative overflow-hidden shadow-sm">
+            <div className="absolute -right-16 -top-16 w-36 h-36 rounded-full bg-violet-600/5 blur-3xl pointer-events-none" />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[9px] text-gray-500 uppercase tracking-wider font-bold mb-0.5">Ação Recomendada</p>
+                <h2 className="text-sm font-black text-white leading-tight">Você tem {pending} revisão agendada para hoje.</h2>
+                {topFilaItem && (
+                  <div className="mt-0.5">
+                    <p className="text-[11px] text-gray-400 truncate">
+                      Sugestão de impacto: <strong className="text-violet-400 font-semibold">{topFilaItem.temaNome}</strong> ({topFilaItem.stepKey.toUpperCase()})
+                    </p>
+                    {topFilaItem.isOptimal && (
+                      <p className="text-[10px] text-amber-400 font-bold mt-1">
+                        💡 Estes itens estão no ponto exato de esquecimento - revisá-los agora rende o dobro.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {topFilaItem && (
+                <button
+                  type="button"
+                  onClick={() => onStudy(topFilaItem.temaId, topFilaItem.stepKey)}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white font-black text-[11px] shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] shrink-0 border-none cursor-pointer"
+                >
+                  ⚡ Iniciar Foco
+                </button>
+              )}
+            </div>
           </div>
-          <div>
-            <h2 className="text-[14px] font-black text-white leading-tight">Fila Zerada! Missão Cumprida.</h2>
-            <p className="text-[11px] text-gray-400 mt-0.5 max-w-sm">
-              Você concluiu todas as revisões programadas pelo algoritmo para hoje. Curva de retenção protegida!
-            </p>
+        ) : (
+          <div className="bg-[#111113] border border-emerald-500/10 rounded-2xl p-5 relative overflow-hidden shadow-sm text-center flex flex-col items-center justify-center gap-3 py-6">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-lg animate-bounce select-none">
+              🏆
+            </div>
+            <div>
+              <h2 className="text-[14px] font-black text-white leading-tight">Fila Zerada! Missão Cumprida.</h2>
+              <p className="text-[11px] text-gray-400 mt-0.5 max-w-sm">
+                Você concluiu todas as revisões programadas pelo algoritmo para hoje. Curva de retenção protegida!
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setView && setView("crono")}
+              className="px-4 py-2 rounded-xl bg-emerald-600/25 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/25 text-[10px] font-black transition-all hover:scale-105 cursor-pointer"
+            >
+              Estudar novos temas
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setView && setView("crono")}
-            className="px-4 py-2 rounded-xl bg-emerald-600/25 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/25 text-[10px] font-black transition-all hover:scale-105 cursor-pointer"
-          >
-            Estudar novos temas
-          </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* SEMANA DE PROVA — Banner de urgência (apenas vest, dentro de 7 dias) */}
       {plat === "vest" && semanaDeProva && (
@@ -672,8 +938,40 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       )}
 
-      {/* NOTA PROJETADA — só para Vestibular */}
-      {plat === "vest" && totalSessions > 0 && notaProjetada != null && (
+      {/* MiniCronogramaWidget shown prominently on main page when in modoSimples */}
+      {modoSimples && (
+        <div className="mt-1">
+          <MiniCronogramaWidget
+            plat={plat}
+            setView={setView}
+            onStudy={onStudy}
+            overdue={overdue}
+            today_={today_}
+          />
+        </div>
+      )}
+
+      {/* Collapsible toggle for modoSimples detailed panels */}
+      {modoSimples && (
+        <div className="mt-1">
+          <button
+            type="button"
+            onClick={() => setShowCompleto(!showCompleto)}
+            className="w-full flex items-center justify-between px-5 py-3.5 bg-[#111113] border border-white/5 rounded-2xl hover:bg-white/[0.02] transition-colors border-none text-left"
+          >
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+              <Brain size={14} className="text-violet-400" />
+              <span>Ver diagnóstico completo</span>
+            </div>
+            {showCompleto ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+          </button>
+        </div>
+      )}
+
+      {(!modoSimples || showCompleto) && (
+        <div className="space-y-5 flex flex-col gap-5">
+          {/* NOTA PROJETADA — só para Vestibular */}
+          {plat === "vest" && totalSessions > 0 && notaProjetada != null && (
         <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 flex flex-col gap-3 shadow-lg relative overflow-hidden">
           <div className="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-emerald-600/5 blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between">
@@ -997,24 +1295,36 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 </div>
               ) : (
                 <div className="flex flex-col divide-y divide-white/5 max-h-72 overflow-y-auto pr-1">
-                  {[...overdue, ...today_].map((r, i) => (
-                    <div key={i} className="flex items-center gap-3 py-2.5">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0" style={{ background: (ESP_COLORS[r.esp] || "#94a3b8") + "15", color: ESP_COLORS[r.esp] }}>
-                        {espAbbr(r.esp)}
+                  {[...overdue, ...today_].map((r, i) => {
+                    const tema = temasFiltrados.find(t => t.id === r.temaId);
+                    const R = tema ? getRetrievability(tema, r.step.key) : 1.0;
+                    const isOptimalItem = R >= 0.85 && R <= 0.90;
+                    return (
+                      <div key={i} className={`flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all ${isOptimalItem ? "bg-amber-500/5 border border-amber-500/10" : ""}`}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0" style={{ background: (ESP_COLORS[r.esp] || "#94a3b8") + "15", color: ESP_COLORS[r.esp] }}>
+                          {espAbbr(r.esp)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1">
+                            <p className="text-xs font-bold text-white truncate">{r.temaNome}</p>
+                            {isOptimalItem && (
+                              <span className="text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-black shrink-0 ml-1.5" title="Retrievabilidade FSRS em ~87%: Ponto ideal de revisibilidade deliberada">
+                                🎯 Ponto Ótimo
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[10px] text-gray-500 font-mono mt-0.5 uppercase">{r.step.label} · {r.step.desc}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onStudy(r.temaId, r.step.key)}
+                          className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-[10.5px] font-semibold hover:bg-violet-500 transition-all shrink-0 active:scale-95"
+                        >
+                          Revisar
+                        </button>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-white truncate">{r.temaNome}</p>
-                        <p className="text-[10px] text-gray-500 font-mono mt-0.5 uppercase">{r.step.label} · {r.step.desc}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => onStudy(r.temaId, r.step.key)}
-                        className="px-3 py-1.5 rounded-lg bg-violet-600 text-white text-[10.5px] font-semibold hover:bg-violet-500 transition-all shrink-0 active:scale-95"
-                      >
-                        Revisar
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1086,6 +1396,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                     </div>
                   </ProgressiveTooltip>
 
+                  {/* Calibração Metacognitiva */}
+                  <MetacognitiveChart doneReviews={done} />
                 </div>
 
                 {/* GRID MINHAS ÁREAS — apenas Vestibular */}
@@ -1112,7 +1424,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
                 {!modoSimples && totalSessions >= 30 && (
                   <div className="border-t border-white/5 pt-4">
-                    <MiniCronogramaWidget plat={plat} setView={setView} />
+                    <MiniCronogramaWidget
+                      plat={plat}
+                      setView={setView}
+                      onStudy={onStudy}
+                      overdue={overdue}
+                      today_={today_}
+                    />
                   </div>
                 )}
               </div>
@@ -1120,6 +1438,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           </div>
         )}
       </div>
+    </div>
+  )}
       {showWelcome && (
         <WelcomePopup
           userName={userName}
