@@ -16,6 +16,7 @@ import {
   deleteUser
 } from "firebase/auth";
 import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
+import { getAnalytics, isSupported, logEvent } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -29,6 +30,29 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+let analyticsInstance = null;
+
+async function getAnalyticsSafe() {
+  if (analyticsInstance) return analyticsInstance;
+  try {
+    const supported = await isSupported();
+    if (!supported) return null;
+    analyticsInstance = getAnalytics(app);
+    return analyticsInstance;
+  } catch {
+    return null;
+  }
+}
+
+export async function trackEvent(name, params = {}) {
+  try {
+    const analytics = await getAnalyticsSafe();
+    if (!analytics) return;
+    logEvent(analytics, name, params);
+  } catch {
+    // no-op: analytics must never break UX
+  }
+}
 
 // ─── AUTHENTICATION OPERATIONS ───────────────────────────────────────────────
 
@@ -48,8 +72,23 @@ export const criarConta = async (email, senha, nome, manterConectado = true) => 
       nome: nome,
       criadoEm: new Date().toISOString(),
       plat: "res",
+      cronogramaSel: { res: "res-medcof-2026", vest: "vest-base" },
+      gamif: {
+        xp: 0,
+        level: 1,
+        streakCurrent: 0,
+        streakBest: 0,
+        lastStudyDate: null,
+        freezesOwned: 1,
+        freezesUsedDates: [],
+        recoveryOwned: 0,
+        badges: [],
+        graceUsedThisWeek: false,
+        focusBoostActive: false,
+        xpAudit: { acertos: 0, constancia: 0, outros: 0 }
+      },
       userName: nome,
-      meta: { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0 },
+      meta: { dataProva: "2026-10-25", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: [], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [] },
       res: { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
       vest: { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
       focusMode: false,

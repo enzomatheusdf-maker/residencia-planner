@@ -1,11 +1,12 @@
 // src/constants/stepDefinitions.js
+import { useStore } from "../core/store";
 
 export const STEP_DEFINITIONS_RES = [
   {
     id: 'pretest',
     title: 'Pré-teste',
     description: 'Responda 5 questões antes da leitura',
-    instruction: `Vá ao MedEvo. Pesquise o tema. Resolva 5 questões sem estudo. \nMarque as respostas (certo/errado). Objetivo: criar ganchos cognitivos.`,
+    instruction: `Vá ao {{ferramentaQuestoes}}. Pesquise o tema. Resolva 5 questões sem estudo. \nMarque as respostas (certo/errado). Objetivo: criar ganchos cognitivos.`,
     justification: `O pré-teste força recuperação antes da consolidação. \nMesmo errando, o cérebro marca os pontos-chave que vão aparecer na leitura. \nEfeito de teste antes (pré-teste) = d=0.73 vs teste depois = d=0.35.\n[Fonte: Roediger & Karpicke 2006, Journal of Experimental Psychology]`,
     duration: 10,
     icon: '📝'
@@ -39,18 +40,18 @@ export const STEP_DEFINITIONS_RES = [
   },
   {
     id: 'questoes',
-    title: 'Questões MedEvo',
+    title: 'Questões {{ferramentaQuestoes}}',
     description: 'Resolva 15-20 questões e categorize os erros',
-    instruction: `1. Vá ao MedEvo, pesquise o tema, resolva 15-20 questões\n2. Corrija TUDO de uma vez (não questão a questão)\n3. Para cada ERRO, categorize:\n   - Fato atômico? → Vai ficar um card Anki\n   - Raciocínio? → Refaça o esqueleto\n   - Distração/leitura? → Refaz o passo anterior\n4. Registre os acertos e o total`,
+    instruction: `1. Vá ao {{ferramentaQuestoes}}, pesquise o tema, resolva 15-20 questões\n2. Corrija TUDO de uma vez (não questão a questão)\n3. Para cada ERRO, categorize:\n   - Fato atômico? → Vai ficar um card {{ferramentaFlashcards}}\n   - Raciocínio? → Refaça o esqueleto\n   - Distração/leitura? → Refaz o passo anterior\n4. Registre os acertos e o total`,
     justification: `Prática distribuída com feedback imediato aumenta transferência. \nA categorização força metacognição — você aprende a aprender, \nnão só memoriza conteúdo (aprendizagem profunda).`,
     duration: 25,
     icon: '✍️'
   },
   {
     id: 'anki',
-    title: 'Flashcards Anki',
+    title: 'Flashcards {{ferramentaFlashcards}}',
     description: 'Crie cards SÓ dos fatos atômicos que erraram',
-    instruction: `No Anki, crie 1 card por fato que ERROU. Formato:\n\nFRENTE: contexto clínico mínimo + pergunta com cloze {{c1::resposta}}\nVERSO: resposta curta (1-2 linhas) + contexto adicional + fonte\n\nExemplo:\n  FRENTE: Apendicite com abscesso >4cm: {{c1::drenagem percutânea + ATB}}\n  VERSO: Intervalar 6-8 semanas. Peritonite geral → cirurgia imediata.\n\n⚠️ REGRAS:\n- 1 card = 1 fato = 1 resposta (atômico)\n- Prefira cloze a básico\n- Nunca listas >4 itens\n- Sempre âncora clínica`,
+    instruction: `No {{ferramentaFlashcards}}, crie 1 card por fato que ERROU. Formato:\n\nFRENTE: contexto clínico mínimo + pergunta com cloze {{c1::resposta}}\nVERSO: resposta curta (1-2 linhas) + contexto adicional + fonte\n\nExemplo:\n  FRENTE: Apendicite com abscesso >4cm: {{c1::drenagem percutânea + ATB}}\n  VERSO: Intervalar 6-8 semanas. Peritonite geral → cirurgia imediata.\n\n⚠️ REGRAS:\n- 1 card = 1 fato = 1 resposta (atômico)\n- Prefira cloze a básico\n- Nunca listas >4 itens\n- Sempre âncora clínica`,
     justification: `Cards atômicos de 1 fato têm custo-benefício melhor. \nEvita ilusão de domínio e pensamento dependente de domínio. \nVocê revisa cards menores, mais rápido, com melhor retention.`,
     duration: 10,
     icon: '🔤'
@@ -62,7 +63,7 @@ export const STEP_DEFINITIONS_VEST_EXATAS = [
     id: 'pretest',
     title: 'Pré-teste',
     description: 'Resolva 3–5 questões antes de estudar',
-    instruction: `Vá ao seu banco de questões. Pesquise o tópico. Resolva 3–5 questões SEM ter estudado ainda.\nMarque o que acertou/errou. Objetivo: criar ganchos cognitivos e revelar lacunas antes da leitura.`,
+    instruction: `Vá ao {{ferramentaQuestoes}}. Pesquise o tópico. Resolva 3–5 questões SEM ter estudado ainda.\nMarque o que acertou/errou. Objetivo: criar ganchos cognitivos e revelar lacunas antes da leitura.`,
     justification: `O pré-teste força recuperação antes da consolidação.\nMesmo errando, o cérebro marca os pontos-chave que vão aparecer no estudo.\nPretesting effect: d=0.73 vs estudo direto d=0.35. [Roediger & Karpicke 2006]`,
     duration: 10,
     icon: '📝'
@@ -98,16 +99,16 @@ export const STEP_DEFINITIONS_VEST_EXATAS = [
     id: 'questoes',
     title: 'Bateria de Questões',
     description: 'Resolva 15–20 questões e categorize os erros',
-    instruction: `1. Vá ao seu banco de questões, pesquise o tópico, resolva 15–20 questões\n2. Corrija tudo de uma vez\n3. Para cada ERRO, categorize:\n   - Fórmula errada? → Reveja o esqueleto\n   - Aplicou a fórmula certa no contexto errado? → Reveja "quando aplicar"\n   - Erro de conta / unidade? → Descuido\n   - Conteúdo nunca visto? → Marque para novo D0\n4. Registre os acertos e o total`,
+    instruction: `1. Vá ao {{ferramentaQuestoes}}, pesquise o tópico, resolva 15–20 questões\n2. Corrija tudo de uma vez\n3. Para cada ERRO, categorize:\n   - Fórmula errada? → Reveja o esqueleto\n   - Aplicou a fórmula certa no contexto errado? → Reveja "quando aplicar"\n   - Erro de conta / unidade? → Descuido\n   - Conteúdo nunca visto? → Marque para novo D0\n4. Registre os acertos e o total`,
     justification: `Prática distribuída com feedback imediato aumenta transferência.\nCategorizar o erro força metacognição — você aprende a aprender, não só executa.`,
     duration: 25,
     icon: '✍️'
   },
   {
     id: 'anki',
-    title: 'Flashcards de Fórmulas',
+    title: 'Flashcards {{ferramentaFlashcards}} de Fórmulas',
     description: 'Crie cards das fórmulas e conceitos que errou',
-    instruction: `No Anki (ou caderno), crie 1 card por fórmula/conceito que ERROU:\n\nFRENTE: contexto do problema + lacuna {{c1::resposta}}\nVERSO: fórmula completa + quando usar + exemplo numérico rápido\n\nExemplos:\n  FRENTE: MRU com v=10 m/s e t=5s: d = {{c1::50 m}}\n  FRENTE: Energia cinética: Ec = {{c1::½mv²}}\n\n⚠️ 1 card = 1 fato. Nunca listas longas.`,
+    instruction: `No {{ferramentaFlashcards}} (ou caderno), crie 1 card por fórmula/conceito que ERROU:\n\nFRENTE: contexto do problema + lacuna {{c1::resposta}}\nVERSO: fórmula completa + quando usar + exemplo numérico rápido\n\nExemplos:\n  FRENTE: MRU com v=10 m/s e t=5s: d = {{c1::50 m}}\n  FRENTE: Energia cinética: Ec = {{c1::½mv²}}\n\n⚠️ 1 card = 1 fato. Nunca listas longas.`,
     justification: `Cards atômicos de fórmulas têm custo-benefício maior do que reler a teoria.\nRevisão espaçada de fórmulas = base do desempenho em exatas.`,
     duration: 10,
     icon: '🔤'
@@ -119,7 +120,7 @@ export const STEP_DEFINITIONS_VEST_HUMANAS = [
     id: 'pretest',
     title: 'Pré-teste',
     description: 'Resolva 3–5 questões antes de estudar',
-    instruction: `Vá ao seu banco de questões. Pesquise o tópico. Resolva 3–5 questões SEM ter estudado ainda.\nSão questões de interpretação/análise — ativar conhecimento prévio e criar perguntas que a leitura vai responder.`,
+    instruction: `Vá ao {{ferramentaQuestoes}}. Pesquise o tópico. Resolva 3–5 questões SEM ter estudado ainda.\nSão questões de interpretação/análise — ativar conhecimento prévio e criar perguntas que a leitura vai responder.`,
     justification: `Pré-teste cria "lacunas cognitivas" que o cérebro busca preencher durante a leitura.\nResulta em leitura mais ativa e retenção superior. [Roediger & Karpicke 2006]`,
     duration: 10,
     icon: '📝'
@@ -155,7 +156,7 @@ export const STEP_DEFINITIONS_VEST_HUMANAS = [
     id: 'questoes',
     title: 'Bateria de Questões',
     description: 'Resolva 15–20 questões e categorize os erros',
-    instruction: `1. Vá ao seu banco de questões, pesquise o tópico, resolva 15–20 questões\n2. Corrija tudo de uma vez\n3. Para cada ERRO, categorize:\n   - Fato não memorizado? → Vai para flashcard\n   - Interpretou errado o enunciado? → Treino de leitura\n   - Confundiu conceitos? → Revisão do esqueleto\n   - Descuido? → Atenção na releitura\n4. Registre os acertos e o total`,
+    instruction: `1. Vá ao {{ferramentaQuestoes}}, pesquise o tópico, resolva 15–20 questões\n2. Corrija tudo de uma vez\n3. Para cada ERRO, categorize:\n   - Fato não memorizado? → Vai para flashcard\n   - Interpretou errado o enunciado? → Treino de leitura\n   - Confundiu conceitos? → Revisão do esqueleto\n   - Descuido? → Atenção na releitura\n4. Registre os acertos e o total`,
     justification: `Categorizar o erro em humanidades é crítico: a maioria dos erros\nnão é falta de conteúdo, é interpretação. Identificar isso muda o treino.`,
     duration: 25,
     icon: '✍️'
@@ -165,7 +166,7 @@ export const STEP_DEFINITIONS_VEST_HUMANAS = [
     title: 'Resumo-Relâmpago',
     description: 'Síntese de 5 linhas + flashcards de fatos atômicos',
     instruction: `Escreva um resumo de 5 linhas do tópico (datas, conceitos, nomes críticos).\n\nPara CADA fato atômico que errou, crie um card:\nFRENTE: pergunta direta sobre o fato\nVERSO: resposta curta + contexto\n\nExemplos:\n  FRENTE: Ano da Proclamação da República no Brasil\n  VERSO: 1889. Marechal Deodoro da Fonseca. Monarquia → República sem plebiscito.\n\n⚠️ 1 card = 1 fato. Evite listas longas.`,
-    justification: `Em humanidades, flashcards são para fatos atômicos (datas, nomes, conceitos).\nO resumo-relâmpago fixa a estrutura; o Anki fixa os fatos pontuais.`,
+    justification: `Em humanidades, flashcards são para fatos atômicos (datas, nomes, conceitos).\nO resumo-relâmpago fixa a estrutura; o {{ferramentaFlashcards}} fixa os fatos pontuais.`,
     duration: 10,
     icon: '🔤'
   }
@@ -185,7 +186,7 @@ export const STEP_DEFINITIONS_VEST_REDACAO = [
     id: 'esqueleto',
     title: 'Planejamento da Redação',
     description: 'Monte o esqueleto: tese, argumentos, proposta',
-    instruction: `Com base na análise, monte o esqueleto:\n- INTRODUÇÃO: Contextualização + Tese (1 parágrafo)\n- DESENVOLVIMENTO 1: Argumento 1 + repertório + desenvolvimento\n- DESENVOLVIMENTO 2: Argumento 2 + repertório + desenvolvimento\n- CONCLUSÃO: Proposta de intervenção (quem faz, como, com qual finalidade)\n\nEsboce em tópicos antes de escrever.`,
+    instruction: `Com base na análise, monte o esqueleto:\n- INTRODUÇÃO: Contextualização + Tese (1 parágrafo)\n- DESENVOLVIMENTO 1: Argumento 1 + repertório + desenvolvimento\n- DESENVOLVIMENTO 2: Argumento 2 + repertório + desenvolvimento\n- CONCLUSÃO: Proposta de intervenção (quem faz, como faz, com qual finalidade)\n\nEsboce em tópicos antes de escrever.`,
     justification: `Planejar antes de escrever reduz drasticamente reescritas e aumenta coerência.\nO ENEM penaliza redações sem estrutura clara.`,
     duration: 10,
     icon: '🧠'
@@ -222,10 +223,37 @@ export const STEP_DEFINITIONS_VEST_REDACAO = [
 const VEST_EXATAS_ESPS = ["Exatas", "Ciências da Natureza", "Matemática", "Física", "Química", "Biologia"];
 
 export function getStepDefinitions(plat, esp) {
-  if (plat !== "vest") return STEP_DEFINITIONS_RES;
-  if (esp === "Redação") return STEP_DEFINITIONS_VEST_REDACAO;
-  if (VEST_EXATAS_ESPS.includes(esp)) return STEP_DEFINITIONS_VEST_EXATAS;
-  return STEP_DEFINITIONS_VEST_HUMANAS;
+  let list = STEP_DEFINITIONS_RES;
+  if (plat === "vest") {
+    if (esp === "Redação") list = STEP_DEFINITIONS_VEST_REDACAO;
+    else if (VEST_EXATAS_ESPS.includes(esp)) list = STEP_DEFINITIONS_VEST_EXATAS;
+    else list = STEP_DEFINITIONS_VEST_HUMANAS;
+  }
+
+  try {
+    const state = useStore.getState();
+    const ferramentas = state?.meta?.ferramentas || { questoes: "MedEvo", flashcards: "Anki" };
+    const fQuestoes = ferramentas.questoes || (plat === "res" ? "MedEvo" : "Estuda Mais");
+    const fFlashcards = ferramentas.flashcards || "Anki";
+
+    return list.map(step => {
+      const interpolate = (str) => {
+        if (!str) return str;
+        return str
+          .replace(/\{\{ferramentaQuestoes\}\}/g, fQuestoes)
+          .replace(/\{\{ferramentaFlashcards\}\}/g, fFlashcards);
+      };
+      return {
+        ...step,
+        title: interpolate(step.title),
+        description: interpolate(step.description),
+        instruction: interpolate(step.instruction),
+        justification: interpolate(step.justification)
+      };
+    });
+  } catch (err) {
+    return list;
+  }
 }
 
 export const BRAIN_DUMP_FIELDS = {

@@ -3,7 +3,18 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { buildRev, recalcAfterMark, STEPS, S_BASE, todayStr, addDays, normalizeTema } from "./fsrs";
+import { buildRev, recalcAfterMark, STEPS, S_BASE, todayStr, addDays, normalizeTema, diffDays } from "./fsrs";
+import { computeStreakOnStudy, recoverStreak } from "./gamif";
+
+function prioToImportancia(prio) {
+  switch ((prio || "").toLowerCase()) {
+    case "diamante": return "CRITICA";
+    case "alta":     return "ALTA";
+    case "média": case "media": return "MEDIA";
+    case "baixa": case "bônus": case "bonus": return "MEDIA";
+    default: return "ALTA";
+  }
+}
 
 const initialPlat = () => ({ temas: [], simulados: [], ankiLog: [], cronogramas: [] });
 
@@ -40,7 +51,7 @@ const initialVestibularPlat = () => {
     { id: 20, nome: "Artes - Visuais", esp: "Linguagens", prio: "Baixa", importancia: "MEDIA", d0: "2026-05-30", obs: "Pré-história ao Renascimento" },
     { id: 21, nome: "Artes - Cênicas e Cinema", esp: "Linguagens", prio: "Baixa", importancia: "MEDIA", d0: "2026-05-30", obs: "Teatro Grego, Brasil, Cinema" },
 
-    // EXTRA: SIMULADOS E REVISÃO
+    // EXTRA: SIMULADOS E REVISÃƒO
     { id: 22, nome: "Simulado UFG 2023", esp: "Exatas", prio: "Alta", importancia: "ALTA", d0: "2026-05-30", obs: "Condição real: sem celular, cronometrado" },
     { id: 23, nome: "Simulado UFG 2022", esp: "Humanas", prio: "Alta", importancia: "ALTA", d0: "2026-06-06", obs: "Cronometrado, sem pausa" },
     { id: 24, nome: "Simulado UFG 2021", esp: "Ciências da Natureza", prio: "Alta", importancia: "ALTA", d0: "2026-06-13", obs: "Condição adversa: cadeira dura, ruído" },
@@ -56,7 +67,7 @@ const timestampMiddleware = (config) => (set, get, api) => {
     const nextState = typeof entropy === "function" ? entropy(current) : entropy;
 
     const hasDataKeys = nextState && Object.keys(nextState).some((key) =>
-      ["res", "vest", "meta", "userName", "onboardingDone", "brainDumpD1Data", "temaStats", "vistos"].includes(key)
+      ["res", "vest", "meta", "userName", "onboardingDone", "brainDumpD1Data", "temaStats", "vistos", "cronogramaSel", "gamif"].includes(key)
     );
 
     if (hasDataKeys && (!nextState || !nextState.hasOwnProperty("updatedAt"))) {
@@ -73,26 +84,46 @@ export const useStore = create(
     timestampMiddleware(
       (set, get) => ({
         plat: "res",
+        cronogramaSel: { res: "res-medcof-2026", vest: "vest-base" },
       userName: "Estudante",
       userEmail: "",
-      meta: { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0, provasAlvo: [], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false },
+      meta: { dataProva: "2026-10-25", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: [], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [] },
       res: initialPlat(),
       vest: initialVestibularPlat(),
       undoStack: [],
       onboardingDone: false,
       sprint: { esps: [], ativa: false, semana: "" },
+      gamif: {
+        xp: 0,
+        level: 1,
+        streakCurrent: 0,
+        streakBest: 0,
+        lastStudyDate: null,
+        freezesOwned: 1,
+        freezesUsedDates: [],
+        recoveryOwned: 0,
+        badges: [],
+        graceUsedThisWeek: false,
+        focusBoostActive: false,
+        xpAudit: { acertos: 0, constancia: 0, outros: 0 }
+      },
+      toast: null,
+      confirmDialog: null,
 
-      // ─── ESTADOS DE MEMÓRIA V7 ─────────────────────────────────────────────
+      // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ ESTADOS DE MEMÃƒâ€œRIA V7 Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
       focusMode: false,
       modoSimples: true,
+      modoProva: false,
       brainDumpD1Data: {},
       temaStats: {},
       vistos: [],
       tourStep: null,
       setPlat: (p) => set({ plat: p }),
+      setCronogramaSel: (platKey, id) => set((s) => ({ cronogramaSel: { ...s.cronogramaSel, [platKey]: id } })),
       setUserName: (name) => set({ userName: name }),
       setUserEmail: (email) => set({ userEmail: email }),
       setMeta: (meta) => set({ meta }),
+      setModoProva: (modoProva) => set({ modoProva }),
       setOnboardingDone: () => set({ onboardingDone: true }),
       resetOnboarding: () => set({ onboardingDone: false }),
       toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
@@ -102,8 +133,259 @@ export const useStore = create(
         return { vistos: [...(state.vistos || []), id] };
       }),
       setTourStep: (step) => set({ tourStep: step }),
+      showToast: (msg, opts = {}) =>
+        set({
+          toast: {
+            msg,
+            undo: !!opts.undo,
+            ms: opts.ms || 5000,
+          },
+        }),
+      dismissToast: () => set({ toast: null }),
+      openConfirm: ({ title = "Confirmar ação", message, onConfirm, confirmLabel = "Confirmar", cancelLabel = "Cancelar", danger = false }) =>
+        set({
+          confirmDialog: {
+            title,
+            message,
+            onConfirm,
+            confirmLabel,
+            cancelLabel,
+            danger,
+          },
+        }),
+      closeConfirm: () => set({ confirmDialog: null }),
       useStreakFreeze: () => set((state) => ({ meta: { ...state.meta, streakFreezeAvailable: false, streakFreezeUsed: true } })),
       resetStreakFreeze: () => set((state) => ({ meta: { ...state.meta, streakFreezeAvailable: true, streakFreezeUsed: false } })),
+
+      addXp: (amount, source = "outros") => set((s) => {
+        const currentGamif = s.gamif || { xp: 0, level: 1, streakCurrent: 0, streakBest: 0, freezesOwned: 1, freezesUsedDates: [], recoveryOwned: 0, badges: [], graceUsedThisWeek: false, xpAudit: { acertos: 0, constancia: 0, outros: 0 } };
+        const newXp = (currentGamif.xp || 0) + amount;
+        const oldLevel = currentGamif.level || 1;
+        const newLevel = Math.floor(Math.sqrt(newXp / 50)) + 1;
+        
+        const xpAudit = currentGamif.xpAudit ? { ...currentGamif.xpAudit } : { acertos: 0, constancia: 0, outros: 0 };
+        xpAudit[source] = (xpAudit[source] || 0) + amount;
+
+        return {
+          gamif: {
+            ...currentGamif,
+            xp: newXp,
+            level: newLevel,
+            xpAudit
+          }
+        };
+      }),
+      buyItem: (itemKey, costXp, reqLevel) => set((s) => {
+        const currentGamif = s.gamif || { xp: 0, level: 1, streakCurrent: 0, streakBest: 0, freezesOwned: 1, freezesUsedDates: [], recoveryOwned: 0, badges: [], graceUsedThisWeek: false, xpAudit: { acertos: 0, constancia: 0, outros: 0 } };
+        if (itemKey === "freeze" && (currentGamif.freezesOwned || 0) >= 2) return {};
+        if ((currentGamif.xp || 0) < costXp || (currentGamif.level || 1) < reqLevel) return {};
+        const g = { ...currentGamif };
+        g.xp = (g.xp || 0) - costXp;
+        if (itemKey === "freeze") {
+          g.freezesOwned = Math.min(2, (g.freezesOwned || 0) + 1);
+        } else if (itemKey === "recovery") {
+          g.recoveryOwned = (g.recoveryOwned || 0) + 1;
+        } else if (itemKey === "boost") {
+          g.focusBoostActive = true;
+        }
+        return { gamif: g };
+      }),
+      useRecovery: () => set((s) => {
+        const currentGamif = s.gamif || { xp: 0, level: 1, streakCurrent: 0, streakBest: 0, freezesOwned: 1, freezesUsedDates: [], recoveryOwned: 0, badges: [], graceUsedThisWeek: false };
+        const g = recoverStreak(currentGamif);
+        return { gamif: g };
+      }),
+      updateGamifStreak: (todayStrVal) => set((s) => {
+        const currentGamif = s.gamif || { xp: 0, level: 1, streakCurrent: 0, streakBest: 0, freezesOwned: 1, freezesUsedDates: [], recoveryOwned: 0, badges: [], graceUsedThisWeek: false };
+        const g = computeStreakOnStudy(currentGamif, todayStrVal);
+        return { gamif: g };
+      }),
+
+      autoCatchUp: () => set((s) => {
+        const hoje = todayStr();
+        const lastActive = s.meta.lastActiveDate;
+        
+        if (!lastActive) {
+          return {
+            meta: {
+              ...s.meta,
+              lastActiveDate: hoje
+            }
+          };
+        }
+
+        const diasAusente = diffDays(lastActive, hoje);
+        if (diasAusente < 2) {
+          return {
+            meta: {
+              ...s.meta,
+              lastActiveDate: hoje
+            }
+          };
+        }
+
+        const rebalancePlat = (platKey) => {
+          const temas = s[platKey].temas || [];
+          if (temas.length === 0) return temas;
+          
+          const overdueSteps = [];
+          temas.forEach(t => {
+            if (t.unstarted) return;
+            Object.keys(t.rev || {}).forEach(k => {
+              const r = t.rev[k];
+              if (r && !r.done && r.date < hoje) {
+                overdueSteps.push({ temaId: t.id, stepKey: k, origDate: r.date });
+              }
+            });
+          });
+
+          if (overdueSteps.length === 0) return temas;
+
+          overdueSteps.sort((a, b) => (a.origDate < b.origDate ? -1 : 1));
+
+          const cap = s.meta.maxRevisoesDia || 30;
+          let currentDayOffset = 0;
+          let currentDayCount = 0;
+
+          const getScheduledCount = (dateStr, list) => {
+            let count = 0;
+            list.forEach(t => {
+              if (t.unstarted) return;
+              Object.keys(t.rev || {}).forEach(k => {
+                if (t.rev[k]?.date === dateStr && !t.rev[k]?.done) count++;
+              });
+            });
+            return count;
+          };
+
+          const newTemas = temas.map(t => ({ ...t, rev: { ...t.rev } }));
+
+          overdueSteps.forEach(stepRef => {
+            while (true) {
+              const targetDate = addDays(hoje, currentDayOffset);
+              const alreadyScheduled = getScheduledCount(targetDate, newTemas) + currentDayCount;
+              
+              if (alreadyScheduled < cap) {
+                const temaIndex = newTemas.findIndex(t => t.id === stepRef.temaId);
+                if (temaIndex !== -1) {
+                  newTemas[temaIndex].rev[stepRef.stepKey] = {
+                    ...newTemas[temaIndex].rev[stepRef.stepKey],
+                    date: targetDate
+                  };
+                }
+                currentDayCount++;
+                break;
+              } else {
+                currentDayOffset++;
+                currentDayCount = 0;
+              }
+            }
+          });
+
+          return newTemas;
+        };
+
+        return {
+          meta: {
+            ...s.meta,
+            lastActiveDate: hoje,
+            isRetornoAcolhedor: true
+          },
+          res: {
+            ...s.res,
+            temas: rebalancePlat("res")
+          },
+          vest: {
+            ...s.vest,
+            temas: rebalancePlat("vest")
+          }
+        };
+      }),
+
+      iniciarFerias: (dias) => set((s) => {
+        const hoje = todayStr();
+        const diasNum = parseInt(dias, 10);
+        if (isNaN(diasNum) || diasNum <= 0) return {};
+
+        const shiftPlatTemas = (platKey) => {
+          const temas = s[platKey].temas || [];
+          return temas.map(t => {
+            if (t.unstarted) return t;
+            const nr = { ...t.rev };
+            Object.keys(nr).forEach(k => {
+              if (!nr[k].done && nr[k].date) {
+                if (nr[k].date >= hoje) {
+                  nr[k] = {
+                    ...nr[k],
+                    date: addDays(nr[k].date, diasNum)
+                  };
+                }
+              }
+            });
+            return { ...t, rev: nr };
+          });
+        };
+
+        const g = { ...s.gamif };
+        if (g.lastStudyDate && g.lastStudyDate >= hoje) {
+          g.lastStudyDate = addDays(g.lastStudyDate, diasNum);
+        } else if (g.lastStudyDate) {
+          g.lastStudyDate = addDays(hoje, diasNum - 1);
+        }
+
+        return {
+          meta: {
+            ...s.meta,
+            pausadoAte: addDays(hoje, diasNum)
+          },
+          gamif: g,
+          res: { ...s.res, temas: shiftPlatTemas("res") },
+          vest: { ...s.vest, temas: shiftPlatTemas("vest") }
+        };
+      }),
+
+      cancelarPausa: () => set((s) => {
+        const hoje = todayStr();
+        if (!s.meta.pausadoAte || s.meta.pausadoAte < hoje) {
+          return { meta: { ...s.meta, pausadoAte: null } };
+        }
+        const diasRestantes = diffDays(hoje, s.meta.pausadoAte);
+        if (diasRestantes <= 0) {
+          return { meta: { ...s.meta, pausadoAte: null } };
+        }
+
+        const pullPlatTemas = (platKey) => {
+          const temas = s[platKey].temas || [];
+          return temas.map(t => {
+            if (t.unstarted) return t;
+            const nr = { ...t.rev };
+            Object.keys(nr).forEach(k => {
+              if (!nr[k].done && nr[k].date) {
+                nr[k] = {
+                  ...nr[k],
+                  date: addDays(nr[k].date, -diasRestantes)
+                };
+              }
+            });
+            return { ...t, rev: nr };
+          });
+        };
+
+        const g = { ...s.gamif };
+        if (g.lastStudyDate) {
+          g.lastStudyDate = addDays(g.lastStudyDate, -diasRestantes);
+        }
+
+        return {
+          meta: {
+            ...s.meta,
+            pausadoAte: null
+          },
+          gamif: g,
+          res: { ...s.res, temas: pullPlatTemas("res") },
+          vest: { ...s.vest, temas: pullPlatTemas("vest") }
+        };
+      }),
 
       setBrainDumpD1: (temaId, data) =>
         set((state) => ({
@@ -195,7 +477,7 @@ export const useStore = create(
       deleteTema: (platKey, id) =>
         set((s) => ({ [platKey]: { ...s[platKey], temas: s[platKey].temas.filter((t) => t.id !== id) } })),
 
-      markStep: (platKey, temaId, stepKey, { acerto, questoes, motivosErro, erros, tempoMin, ansiedade, cansaco, confianca, dificuldade, foco }) =>
+      markStep: (platKey, temaId, stepKey, { acerto, previsao, questoes, motivosErro, erros, tempoMin, ansiedade, cansaco, confianca, dificuldade, foco, c1, c2, c3, c4, c5, modoReduzido, descansoPrescrito }) =>
         set((s) => ({
           [platKey]: {
             ...s[platKey],
@@ -207,6 +489,7 @@ export const useStore = create(
                   ...t.rev[stepKey],
                   done: true,
                   acerto,
+                  previsao,
                   questoes,
                   motivosErro: motivosErro || [],
                   erros: erros || [],
@@ -216,9 +499,18 @@ export const useStore = create(
                   confianca: confianca ?? t.rev[stepKey].confianca,
                   dificuldade: dificuldade ?? t.rev[stepKey].dificuldade,
                   foco: foco ?? t.rev[stepKey].foco,
+                  c1: c1 ?? t.rev[stepKey].c1,
+                  c2: c2 ?? t.rev[stepKey].c2,
+                  c3: c3 ?? t.rev[stepKey].c3,
+                  c4: c4 ?? t.rev[stepKey].c4,
+                  c5: c5 ?? t.rev[stepKey].c5,
+                  modoReduzido: modoReduzido ?? t.rev[stepKey].modoReduzido,
+                  descansoPrescrito: descansoPrescrito ?? t.rev[stepKey].descansoPrescrito,
                 },
               };
-              return { ...t, rev: recalcAfterMark(revMarked, stepKey, acerto) };
+              const desiredRetention = s.meta?.retencaoFSRS ?? 0.90;
+              const maxInterval = s.meta?.intervaloMaxDias ?? 180;
+              return { ...t, rev: recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval) };
             }),
           },
         })),
@@ -234,7 +526,7 @@ export const useStore = create(
                 nome: it.nome,
                 esp: it.esp,
                 prio: it.prio,
-                importancia: "ALTA",
+                importancia: prioToImportancia(it.prio),
                 obs: "MEDCOF 2026",
                 pico: "",
                 ankiDeck: "",
@@ -300,31 +592,111 @@ export const useStore = create(
         }),
 
       addSim: (platKey, sim) =>
-        set((s) => ({
-          [platKey]: {
-            ...s[platKey],
-            simulados: [...s[platKey].simulados, { questoesErradas: [], statusCorrecao: "pendente", porArea: [], ...sim, id: Date.now() }],
-          },
-        })),
+        set((s) => {
+          const newSim = { questoesErradas: [], statusCorrecao: "pendente", porArea: [], ...sim, id: Date.now() };
+          let updatedTemas = [...s[platKey].temas];
+          const hoje = todayStr();
+
+          const erradas = newSim.questoesErradas || [];
+          erradas.forEach(q => {
+            const subtopicoStr = q.subtopico || q.enunciado || q.esp || "Geral";
+            const areaStr = q.esp || q.area || q.materia || "Clínica Médica";
+
+            const existIndex = updatedTemas.findIndex(t => 
+              t.nome.toLowerCase() === subtopicoStr.toLowerCase()
+            );
+
+            if (existIndex !== -1) {
+              const oldTema = updatedTemas[existIndex];
+              const newRev = buildRev(hoje);
+              updatedTemas[existIndex] = normalizeTema({
+                ...oldTema,
+                d0: hoje,
+                rev: newRev
+              });
+            } else {
+              const newTema = normalizeTema({
+                id: Date.now() + Math.random(),
+                nome: subtopicoStr,
+                esp: areaStr,
+                prio: "Alta",
+                importancia: "ALTA",
+                d0: hoje,
+                rev: buildRev(hoje),
+                parentTopic: null,
+                ankiDeck: "",
+                obs: `Auto-gerado via erro em simulado (${q.tipoErro || "Geral"})`
+              });
+              updatedTemas.push(newTema);
+            }
+          });
+
+          return {
+            [platKey]: {
+              ...s[platKey],
+              simulados: [...s[platKey].simulados, newSim],
+              temas: updatedTemas
+            }
+          };
+        }),
 
       deleteSim: (platKey, id) =>
         set((s) => ({ [platKey]: { ...s[platKey], simulados: s[platKey].simulados.filter((x) => x.id !== id) } })),
 
       addQuestaoErrada: (platKey, simId, questao) =>
-        set((s) => ({
-          [platKey]: {
-            ...s[platKey],
-            simulados: s[platKey].simulados.map((sim) =>
-              sim.id !== simId
-                ? sim
-                : {
-                    ...sim,
-                    questoesErradas: [...(sim.questoesErradas || []), { ...questao, id: Date.now() }],
-                    statusCorrecao: "parcial",
-                  }
-            ),
-          },
-        })),
+        set((s) => {
+          const simMap = s[platKey].simulados.map((sim) =>
+            sim.id !== simId
+              ? sim
+              : {
+                  ...sim,
+                  questoesErradas: [...(sim.questoesErradas || []), { ...questao, id: Date.now() }],
+                  statusCorrecao: "parcial",
+                }
+          );
+
+          const subtopicoStr = questao.subtopico || questao.enunciado || "Geral";
+          const areaStr = questao.area || questao.materia || "Clínica Médica";
+
+          const existIndex = s[platKey].temas.findIndex(t => 
+            t.nome.toLowerCase() === subtopicoStr.toLowerCase()
+          );
+
+          let updatedTemas = [...s[platKey].temas];
+          const hoje = todayStr();
+
+          if (existIndex !== -1) {
+            const oldTema = s[platKey].temas[existIndex];
+            const newRev = buildRev(hoje);
+            updatedTemas[existIndex] = normalizeTema({
+              ...oldTema,
+              d0: hoje,
+              rev: newRev
+            });
+          } else {
+            const newTema = normalizeTema({
+              id: Date.now() + Math.random(),
+              nome: subtopicoStr,
+              esp: areaStr,
+              prio: "Alta",
+              importancia: "ALTA",
+              d0: hoje,
+              rev: buildRev(hoje),
+              parentTopic: null,
+              ankiDeck: "",
+              obs: `Auto-gerado via erro em simulado (${questao.tipoErro || "Geral"})`
+            });
+            updatedTemas.push(newTema);
+          }
+
+          return {
+            [platKey]: {
+              ...s[platKey],
+              simulados: simMap,
+              temas: updatedTemas
+            }
+          };
+        }),
 
       marcarD7: (platKey, simId, questaoId, acertou) =>
         set((s) => ({
@@ -404,16 +776,33 @@ export const useStore = create(
       resetStore: () =>
         set({
           plat: "res",
+          cronogramaSel: { res: "res-medcof-2026", vest: "vest-base" },
           userName: "Estudante",
           userEmail: "",
-          meta: { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0, provasAlvo: [] },
+          meta: { dataProva: "2026-10-25", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: [], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [] },
           onboardingDone: false,
           focusMode: false,
           modoSimples: true,
           brainDumpD1Data: {},
           temaStats: {},
           vistos: [],
+          toast: null,
+          confirmDialog: null,
           tourStep: null,
+          gamif: {
+            xp: 0,
+            level: 1,
+            streakCurrent: 0,
+            streakBest: 0,
+            lastStudyDate: null,
+            freezesOwned: 1,
+            freezesUsedDates: [],
+            recoveryOwned: 0,
+            badges: [],
+            graceUsedThisWeek: false,
+            focusBoostActive: false,
+            xpAudit: { acertos: 0, constancia: 0, outros: 0 },
+          },
         }),
       })
     ),
@@ -422,6 +811,7 @@ export const useStore = create(
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({
         plat: s.plat,
+        cronogramaSel: s.cronogramaSel,
         meta: s.meta,
         res: s.res,
         vest: s.vest,
@@ -430,17 +820,19 @@ export const useStore = create(
         onboardingDone: s.onboardingDone,
         focusMode: s.focusMode,
         modoSimples: s.modoSimples,
+        modoProva: s.modoProva,
         brainDumpD1Data: s.brainDumpD1Data,
         temaStats: s.temaStats,
         vistos: s.vistos,
         sprint: s.sprint,
         updatedAt: s.updatedAt,
+        gamif: s.gamif,
       }),
       merge: (persisted, initial) => {
         const persistedVest = persisted.vest || {};
         const resolvedVest = (persistedVest.temas?.length > 0)
           ? { ...initial.vest, ...persistedVest }
-          : { ...initial.vest, ...persistedVest, temas: initial.vest.temas };
+          : { ...initial.vest, ...persistedVest, temas: initial.vest?.temas || [] };
 
         const normalizePlatTemas = (platObj) => {
           if (!platObj || !Array.isArray(platObj.temas)) return platObj;
@@ -456,19 +848,24 @@ export const useStore = create(
         return {
           ...initial,
           ...persisted,
+          cronogramaSel: persisted.cronogramaSel ? { ...initial.cronogramaSel, ...persisted.cronogramaSel } : initial.cronogramaSel,
+          meta: persisted.meta ? { ...initial.meta, ...persisted.meta } : initial.meta,
           res: mergedRes,
           vest: mergedVest,
           userEmail: persisted.userEmail ?? initial.userEmail,
           focusMode: persisted.focusMode ?? initial.focusMode,
           modoSimples: persisted.modoSimples ?? initial.modoSimples,
+          modoProva: persisted.modoProva ?? initial.modoProva,
           brainDumpD1Data: persisted.brainDumpD1Data ?? initial.brainDumpD1Data,
           temaStats: persisted.temaStats ?? initial.temaStats,
           vistos: persisted.vistos ?? initial.vistos,
           sprint: persisted.sprint ?? initial.sprint,
           onboardingDone: persisted.onboardingDone ?? initial.onboardingDone,
           updatedAt: persisted.updatedAt ?? initial.updatedAt,
+          gamif: persisted.gamif ? { ...initial.gamif, ...persisted.gamif } : initial.gamif,
         };
       },
     }
   )
 );
+

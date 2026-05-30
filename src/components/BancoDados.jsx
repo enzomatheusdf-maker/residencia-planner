@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { FileText } from "lucide-react";
 import { useStore } from "../core/store";
-import { STEPS, ESP_COLORS, IMPORTANCIA, isOverdue, isDueToday, fmtDate } from "../core/fsrs";
+import { STEPS, ESP_COLORS, IMPORTANCIA, isOverdue, isDueToday, fmtDate, fmtRelativo } from "../core/fsrs";
 import { Btn, Input } from "./Primitives";
 
 export default function BancoDados() {
@@ -117,7 +117,7 @@ export default function BancoDados() {
                     <td className="px-4 py-3">
                       {r.nextStep
                         ? <span className={`text-[11.5px] font-semibold ${isOverdue(r.nextDate) ? "text-red-400" : isDueToday(r.nextDate) ? "text-violet-400" : "text-gray-500"}`}>
-                            {r.nextStep.toUpperCase()} · {isOverdue(r.nextDate) ? "vencido" : isDueToday(r.nextDate) ? "hoje" : fmtDate(r.nextDate)}
+                            {r.nextStep.toUpperCase()} · {fmtRelativo(r.nextDate)}
                           </span>
                         : <span className="text-[11px] font-bold text-emerald-400">✓ concluído</span>}
                     </td>

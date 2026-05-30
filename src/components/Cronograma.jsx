@@ -1,10 +1,22 @@
 // src/components/Cronograma.jsx
 import React, { useState } from "react";
-import { Edit2, Plus, Play, ChevronDown } from "lucide-react";
+import { Edit2, Plus, Play, ChevronDown, ChevronUp, Calendar } from "lucide-react";
 import { useStore } from "../core/store";
 import { ESP_COLORS, STEPS, IMPORTANCIA, DEMO_TEMA_ID } from "../core/fsrs";
-import { CATALOGO_RES, CATALOGO_VEST, parseCatalogEntry } from "../constants/catalogos";
+import { parseCatalogEntry } from "../constants/catalogos";
+import { getCronogramasByPlat, getDefaultCronogramaId, resolveCatalogo } from "../constants/cronogramas";
 import { stepState, STATE_DOT, STATE_TW, Badge, SBadge, Btn, Input, TourBalloon } from "./Primitives";
+import RetrievabilitySpark from "./RetrievabilitySpark";
+
+function prioToImportancia(prio) {
+  switch ((prio || "").toLowerCase()) {
+    case "diamante": return "CRITICA";
+    case "alta":     return "ALTA";
+    case "média": case "media": return "MEDIA";
+    case "baixa": case "bônus": case "bonus": return "MEDIA";
+    default: return "ALTA";
+  }
+}
 
 export function CronoCard({ tema, onStep, onEdit, onIniciarTema }) {
   const esp     = ESP_COLORS[tema.esp] || "#94a3b8";
@@ -22,7 +34,7 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema }) {
 
   return (
     <div
-      className={`bg-[#111113] border rounded-3xl overflow-hidden transition-all text-left ${
+      className={`bg-[var(--surface-1)] border rounded-3xl overflow-hidden transition-all text-left ${
         hasVies 
           ? "border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]" 
           : "border-white/5"
@@ -61,14 +73,17 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema }) {
             {tema.pico}
           </p>
         )}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 flex gap-1.5">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex-1 flex gap-1.5 min-w-[120px]">
             {STEPS.map((s) => {
               const st2 = stepState(tema.rev[s.key]);
               return <div key={s.key} title={`${s.label} · ${s.desc}`} className={`flex-1 h-2 rounded-full transition-all ${tema.rev[s.key].done ? "bg-emerald-500" : STATE_DOT[st2]}`} />;
             })}
           </div>
-          <span className={`text-[11px] font-semibold ${STATE_TW[nextState]}`}>RO: {next ? next.label : "Fixação"}</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <RetrievabilitySpark tema={tema} />
+            <span className={`text-[11px] font-semibold ${STATE_TW[nextState]}`}>RO: {next ? next.label : "Fixação"}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -76,14 +91,18 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema }) {
 }
 
 export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) {
-  const { plat, tourStep, setTourStep } = useStore();
+  const { plat, cronogramaSel, setCronogramaSel, tourStep, setTourStep } = useStore();
   const temas = useStore((s) => s[plat].temas);
-  const cat = catalogo || (plat === "vest" ? CATALOGO_VEST : CATALOGO_RES);
+  const planos = getCronogramasByPlat(plat);
+  const selId = cronogramaSel?.[plat] || getDefaultCronogramaId(plat);
+  const cat = catalogo || resolveCatalogo(plat, selId);
+  const showSelector = !catalogo && planos.length >= 1;
   const [q, setQ]         = useState("");
   const [filter, setFilter] = useState("todos");
   const [impFilter, setImpFilter] = useState("TODAS");
   const [openBlocks, setOpenBlocks] = useState({ 1: true });
   const [expandedTopics, setExpandedTopics] = useState({});
+  const [showPlanPanel, setShowPlanPanel] = useState(true);
 
   const toggleTopic = (topicName) => {
     setExpandedTopics((prev) => ({
@@ -104,10 +123,10 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
   return (
     <div className="flex flex-col gap-5 animate-fade-up text-left">
       {tourStep === "crono" && (
-        <div className="bg-[#111113] border border-violet-500/30 rounded-3xl p-5 flex flex-col gap-4 relative overflow-hidden" style={{ borderLeft: "4px solid #a78bfa" }}>
+        <div className="bg-[var(--surface-1)] border border-blue-500/30 rounded-3xl p-5 flex flex-col gap-4 relative overflow-hidden" style={{ borderLeft: "4px solid #a78bfa" }}>
           <div>
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="text-[10px] uppercase font-mono tracking-[0.2em] px-2 py-0.5 rounded bg-violet-500/15 text-violet-400">
+              <span className="text-[10px] uppercase font-mono tracking-[0.2em] px-2 py-0.5 rounded bg-blue-500/15 text-blue-400">
                 {plat === "vest" ? "Matemática" : "Cirurgia"}
               </span>
               <Badge color="#ec4899">Alta</Badge>
@@ -125,7 +144,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
               setTourStep("focus");
               onStep(DEMO_TEMA_ID(plat), "d0");
             }}
-            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-[12px] font-bold text-white flex items-center justify-center gap-1.5"
+            className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-[12px] font-bold text-white flex items-center justify-center gap-1.5"
           >
             <Play size={13} /> Iniciar Ciclo de Estudos
           </button>
@@ -148,35 +167,88 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
 
       {tourStep !== "crono" && (
         <>
-          <div className="flex flex-wrap gap-3 items-center">
-            <Input placeholder="Buscar tema..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-[200px]" />
-            <div className="flex gap-1 bg-[#111113] border border-white/5 rounded-xl p-1">
-              {[["todos","Todos"],["iniciados","Iniciados"],["nao","Não iniciados"]].map(([v, l]) => (
-                <button type="button" key={v} onClick={() => setFilter(v)} className={`px-3 py-1.5 rounded-lg text-[11.5px] font-semibold ${filter === v ? "bg-violet-600 text-white" : "text-gray-500"}`}>
-                  {l}
-                </button>
-              ))}
+          <div className="bg-[var(--surface-1)] border border-white/5 rounded-3xl p-4 mb-2 select-none animate-fade-in">
+            {showSelector && (
+              <>
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-[12px] font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                    <Calendar size={14} className="text-blue-400" /> Plano Ativo + Prioridades
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => setShowPlanPanel((v) => !v)}
+                    className="text-[10px] px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 flex items-center gap-1.5"
+                  >
+                    {showPlanPanel ? "Minimizar" : "Expandir"}
+                    {showPlanPanel ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  </button>
+                </div>
+
+                {showPlanPanel && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                    {planos.map((p) => {
+                      const isSel = p.id === selId;
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => setCronogramaSel(plat, p.id)}
+                          className={`cursor-pointer rounded-2xl p-4 border transition-all text-left flex flex-col justify-between ${
+                            isSel
+                              ? "border-blue-500 bg-blue-500/5 shadow-md shadow-indigo-950/20"
+                              : "border-white/5 bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.02]"
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <h5 className="font-bold text-sm text-gray-100">{p.nome}</h5>
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/5 text-gray-400 font-mono">
+                                {p.blocos} blocos
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 leading-normal mb-3">{p.descricao}</p>
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] text-gray-600 font-medium">
+                            <span>Fonte: {p.fonte} ({p.ano})</span>
+                            {isSel && <span className="text-blue-400 font-bold flex items-center gap-1">Ativo <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /></span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+
+            <div className={`flex flex-wrap gap-3 items-center ${showSelector ? "mt-3" : ""}`}>
+              <Input placeholder="Buscar tema..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-[200px]" />
+              <div className="flex gap-1 bg-[#0d0d10] border border-white/5 rounded-xl p-1">
+                {[["todos","Todos"],["iniciados","Iniciados"],["nao","Não iniciados"]].map(([v, l]) => (
+                  <button type="button" key={v} onClick={() => setFilter(v)} className={`px-3 py-1.5 rounded-lg text-[11.5px] font-semibold ${filter === v ? "bg-blue-600 text-white" : "text-gray-500"}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-1 bg-[#0d0d10] border border-white/5 rounded-xl p-1">
+                {["TODAS", "CRITICA", "ALTA", "MEDIA"].map((imp) => (
+                  <button type="button" key={imp} onClick={() => setImpFilter(imp)} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold ${impFilter === imp ? "bg-white/10 text-white" : "text-gray-600"}`}>
+                    {imp === "TODAS" ? "Todas" : IMPORTANCIA[imp]?.icon}
+                  </button>
+                ))}
+              </div>
+              <div className="flex-1" />
+              <Btn onClick={() => onEdit({})} className="text-[12px] gap-2"><Plus size={16} /> Novo tema</Btn>
             </div>
-            <div className="flex gap-1 bg-[#111113] border border-white/5 rounded-xl p-1">
-              {["TODAS", "CRITICA", "ALTA", "MEDIA"].map((imp) => (
-                <button type="button" key={imp} onClick={() => setImpFilter(imp)} className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold ${impFilter === imp ? "bg-white/10 text-white" : "text-gray-600"}`}>
-                  {imp === "TODAS" ? "Todas" : IMPORTANCIA[imp]?.icon}
-                </button>
-              ))}
-            </div>
-            <div className="flex-1" />
-            <Btn onClick={() => onEdit({})} className="text-[12px] gap-2"><Plus size={16} /> Novo tema</Btn>
           </div>
 
           {cat.map((bl) => {
             const blTemas = bl.t.filter((entry) => {
-              const { nome, esp, prio, subs } = parseCatalogEntry(entry);
+              const { nome, subs, prio: topPrio } = parseCatalogEntry(entry);
               const nameMatches = !q || nome.toLowerCase().includes(q.toLowerCase());
               const subMatches = !q || subs.some(s => s.toLowerCase().includes(q.toLowerCase()));
               if (!nameMatches && !subMatches) return false;
               
               const mTema = temaMap.get(nome);
-              const currentImp = mTema ? mTema.importancia : "ALTA";
+              const currentImp = mTema ? (mTema.importancia || prioToImportancia(topPrio)) : prioToImportancia(topPrio);
               if (impFilter !== "TODAS" && currentImp !== impFilter) return false;
 
               const hasSubs = subs.length > 0;
@@ -199,14 +271,14 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
             const isOpen = !!openBlocks[bl.b];
 
             return (
-              <div key={bl.b} className="border border-white/5 bg-[#111113]/25 rounded-3xl p-4 transition-all">
+              <div key={bl.b} className="border border-white/5 bg-[var(--surface-1)]/25 rounded-3xl p-4 transition-all">
                 <button
                   type="button"
                   onClick={() => toggleBlock(bl.b)}
                   className="w-full flex items-center justify-between text-left select-none outline-none group py-1"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-6 rounded-full bg-violet-600 group-hover:bg-pink-500 transition-colors" />
+                    <span className="w-1.5 h-6 rounded-full bg-blue-600 group-hover:bg-sky-500 transition-colors" />
                     <h3 className="text-sm font-bold text-gray-300 group-hover:text-white transition-colors">
                       {bl.nome || `Bloco ${bl.b}`}
                     </h3>
@@ -230,7 +302,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                         }).length;
 
                         return (
-                          <div key={topNome} className="bg-[#111113] border border-white/5 rounded-3xl overflow-hidden transition-all text-left">
+                          <div key={topNome} className="bg-[var(--surface-1)] border border-white/5 rounded-3xl overflow-hidden transition-all text-left">
                             <div
                               className="p-5 flex flex-col gap-3 cursor-pointer hover:bg-white/[0.01]"
                               onClick={() => toggleTopic(topNome)}
@@ -249,7 +321,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                               <div className="flex items-center gap-3">
                                 <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
                                   <div
-                                    className="h-full bg-violet-600 rounded-full transition-all"
+                                    className="h-full bg-blue-600 rounded-full transition-all"
                                     style={{ width: `${(activeSubsCount / subs.length) * 100}%` }}
                                   />
                                 </div>
@@ -263,11 +335,10 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                               <div className="border-t border-white/5 bg-black/20 divide-y divide-white/5">
                                 {subs.map((sub) => {
                                   const subName = `${topNome} — ${sub}`;
-                                  const subTema = temas.find(t => t.parentTopic === topNome && (t.nome === subName || t.nome === sub) || t.nome === subName);
+                                  const subTema = temas.find(t => (t.parentTopic === topNome && (t.nome === subName || t.nome === sub)) || t.nome === subName);
                                   const isStarted = subTema && !subTema.unstarted;
 
                                   if (isStarted) {
-                                    const allDone = STEPS.every((s) => subTema.rev[s.key].done);
                                     const next = STEPS.find((s) => !subTema.rev[s.key].done);
                                     const nextState = next ? stepState(subTema.rev[next.key]) : "done";
 
@@ -285,9 +356,12 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                                                 />
                                               ))}
                                             </div>
-                                            <span className={`text-[9.5px] font-bold ${STATE_TW[nextState]}`}>
-                                              RO: {next ? next.label : "Fixado"}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                              <RetrievabilitySpark tema={subTema} />
+                                              <span className={`text-[9.5px] font-bold ${STATE_TW[nextState]}`}>
+                                                RO: {next ? next.label : "Fixado"}
+                                              </span>
+                                            </div>
                                           </div>
                                         </div>
                                         
@@ -319,7 +393,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                                       <button
                                         type="button"
                                         onClick={() => onIniciarTema(subTema || { nome: subName, esp, prio: topPrio, parentTopic: topNome })}
-                                        className="px-2.5 py-1.5 rounded-lg bg-violet-600/10 hover:bg-violet-600 text-violet-400 hover:text-white text-[10px] font-black transition-all border border-violet-500/10 shrink-0 cursor-pointer"
+                                        className="px-2.5 py-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white text-[10px] font-black transition-all border border-blue-500/10 shrink-0 cursor-pointer"
                                       >
                                         Iniciar FSRS
                                       </button>
@@ -337,13 +411,13 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
 
                       const espC  = ESP_COLORS[esp] || "#94a3b8";
                       const currentPrio = tema ? tema.prio : topPrio;
-                      const currentImp = tema ? tema.importancia : "ALTA";
+                      const currentImp = tema ? (tema.importancia || prioToImportancia(topPrio)) : prioToImportancia(topPrio);
 
                       return (
                         <div
                           key={topNome}
                           onClick={() => onEdit(tema || { nome: topNome, esp, prio: currentPrio, importancia: currentImp, obs: `${bl.nome || "MEDCOF Bloco " + bl.b}`, unstarted: true })}
-                          className="bg-[#111113]/60 hover:bg-[#111113]/80 hover:border-white/10 cursor-pointer rounded-3xl p-5 flex flex-col gap-4 border border-white/5 border-dashed transition-all"
+                          className="bg-[var(--surface-1)]/60 hover:bg-[var(--surface-1)]/80 hover:border-white/10 cursor-pointer rounded-3xl p-5 flex flex-col gap-4 border border-white/5 border-dashed transition-all"
                           style={{ borderLeft: `4px dashed ${espC}` }}
                         >
                           <div className="flex-1">
@@ -370,7 +444,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                               e.stopPropagation();
                               onIniciarTema(tema || { nome: topNome, esp, prio: currentPrio, importancia: currentImp, obs: `${bl.nome || "MEDCOF Bloco " + bl.b}` });
                             }}
-                            className="w-full py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-violet-600/20 text-[12px] font-bold text-violet-400 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            className="w-full py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-blue-600/20 text-[12px] font-bold text-blue-400 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                           >
                             <Play size={13} /> Iniciar Ciclo Hoje
                           </button>
@@ -387,3 +461,6 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
     </div>
   );
 }
+
+
+

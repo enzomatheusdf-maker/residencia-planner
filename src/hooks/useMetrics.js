@@ -2,7 +2,9 @@
 // Optimized math and analytics calculation engines for FSRS study data
 
 import { useMemo } from "react";
-import { STEPS, IMPORTANCIA, todayStr, diffDays } from "../core/fsrs";
+import { STEPS, IMPORTANCIA, todayStr, diffDays, addDays } from "../core/fsrs";
+import { getAreaWeight, PESO_AREA_ENAMED, BONUS_RETORNO_RAPIDO } from "../core/provasStats";
+import { useStore } from "../core/store";
 
 // ─── VESTIBULAR WEIGHTS & SCORE ──────────────────────────────────────────────
 
@@ -32,7 +34,8 @@ function calcRetornoMarginal(notaAtual, notaCorte, peso) {
  * Vestibular-specific score for a (tema, step) pair.
  */
 function scoreVestibular(t, s, today, meta) {
-  const provaAlvo = (meta?.provasAlvo || [])[0] || "ENEM";
+  const filtered = (meta?.provasAlvo || []).filter(p => ["UnB", "UFG"].includes(p));
+  const provaAlvo = filtered[0] || "UnB";
   const pesos = PESOS_PROVA_VEST[provaAlvo] || PESOS_PROVA_VEST.ENEM;
   const peso = (pesos[t.esp] || 10) / 100; // normalize to 0–1
 
@@ -104,9 +107,17 @@ export function calcFilaInteligente(temas, plat, meta) {
       const isToday = rDate === today;
       if (!overdue && !isToday) continue;
       
-      const score = plat === "vest"
-        ? scoreVestibular(t, s, today, meta)
-        : (() => { const urgencia = overdue ? 1.5 : 1.0; return (1 - acertoMedia) * pesoImp * urgencia; })();
+      let score;
+      if (plat === "vest") {
+        score = scoreVestibular(t, s, today, meta);
+        const weight = getAreaWeight(plat, t.esp, meta);
+        score = score * weight;
+      } else {
+        const urgencia = overdue ? 1.5 : 1.0;
+        const pesoArea = PESO_AREA_ENAMED[t.esp] ?? 1.0;
+        const bonus = acertoMedia < 0.6 ? (BONUS_RETORNO_RAPIDO[t.esp] ?? 0) : 0;
+        score = (1 - acertoMedia) * pesoImp * urgencia * pesoArea + bonus;
+      }
       
       items.push({
         temaId: t.id,
@@ -128,7 +139,7 @@ export function calcFilaInteligente(temas, plat, meta) {
 /**
  * Calculates elite learning analytics on mock exam logs in a single O(N) pass.
  */
-export function calcMetricasElite(simulados) {
+export function calcMetricasElite(simulados, plat = "res", provaAlvo = "ENAMED") {
   if (!simulados || simulados.length === 0) {
     return { indiceDescuido: null, velEficiente: null, taxaConversao: null, diagnostico: [], insights: [] };
   }
@@ -215,8 +226,13 @@ export function calcMetricasElite(simulados) {
   if (indiceDescuido > 25) {
     insights.push(`${indiceDescuido}% dos seus erros são descuido — o problema é atenção, não conteúdo.`);
   }
-  if (velEficiente && velEficiente < 40) {
-    insights.push(`Velocidade: ${velEficiente} certas/hora. Meta ENAMED: 40/hora.`);
+  if (velEficiente) {
+    if (plat === "vest") {
+      const targetVel = provaAlvo === "FUVEST" ? 24 : 36;
+      insights.push(`Velocidade: ${velEficiente} certas/hora. Meta ${provaAlvo}: ${targetVel}/hora.`);
+    } else {
+      insights.push(`Velocidade: ${velEficiente} certas/hora. Meta ENAMED: 40/hora.`);
+    }
   }
   if (taxaConversao !== null && taxaConversao < 70) {
     insights.push(`Taxa de conversão ${taxaConversao}% — abaixo de 70%. Revise o método de correção.`);
@@ -252,22 +268,34 @@ export function calcProjecao(values, steps = 3) {
 }
 
 export function calcStreaks(doneDays) {
-  if (!doneDays || !doneDays.size) return { current: 0, best: 0 };
-  const sorted = [...doneDays].sort();
-  let best = 1, cur = 1;
+  if (!doneDays) return { current: 0, best: 0 };
   const today = todayStr();
   
-  for (let i = 1; i < sorted.length; i++) {
-    const diff = diffDays(sorted[i - 1], sorted[i]);
-    if (diff === 1) {
-      cur++;
-      best = Math.max(best, cur);
-    } else if (diff > 1) {
-      cur = 1;
-    }
+  // Calcula dias ativos nos últimos 7 dias
+  const last7Days = [];
+  for (let i = 0; i < 7; i++) {
+    last7Days.push(addDays(today, -i));
   }
-  const sinceLast = diffDays(sorted[sorted.length - 1], today);
-  return { current: sinceLast <= 1 ? cur : 0, best };
+  const current = [...doneDays].filter(d => last7Days.includes(d)).length;
+
+  let best = current;
+  if (doneDays.size > 0) {
+    const sorted = [...doneDays].sort();
+    let curConsec = 1;
+    let maxConsec = 1;
+    for (let i = 1; i < sorted.length; i++) {
+      const diff = diffDays(sorted[i - 1], sorted[i]);
+      if (diff === 1) {
+        curConsec++;
+        maxConsec = Math.max(maxConsec, curConsec);
+      } else if (diff > 1) {
+        curConsec = 1;
+      }
+    }
+    best = Math.max(maxConsec, current);
+  }
+  
+  return { current, best };
 }
 
 export function calcBleedingScore(temas) {
@@ -323,7 +351,11 @@ export const migrarSim = (s) => ({
   statusCorrecao: s.statusCorrecao || "concluida",
 });
 
-export function useFilaInteligente(temas, plat, meta) {
+export function useFilaInteligente(overrideTemas) {
+  const plat = useStore((s) => s.plat);
+  const meta = useStore((s) => s.meta);
+  const storeTemas = useStore((s) => s[plat]?.temas || []);
+  const temas = overrideTemas !== undefined ? overrideTemas : storeTemas;
   return useMemo(() => calcFilaInteligente(temas, plat, meta), [temas, plat, meta]);
 }
 

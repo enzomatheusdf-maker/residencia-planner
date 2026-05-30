@@ -1,24 +1,34 @@
-// src/components/Modals.jsx
+﻿// src/components/Modals.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Zap, Target, BookOpen, 
   TrendingUp, Award, Edit2, Trash2, Search, User, Settings, Lock
 } from "lucide-react";
 import { CATALOGO_RES, CATALOGO_VEST, getSubtopics } from "../constants/catalogos";
+import { PROVA_STATS_RES, PROVA_STATS_VEST, PROVAS_RES, PROVAS_VEST } from "../constants/provaStats";
+import { getBrainDumpFields } from "../constants/stepDefinitions";
 import { useStore } from "../core/store";
+import { getReadinessData } from "../core/readiness";
+
 import {
   STEPS, IMPORTANCIA, ESPS_RES, ESPS_VEST,
-  todayStr, diffDays, fmtFull
+  todayStr, diffDays, fmtFull, addDays, getWorkloadProjection
 } from "../core/fsrs";
 import {
-  Modal, Btn, Input, Textarea, Select, Field, MedRevLogo, Tabs
+  Modal, Btn, Input, Textarea, Select, Field, MedRevLogo, Tabs, InfoTooltip
 } from "./Primitives";
-import { calcFilaInteligente } from "../hooks/useMetrics";
+import { useFilaInteligente } from "../hooks/useMetrics";
 import { getMentorPhrase, getRecentPhrases, trackRecentPhrase } from "../core/mentor";
 import { Brain } from "lucide-react";
 import { auth, excluirUsuarioEDados } from "../services/firebase";
+import { ACHIEVEMENTS } from "../core/achievements";
 
-// ─── HELP MODAL ──────────────────────────────────────────────────────────────
+const PROVA_STATS = {
+  ...PROVA_STATS_RES,
+  ...PROVA_STATS_VEST
+};
+
+// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ HELP MODAL ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
 export function HelpModal({ onClose }) {
   const [tab, setTab] = useState("secoes");
   const sections = [
@@ -49,7 +59,7 @@ export function HelpModal({ onClose }) {
 
         <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
           {[["secoes","Seções"], ["fluxo","Fluxo FSRS"], ["glossario","Glossário"]].map(([k,l]) => (
-            <button key={k} onClick={() => setTab(k)} className={`flex-1 py-1.5 rounded-lg text-[12px] font-bold transition-all ${tab === k ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white" : "text-gray-500 hover:text-gray-300"}`}>{l}</button>
+            <button key={k} onClick={() => setTab(k)} className={`flex-1 py-1.5 rounded-lg text-[12px] font-bold transition-all ${tab === k ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white" : "text-gray-500 hover:text-gray-300"}`}>{l}</button>
           ))}
         </div>
 
@@ -97,31 +107,31 @@ export function HelpModal({ onClose }) {
         {tab === "glossario" && (
           <div className="flex flex-col gap-3 max-h-[350px] overflow-y-auto pr-1">
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-              <span className="text-xs font-black text-violet-400 font-mono">FSRS (Free Spaced Repetition Scheduler)</span>
+              <span className="text-xs font-black text-blue-400 font-mono">FSRS (Free Spaced Repetition Scheduler)</span>
               <p className="text-[11px] text-gray-400 leading-relaxed">
                 Algoritmo matemático de repetição espaçada que estima o nível de estabilidade da memória baseado nas suas taxas de acertos e calcula a data ideal de revisão para garantir 90% de retenção (True Retention).
               </p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-              <span className="text-xs font-black text-violet-400 font-mono">D0 → D21 (Ciclo Espaçado)</span>
+              <span className="text-xs font-black text-blue-400 font-mono">D0 → D21 (Ciclo Espaçado)</span>
               <p className="text-[11px] text-gray-400 leading-relaxed">
                 Intervalos fixados cientificamente: D0 (estudo inicial ativo), D1 (recuperação ativa no dia seguinte via Brain Dump), D4 (reforço de questões), D7 (questões e flashcards) e D21 (revisão interleaved misturada).
               </p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-              <span className="text-xs font-black text-violet-400 font-mono">True Retention D21+</span>
+              <span className="text-xs font-black text-blue-400 font-mono">True Retention D21+</span>
               <p className="text-[11px] text-gray-400 leading-relaxed">
                 A porcentagem real de acertos nas revisões de longo prazo (etapas D21 em diante). É a métrica mais pura do seu nível de aprendizado real. Ideal acima de 80%.
               </p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-              <span className="text-xs font-black text-violet-400 font-mono">Fila Inteligente</span>
+              <span className="text-xs font-black text-blue-400 font-mono">Fila Inteligente</span>
               <p className="text-[11px] text-gray-400 leading-relaxed">
                 Score dinâmico que ordena seus temas na fila considerando a urgência do FSRS (atraso) combinada com a importância da especialidade nas provas e seu peso de dificuldade.
               </p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-              <span className="text-xs font-black text-violet-400 font-mono">Viés Metacognitivo</span>
+              <span className="text-xs font-black text-blue-400 font-mono">Viés Metacognitivo</span>
               <p className="text-[11px] text-gray-400 leading-relaxed">
                 A diferença entre a confiança estimada pelo estudante (percepção de domínio) e a taxa de acerto real nas questões. Um delta alto de excesso de confiança indica que o estudante está negligenciando lacunas graves.
               </p>
@@ -129,15 +139,15 @@ export function HelpModal({ onClose }) {
           </div>
         )}
 
-        <Btn className="w-full" onClick={onClose}>Entendido — vamos estudar!</Btn>
+        <Btn className="w-full" onClick={onClose}>Entendido — vamos estudar!</Btn>
       </div>
     </Modal>
   );
 }
 
-// ─── CYCLE COMPLETE MODAL ─────────────────────────────────────────────────────
+// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ CYCLE COMPLETE MODAL ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
 export function CycleCompleteModal({ tema, onClose }) {
-  const { plat } = useStore();
+  const { plat, meta } = useStore();
   const userName = useStore((s) => s.userName || "Estudante");
   const temas = useStore((s) => s[plat]?.temas || []);
 
@@ -202,7 +212,7 @@ export function CycleCompleteModal({ tema, onClose }) {
   }, [phraseId]);
 
   // Recommended next action
-  const nextFila = calcFilaInteligente(temas).filter(item => item.temaId !== tema.id);
+  const nextFila = useFilaInteligente(temas).filter(item => item.temaId !== tema.id);
   const nextRecomendacao = nextFila.length > 0 ? nextFila[0] : null;
 
   // Steps data for SVG chart
@@ -248,7 +258,7 @@ export function CycleCompleteModal({ tema, onClose }) {
           <p className="text-5xl mb-2 animate-pulse">🎉</p>
           <h2 className="text-xl font-black text-white">Ciclo Finalizado!</h2>
           <p className="text-[12px] text-gray-400 mt-1">Você concluiu todas as etapas da curva FSRS para:</p>
-          <p className="text-sm text-violet-400 font-bold mt-0.5">{tema.nome}</p>
+          <p className="text-sm text-blue-400 font-bold mt-0.5">{tema.nome}</p>
         </div>
 
         {/* Chart Card */}
@@ -310,7 +320,7 @@ export function CycleCompleteModal({ tema, onClose }) {
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-white/5 border border-white/5 rounded-xl p-3">
             <p className="text-[9px] text-gray-500 uppercase tracking-wider font-bold">Média do Ciclo</p>
-            <p className={`text-xl font-black mt-0.5 ${avgAcerto >= 80 ? "text-emerald-400" : avgAcerto >= 65 ? "text-violet-400" : "text-red-400"}`}>
+            <p className={`text-xl font-black mt-0.5 ${avgAcerto >= 80 ? "text-emerald-400" : avgAcerto >= 65 ? "text-blue-400" : "text-red-400"}`}>
               {avgAcerto}%
             </p>
           </div>
@@ -331,7 +341,7 @@ export function CycleCompleteModal({ tema, onClose }) {
             : "bg-white/5 border-white/5 text-gray-300"
         }`}>
           <div className="flex items-center gap-1.5 font-bold">
-            <Brain size={13} className="text-violet-400" />
+            <Brain size={13} className="text-blue-400" />
             <span>Conselho do Mentor</span>
           </div>
           <p className="font-semibold text-[12px]">{curveMsg}</p>
@@ -360,7 +370,7 @@ export function CycleCompleteModal({ tema, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="w-full py-3 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-bold text-[12.5px] transition-all hover:scale-[1.01] active:scale-[0.99] shadow-lg shadow-purple-900/10"
+          className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white rounded-xl font-bold text-[12.5px] transition-all hover:scale-[1.01] active:scale-[0.99] shadow-lg shadow-blue-900/10"
         >
           Continuar Planejamento
         </button>
@@ -369,354 +379,92 @@ export function CycleCompleteModal({ tema, onClose }) {
   );
 }
 
-// ─── ONBOARDING MODAL ──────────────────────────────────────────────────────────
-const PROVAS_RES = ["ENAMED", "USP-SP", "UNIFESP", "SCMSP", "SUS-SP", "UNICAMP", "UFRJ", "AMP"];
-const PROVAS_VEST = ["ENEM", "FUVEST", "UNICAMP", "UNESP", "UFG", "UERJ", "UFSC", "UnB", "UFU"];
+// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ ONBOARDING MODAL ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
 
 export function OnboardingModal({ onComplete }) {
-  const [step, setStep] = useState(1);
   const [nome, setNome] = useState("");
   const [plataforma, setPlataforma] = useState("res");
-  const [dataProva, setDataProva] = useState("2026-10-25");
-  const [metaAcerto, setMetaAcerto] = useState(85);
-  const [provasAlvo, setProvasAlvo] = useState([]);
-  const [horarioPreferido, setHorarioPreferido] = useState("Manhã");
   const [tempoDisponivel, setTempoDisponivel] = useState(2);
-  const [plataformaQuestoes, setPlataformaQuestoes] = useState("MedEvo");
-  // Vestibular-specific
-  const [isSegundaTentativa, setIsSegundaTentativa] = useState(false);
-  const [areaPuxouBaixo, setAreaPuxouBaixo] = useState("");
-  const [acertosAlvo, setAcertosAlvo] = useState("");
-  const [totalQuestoesAlvo, setTotalQuestoesAlvo] = useState("");
-  const [customPlat, setCustomPlat] = useState("");
 
-  // Internal steps: 1 (identificação), 2 (vest context — skipped for res), 3 (rotina), 4 (plataforma)
-  const TOTAL_STEPS = plataforma === "vest" ? 4 : 3;
-  const visibleStep = plataforma === "vest" ? step : Math.max(1, step - (step > 1 ? 1 : 0));
-
-  const next = () => {
-    if (step === 1 && !nome.trim()) return;
-    if (step === 1 && plataforma === "res") {
-      if (plataformaQuestoes === "MedEvo") setPlataformaQuestoes("MedEvo");
-      setStep(3);
-      return;
-    }
-    if (step === 2 && plataforma === "vest" && +acertosAlvo > +totalQuestoesAlvo) {
-      alert("O número de acertos não pode ser maior que o total de questões!");
-      return;
-    }
-    if (step === 4) {
-      const finalPlatQuestoes = plataformaQuestoes === "Outro" ? (customPlat.trim() || "Outro") : plataformaQuestoes;
-      const tot = +totalQuestoesAlvo || 0;
-      const acert = +acertosAlvo || 0;
-      const calculatedNotaCorte = tot > 0 ? parseFloat(((acert / tot) * 100).toFixed(2)) : 0;
-      onComplete(nome.trim() || "Estudante", plataforma, {
-        dataProva,
-        acerto: metaAcerto,
-        provasAlvo,
-        horarioPreferido,
-        tempoDisponivel,
-        plataformaQuestoes: finalPlatQuestoes,
-        isSegundaTentativa,
-        areaPuxouBaixo,
-        acertosAlvo: acert,
-        totalQuestoesAlvo: tot,
-        notaCorteAlvo: calculatedNotaCorte,
-        notasTentativaAnterior: {},
-      });
-      return;
-    }
-    setStep(step + 1);
-  };
-  const prev = () => {
-    if (step <= 1) return;
-    if (step === 3 && plataforma === "res") { setStep(1); return; } // skip vestibular step backwards
-    setStep(step - 1);
+  const handleFinalize = () => {
+    if (!nome.trim()) return;
+    const finalPlatQuestoes = plataforma === "res" ? "MedEvo" : "Estuda.com";
+    const dataProva = addDays(todayStr(), 180);
+    onComplete(nome.trim(), plataforma, {
+      dataProva,
+      acerto: 80,
+      provasAlvo: [],
+      horarioPreferido: "Manhã",
+      tempoDisponivel,
+      plataformaQuestoes: finalPlatQuestoes,
+      isSegundaTentativa: false,
+      areaPuxouBaixo: "",
+      acertosAlvo: 0,
+      totalQuestoesAlvo: 100,
+      notaCorteAlvo: 0,
+      notasTentativaAnterior: {},
+      tomMentor: "gentil",
+      estrategiaRefinada: false,
+    });
   };
 
   return (
     <div className="fixed inset-0 bg-[#05050d]/97 backdrop-blur-md flex items-center justify-center z-[100] p-4">
       <div className="bg-[#0d0d18] border border-white/10 rounded-3xl p-6 w-full max-w-md flex flex-col gap-5 shadow-2xl shadow-purple-900/20 animate-slide-up max-h-[92vh] overflow-y-auto">
-        {/* Progress bar */}
-        <div className="flex gap-1 shrink-0">
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <div key={i} className={`flex-1 h-1 rounded-full transition-all duration-300 ${i < visibleStep ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-white/10"}`} />
-          ))}
+        <div className="flex flex-col items-center text-center gap-4 py-1">
+          <MedRevLogo size="md" showTagline />
+          <h2 className="text-xl font-black text-white mt-2">Monte seu Perfil Clínico</h2>
+          <p className="text-[11px] text-gray-500">Identificação, foco de estudo e sua rotina inicial.</p>
         </div>
 
-        <div className="flex flex-col items-center text-center gap-4 py-1 min-h-[360px]">
-          {/* TELA 1: Identificação e Metas */}
-          {step === 1 && (
-            <div className="w-full flex flex-col gap-4 text-left">
-              <div className="text-center">
-                <MedRevLogo size="md" showTagline />
-                <h2 className="text-xl font-black text-white mt-4">Monte seu Perfil Clínico</h2>
-                <p className="text-[11px] text-gray-500 mt-1">Identificação, foco de estudo e metas de aprovação.</p>
-              </div>
+        <div className="w-full flex flex-col gap-4 text-left">
+          <Field label="Nome completo ou como prefere ser chamado" info="Seu nome para personalizarmos os alertas e mensagens do Mentor.">
+            <Input
+              autoFocus
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Seu primeiro nome"
+              className="py-2.5 text-xs"
+            />
+          </Field>
 
-              <Field label="Nome completo ou como prefere ser chamado">
-                <Input
-                  autoFocus
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  placeholder="Seu primeiro nome"
-                  className="py-2.5 text-xs"
-                />
-              </Field>
+          <Field label="Foco de Estudo" info="Selecione Residência Médica para temas clínicos ou Vestibular para ENEM/Vestibulares.">
+            <Select value={plataforma} onChange={(e) => setPlataforma(e.target.value)}>
+              <option value="res">Residência Médica</option>
+              <option value="vest">Vestibular / ENEM</option>
+            </Select>
+          </Field>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Foco de Estudo">
-                  <Select value={plataforma} onChange={(e) => {
-                    const val = e.target.value;
-                    setPlataforma(val);
-                    setProvasAlvo([]);
-                    setPlataformaQuestoes(val === "vest" ? "Estuda.com" : "MedEvo");
-                  }}>
-                    <option value="res">Residência Médica</option>
-                    <option value="vest">Vestibular / ENEM</option>
-                  </Select>
-                </Field>
-                <Field label="Data da Prova">
-                  <Input type="date" value={dataProva} onChange={(e) => setDataProva(e.target.value)} className="py-2 text-xs" />
-                </Field>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-baseline mb-1">
-                  <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold">Meta de acerto (%)</span>
-                  <span className="text-sm font-black text-emerald-400 font-mono">{metaAcerto}%</span>
-                </div>
-                <Input
-                  type="number"
-                  min={50}
-                  max={100}
-                  step={0.1}
-                  value={metaAcerto}
-                  onChange={(e) => setMetaAcerto(parseFloat(e.target.value) || 50)}
-                  placeholder="Ex: 87.5"
-                  className="py-2 text-xs"
-                />
-                <p className="text-[9.5px] text-gray-500 mt-1 pl-1">
-                  💡 Recomendado: manter a meta de acerto entre 85% e 90% para otimização da retenção e estabilidade da curva no FSRS.
-                </p>
-              </div>
-
-              <div>
-                <span className="text-[10px] text-gray-500 uppercase tracking-wide font-semibold block mb-1.5">Instituições / Provas Alvo</span>
-                <div className="flex flex-wrap gap-1 border border-white/5 p-2 rounded-xl bg-black/40 max-h-24 overflow-y-auto">
-                  {(plataforma === "res" ? PROVAS_RES : PROVAS_VEST).map((pr) => {
-                    const selected = provasAlvo.includes(pr);
-                    return (
-                      <button
-                        key={pr}
-                        type="button"
-                        onClick={() => {
-                          if (selected) setProvasAlvo(provasAlvo.filter(x => x !== pr));
-                          else setProvasAlvo([...provasAlvo, pr]);
-                        }}
-                        className={`text-[9.5px] font-bold px-2 py-1 rounded-lg border transition-all ${
-                          selected
-                            ? "bg-purple-600 border-purple-500 text-white"
-                            : "bg-white/5 border-white/10 text-gray-400 hover:text-gray-200"
-                        }`}
-                      >
-                        {pr}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+          <Field label="Tempo disponível para estudos por dia" info="Média de horas diárias dedicadas aos estudos. Usaremos para propor o teto diário de revisões.">
+            <div className="grid grid-cols-5 gap-2 bg-black border border-white/10 rounded-xl p-0.5 mt-1">
+              {[1, 2, 3, 4, 5].map((hr) => (
+                <button
+                  key={hr}
+                  type="button"
+                  onClick={() => setTempoDisponivel(hr)}
+                  className={`py-2 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer border-none ${
+                    tempoDisponivel === hr ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  {hr}h{hr === 5 && "+"}
+                </button>
+              ))}
             </div>
-          )}
+          </Field>
 
-          {/* TELA 2: Contexto Vestibular (somente para vest) */}
-          {step === 2 && plataforma === "vest" && (
-            <div className="w-full flex flex-col gap-5 text-left mt-2">
-              <div className="text-center">
-                <span className="text-3xl">🎯</span>
-                <h2 className="text-xl font-black text-white mt-3">Contexto do Vestibular</h2>
-                <p className="text-[11px] text-gray-500 mt-1">Vamos calibrar sua estratégia com base no seu histórico.</p>
-              </div>
-
-              <div className="space-y-2">
-                <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-semibold">É uma segunda tentativa?</span>
-                <div className="grid grid-cols-2 gap-2 bg-black border border-white/10 rounded-xl p-0.5">
-                  {[["Sim, já prestei antes", true], ["Não, é minha primeira vez", false]].map(([lbl, val]) => (
-                    <button
-                      key={String(val)}
-                      type="button"
-                      onClick={() => setIsSegundaTentativa(val)}
-                      className={`py-2 px-2 rounded-lg text-xs font-bold transition-all ${isSegundaTentativa === val ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"}`}
-                    >
-                      {lbl}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Meta de acertos (Nº Qs)">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={acertosAlvo}
-                      onChange={(e) => setAcertosAlvo(e.target.value)}
-                      placeholder="Ex: 75"
-                    />
-                  </Field>
-                  <Field label="Total questões prova">
-                    <Input
-                      type="number"
-                      min={1}
-                      value={totalQuestoesAlvo}
-                      onChange={(e) => setTotalQuestoesAlvo(e.target.value)}
-                      placeholder="Ex: 90"
-                    />
-                  </Field>
-                </div>
-                {+totalQuestoesAlvo > 0 && +acertosAlvo >= 0 && (
-                  <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl space-y-1.5">
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-[10px] text-gray-500 uppercase font-semibold">Aproveitamento Alvo</span>
-                      <span className="text-sm font-black text-emerald-400 font-mono">
-                        {((+acertosAlvo / +totalQuestoesAlvo) * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                    <p className="text-[9.5px] text-gray-500 leading-normal">
-                      💡 Recomendado: manter entre 85% e 90% para otimização da retenção e estabilidade da curva no FSRS.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {isSegundaTentativa && (
-                <div>
-                  <span className="block text-[10px] text-gray-500 uppercase tracking-wide font-semibold mb-1.5">Área que mais te derrubou</span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {["Exatas", "Ciências da Natureza", "Linguagens", "Humanas"].map(area => (
-                      <button
-                        key={area}
-                        type="button"
-                        onClick={() => setAreaPuxouBaixo(area === areaPuxouBaixo ? "" : area)}
-                        className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all ${
-                          areaPuxouBaixo === area
-                            ? "bg-red-500/20 border-red-500/50 text-red-300"
-                            : "bg-white/5 border-white/10 text-gray-400 hover:text-gray-200"
-                        }`}
-                      >
-                        {area}
-                      </button>
-                    ))}
-                  </div>
-                  {areaPuxouBaixo && (
-                    <p className="text-[10px] text-amber-400/80 mt-2 pl-1">⚡ A fila inteligente vai priorizar {areaPuxouBaixo} automaticamente.</p>
-                  )}
-                </div>
-              )}
+          <div className="bg-purple-950/20 border border-purple-500/20 p-4 rounded-2xl text-left space-y-2 mt-2">
+            <div className="flex items-center gap-2">
+              <span className="text-purple-400 text-base">🎻</span>
+              <h3 className="text-xs font-black text-purple-300 uppercase tracking-wider">Maestro, não Banco de Questões</h3>
             </div>
-          )}
-
-          {/* TELA 3: Rotina de Estudos */}
-          {step === 3 && (
-            <div className="w-full flex flex-col gap-5 text-left mt-2">
-              <div className="text-center">
-                <span className="text-3xl">📅</span>
-                <h2 className="text-xl font-black text-white mt-3">Sua Rotina de Estudos</h2>
-                <p className="text-[11px] text-gray-500 mt-1">Defina quando estuda e por quanto tempo.</p>
-              </div>
-
-              <div className="space-y-2">
-                <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Horário preferido de estudo</span>
-                <div className="grid grid-cols-3 gap-2 bg-black border border-white/10 rounded-xl p-0.5">
-                  {["Manhã", "Tarde", "Noite"].map(h => (
-                    <button
-                      key={h}
-                      type="button"
-                      onClick={() => setHorarioPreferido(h)}
-                      className={`py-2 rounded-lg text-xs font-bold transition-all ${horarioPreferido === h ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"}`}
-                    >
-                      {h === "Manhã" ? "🌅 Manhã" : h === "Tarde" ? "☀️ Tarde" : "🌙 Noite"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Tempo disponível para estudos por dia</span>
-                <div className="grid grid-cols-5 gap-2 bg-black border border-white/10 rounded-xl p-0.5">
-                  {[1, 2, 3, 4, 5].map(hr => (
-                    <button
-                      key={hr}
-                      type="button"
-                      onClick={() => setTempoDisponivel(hr)}
-                      className={`py-2 rounded-lg text-xs font-mono font-bold transition-all ${tempoDisponivel === hr ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"}`}
-                    >
-                      {hr}h{hr === 5 && "+"}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[10px] text-gray-600 leading-normal pl-1">
-                  O Mentor adaptará os lembretes de estudos e as sessões FSRS baseado no seu tempo disponível.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* TELA 4: Plataforma de Questões */}
-          {step === 4 && (
-            <div className="w-full flex flex-col gap-5 text-left mt-2 animate-fade-in">
-              <div className="text-center">
-                <span className="text-3xl">💻</span>
-                <h2 className="text-xl font-black text-white mt-3">Banco de Questões</h2>
-                <p className="text-[11px] text-gray-500 mt-1">Onde você resolve questões práticas de prova.</p>
-              </div>
-
-              <div className="space-y-3">
-                <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Plataforma principal utilizada</span>
-                <div className="grid grid-cols-2 gap-2">
-                  {(plataforma === "vest"
-                    ? ["Descomplica", "Estuda.com", "Khan Academy", "Gabarito", "Vestibulares (PDF)", "Outro"]
-                    : ["MedEvo", "Medgrupo", "Sanar", "Estratégia", "Outro"]
-                  ).map(platOpt => (
-                    <button
-                      key={platOpt}
-                      type="button"
-                      onClick={() => setPlataformaQuestoes(platOpt)}
-                      className={`p-4 rounded-xl border text-center transition-all ${
-                        plataformaQuestoes === platOpt
-                          ? "border-purple-500 bg-purple-500/10 text-white shadow-lg font-bold"
-                          : "border-white/10 bg-white/[0.02] text-gray-400 hover:border-white/20 hover:text-gray-200"
-                      }`}
-                    >
-                      {platOpt}
-                    </button>
-                  ))}
-                </div>
-
-                {plataformaQuestoes === "Outro" && (
-                  <div className="mt-2 animate-fade-in">
-                    <Field label="Escreva o nome do outro banco/plataforma">
-                      <Input
-                        placeholder="Ex: Banco do Cursinho"
-                        value={customPlat}
-                        onChange={(e) => setCustomPlat(e.target.value)}
-                      />
-                    </Field>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+            <p className="text-[10.5px] text-gray-400 leading-relaxed">
+              O MedRev é seu <strong>maestro de revisão</strong>, não um banco de questões. Ele decide <strong>o que</strong> e <strong>quando</strong> revisar, com base na ciência do esquecimento — e te manda resolver as questões na sua plataforma preferida. Pense nele como o técnico, não o campo.
+            </p>
+          </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-2 shrink-0">
-          {step > 1 && (
-            <Btn variant="ghost" onClick={prev} className="flex-none px-4">←</Btn>
-          )}
-          <Btn className="flex-1" onClick={next} disabled={step === 1 && !nome.trim()}>
-            {step === 4 ? "🏁 Finalizar Perfil" : "Continuar →"}
+        <div className="flex gap-2 shrink-0 pt-2">
+          <Btn className="flex-1 py-3 font-bold" onClick={handleFinalize} disabled={!nome.trim()}>🏁 Finalizar Perfil e Começar
           </Btn>
         </div>
       </div>
@@ -724,7 +472,7 @@ export function OnboardingModal({ onComplete }) {
   );
 }
 
-// ─── STRUCTURED ERRORS LIST ──────────────────────────────────────────────────
+// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ STRUCTURED ERRORS LIST ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
 export function StructuredErrorsList({ erros, onChange, plat, esp }) {
   const subtopics = useMemo(() => getSubtopics(plat, esp), [plat, esp]);
 
@@ -764,7 +512,7 @@ export function StructuredErrorsList({ erros, onChange, plat, esp }) {
         <button
           type="button"
           onClick={addErro}
-          className="px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white rounded text-[10px] font-bold transition-all"
+          className="px-2 py-1 bg-violet-600 hover:bg-blue-500 text-white rounded text-[10px] font-bold transition-all"
         >
           + Adicionar Erro
         </button>
@@ -782,7 +530,7 @@ export function StructuredErrorsList({ erros, onChange, plat, esp }) {
                 className="absolute top-2 right-2 text-gray-500 hover:text-red-400 text-xs"
                 title="Excluir erro"
               >
-                ✕
+                âœ•
               </button>
               
               <div className="text-[10px] text-gray-400 font-bold font-mono">ERRO #{idx + 1}</div>
@@ -861,7 +609,49 @@ export function StructuredErrorsList({ erros, onChange, plat, esp }) {
   );
 }
 
-// ─── MARK MODAL ───────────────────────────────────────────────────────────────
+// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ MARK MODAL ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ REDACAO INPUTS HELPER ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
+function RedacaoInputs({ c1, setC1, c2, setC2, c3, setC3, c4, setC4, c5, setC5 }) {
+  const sum = (+c1 || 0) + (+c2 || 0) + (+c3 || 0) + (+c4 || 0) + (+c5 || 0);
+  const comps = [
+    { k: "c1", l: "C1: Norma Culta", val: c1, set: setC1, desc: "Gramática, ortografia, pontuação" },
+    { k: "c2", l: "C2: Tema e Gênero", val: c2, set: setC2, desc: "Compreensão do tema e tipo de texto" },
+    { k: "c3", l: "C3: Argumentação", val: c3, set: setC3, desc: "Coerência, seleção de ideias e tese" },
+    { k: "c4", l: "C4: Coesão", val: c4, set: setC4, desc: "Recursos coesivos e conectivos" },
+    { k: "c5", l: "C5: Proposta", val: c5, set: setC5, desc: "Ação, agente, meio, efeito e detalhe" }
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+        {comps.map(c => (
+          <div key={c.k} className="space-y-1 bg-black/40 border border-white/5 rounded-xl p-3">
+            <div className="flex justify-between items-center">
+              <label className="block text-[10px] font-black text-gray-300 uppercase tracking-wider">{c.l}</label>
+              <span className="text-[9px] text-gray-500 font-medium">{c.desc}</span>
+            </div>
+            <select
+              value={c.val}
+              onChange={(e) => c.set(e.target.value)}
+              className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-violet-500 transition-all mt-1"
+            >
+              {[200, 160, 120, 80, 40, 0].map(val => (
+                <option key={val} value={val}>{val} pts</option>
+              ))}
+            </select>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 mt-2">
+        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Nota Final Calculada</span>
+        <span className={`text-2xl font-black font-mono ${sum >= 800 ? "text-emerald-400" : sum >= 600 ? "text-blue-400" : "text-red-400"}`}>
+          {sum} / 1000
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function MarkModal({ tema, stepKey, onConfirm, onCancel }) {
   const step    = STEPS.find((s) => s.key === stepKey);
   const plat    = useStore((s) => s.plat);
@@ -869,25 +659,59 @@ export function MarkModal({ tema, stepKey, onConfirm, onCancel }) {
   const [acertos, setAcertos]   = useState("");
   const [erros, setErros]       = useState([]);
 
+  // Sprint 4 states
+  const [comoFoi, setComoFoi] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [ansiedade, setAnsiedade] = useState("Normal");
+  const [cansaco, setCansaco] = useState("Normal");
+  const [confianca, setConfianca] = useState("Média");
+  const [foco, setFoco] = useState("Normal");
+  const [tempoMin, setTempoMin] = useState("");
+  const sugerirDetalhes = useMemo(() => Math.random() < 0.25, []);
+
+  // Redação states
+  const [c1, setC1] = useState(160);
+  const [c2, setC2] = useState(160);
+  const [c3, setC3] = useState(160);
+  const [c4, setC4] = useState(160);
+  const [c5, setC5] = useState(160);
+
+  // D1 self-evaluation state
+  const [d1ForgotFields, setD1ForgotFields] = useState({});
+  const brainDumpFields = useMemo(() => getBrainDumpFields(plat, tema?.esp), [plat, tema?.esp]);
+
   const isD1  = step.checkbox;
+  const isRedacao = tema?.esp === "Redação";
 
   const totalQuestoes = +questoes || 0;
   const certasQuestoes = +acertos || 0;
   const pct = totalQuestoes > 0 ? Math.round((certasQuestoes / totalQuestoes) * 100) : 0;
-  const showErroBox = pct < 75 && totalQuestoes > 0;
+  const showErroBox = pct < 75 && totalQuestoes > 0 && !isRedacao;
 
-  const col   = pct >= 90 ? "text-emerald-400" : pct >= 75 ? "text-violet-400" : pct >= 55 ? "text-yellow-400" : "text-red-400";
+  const col   = pct >= 90 ? "text-emerald-400" : pct >= 75 ? "text-blue-400" : pct >= 55 ? "text-yellow-400" : "text-red-400";
   const label = pct >= 90 ? "Domínio sólido 🎯" : pct >= 75 ? "Bom progresso" : pct >= 55 ? "Em consolidação" : "Ponto fraco — revise mais";
-  const isInvalid = totalQuestoes <= 0 || certasQuestoes > totalQuestoes;
+  
+  const isInvalid = !isRedacao && (totalQuestoes <= 0 || certasQuestoes > totalQuestoes);
   const confirmDisabled = !isD1 && isInvalid;
+
+  // Calculate dynamic D1 acerto
+  const forgotCount = Object.keys(d1ForgotFields).filter(k => d1ForgotFields[k]).length;
+  let d1Acerto = 1.0;
+  if (forgotCount === 1) d1Acerto = 0.85;
+  else if (forgotCount === 2) d1Acerto = 0.65;
+  else if (forgotCount >= 3) d1Acerto = 0.40;
+
+  // Calculate Redação acerto
+  const sumRedacao = (+c1 || 0) + (+c2 || 0) + (+c3 || 0) + (+c4 || 0) + (+c5 || 0);
+  const redacaoAcerto = sumRedacao / 1000;
 
   return (
     <Modal onClose={onCancel}>
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center text-violet-400 font-black text-[13px] shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center text-blue-400 font-black text-[13px] shrink-0 font-mono">
           {step.label}
         </div>
-        <div>
+        <div className="text-left">
           <p className="text-[14px] font-bold text-gray-100">{step.desc}</p>
           <p className="text-[12px] text-gray-500 mt-0.5 line-clamp-1">{tema.nome}</p>
         </div>
@@ -896,51 +720,257 @@ export function MarkModal({ tema, stepKey, onConfirm, onCancel }) {
       <div className="h-px bg-white/5" />
 
       {isD1 ? (
-        <div className="text-center py-3">
-          <div className="text-4xl mb-3">✍️</div>
-          <p className="text-[13px] text-gray-400 leading-relaxed">
-            Brain dump escrito de 5 min, material fechado.<br />Você fez?
-          </p>
+        <div className="space-y-4 text-left">
+          <div className="bg-[#141421]/60 border border-violet-500/10 rounded-2xl p-4 mb-2">
+            <h4 className="text-xs font-black text-blue-400 uppercase tracking-wider">Auto-avaliação do Brain Dump</h4>
+            <p className="text-[11.5px] text-gray-400 mt-1 leading-relaxed">
+              Compare seu esforço de memória com o material. Marque o que você acabou esquecendo ou confundindo para calibrar o motor FSRS:
+            </p>
+          </div>
+
+          <div className="space-y-2.5 max-h-[40vh] overflow-y-auto pr-1 text-left">
+            {brainDumpFields.map(field => {
+              const isForgot = !!d1ForgotFields[field.k];
+              return (
+                <label key={field.k} className="flex items-center gap-2.5 p-2.5 bg-black/40 border border-white/5 rounded-xl cursor-pointer select-none text-xs text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={isForgot}
+                    onChange={(e) => setD1ForgotFields({ ...d1ForgotFields, [field.k]: e.target.checked })}
+                    className="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black cursor-pointer"
+                  />
+                  <span>Esqueci detalhes de {field.label.replace(/^[^\s]+\s+/, "")}</span>
+                </label>
+              );
+            })}
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Questões resolvidas">
-              <Input type="number" min={0} value={questoes} onChange={(e) => setQuestoes(e.target.value)} placeholder="ex: 20" />
-            </Field>
-            <Field label="Quantas acertou?">
-              <Input type="number" min={0} value={acertos} onChange={(e) => setAcertos(e.target.value)} placeholder="ex: 15" />
-            </Field>
+          {isRedacao ? (
+            <RedacaoInputs
+              c1={c1} setC1={setC1}
+              c2={c2} setC2={setC2}
+              c3={c3} setC3={setC3}
+              c4={c4} setC4={setC4}
+              c5={c5} setC5={setC5}
+            />
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3 text-left">
+                <Field label="Questões resolvidas" info="Quantidade total de exercícios práticos que você realizou na plataforma externa para este tema.">
+                  <Input type="number" min={0} value={questoes} onChange={(e) => setQuestoes(e.target.value)} placeholder="ex: 20" />
+                </Field>
+                <Field label="Quantas acertou?" info="O número de acertos que obteve no bloco de questões (usado para calcular sua taxa de acerto no FSRS).">
+                  <Input type="number" min={0} value={acertos} onChange={(e) => setAcertos(e.target.value)} placeholder="ex: 15" />
+                </Field>
+              </div>
+
+              {totalQuestoes > 0 && (
+                <div className="text-left">
+                  <div className="flex justify-between items-baseline mb-2">
+                    <span className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold">Acerto calculado</span>
+                    <span className={`text-3xl font-black font-mono tabular-nums ${col}`}>{pct}%</span>
+                  </div>
+                  <div className="text-[11px] text-right text-gray-500 italic">{label}</div>
+                </div>
+              )}
+
+              {isInvalid && totalQuestoes > 0 && (
+                <p className="text-[11px] text-red-400 italic text-left">Número de acertos não pode ser maior que o total de questões.</p>
+              )}
+            </>
+          )}
+
+          {/* Como Foi Emoji Selector */}
+          <div className="space-y-2 text-left border-t border-white/5 pt-3">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider">Como foi o estudo deste tema? (Opcional)</label>
+            <div className="flex gap-4">
+              {[
+                { key: "ruim", emoji: "😣", label: "Ruim / Exausto" },
+                { key: "normal", emoji: "😐", label: "Ok / Normal" },
+                { key: "bom", emoji: "🙂", label: "Bem / Produtivo" }
+              ].map(item => {
+                const isSelected = comoFoi === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => {
+                      setComoFoi(item.key);
+                      if (item.key === "ruim") {
+                        setCansaco("Alto");
+                        setAnsiedade("Alta");
+                        setConfianca("Baixa");
+                      } else if (item.key === "normal") {
+                        setCansaco("Normal");
+                        setAnsiedade("Normal");
+                        setConfianca("Média");
+                      } else if (item.key === "bom") {
+                        setCansaco("Baixo");
+                        setAnsiedade("Baixa");
+                        setConfianca("Alta");
+                      }
+                    }}
+                    className={`flex-1 flex flex-col items-center gap-1 p-2 rounded-2xl border transition-all duration-300 ${
+                      isSelected 
+                        ? "bg-violet-600/20 border-violet-500 text-white scale-[1.03]" 
+                        : "bg-black/40 border-white/5 text-gray-400 hover:bg-black/60 hover:text-white"
+                    }`}
+                  >
+                    <span className="text-xl">{item.emoji}</span>
+                    <span className="text-[9px] font-semibold">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {totalQuestoes > 0 && (
-            <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <span className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold">Acerto calculado</span>
-                <span className={`text-3xl font-black font-mono tabular-nums ${col}`}>{pct}%</span>
+          {/* Collapsible Details */}
+          <div className="text-left">
+            <button
+              type="button"
+              onClick={() => setShowDetails(!showDetails)}
+              className={`w-full py-2.5 rounded-xl border text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${
+                showDetails 
+                  ? "bg-white/10 border-white/10 text-white" 
+                  : sugerirDetalhes 
+                  ? "bg-violet-950/40 border-violet-500/40 text-violet-300 hover:bg-violet-900/40 hover:border-violet-500 animate-pulse" 
+                  : "bg-white/5 border-white/5 text-gray-400 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <span>📊 {showDetails ? "Ocultar Detalhes" : "Adicionar Detalhes / Refinar Diagnóstico"}</span>
+              {sugerirDetalhes && !showDetails && <span className="bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold font-mono">Amostra</span>}
+            </button>
+            
+            {sugerirDetalhes && !showDetails && (
+              <p className="text-[10px] text-blue-400/80 mt-1 text-center italic leading-normal">
+                💡 Coleta Amostral Diagnóstica: Considere expandir e detalhar como se sente hoje para calibrar o Mentor!
+              </p>
+            )}
+
+            {showDetails && (
+              <div className="border border-white/5 bg-black/20 rounded-2xl p-4 space-y-4 animate-fade-in mt-3">
+                <div className="space-y-1">
+                  <label className="block text-[9.5px] font-black text-gray-400 uppercase tracking-wide font-semibold">Nível de Cansaço / Exaustão</label>
+                  <div className="flex gap-2">
+                    {["Baixo", "Normal", "Alto"].map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setCansaco(val)}
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                          cansaco === val 
+                            ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                            : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[9.5px] font-black text-gray-400 uppercase tracking-wide font-semibold">Ansiedade Subjetiva</label>
+                  <div className="flex gap-2">
+                    {["Baixa", "Normal", "Alta"].map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setAnsiedade(val)}
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                          ansiedade === val 
+                            ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                            : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[9.5px] font-black text-gray-400 uppercase tracking-wide font-semibold">Confiança no Conteúdo</label>
+                  <div className="flex gap-2">
+                    {["Baixa", "Média", "Alta"].map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setConfianca(val)}
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                          confianca === val 
+                            ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                            : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[9.5px] font-black text-gray-400 uppercase tracking-wide font-semibold">Foco no Estudo</label>
+                  <div className="flex gap-2">
+                    {["Baixo", "Normal", "Alto"].map(val => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setFoco(val)}
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                          foco === val 
+                            ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                            : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
+                        }`}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[9.5px] font-black text-gray-400 uppercase tracking-wide font-semibold">Tempo de Estudo (minutos)</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={tempoMin}
+                    onChange={(e) => setTempoMin(e.target.value)}
+                    placeholder="Tempo gasto em minutos"
+                  />
+                </div>
+
+                {!isRedacao && pct != null && pct < 75 && (
+                  <div className="border-t border-white/5 pt-3">
+                    <StructuredErrorsList erros={erros} onChange={setErros} plat={plat} esp={tema.esp} />
+                  </div>
+                )}
               </div>
-              <div className="text-[11px] text-right text-gray-500 italic">{label}</div>
-            </div>
-          )}
-
-          {isInvalid && totalQuestoes > 0 && (
-            <p className="text-[11px] text-red-400 italic">Número de acertos não pode ser maior que o total de questões.</p>
-          )}
-
-          {showErroBox && (
-            <StructuredErrorsList erros={erros} onChange={setErros} plat={plat} esp={tema.esp} />
-          )}
+            )}
+          </div>
         </div>
       )}
 
-      <div className="flex gap-2 pt-1">
+      <div className="flex gap-2 pt-2 border-t border-white/5 mt-2">
         <Btn className="flex-1"
           disabled={confirmDisabled}
           onClick={() => onConfirm({
-            acerto: isD1 ? null : pct / 100,
-            questoes: totalQuestoes || null,
+            acerto: isD1 ? d1Acerto : (isRedacao ? redacaoAcerto : pct / 100),
+            questoes: isD1 ? 1 : (isRedacao ? 5 : totalQuestoes || null),
             motivosErro: showErroBox ? erros.map(e => e.tipoErro) : [],
-            erros: showErroBox ? erros : []
+            erros: showErroBox ? erros : [],
+            c1: isRedacao ? +c1 : undefined,
+            c2: isRedacao ? +c2 : undefined,
+            c3: isRedacao ? +c3 : undefined,
+            c4: isRedacao ? +c4 : undefined,
+            c5: isRedacao ? +c5 : undefined,
+            tempoMin: +tempoMin || null,
+            ansiedade,
+            cansaco,
+            confianca,
+            foco
           })}>
           ✓ Confirmar
         </Btn>
@@ -950,68 +980,6 @@ export function MarkModal({ tema, stepKey, onConfirm, onCancel }) {
   );
 }
 
-// ─── TEMA MODAL ───────────────────────────────────────────────────────────────
-const PROVA_STATS = {
-  "ENAMED": {
-    "Preventiva": { nivel: "Risco Crítico", msg: "Preventiva representa 25% da prova no ENAMED (peso altíssimo)." },
-    "Pediatria": { nivel: "Alta", msg: "Pediatria foca em Puericultura e Aleitamento." },
-    "Cirurgia": { nivel: "Média", msg: "Foco em Trauma Inicial." },
-    "Clínica Médica": { nivel: "Alta", msg: "Incidência distribuída em temas de atenção primária." },
-    "GO": { nivel: "Risco Crítico", msg: "Ginecologia tem altíssima repetição de temas." }
-  },
-  "USP-SP": {
-    "Cirurgia": { nivel: "Risco Crítico", msg: "Cirurgia Geral e do Trauma são extremamente puxadas na USP-SP." },
-    "Clínica Médica": { nivel: "Risco Crítico", msg: "Questões de Clínica Médica exigem alto nível de raciocínio diagnóstico." },
-    "Preventiva": { nivel: "Alta", msg: "Preventiva foca muito em epidemiologia molecular e bioestatística." },
-    "Pediatria": { nivel: "Alta", msg: "Questões de Pediatria com imagens e condutas neonatais avançadas." },
-    "GO": { nivel: "Média", msg: "Foco em Obstetrícia de alto risco." }
-  },
-  "UNIFESP": {
-    "Clínica Médica": { nivel: "Risco Crítico", msg: "Medicina baseada em evidências e nefrologia/cardiologia complexas." },
-    "Preventiva": { nivel: "Risco Crítico", msg: "Muito foco em SUS, saúde coletiva e portarias específicas." },
-    "Cirurgia": { nivel: "Alta", msg: "Foco em condutas cirúrgicas práticas de pronto-socorro." },
-    "Pediatria": { nivel: "Alta", msg: "Pediatria geral e terapia intensiva pediátrica." },
-    "GO": { nivel: "Alta", msg: "Uroginecologia e oncologia ginecológica recorrentes." }
-  },
-  "SUS-SP": {
-    "Preventiva": { nivel: "Risco Crítico", msg: "Epidemiologia e SUS clássico dominam a prova." },
-    "Clínica Médica": { nivel: "Alta", msg: "Clínica Geral com ênfase em emergência médica." },
-    "Cirurgia": { nivel: "Alta", msg: "Trauma e Cirurgia Geral básica." },
-    "Pediatria": { nivel: "Alta", msg: "Puericultura clássica e vacinas." },
-    "GO": { nivel: "Média", msg: "GO geral e pré-natal clássico." }
-  },
-  "SCMSP": {
-    "Cirurgia": { nivel: "Alta", msg: "Urgência cirúrgica clássica." },
-    "Clínica Médica": { nivel: "Alta", msg: "Semiologia médica refinada." }
-  },
-  "UNICAMP": {
-    "Clínica Médica": { nivel: "Risco Crítico", msg: "Questões discursivas e casos clínicos integrados complexos." },
-    "GO": { nivel: "Alta", msg: "Grande volume de obstetrícia fisiológica e patológica." }
-  },
-  "UFRJ": {
-    "Clínica Médica": { nivel: "Alta", msg: "Clínica clássica com condutas de enfermaria." }
-  },
-  "AMP": {
-    "Pediatria": { nivel: "Alta", msg: "Pediatria e vacinas têm alto peso na Região Sul." }
-  },
-  "ENEM": {
-    "Ciências da Natureza": { nivel: "Risco Crítico", msg: "Ecologia, Química Orgânica e Eletrodinâmica são recorrentes." },
-    "Redação": { nivel: "Risco Crítico", msg: "Redação nota 1000 representa peso decisivo." },
-    "Humanas": { nivel: "Alta", msg: "História do Brasil e Geografia física/humana do país." },
-    "Linguagens": { nivel: "Média", msg: "Interpretação textual intensa." },
-    "Exatas": { nivel: "Risco Crítico", msg: "Matemática básica, estatística e funções determinam a nota TRI." }
-  },
-  "FUVEST": {
-    "Exatas": { nivel: "Risco Crítico", msg: "Física e Matemática de nível altíssimo e analítico." },
-    "Ciências da Natureza": { nivel: "Risco Crítico", msg: "Biologia e Química teórica aprofundada." },
-    "Linguagens": { nivel: "Alta", msg: "Literatura com leitura obrigatória estrita." }
-  },
-  "UFG": {
-    "Humanas": { nivel: "Alta", msg: "História e Geografia de Goiás recorrentes." },
-    "Linguagens": { nivel: "Alta", msg: "Gêneros textuais específicos." }
-  }
-};
-
 const getRecomendacao = (esp, provasAlvo = []) => {
   if (!provasAlvo || provasAlvo.length === 0) {
     return { nivel: "Média", msg: "Nenhuma prova alvo selecionada em Ajustes. Defina suas metas para obter recomendações direcionadas." };
@@ -1019,9 +987,32 @@ const getRecomendacao = (esp, provasAlvo = []) => {
 
   const matches = [];
   provasAlvo.forEach((pr) => {
-    const pStat = PROVA_STATS[pr]?.[esp];
-    if (pStat) {
-      matches.push({ prova: pr, ...pStat });
+    const provaData = PROVA_STATS[pr];
+    if (!provaData) return;
+    
+    // Mapear especialidade para o nome na prova
+    let searchKey = esp;
+    if (esp === "Cirurgia") searchKey = "Cirurgia Geral";
+    if (esp === "Preventiva") {
+      searchKey = "Preventiva";
+      if (provaData.concorrencia && !provaData.concorrencia[searchKey] && provaData.concorrencia["Preventiva/MFC"]) {
+        searchKey = "Preventiva/MFC";
+      }
+    }
+
+    const concorrencia = provaData.concorrencia?.[searchKey] || provaData.concorrencia?.[esp];
+    const temas = provaData.temasQuentes?.[searchKey] || provaData.temasQuentes?.[esp] || [];
+    
+    if (concorrencia) {
+      let nivel = "Média";
+      if (concorrencia === "altíssima" || concorrencia === "alta") nivel = "Risco Crítico";
+      else if (concorrencia === "média-alta" || concorrencia === "média") nivel = "Alta";
+      
+      let msg = `Concorrência ${concorrencia} em ${pr}.`;
+      if (temas.length > 0) {
+        msg += ` Temas quentes: ${temas.join(", ")}.`;
+      }
+      matches.push({ prova: pr, nivel, msg });
     }
   });
 
@@ -1061,7 +1052,8 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
   });
   const [showOptional, setShowOptional] = useState(!!(initial?.ankiDeck || initial?.pico || initial?.obs));
 
-  const rec = getRecomendacao(f.esp, meta.provasAlvo);
+  const filteredProvas = (meta.provasAlvo || []).filter(p => (platKey === "res" ? ["SES-DF", "SUS-SP", "HC-FMUSP"] : ["UnB", "UFG"]).includes(p));
+  const rec = getRecomendacao(f.esp, filteredProvas);
 
   useEffect(() => {
     setF((prev) => ({ ...prev, prio: rec.nivel }));
@@ -1073,17 +1065,17 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
         {initial?.id ? "Editar tema" : initial?.unstarted ? "Priorizar Tópico" : "Novo tema"}
       </h2>
 
-      <Field label="Nome do tema">
+      <Field label="Nome do tema" info="O nome do tema ou assunto estudado (ex: Trauma de Tórax, Eletrodinâmica).">
         <Input value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} placeholder="ex: Trauma de Tórax" />
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Área">
+        <Field label="Área" info="Grande área ou especialidade do tema para peso de importância e organização.">
           <Select value={f.esp} onChange={(e) => setF({ ...f, esp: e.target.value })}>
             {esps.map((e) => <option key={e}>{e}</option>)}
           </Select>
         </Field>
-        <Field label="Data D0">
+        <Field label="Data D0" info="A data em que o estudo teórico inicial foi (ou será) realizado.">
           <Input type="date" value={f.d0} onChange={(e) => setF({ ...f, d0: e.target.value })} />
         </Field>
       </div>
@@ -1126,12 +1118,12 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
 
       {showOptional && (
         <>
-          <Field label="Deck do Anki Correspondente (opcional)">
+          <Field label="Deck do Anki Correspondente (opcional)" info="Caso sincronize este tema com o Anki, insira o nome do deck correspondente.">
             <Input value={f.ankiDeck || ""} onChange={(e) => setF({ ...f, ankiDeck: e.target.value })} placeholder="ex: Medicina::Cirurgia::Trauma" />
           </Field>
 
            {platKey !== "vest" && (
-            <Field label="PICO / Caso Clínico (opcional)">
+            <Field label="PICO / Caso Clínico (opcional)" info="Resumo clínico rápido no padrão Paciente-Intervenção-Comparação-Outcome.">
               <Textarea
                 rows={2}
                 value={f.pico || ""}
@@ -1141,7 +1133,7 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
             </Field>
           )}
 
-          <Field label="Fonte / obs (opcional)">
+          <Field label="Fonte / obs (opcional)" info="Anotação curta da origem do material ou observações adicionais.">
             <Input value={f.obs} placeholder="ex: MEDCOF Bloco 2" onChange={(e) => setF({ ...f, obs: e.target.value })} />
           </Field>
         </>
@@ -1156,13 +1148,45 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
   );
 }
 
-// ─── AJUSTES MODAL ────────────────────────────────────────────────────────────
+// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ AJUSTES MODAL ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
 export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
-  const { meta, setMeta, plat, setPlat, optimize, sprint, setSprint, userName, setUserName, userEmail, setUserEmail } = useStore();
-  const [activeTab, setActiveTab] = useState("perfil");
+  const { meta, setMeta, plat, setPlat, optimize, sprint, setSprint, userName, setUserName, userEmail, setUserEmail, gamif } = useStore();
+  const temas = useStore((s) => s[plat]?.temas || []);
+  const simulados = useStore((s) => s[plat]?.simulados || []);
+  const saveMeta = (newFields) => {
+    setMeta({ ...meta, ...newFields, estrategiaRefinada: true });
+  };
   const esps = plat === "res" ? ESPS_RES : ESPS_VEST;
+
+  const readiness = getReadinessData({ temas, simulados, meta, plat });
+  const sprintRedAreas = (readiness.priorityList || [])
+    .filter(p => p.zona === "vermelha")
+    .map(p => {
+      let name = p.area;
+      if (name === "Cirurgia Geral") name = "Cirurgia";
+      return name;
+    })
+    .filter(name => esps.includes(name));
+
+  const aplicarFocoProva = () => {
+    if (sprintRedAreas.length === 0) return;
+    setSprint({
+      ...sprint,
+      ativa: true,
+      semana: sprint.semana || `Foco ${readiness.targetProva}`,
+      esps: sprintRedAreas
+    });
+  };
+  const [activeTab, setActiveTab] = useState("perfil");
   const daysLeft = meta.dataProva ? diffDays(todayStr(), meta.dataProva) : null;
-  const urgency  = daysLeft == null ? "" : daysLeft <= 30 ? "text-red-400" : daysLeft <= 90 ? "text-yellow-400" : "text-violet-400";
+  const urgency  = daysLeft == null ? "" : daysLeft <= 30 ? "text-red-400" : daysLeft <= 90 ? "text-yellow-400" : "text-blue-400";
+
+  const xpAudit = gamif?.xpAudit || { acertos: 0, constancia: 0, outros: 0 };
+  const totalAuditXp = (xpAudit.acertos || 0) + (xpAudit.constancia || 0) + (xpAudit.outros || 0);
+  
+  const pctAcertos = totalAuditXp > 0 ? Math.round((xpAudit.acertos / totalAuditXp) * 100) : 0;
+  const pctConstancia = totalAuditXp > 0 ? Math.round((xpAudit.constancia / totalAuditXp) * 100) : 0;
+  const pctOutros = totalAuditXp > 0 ? Math.round((xpAudit.outros / totalAuditXp) * 100) : 0;
 
   const tabs = [
     { k: "perfil", label: "Perfil", icon: User },
@@ -1285,9 +1309,9 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
     <Modal onClose={onClose} wide>
       <div className="flex items-center justify-between border-b border-white/5 pb-3">
         <h2 className="text-[16px] font-black text-gray-100 flex items-center gap-2">
-          <span>⚙ Perfil & Configurações</span>
+          <span>Perfil & Configurações</span>
         </h2>
-        <button onClick={onClose} className="text-gray-600 hover:text-gray-300 text-lg transition-colors">✕</button>
+        <button onClick={onClose} className="text-gray-600 hover:text-gray-300 transition-colors">âœ•</button>
       </div>
 
       {/* Tabs Header */}
@@ -1302,13 +1326,13 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
         {activeTab === "perfil" && (
           <div className="space-y-4 animate-fade-up">
             <div className="flex items-center gap-4 bg-white/[0.01] border border-white/5 p-4 rounded-2xl">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-pink-500 flex items-center justify-center font-black text-white text-2xl select-none shadow-xl shadow-purple-950/60">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center font-black text-white text-2xl select-none shadow-xl shadow-purple-950/60">
                 {(userName || "US").substring(0, 2).toUpperCase()}
               </div>
               <div className="space-y-1">
                 <h3 className="text-sm font-bold text-white leading-tight">{userName || "Estudante"}</h3>
                 <p className="text-[10px] text-gray-500 font-mono">{userEmail || "Sem email cadastrado"}</p>
-                <span className="inline-block text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-violet-600/20 text-violet-400 border border-violet-600/30 font-mono">
+                <span className="inline-block text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-violet-600/20 text-blue-400 border border-violet-600/30 font-mono">
                   PLATAFORMA: {plat === "res" ? "Residência" : "Vestibular"}
                 </span>
               </div>
@@ -1316,10 +1340,10 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
 
             <div className="bg-white/5 rounded-2xl p-4 space-y-3">
               <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Identificação</p>
-              <Field label="Nome de exibição">
+              <Field label="Nome de exibição" info="O nome que o Mentor usará ao se comunicar com você.">
                 <Input type="text" value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Seu nome" />
               </Field>
-              <Field label="Endereço de email">
+              <Field label="Endereço de email" info="O email cadastrado na sua conta para login e sincronização de dados.">
                 <Input type="email" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} placeholder="email@exemplo.com" />
               </Field>
             </div>
@@ -1331,10 +1355,14 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                   <button
                     type="button"
                     key={k}
-                    onClick={() => setPlat(k)}
+                    onClick={() => {
+                      if (window.confirm("Deseja mesmo alterar seu foco de estudo? Todas as métricas, temas e simulados serão alternados para a outra plataforma.")) {
+                        setPlat(k);
+                      }
+                    }}
                     className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
                       plat === k
-                        ? "bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow-md shadow-violet-900/25"
+                        ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-900/25"
                         : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.02] bg-transparent border border-transparent"
                     }`}
                   >
@@ -1343,6 +1371,58 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                 ))}
               </div>
               <p className="text-[10px] text-gray-500 mt-1 leading-normal">Trocar o foco muda todo o painel, cronograma e métricas.</p>
+            </div>
+
+            <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Auditoria de Experiência (XP)</p>
+              <div className="space-y-2">
+                <div className="flex justify-between text-[11.5px]">
+                  <span className="text-gray-400">Total Acumulado:</span>
+                  <span className="font-bold text-blue-400">{gamif?.xp || 0} XP (Nível {gamif?.level || 1})</span>
+                </div>
+                <div className="bg-white/5 rounded-full h-2 overflow-hidden flex">
+                  <div className="bg-emerald-500 h-full" style={{ width: `${pctAcertos}%` }} title={`Acertos: ${pctAcertos}%`} />
+                  <div className="bg-blue-500 h-full" style={{ width: `${pctConstancia}%` }} title={`Constância: ${pctConstancia}%`} />
+                  <div className="bg-cyan-500 h-full" style={{ width: `${pctOutros}%` }} title={`Conquistas/Outros: ${pctOutros}%`} />
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-[10.5px] text-gray-500 pt-1">
+                  <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                    <span>Acertos: {pctAcertos}%</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                    <span>Constância: {pctConstancia}%</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 justify-center sm:justify-start">
+                    <span className="w-2 h-2 rounded-full bg-cyan-500 inline-block" />
+                    <span>Outros: {pctOutros}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Timeline de Conquistas ({gamif?.badges?.length || 0} / {ACHIEVEMENTS.length})</p>
+              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                {ACHIEVEMENTS.map(ach => {
+                  const unlocked = gamif?.badges?.includes(ach.id);
+                  return (
+                    <div key={ach.id} className={`flex items-center gap-3 p-2.5 rounded-xl border transition-all ${unlocked ? "bg-blue-500/[0.03] border-violet-500/20" : "bg-black/20 border-white/5 opacity-50"}`}>
+                      <div className="text-2xl shrink-0">{ach.icon}</div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className={`text-[12px] font-bold leading-tight ${unlocked ? "text-white" : "text-gray-500"}`}>{ach.nome}</p>
+                        <p className="text-[10px] text-gray-500 leading-normal mt-0.5">{ach.desc}</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${unlocked ? "bg-violet-600/20 text-blue-400 border border-violet-600/30" : "bg-white/5 text-gray-600 border border-white/5"}`}>
+                          +{ach.xpReward} XP
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -1353,18 +1433,72 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
             <div className="bg-white/5 rounded-2xl p-4 space-y-4">
               <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">🎯 Planejamento Geral</p>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Data da prova">
-                  <Input type="date" value={meta.dataProva} onChange={(e) => setMeta({ ...meta, dataProva: e.target.value })} />
+                <Field label="Data da prova" info="Data em que será realizado o seu exame principal (utilizado para calcular o cronograma e as regressivas de estudo).">
+                  <Input type="date" value={meta.dataProva} onChange={(e) => saveMeta({ dataProva: e.target.value })} />
                 </Field>
-                <Field label="Meta de acerto (%)">
-                  <Input type="number" min={50} max={100} step={0.1} value={meta.acerto} onChange={(e) => setMeta({ ...meta, acerto: parseFloat(e.target.value) || 85 })} />
+                <Field label="Meta de acerto (%)" info="A porcentagem de acertos em simulados que você deseja atingir no final da preparação.">
+                  <Input type="number" min={50} max={100} step={0.1} value={meta.acerto} onChange={(e) => saveMeta({ acerto: parseFloat(e.target.value) || 85 })} />
                 </Field>
               </div>
               <p className="text-[9.5px] text-gray-500 pl-1 -mt-2">
                 💡 Recomendação: manter a meta de acerto entre 85% e 90% para melhor retenção e estabilidade da curva no FSRS.
               </p>
-              <Field label="Meta diária de revisões (0 = ilimitada)">
-                <Input type="number" min={0} value={meta.metaDiaria || 0} onChange={(e) => setMeta({ ...meta, metaDiaria: +e.target.value })} />
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Teto diário de revisões" info="O número máximo de cards de revisão exibidos no Dashboard por dia. Excessos são movidos de forma inteligente para a fila reserva para amanhã, aliviando a carga mental.">
+                  <Input type="number" min={5} max={500} value={meta.maxRevisoesDia || 30} onChange={(e) => saveMeta({ maxRevisoesDia: parseInt(e.target.value, 10) || 30 })} />
+                </Field>
+                <Field label="Intervalo Máximo (Dias)" info="O limite máximo de dias para o agendamento de uma revisão. Garante que você revise todos os temas consolidados pelo menos uma vez a cada N dias.">
+                  <Input type="number" min={30} max={365} value={meta.intervaloMaxDias || 180} onChange={(e) => saveMeta({ intervaloMaxDias: parseInt(e.target.value, 10) || 180 })} />
+                </Field>
+              </div>
+
+              <Field label="Retenção FSRS Desejada (%)" info="A probabilidade de recall que você quer ter quando for agendar um card. Mais alto (ex: 90%) agenda revisões mais frequentes. Mais baixo (ex: 80%) diminui o ritmo diário e o volume de revisões.">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min={70}
+                    max={97}
+                    value={Math.round((meta.retencaoFSRS || 0.90) * 100)}
+                    onChange={(e) => saveMeta({ retencaoFSRS: parseFloat(e.target.value) / 100 })}
+                    className="flex-1 accent-purple-600 cursor-pointer h-1.5 bg-white/10 rounded-lg outline-none"
+                  />
+                  <span className="font-mono font-bold text-xs text-white shrink-0">{Math.round((meta.retencaoFSRS || 0.90) * 100)}%</span>
+                </div>
+              </Field>
+
+              <Field label="Meta diária de revisões (0 = ilimitada)" info="Número de revisões que você se compromete a fazer diariamente como meta pessoal (não confunda com o Teto Diário do FSRS).">
+                <div className="flex gap-2">
+                  <Input type="number" min={0} value={meta.metaDiaria || 0} onChange={(e) => saveMeta({ metaDiaria: +e.target.value })} className="flex-1" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const avgWorkload = Math.round(Object.values(getWorkloadProjection(temas, 14)).reduce((a,b)=>a+b, 0) / 14) || 10;
+                      saveMeta({ metaDiaria: avgWorkload });
+                      alert(`✓ Meta Diária autônoma calibrada em ${avgWorkload} revisões/dia (com base na sua carga projetada para os próximos 14 dias).`);
+                    }}
+                    className="px-3 py-2 bg-violet-600/20 hover:bg-violet-600/30 text-blue-400 border border-violet-600/30 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    🪄 Autocalcular
+                  </button>
+                </div>
+              </Field>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Meta diária de questões (0 = inativo)" info="Quantidade de questões resolvidas que você quer atingir por dia (utilizado para calcular o Saldo de Ritmo na aba de Prontidão).">
+                  <Input type="number" min={0} value={meta.metaQuestoesDia || 0} onChange={(e) => saveMeta({ metaQuestoesDia: parseInt(e.target.value, 10) || 0 })} />
+                </Field>
+                <Field label="Meta total de questões (0 = inativo)" info="Quantidade total de questões resolvidas que você quer atingir ao final da preparação.">
+                  <Input type="number" min={0} value={meta.metaQuestoesTotal || 0} onChange={(e) => saveMeta({ metaQuestoesTotal: parseInt(e.target.value, 10) || 0 })} />
+                </Field>
+              </div>
+
+              <Field label="Tom do Mentor" info="Ajuste a personalidade conversacional do seu Mentor. Gentil: tom de apoio e sem rigidez; Neutro: focado em dados e direto; Firme: disciplina rígida e focado na meta de aprovação.">
+                <Select value={meta.tomMentor || "gentil"} onChange={(e) => saveMeta({ tomMentor: e.target.value })}>
+                  <option value="gentil">Gentil</option>
+                  <option value="neutro">Neutro</option>
+                  <option value="firme">Firme</option>
+                </Select>
               </Field>
 
               {daysLeft != null && (
@@ -1374,10 +1508,68 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
               )}
             </div>
 
+            {/* Modo Pausa / Férias */}
+            <div className="bg-white/5 rounded-2xl p-4 space-y-3 text-left">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                <span>🌴 Modo Pausa / Férias</span>
+                {meta.pausadoAte && todayStr() <= meta.pausadoAte && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded font-black bg-blue-500/20 text-blue-400 border border-blue-600/30">
+                    CONGELADO
+                  </span>
+                )}
+              </p>
+              <p className="text-[11px] text-gray-500 leading-relaxed">
+                Vai viajar ou dar um descanso? Congele seus agendamentos FSRS para não acumular revisões atrasadas enquanto estiver fora. O streak móvel é preservado.
+              </p>
+              {meta.pausadoAte && todayStr() <= meta.pausadoAte ? (
+                <div className="space-y-2">
+                  <p className="text-[10.5px] text-blue-300">
+                    Seus agendamentos estão pausados até <strong>{fmtFull(meta.pausadoAte)}</strong>.
+                  </p>
+                  <Btn onClick={() => { useStore.getState().cancelarPausa(); }} className="w-full">
+                    Retomar Estudos Agora
+                  </Btn>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  {[3, 7, 15].map((dias) => (
+                    <button
+                      key={dias}
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Deseja pausar seus estudos por ${dias} dias? Seus agendamentos serão empurrados.`)) {
+                          useStore.getState().iniciarFerias(dias);
+                        }
+                      }}
+                      className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 rounded-xl text-[10.5px] font-bold transition-all cursor-pointer"
+                    >
+                      {dias} dias
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const dias = window.prompt("Quantos dias deseja se ausentar?", "10");
+                      if (dias) {
+                        const n = parseInt(dias, 10);
+                        if (n > 0) useStore.getState().iniciarFerias(n);
+                      }
+                    }}
+                    className="px-3 py-2 bg-white/5 hover:bg-[#1f1f23] text-gray-400 border border-white/10 rounded-xl text-[10.5px] font-bold cursor-pointer"
+                  >
+                    Outro...
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Otimizador FSRS */}
             <div className="bg-white/5 rounded-2xl p-4 space-y-3">
-              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">⚡ Otimizador de Ciclos FSRS</p>
-              <p className="text-[11px] text-gray-500 leading-relaxed">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>⚡ Otimizador de Ciclos FSRS</span>
+                <InfoTooltip texto="Reorganiza as revisões que estão atrasadas de forma que você possa colocá-las em dia sem desregular o peso cognitivo agendado FSRS." />
+              </p>
+              <p className="text-[11px] text-gray-500 leading-relaxed font-medium">
                 Reagenda revisões vencidas acumuladas distribuindo-as no tempo e preservando os pesos de retenção.
                 {overdueCount > 0 ? <> Você possui <strong className="text-red-400">{overdueCount} pendentes</strong>.</> : " Nenhuma pendência atualmente."}
               </p>
@@ -1401,6 +1593,15 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                   {sprint?.ativa ? "Desativar" : "Ativar"}
                 </button>
               </div>
+              {sprintRedAreas.length > 0 && (
+                <button
+                  type="button"
+                  onClick={aplicarFocoProva}
+                  className="w-full py-2 bg-gradient-to-r from-red-600/20 to-rose-600/20 hover:from-red-600 hover:to-rose-500 hover:text-white border border-red-500/20 rounded-xl text-[11px] font-bold text-red-400 transition-all cursor-pointer"
+                >
+                  🎯 Focar a Zona Vermelha de {readiness.targetProva} ({sprintRedAreas.join(", ")})
+                </button>
+              )}
               <p className="text-[10px] text-gray-500">Filtrar painel para estas especialidades foco:</p>
               <div className="grid grid-cols-2 gap-1 max-h-24 overflow-y-auto border border-white/5 p-2 rounded-xl bg-black/40">
                 {esps.map(esp => (
@@ -1410,6 +1611,25 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                   </label>
                 ))}
               </div>
+            </div>
+
+            {/* Apoio ao Bem-estar (CVV 188) */}
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/5 flex items-center justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold text-blue-400 uppercase tracking-wider">🌱 Apoio ao Bem-estar</p>
+                <p className="text-[10px] text-gray-400 leading-normal">
+                  Se o ritmo estiver pesado, lembre-se de que sua saúde mental vem primeiro. Apoio gratuito e sigiloso disponível 24h.
+                </p>
+              </div>
+              <a
+                href="https://cvv.org.br"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 px-3 py-1.5 bg-violet-600/20 hover:bg-violet-600/30 text-blue-400 border border-violet-600/30 text-[10px] font-bold rounded-xl transition-all flex items-center gap-1.5 hover:scale-105"
+              >
+                <span>CVV 188</span>
+                <span className="text-[11px]">↗</span>
+              </a>
             </div>
           </div>
         )}
@@ -1432,7 +1652,7 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                         onClick={() => {
                           const current = meta.provasAlvo || [];
                           const next = selected ? current.filter((x) => x !== pr) : [...current, pr];
-                          setMeta({ ...meta, provasAlvo: next });
+                          saveMeta({ provasAlvo: next });
                         }}
                         className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all ${
                           selected
@@ -1448,16 +1668,70 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Plataforma de questões preferida">
+                <Field label="Plataforma de Questões" info="A plataforma externa de questões em que você resolve seus blocos de exercícios.">
                   <Select
-                    value={meta.plataformaQuestoes || questPlatforms[0]}
-                    onChange={(e) => setMeta({ ...meta, plataformaQuestoes: e.target.value })}
+                    value={questPlatforms.includes(meta.ferramentas?.questoes) ? meta.ferramentas?.questoes : (meta.plataformaQuestoes && questPlatforms.includes(meta.plataformaQuestoes) ? meta.plataformaQuestoes : "Outro")}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      saveMeta({
+                        plataformaQuestoes: val,
+                        ferramentas: { ...(meta.ferramentas || { flashcards: "Anki" }), questoes: val }
+                      });
+                    }}
                   >
                     {questPlatforms.map(p => <option key={p} value={p}>{p}</option>)}
                   </Select>
                 </Field>
-                <Field label="Horas disponíveis / dia">
-                  <Input type="number" min={1} max={24} value={meta.tempoDisponivel || 2} onChange={(e) => setMeta({ ...meta, tempoDisponivel: +e.target.value })} />
+
+                <Field label="Ferramenta de Flashcards" info="A ferramenta de repetição espaçada externa usada para seus flashcards.">
+                  <Select
+                    value={["Anki", "RemNote", "Quizlet"].includes(meta.ferramentas?.flashcards) ? meta.ferramentas?.flashcards : "Outro"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      saveMeta({
+                        ferramentas: { ...(meta.ferramentas || { questoes: "MedEvo" }), flashcards: val }
+                      });
+                    }}
+                  >
+                    {["Anki", "RemNote", "Quizlet", "Outro"].map(p => <option key={p} value={p}>{p}</option>)}
+                  </Select>
+                </Field>
+              </div>
+
+              {((meta.ferramentas?.questoes === "Outro" || (meta.ferramentas?.questoes && !questPlatforms.includes(meta.ferramentas?.questoes))) ||
+                (meta.ferramentas?.flashcards === "Outro" || (meta.ferramentas?.flashcards && !["Anki", "RemNote", "Quizlet"].includes(meta.ferramentas?.flashcards)))) && (
+                <div className="grid grid-cols-2 gap-3 p-3 bg-black/20 border border-white/5 rounded-xl">
+                  {(!meta.ferramentas?.questoes || meta.ferramentas?.questoes === "Outro" || !questPlatforms.includes(meta.ferramentas?.questoes)) ? (
+                    <Field label="Nome da Plataforma de Questões" info="Escreva o nome personalizado da sua plataforma de questões.">
+                      <Input
+                        type="text"
+                        value={meta.ferramentas?.questoes === "Outro" ? "" : (meta.ferramentas?.questoes || "")}
+                        onChange={(e) => saveMeta({
+                          plataformaQuestoes: e.target.value,
+                          ferramentas: { ...(meta.ferramentas || { flashcards: "Anki" }), questoes: e.target.value }
+                        })}
+                        placeholder="Ex: Tec Concursos"
+                      />
+                    </Field>
+                  ) : <div />}
+                  {(!meta.ferramentas?.flashcards || meta.ferramentas?.flashcards === "Outro" || !["Anki", "RemNote", "Quizlet"].includes(meta.ferramentas?.flashcards)) ? (
+                    <Field label="Nome da Ferramenta de Flashcards" info="Escreva o nome personalizado da sua ferramenta de flashcards.">
+                      <Input
+                        type="text"
+                        value={meta.ferramentas?.flashcards === "Outro" ? "" : (meta.ferramentas?.flashcards || "")}
+                        onChange={(e) => saveMeta({
+                          ferramentas: { ...(meta.ferramentas || { questoes: "MedEvo" }), flashcards: e.target.value }
+                        })}
+                        placeholder="Ex: Flashcards Web"
+                      />
+                    </Field>
+                  ) : <div />}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Horas disponíveis / dia" info="Média de horas diárias dedicadas ao estudo. Auxilia o Mentor na recomendação e limite de carga.">
+                  <Input type="number" min={1} max={24} value={meta.tempoDisponivel || 2} onChange={(e) => saveMeta({ tempoDisponivel: +e.target.value })} />
                 </Field>
               </div>
 
@@ -1467,13 +1741,13 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                     <input
                       type="checkbox"
                       checked={meta.isSegundaTentativa || false}
-                      onChange={(e) => setMeta({ ...meta, isSegundaTentativa: e.target.checked })}
+                      onChange={(e) => saveMeta({ isSegundaTentativa: e.target.checked })}
                       className="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black"
                     />
                     <span>Segunda tentativa / Mais de um ano estudando</span>
                   </label>
                   <div className="grid grid-cols-2 gap-3">
-                    <Field label="Meta de Acertos (Nº Qs)">
+                    <Field label="Meta de Acertos (Nº Qs)" info="Sua meta de número de acertos na prova alvo.">
                       <Input
                         type="number"
                         min={0}
@@ -1482,12 +1756,12 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                           const val = +e.target.value;
                           const tot = meta.totalQuestoesAlvo || 100;
                           const pct = tot > 0 ? parseFloat(((val / tot) * 100).toFixed(2)) : 0;
-                          setMeta({ ...meta, acertosAlvo: val, notaCorteAlvo: pct });
+                          saveMeta({ acertosAlvo: val, notaCorteAlvo: pct });
                         }}
                         placeholder="Ex: 75"
                       />
                     </Field>
-                    <Field label="Total Questões Prova">
+                    <Field label="Total Questões Prova" info="O total de questões da sua prova alvo para cálculo de aproveitamento percentual estratégico.">
                       <Input
                         type="number"
                         min={1}
@@ -1496,7 +1770,7 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                           const tot = +e.target.value;
                           const val = meta.acertosAlvo || 0;
                           const pct = tot > 0 ? parseFloat(((val / tot) * 100).toFixed(2)) : 0;
-                          setMeta({ ...meta, totalQuestoesAlvo: tot, notaCorteAlvo: pct });
+                          saveMeta({ totalQuestoesAlvo: tot, notaCorteAlvo: pct });
                         }}
                         placeholder="Ex: 90"
                       />
@@ -1505,10 +1779,10 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                   <p className="text-[10px] text-gray-500 mt-1 pl-1">
                     Sua meta equivale a <strong className="text-emerald-400">{meta.notaCorteAlvo || 0}%</strong> de acerto. Recomendamos manter entre 85% e 90% para otimização da retenção no FSRS.
                   </p>
-                  <Field label="Área de maior dificuldade">
+                  <Field label="Área de maior dificuldade" info="A grande área onde seu desempenho é historicamente mais fraco. O MedRev irá priorizar revisões desta área.">
                     <Select
                       value={meta.areaPuxouBaixo || ""}
-                      onChange={(e) => setMeta({ ...meta, areaPuxouBaixo: e.target.value })}
+                      onChange={(e) => saveMeta({ areaPuxouBaixo: e.target.value })}
                     >
                       <option value="">Nenhuma selecionada</option>
                       {esps.map(e => <option key={e} value={e}>{e}</option>)}
@@ -1531,7 +1805,7 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                 <button
                   type="button"
                   onClick={handleExportBackup}
-                  className="px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-[11px] font-bold transition-all"
+                  className="px-3 py-2 bg-violet-600 hover:bg-blue-500 text-white rounded-xl text-[11px] font-bold transition-all"
                 >
                   Exportar Backup
                 </button>
@@ -1574,7 +1848,7 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
   );
 }
 
-// ─── BRAIN DUMP D1 ASSISTENTE MODAL ───────────────────────────────────────────
+// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ BRAIN DUMP D1 ASSISTENTE MODAL ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
 export function BrainDumpD1Modal({ tema, onConfirm, onCancel }) {
   const [seconds, setSeconds] = useState(300); // 5 Minutos
   const [timerActive, setTimerActive] = useState(true);
@@ -1591,22 +1865,26 @@ export function BrainDumpD1Modal({ tema, onConfirm, onCancel }) {
   const fmtTimer = () => `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 
   const formMapeamento = [
-    { k: "epidemiologia", l: "📍 Epidemiologia / Fatores de Risco", p: "Quem? Quando? Ocorrência típica de prova..." },
-    { k: "fisiopatologia", l: "🔬 Fisiopatologia / Mecanismo", p: "Vias biológicas, gatilhos anatômicos cruciais..." },
-    { k: "diagnostico", l: "🔍 Critérios Diagnósticos / exames", p: "Padrão-ouro, sinais clínicos patognomônicos..." },
-    { k: "conduta", l: "💊 Conduta Inicial e Tratamento", p: "Medicamentos, doses, indicações cirúrgicas puras..." },
-    { k: "complicacoes", l: "⚠️ Complicações / Padrões de Erro", p: "O que o distrator de prova tenta induzir a errar..." }
+    { k: "epidemiologia", l: "📍 Epidemiologia / Fatores de Risco", p: "Quem? Quando? Ocorrência típica de prova...", info: "Quem é o paciente típico de prova? Idade, sexo, fatores predisponentes ou exposição." },
+    { k: "fisiopatologia", l: "🔬 Fisiopatologia / Mecanismo", p: "Vias biológicas, gatilhos anatômicos cruciais...", info: "Como a doença se desenvolve no organismo. Alterações anatômicas ou bioquímicas principais." },
+    { k: "diagnostico", l: "🔍 Critérios Diagnósticos / exames", p: "Padrão-ouro, sinais clínicos patognomônicos...", info: "Qual o exame padrão-ouro? Quais os critérios para fechar o diagnóstico e sinais clínicos típicos." },
+    { k: "conduta", l: "💊 Conduta Inicial e Tratamento", p: "Medicamentos, doses, indicações cirúrgicas puras...", info: "Medidas iniciais no pronto-socorro, drogas de primeira escolha, doses e tratamento definitivo." },
+    { k: "complicacoes", l: "⚠️ Complicações / Padrões de Erro", p: "O que o distrator de prova tenta induzir a errar...", info: "Complicações mais comuns da doença ou do tratamento e pegadinhas clássicas de prova." }
   ];
 
   return (
     <Modal onClose={onCancel} wide>
       <div className="flex items-center justify-between border-b border-white/5 pb-2">
         <div><h2 className="text-[15px] font-black text-white">{tema.nome}</h2><p className="text-[11px] text-gray-500">Brain Dump D1</p></div>
-        <div className={`px-3 py-1 rounded-xl font-mono text-[16px] font-black ${seconds <= 60 ? "bg-red-600/20 text-red-400 border border-red-500/30 animate-pulse" : "bg-white/5 text-violet-400 border border-white/10"}`}>{fmtTimer()}</div>
+        <div className={`px-3 py-1 rounded-xl font-mono text-[16px] font-black ${seconds <= 60 ? "bg-red-600/20 text-red-400 border border-red-500/30 animate-pulse" : "bg-white/5 text-blue-400 border border-white/10"}`}>{fmtTimer()}</div>
       </div>
       <div className="space-y-3 my-2 max-h-[55vh] overflow-y-auto pr-1 text-left">
         {formMapeamento.map(f => (
-          <div key={f.k} className="space-y-1"><label className="block text-[11px] font-bold text-gray-400 uppercase">{f.l}</label><Textarea rows={2} value={fields[f.k]} onChange={e => setFields({ ...fields, [f.k]: e.target.value })} placeholder={f.p} /></div>
+          <div key={f.k} className="space-y-1">
+            <Field label={f.l} info={f.info}>
+              <Textarea rows={2} value={fields[f.k]} onChange={e => setFields({ ...fields, [f.k]: e.target.value })} placeholder={f.p} />
+            </Field>
+          </div>
         ))}
       </div>
       <div className="flex gap-2 border-t border-white/5 pt-3">
@@ -1618,7 +1896,7 @@ export function BrainDumpD1Modal({ tema, onConfirm, onCancel }) {
   );
 }
 
-// ─── GLOBAL SEARCH MODAL (Ctrl + K) ──────────────────────────────────────────
+// ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ GLOBAL SEARCH MODAL (Ctrl + K) ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
 export function GlobalSearchModal({ onClose, temas, plat, onSelectTema, onIniciarTema }) {
   const [q, setQ] = useState("");
   
@@ -1718,7 +1996,7 @@ export function GlobalSearchModal({ onClose, temas, plat, onSelectTema, onInicia
                       onIniciarTema(r);
                       onClose();
                     }}
-                    className="px-3.5 py-2 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white text-xs font-bold rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-purple-900/10"
+                    className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white text-xs font-bold rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-blue-900/10"
                   >
                     Iniciar Ciclo
                   </button>
@@ -1735,3 +2013,137 @@ export function GlobalSearchModal({ onClose, temas, plat, onSelectTema, onInicia
     </Modal>
   );
 }
+
+export function LojaModal({ onClose }) {
+  const gamif = useStore((s) => s.gamif) || { xp: 0, level: 1, freezesOwned: 1, recoveryOwned: 0, focusBoostActive: false };
+  const buyItem = useStore((s) => s.buyItem);
+  
+  const items = [
+    {
+      key: "freeze",
+      nome: "Congelamento de Streak",
+      desc: "Protege sua streak de ser zerada por 1 dia inteiro de ausência de estudos. Ativado automaticamente.",
+      icon: "❄️",
+      costXp: 150,
+      reqLevel: 2,
+      efeto: "Estoque máximo de 2 freezes.",
+      owned: gamif.freezesOwned || 0,
+      maxed: (gamif.freezesOwned || 0) >= 2,
+    },
+    {
+      key: "recovery",
+      nome: "Recuperação de Streak",
+      desc: "Restaura uma streak que foi quebrada nas últimas 48h. Uso manual através do painel.",
+      icon: "🛟",
+      costXp: 400,
+      reqLevel: 4,
+      efeto: "Permite reerguer sua ofensiva perdida.",
+      owned: gamif.recoveryOwned || 0,
+      maxed: false,
+    },
+    {
+      key: "boost",
+      nome: "Boost de Foco (Cosmético)",
+      desc: "Habilita um tema alternativo verde esmeralda e ciano no dashboard.",
+      icon: "🎯",
+      costXp: 100,
+      reqLevel: 3,
+      efeto: "Visual premium extra para foco.",
+      owned: gamif.focusBoostActive ? 1 : 0,
+      maxed: gamif.focusBoostActive,
+    }
+  ];
+
+  const handleBuy = (item) => {
+    if (gamif.xp < item.costXp) {
+      alert("Você não possui XP suficiente!");
+      return;
+    }
+    if (gamif.level < item.reqLevel) {
+      alert(`Este item requer Nível ${item.reqLevel}!`);
+      return;
+    }
+    if (item.maxed) {
+      alert("Você já possui a quantidade máxima deste item!");
+      return;
+    }
+    buyItem(item.key, item.costXp, item.reqLevel);
+  };
+
+  return (
+    <Modal onClose={onClose} wide>
+      <div className="flex items-center justify-between border-b border-white/5 pb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-500 flex items-center justify-center shadow-lg shadow-amber-950/20">
+            <span className="text-sm">🏪</span>
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-white uppercase tracking-wider">Loja do Mentor</h3>
+            <p className="text-[10px] text-gray-500">Troque seus pontos de esforço por itens estratégicos.</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-[9px] text-gray-500 font-bold uppercase">Seu Saldo</p>
+            <p className="text-xs font-black text-amber-400 font-mono">{gamif.xp} XP</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl px-2.5 py-1 text-center">
+            <p className="text-[8px] text-gray-500 font-bold uppercase leading-none">Nível</p>
+            <p className="text-xs font-black text-blue-400 font-mono mt-0.5">{gamif.level}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="my-2 max-h-[60vh] overflow-y-auto pr-1 space-y-3 text-left">
+        {items.map(item => {
+          const canBuy = gamif.xp >= item.costXp && gamif.level >= item.reqLevel && !item.maxed;
+          return (
+            <div key={item.key} className="bg-white/[0.01] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
+              <div className="flex gap-3 items-start">
+                <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-xl shrink-0 mt-0.5">
+                  {item.icon}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="text-sm font-bold text-white leading-none">{item.nome}</h4>
+                    {item.owned > 0 && (
+                      <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 leading-none">
+                        Possui: {item.owned}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{item.desc}</p>
+                  <p className="text-[9.5px] text-gray-600 mt-1">{item.efeto}</p>
+                </div>
+              </div>
+
+              <div className="shrink-0 flex items-center gap-3 sm:flex-col sm:items-end justify-between border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0">
+                <div className="text-left sm:text-right">
+                  <p className="text-[9px] text-gray-500 font-bold uppercase">Preço</p>
+                  <p className="text-sm font-black text-amber-400 font-mono">{item.costXp} XP</p>
+                  {gamif.level < item.reqLevel && (
+                    <p className="text-[9px] text-red-400 font-bold mt-0.5">Requer Nvl {item.reqLevel}</p>
+                  )}
+                </div>
+
+                <button
+                  disabled={!canBuy}
+                  onClick={() => handleBuy(item)}
+                  className={`px-4 py-2 text-xs font-bold rounded-xl transition-all active:scale-[0.98] ${
+                    canBuy
+                      ? "bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-lg shadow-blue-900/10 cursor-pointer"
+                      : "bg-white/5 text-gray-600 border border-white/5 cursor-not-allowed"
+                  }`}
+                >
+                  {item.maxed ? "Esgotado" : "Comprar"}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Modal>
+  );
+}
+
+

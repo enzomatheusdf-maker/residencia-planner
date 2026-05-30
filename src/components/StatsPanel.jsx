@@ -3,169 +3,17 @@ import React, { useState, useMemo } from "react";
 import { BarChart3, ShieldAlert, Award, AlertTriangle, TrendingUp, Info, HelpCircle, Flame } from "lucide-react";
 import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, todayStr, addDays, fmtDate } from "../core/fsrs";
-import { migrarSim, PESOS_PROVA_VEST } from "../hooks/useMetrics";
-
-const PROVA_STATS = {
-  ENAMED: {
-    areas: [
-      { name: "Cirurgia Geral", pct: 20 }, { name: "Clínica Médica", pct: 20 },
-      { name: "Ginecologia e Obstetrícia", pct: 20 }, { name: "Pediatria", pct: 20 },
-      { name: "Medicina Preventiva", pct: 20 }
-    ],
-    subtemasFoco: [
-      { name: "Trauma de Tórax e Abdominal", pct: 32 }, { name: "Abdome Agudo (Inflamatório/Obstrutivo)", pct: 28 },
-      { name: "Hérnias da Parede Abdominal", pct: 18 }, { name: "Cuidados Pré/Pós-Operatórios (REMIT)", pct: 14 },
-      { name: "Atendimento Inicial ao Politraumatizado", pct: 8 }
-    ],
-    gaps2025: [
-      { name: "Queimaduras Graves e Reposição Volumétrica", especialidade: "Cirurgia / Emergência", risk: "Crítico" },
-      { name: "Níveis de Prevenção e Indicadores de Saúde APS", especialidade: "Preventiva", risk: "Alto" },
-      { name: "Emergências Hiperglicêmicas (CAD / EHH)", especialidade: "Clínica Médica", risk: "Alto" }
-    ]
-  },
-  "USP-SP": {
-    areas: [
-      { name: "Cirurgia Especializada", pct: 22 }, { name: "Clínica Médica", pct: 21 },
-      { name: "Obstetrícia e Ginecologia", pct: 19 }, { name: "Pediatria Pura", pct: 18 },
-      { name: "Epidemiologia e SUS", pct: 20 }
-    ],
-    subtemasFoco: [
-      { name: "Atendimento Avançado no Trauma (ATLS 10)", pct: 35 }, { name: "Afecções Cirúrgicas do Esôfago e Estômago", pct: 25 },
-      { name: "Abdome Agudo Vascular e Isquêmico", pct: 20 }, { name: "Cicatrização, Fios e Anestésicos Locais", pct: 12 },
-      { name: "Urologia de Emergência (Escroto Agudo)", pct: 8 }
-    ],
-    gaps2025: [
-      { name: "Trauma Cranioencefálico (TCE) e Drenagem", especialidade: "Cirurgia", risk: "Crítico" },
-      { name: "Infecções Congênitas e Triagem Neonatal", especialidade: "Pediatria", risk: "Alto" }
-    ]
-  },
-  "UNIFESP": {
-    areas: [
-      { name: "Cirurgia Geral e Trauma", pct: 23 }, { name: "Clínica Médica", pct: 20 },
-      { name: "Saúde Coletiva", pct: 19 }, { name: "Pediatria", pct: 18 },
-      { name: "Ginecologia de Alta Complexidade", pct: 20 }
-    ],
-    subtemasFoco: [
-      { name: "Pancreatite Aguda e Urgências Biliares", pct: 30 }, { name: "Nódulos Hepáticos e Carcinoma Hepatocelular", pct: 25 },
-      { name: "Hérnias Inguinais (Anatomia do Canal)", pct: 22 }, { name: "Apendicite Aguda e Complicações Obstrutivas", pct: 15 },
-      { name: "Trombose Venosa Profunda e Profilaxia", pct: 8 }
-    ],
-    gaps2025: [
-      { name: "Diverticulite Aguda e Classificação de Hinchey", especialidade: "Cirurgia", risk: "Crítico" },
-      { name: "Nefrologia Pediátrica e Glomerulopatias", especialidade: "Pediatria", risk: "Alto" }
-    ]
-  },
-  ENEM: {
-    areas: [
-      { name: "Matemática e suas Tecnologias", pct: 25 },
-      { name: "Ciências da Natureza e suas Tecnologias", pct: 25 },
-      { name: "Ciências Humanas e suas Tecnologias", pct: 25 },
-      { name: "Linguagens, Códigos e suas Tecnologias", pct: 25 }
-    ],
-    subtemasFoco: [
-      { name: "Geometria Plana e Espacial", pct: 30 },
-      { name: "Funções (Afim e Quadrática)", pct: 25 },
-      { name: "Estatística (Média, Mediana, Moda)", pct: 20 },
-      { name: "Eletrodinâmica (Circuitos e Potência)", pct: 15 },
-      { name: "Estequiometria e Soluções", pct: 10 }
-    ],
-    gaps2025: [
-      { name: "Funções Trigonométricas e Gráficos", especialidade: "Matemática", risk: "Crítico" },
-      { name: "Termodinâmica e Leis dos Gases", especialidade: "Física", risk: "Alto" },
-      { name: "Genética Molecular e Biotecnologia", especialidade: "Biologia", risk: "Alto" }
-    ]
-  },
-  FUVEST: {
-    areas: [
-      { name: "Matemática", pct: 20 },
-      { name: "Física e Química", pct: 30 },
-      { name: "Biologia", pct: 15 },
-      { name: "História e Geografia", pct: 20 },
-      { name: "Português e Literatura", pct: 15 }
-    ],
-    subtemasFoco: [
-      { name: "Geometria Analítica e Cônicas", pct: 32 },
-      { name: "Trigonometria no Ciclo", pct: 24 },
-      { name: "Cinemática e Dinâmica", pct: 20 },
-      { name: "Química Orgânica e Isomeria", pct: 14 },
-      { name: "Citologia e Divisão Celular", pct: 10 }
-    ],
-    gaps2025: [
-      { name: "Cônicas (Elipse, Hipérbole, Parábola)", especialidade: "Matemática", risk: "Crítico" },
-      { name: "Equilíbrio Químico e pH", especialidade: "Química", risk: "Alto" },
-      { name: "Obras Literárias Obrigatórias", especialidade: "Literatura", risk: "Alto" }
-    ]
-  },
-  UFG: {
-    areas: [
-      { name: "Matemática", pct: 22 },
-      { name: "Ciências da Natureza", pct: 28 },
-      { name: "História e Geografia (Geral e Goiás)", pct: 24 },
-      { name: "Linguagens e Literatura", pct: 26 }
-    ],
-    subtemasFoco: [
-      { name: "Funções e Análise Gráfica", pct: 30 },
-      { name: "Geografia Física e Climas de Goiás", pct: 25 },
-      { name: "Estequiometria Básica", pct: 20 },
-      { name: "História Regional de Goiás", pct: 15 },
-      { name: "Ecologia e Impactos Ambientais", pct: 10 }
-    ],
-    gaps2025: [
-      { name: "Geografia e Geologia de Goiás", especialidade: "Geografia", risk: "Crítico" },
-      { name: "Cinemática Escalar e Vetores", especialidade: "Física", risk: "Alto" },
-      { name: "Sintaxe do Período Composto", especialidade: "Português", risk: "Alto" }
-    ]
-  },
-  UnB: {
-    areas: [
-      { name: "Matemática e Ciências da Natureza", pct: 35 },
-      { name: "Ciências Humanas, Filosofia e Sociologia", pct: 30 },
-      { name: "Linguagens, Literatura e Artes", pct: 35 }
-    ],
-    subtemasFoco: [
-      { name: "Cálculo de Áreas e Volumes", pct: 28 },
-      { name: "Eletromagnetismo e Indução", pct: 24 },
-      { name: "Fisiologia Humana e Imunologia", pct: 20 },
-      { name: "Química Geral e Termoquímica", pct: 16 },
-      { name: "Vanguardas Europeias e Arte Brasileira", pct: 12 }
-    ],
-    gaps2025: [
-      { name: "Obras Literárias do PAS / UnB", especialidade: "Literatura", risk: "Crítico" },
-      { name: "Contratualistas e Ética", especialidade: "Filosofia", risk: "Alto" },
-      { name: "Genética Mendeliana e Cruzamentos", especialidade: "Biologia", risk: "Alto" }
-    ]
-  }
-};
+import { calcCalibration } from "../core/calibration";
+import { getMentorPhrase } from "../core/mentor";
+import { getReadinessData } from "../core/readiness";
 
 export default function StatsPanel() {
-  const [mainTab, setMainTab] = useState("meu");
-  const [selectedProva, setSelectedProva] = useState(null);
-  const { plat, temaStats } = useStore();
+  const { plat, temaStats, userName, meta } = useStore();
   const temas = useStore((s) => s[plat]?.temas || []);
-  const rawSimulados = useStore((s) => s[plat]?.simulados || []);
 
   const totalSessions = useMemo(() => {
     return temas.flatMap((t) => Object.values(t.rev)).filter((r) => r.done).length;
   }, [temas]);
-
-  // Determine available provas based on platform
-  const provasDisponiveis = plat === "res" 
-    ? ["ENAMED", "USP-SP", "UNIFESP"] 
-    : ["ENEM", "FUVEST", "UFG", "UnB"];
-
-  // Initialize selectedProva on first render or when platform changes
-  if (selectedProva === null) {
-    const firstProva = provasDisponiveis[0];
-    if (firstProva !== selectedProva) {
-      setSelectedProva(firstProva);
-    }
-  }
-
-  // Ensure selectedProva is valid for current platform
-  const validProva = selectedProva && provasDisponiveis.includes(selectedProva) ? selectedProva : provasDisponiveis[0];
-  const prova = PROVA_STATS[validProva] || {};
-
-  const simulados = useMemo(() => rawSimulados.map(migrarSim), [rawSimulados]);
 
   const personalStats = useMemo(() => {
     const startedTemas = temas.filter(t => !t.unstarted);
@@ -199,10 +47,8 @@ export default function StatsPanel() {
     const allAcertos = startedTemas.flatMap(t => STEPS.map(s => t.rev[s.key])).filter(r => r.done && r.acerto != null);
     const overallAcc = allAcertos.length ? Math.round(allAcertos.reduce((a, r) => a + r.acerto, 0) / allAcertos.length * 100) : null;
     const totalConcluidos = startedTemas.filter(t => STEPS.every(s => t.rev[s.key].done)).length;
-    const simPcts = simulados.map(s => s.pct);
-    const simAvg = simPcts.length ? Math.round(simPcts.reduce((a, b) => a + b) / simPcts.length) : null;
-    return { espStats, totalQuestoes, totalDoneSteps, bestEsp, worstEsp, overallAcc, totalConcluidos, simAvg };
-  }, [temas, simulados]);
+    return { espStats, totalQuestoes, totalDoneSteps, bestEsp, worstEsp, overallAcc, totalConcluidos };
+  }, [temas]);
 
   // 12-Week Heatmap generation
   const heatmapDays = useMemo(() => {
@@ -306,137 +152,63 @@ export default function StatsPanel() {
     return { line, area, pts };
   }, [chronologicalAccuracy]);
 
-  // Error Stats Breakdown
-  const errorStats = useMemo(() => {
-    const counts = {
-      lacuna: 0,
-      raciocinio: 0,
-      distractor: 0,
-      descuido: 0,
-      nao_visto: 0,
-      interpretacao: 0
-    };
-    const subtopicoCounts = {};
-    let total = 0;
-    
-    temas.forEach(t => {
-      STEPS.forEach(s => {
-        const stepErros = t.rev?.[s.key]?.erros || [];
-        stepErros.forEach(e => {
-          if (e.tipoErro && counts[e.tipoErro] !== undefined) {
-            counts[e.tipoErro]++;
-            total++;
-          }
-          if (e.subtopico) {
-            subtopicoCounts[e.subtopico] = (subtopicoCounts[e.subtopico] || 0) + 1;
+  // Chronological Redação Competency Trend Data (only for vest)
+  const redacaoHistory = useMemo(() => {
+    const list = [];
+    Object.entries(temaStats || {}).forEach(([temaId, logs]) => {
+      if (Array.isArray(logs)) {
+        logs.forEach(log => {
+          if (log.c1 !== undefined && log.completedAt) {
+            list.push({
+              completedAt: new Date(log.completedAt),
+              c1: log.c1 || 0,
+              c2: log.c2 || 0,
+              c3: log.c3 || 0,
+              c4: log.c4 || 0,
+              c5: log.c5 || 0,
+            });
           }
         });
-      });
+      }
     });
-    
-    const tipoLabels = {
-      lacuna: "Lacuna de Conteúdo",
-      raciocinio: "Erro de Raciocínio",
-      distractor: "Caiu em Pegadinha/Distrator",
-      descuido: "Descuido / Falta de Atenção",
-      nao_visto: "Conteúdo Nunca Visto",
-      interpretacao: "Erro de Interpretação"
+    list.sort((a, b) => a.completedAt - b.completedAt);
+    return list;
+  }, [temaStats]);
+
+  const redacaoPoints = useMemo(() => {
+    if (redacaoHistory.length < 2) return { c1: { path: "", pts: [] }, c2: { path: "", pts: [] }, c3: { path: "", pts: [] }, c4: { path: "", pts: [] }, c5: { path: "", pts: [] } };
+    const len = redacaoHistory.length;
+    const startX = 15;
+    const endX = svgWidth - 15;
+
+    const buildPath = (key) => {
+      const pts = redacaoHistory.map((p, i) => {
+        const x = (i / (len - 1)) * (endX - startX) + startX;
+        const val = p[key]; // 0 to 200
+        const y = svgHeight - (val / 200) * (svgHeight - 25) - 15;
+        return { x, y, val };
+      });
+      const path = `M ${pts.map(p => `${p.x},${p.y}`).join(" L ")}`;
+      return { path, pts };
     };
-    
-    const distribution = Object.entries(counts).map(([k, count]) => ({
-      key: k,
-      label: tipoLabels[k] || k,
-      count,
-      pct: total > 0 ? Math.round((count / total) * 100) : 0
-    })).sort((a, b) => b.count - a.count);
-    
-    const topSubtopics = Object.entries(subtopicoCounts)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-      
-    return { distribution, topSubtopics, total };
-  }, [temas]);
 
-  // Advanced Metrics Calculations (True Retention, Bleeding Areas, Projeção de Nota)
-  const trueRet = useMemo(() => {
-    const vals = [];
-    temas.forEach(t => {
-      if (t.unstarted) return;
-      STEPS.forEach(s => {
-        if (s.offset > 15) {
-          const r = t.rev[s.key];
-          if (r && r.done && r.acerto != null) vals.push(r.acerto);
-        }
-      });
-    });
-    return vals.length ? Math.round((vals.reduce((a, b) => a + b) / vals.length) * 100) : null;
-  }, [temas]);
+    return {
+      c1: buildPath("c1"),
+      c2: buildPath("c2"),
+      c3: buildPath("c3"),
+      c4: buildPath("c4"),
+      c5: buildPath("c5"),
+    };
+  }, [redacaoHistory]);
 
-  const bleedingAreas = useMemo(() => {
-    const byEsp = {};
-    temas.forEach(t => {
-      if (t.unstarted) return;
-      if (!byEsp[t.esp]) byEsp[t.esp] = { total: 0, questoes: 0 };
-      STEPS.forEach(s => {
-        const r = t.rev[s.key];
-        if (r && r.done && r.acerto != null && r.questoes) {
-          byEsp[t.esp].total += r.acerto * r.questoes;
-          byEsp[t.esp].questoes += r.questoes;
-        }
-      });
-    });
-    return Object.entries(byEsp)
-      .map(([esp, v]) => ({ esp, acc: v.questoes > 0 ? Math.round((v.total / v.questoes) * 100) : 0 }))
-      .filter(x => x.acc < 60)
-      .sort((a, b) => a.acc - b.acc);
-  }, [temas]);
-
-  const areaRetention = useMemo(() => {
-    const byArea = {};
-    temas.forEach(t => {
-      if (t.unstarted) return;
-      if (!byArea[t.esp]) byArea[t.esp] = { sum: 0, count: 0 };
-      STEPS.forEach(s => {
-        const r = t.rev[s.key];
-        if (r && r.done && r.acerto != null) {
-          byArea[t.esp].sum += r.acerto;
-          byArea[t.esp].count++;
-        }
-      });
-    });
-    return Object.fromEntries(
-      Object.entries(byArea).map(([esp, v]) => [
-        esp, v.count > 0 ? Math.round((v.sum / v.count) * 100) : null
-      ])
-    );
-  }, [temas]);
-
-  const notaProjetada = useMemo(() => {
-    const meta = useStore.getState().meta;
-    if (plat !== "vest") {
-      return personalStats?.simAvg ?? personalStats?.overallAcc ?? 50;
-    }
-    const provaAlvo = (meta?.provasAlvo || [])[0] || "ENEM";
-    const pesos = PESOS_PROVA_VEST[provaAlvo] || PESOS_PROVA_VEST.ENEM;
-    let sumPeso = 0, sumScore = 0;
-    for (const [area, peso] of Object.entries(pesos)) {
-      if (!peso) continue;
-      const ret = areaRetention[area];
-      sumScore += (ret != null ? ret : 50) * peso;
-      sumPeso += peso;
-    }
-    return sumPeso > 0 ? Math.round(sumScore / sumPeso) : null;
-  }, [plat, areaRetention, personalStats]);
-
+  // FSRS Forecast: count number of uncompleted cards scheduled for each of next 14 days
   const forecastData = useMemo(() => {
     const counts = {};
     for (let i = 0; i < 14; i++) {
-      const dateStr = addDays(todayStr(), i);
-      counts[dateStr] = 0;
+      const d = addDays(todayStr(), i);
+      counts[d] = 0;
     }
     temas.forEach(t => {
-      if (t.unstarted) return;
       STEPS.forEach(s => {
         const r = t.rev?.[s.key];
         if (r && !r.done && r.date) {
@@ -451,270 +223,296 @@ export default function StatsPanel() {
     }));
   }, [temas]);
 
-  const subtemasTitle = plat === "vest" ? "Subtemas de Exatas Mais Cobrados" : "Subtemas de Cirurgia Mais Cobrados";
-  const subtemasData = prova.subtemasFoco || prova.subtemasCirurgia || [];
+  const calibrationData = useMemo(() => {
+    const flatStats = Object.values(temaStats || {}).flat();
+    return calcCalibration(flatStats);
+  }, [temaStats]);
+
+  const calibrationMentorPhrase = useMemo(() => {
+    if (!calibrationData || calibrationData.status === "coletando") {
+      const remaining = 5 - (calibrationData?.n || 0);
+      return `Ainda estou reunindo dados. Faltam mais ${remaining} ${remaining === 1 ? "revisão" : "revisões"} com previsão preenchida para calibrarmos seu viés.`;
+    }
+    const key = `calibracao_${calibrationData.tendencia}`;
+    const phraseObj = getMentorPhrase(key, { userName: userName || "Estudante" }, [], plat);
+    return phraseObj.text;
+  }, [calibrationData, userName, plat]);
+
+  const readinessTrend = useMemo(() => {
+    const hist = meta.prontidaoHist || [];
+    if (hist.length === 0) {
+      const state = useStore.getState();
+      const simulados = state[plat]?.simulados || [];
+      const score = getReadinessData({ temas, simulados, meta, plat }).score || 0;
+      return { current: score, delta7: 0, delta30: 0 };
+    }
+    
+    const current = hist[hist.length - 1]?.score || 0;
+    
+    const sevenDaysAgo = addDays(todayStr(), -7);
+    const rec7 = hist.find(r => r.d >= sevenDaysAgo) || hist[0];
+    const val7 = rec7 ? rec7.score : current;
+    
+    const thirtyDaysAgo = addDays(todayStr(), -30);
+    const rec30 = hist.find(r => r.d >= thirtyDaysAgo) || hist[0];
+    const val30 = rec30 ? rec30.score : current;
+    
+    return {
+      current,
+      delta7: current - val7,
+      delta30: current - val30
+    };
+  }, [meta.prontidaoHist, temas, plat, meta]);
+
+  const sparklinePath = useMemo(() => {
+    const hist = meta.prontidaoHist || [];
+    if (hist.length < 2) return "";
+    const width = 100;
+    const height = 20;
+    const padding = 2;
+    const maxVal = 100;
+    const dx = width / (hist.length - 1);
+    
+    return hist.map((p, i) => {
+      const x = i * dx;
+      const y = height - padding - (p.score / maxVal) * (height - padding * 2);
+      return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+    }).join(" ");
+  }, [meta.prontidaoHist]);
 
   return (
     <div className="space-y-5 animate-fade-up text-left">
-      <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/5 w-fit">
-        <button onClick={() => setMainTab("meu")} className={`px-4 py-2 rounded-lg text-[12px] font-black transition-all ${mainTab === "meu" ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white" : "text-gray-500 hover:text-gray-300"}`}>Meu Desempenho</button>
-        <button onClick={() => setMainTab("provas")} className={`px-4 py-2 rounded-lg text-[12px] font-black transition-all ${mainTab === "provas" ? "bg-violet-600 text-white" : "text-gray-500 hover:text-gray-300"}`}>Análise de Provas</button>
+      <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+        <BarChart3 size={20} className="text-purple-400" />
+        <h2 className="text-[15px] font-bold text-gray-100">Histórico de Desempenho</h2>
       </div>
 
-      {/* ─── ABA: MEU DESEMPENHO ─────────────────────────────────────────── */}
-      {mainTab === "meu" && (
-        <div className="space-y-5">
-          {!temas.length ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-              <BarChart3 size={40} className="text-gray-700" />
-              <p className="text-[13px] text-gray-500">Adicione temas ao seu banco para ver estatísticas pessoais.</p>
-            </div>
-          ) : (
-            <>
-              {/* KPIs */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: "Temas", value: temas.length, color: "text-purple-400" },
-                  { label: "Questões", value: (personalStats?.totalQuestoes || 0).toLocaleString("pt-BR"), color: "text-blue-400" },
-                  { label: "Ciclos Completos", value: personalStats?.totalConcluidos ?? 0, color: "text-emerald-400" },
-                  { label: "Acerto Médio", value: personalStats?.overallAcc != null ? `${personalStats.overallAcc}%` : "—",
-                    color: personalStats?.overallAcc == null ? "text-gray-500" : personalStats.overallAcc >= 80 ? "text-emerald-400" : personalStats.overallAcc >= 65 ? "text-yellow-400" : "text-red-400" },
-                ].map(s => (
-                  <div key={s.label} className="bg-[#111113] border border-white/5 rounded-2xl p-4">
+      <div className="space-y-5">
+        {!temas.length ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+            <BarChart3 size={40} className="text-gray-700" />
+            <p className="text-[13px] text-gray-500">Adicione temas ao seu banco para ver estatísticas pessoais.</p>
+          </div>
+        ) : (
+          <>
+            {/* KPIs */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {[
+                { 
+                  label: "Prontidão", 
+                  value: `${readinessTrend.current}%`, 
+                  color: "text-violet-400",
+                  trend: readinessTrend.delta7,
+                  trend30: readinessTrend.delta30
+                },
+                { label: "Temas", value: temas.length, color: "text-purple-400" },
+                { label: "Questões", value: (personalStats?.totalQuestoes || 0).toLocaleString("pt-BR"), color: "text-blue-400" },
+                { label: "Ciclos Completos", value: personalStats?.totalConcluidos ?? 0, color: "text-emerald-400" },
+                { label: "Acerto Médio", value: personalStats?.overallAcc != null ? `${personalStats.overallAcc}%` : "—",
+                  color: personalStats?.overallAcc == null ? "text-gray-500" : personalStats.overallAcc >= 80 ? "text-emerald-400" : personalStats.overallAcc >= 65 ? "text-yellow-400" : "text-red-400" },
+              ].map(s => (
+                <div key={s.label} className="bg-[#111113] border border-white/5 rounded-2xl p-4 relative overflow-hidden flex flex-col justify-between min-h-[92px]">
+                  <div>
                     <p className="text-[10px] text-gray-500 uppercase font-semibold mb-1">{s.label}</p>
-                    <p className={`text-2xl font-black tabular-nums ${s.color}`}>{s.value}</p>
+                    <div className="flex items-baseline gap-1.5 flex-wrap">
+                      <p className={`text-2xl font-black tabular-nums ${s.color}`}>{s.value}</p>
+                      {s.trend !== undefined && (
+                        <span className={`text-[9px] font-bold ${s.trend >= 0 ? "text-emerald-400" : "text-red-400"}`} title={`Acumulado de 7d/30d`}>
+                          {s.trend >= 0 ? `▲ +${s.trend}%` : `▼ ${s.trend}%`}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                ))}
-              </div>
+                  {s.label === "Prontidão" && sparklinePath && (
+                    <div className="absolute bottom-0 left-0 right-0 h-5 opacity-40 pointer-events-none">
+                      <svg viewBox="0 0 100 20" preserveAspectRatio="none" className="w-full h-full">
+                        <path d={sparklinePath} fill="none" stroke="#8b5cf6" strokeWidth="1.5" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
 
-              {/* Heatmap Section */}
-              <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4">
+            {/* Heatmap Section */}
+            <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4 shadow-lg">
+              <div>
+                <h3 className="text-[13px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <Flame size={15} className="text-orange-400" /> Consistência de Estudos (Últimas 12 Semanas)
+                </h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">Visualize seus dias ativos na plataforma. Cada bloco colorido indica uma sessão finalizada.</p>
+              </div>
+              
+              <div className="w-full overflow-x-auto select-none py-2">
+                <div className="min-w-[420px] max-w-lg mx-auto">
+                  {/* Months header */}
+                  <div className="flex gap-2 mb-1">
+                    <div className="w-8 shrink-0" />
+                    <div className="grid grid-cols-12 gap-1.5 w-full">
+                      {monthLabels.map((lbl, i) => (
+                        <span key={i} className="text-[9px] text-gray-500 font-bold text-center uppercase tracking-wider block truncate">
+                          {lbl}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 items-start justify-center">
+                    {/* Day Labels */}
+                    <div className="flex flex-col justify-between text-[9px] text-gray-500 h-28 pr-1 py-1 font-semibold uppercase tracking-wider select-none shrink-0">
+                      <span>Dom</span>
+                      <span>Qua</span>
+                      <span>Sáb</span>
+                    </div>
+
+                    {/* Heatmap Grid */}
+                    <div className="grid grid-flow-col grid-rows-7 gap-1.5 h-28 w-full">
+                      {heatmapDays.map((d) => {
+                        const studied = doneDays.has(d);
+                        return (
+                          <div
+                            key={d}
+                            title={`${fmtDate(d)}: ${studied ? "Estudo Realizado" : "Nenhuma Atividade"}`}
+                            className={`aspect-square w-3.5 h-3.5 rounded-sm transition-all duration-300 ${
+                              studied
+                                ? "bg-gradient-to-br from-violet-500 to-pink-500 shadow-sm shadow-purple-950/50"
+                                : "bg-white/[0.03] hover:bg-white/[0.08]"
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Calibração Metacognitiva */}
+            <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4 shadow-lg">
+              <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-[13px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                    <Flame size={15} className="text-orange-400" /> Consistência de Estudos (Últimas 12 Semanas)
+                    🎯 Calibração Metacognitiva
                   </h3>
-                  <p className="text-[11px] text-gray-500 mt-0.5">Visualize seus dias ativos na plataforma. Cada bloco colorido indica uma sessão finalizada.</p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">Mede o alinhamento entre o que você acha que vai acertar e seu acerto real.</p>
                 </div>
-                
-                <div className="w-full overflow-x-auto select-none py-2">
-                  <div className="min-w-[420px] max-w-lg mx-auto">
-                    {/* Months header */}
-                    <div className="flex gap-2 mb-1">
-                      <div className="w-8 shrink-0" />
-                      <div className="grid grid-cols-12 gap-1.5 w-full">
-                        {monthLabels.map((lbl, i) => (
-                          <span key={i} className="text-[9px] text-gray-500 font-bold text-center uppercase tracking-wider block truncate">
-                            {lbl}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 items-start justify-center">
-                      {/* Day Labels */}
-                      <div className="flex flex-col justify-between text-[9px] text-gray-500 h-28 pr-1 py-1 font-semibold uppercase tracking-wider select-none shrink-0">
-                        <span>Dom</span>
-                        <span>Qua</span>
-                        <span>Sáb</span>
-                      </div>
-
-                      {/* Heatmap Grid */}
-                      <div className="grid grid-flow-col grid-rows-7 gap-1.5 h-28 w-full">
-                        {heatmapDays.map((d) => {
-                          const studied = doneDays.has(d);
-                          return (
-                            <div
-                              key={d}
-                              title={`${fmtDate(d)}: ${studied ? "Estudo Realizado" : "Nenhuma Atividade"}`}
-                              className={`aspect-square w-3.5 h-3.5 rounded-sm transition-all duration-300 ${
-                                studied
-                                  ? "bg-gradient-to-br from-violet-500 to-pink-500 shadow-sm shadow-purple-950/50"
-                                  : "bg-white/[0.03]"
-                              }`}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                {calibrationData.status === "ok" && (
+                  <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
+                    calibrationData.tendencia === "calibrado" 
+                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                      : calibrationData.tendencia === "subestima"
+                      ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                      : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                  }`}>
+                    {calibrationData.tendencia === "calibrado" ? "Calibrado" : calibrationData.tendencia === "subestima" ? "Subestima" : "Excesso de Confiança"}
+                  </span>
+                )}
               </div>
 
-              {/* Histórico e Evolução + Advanced Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Gráfico de Evolução de Acertos */}
-                <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4">
-                  <div>
-                    <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">Evolução Cronológica de Acertos</h3>
-                    <p className="text-[11px] text-gray-500 mt-0.5">Acompanhe a precisão média de cada sessão executada em ordem cronológica.</p>
-                  </div>
-                  
-                  <div className="h-36 flex items-center justify-center bg-black/40 border border-white/5 rounded-xl p-3">
-                    {chronologicalAccuracy.length < 2 ? (
-                      <p className="text-[11.5px] text-gray-500 text-center leading-relaxed">
-                        ℹ️ Insuficientes dados para traçar gráfico de linha cronológica. Continue estudando!
-                      </p>
-                    ) : (
-                      <div className="w-full h-full relative">
-                        <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-full">
-                          <defs>
-                            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4"/>
-                              <stop offset="100%" stopColor="#ec4899" stopOpacity="0.0"/>
-                            </linearGradient>
-                            <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#8b5cf6" />
-                              <stop offset="100%" stopColor="#ec4899" />
-                            </linearGradient>
-                          </defs>
-                          
-                          {/* Grid Lines */}
-                          <line x1="15" y1={svgHeight - 10} x2={svgWidth - 15} y2={svgHeight - 10} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                          <line x1="15" y1={(svgHeight - 25) * 0.5 + 15} x2={svgWidth - 15} y2={(svgHeight - 25) * 0.5 + 15} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                          <line x1="15" y1={(svgHeight - 25) * 0.2 + 15} x2={svgWidth - 15} y2={(svgHeight - 25) * 0.2 + 15} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                          <line x1="15" y1="15" x2={svgWidth - 15} y2="15" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                          
-                          {/* Labels */}
-                          <text x="17" y={svgHeight - 14} fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">0%</text>
-                          <text x="17" y={(svgHeight - 25) * 0.5 + 20} fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">50%</text>
-                          <text x="17" y={(svgHeight - 25) * 0.2 + 20} fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">80%</text>
-                          <text x="17" y="23" fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">100%</text>
-
-                          {/* Gradient Shading */}
-                          {pointsInfo.area && <path d={pointsInfo.area} fill="url(#areaGrad)" />}
-                          
-                          {/* Path Line */}
-                          {pointsInfo.line && <path d={pointsInfo.line} fill="none" stroke="url(#lineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
-
-                          {/* Dots */}
-                          {pointsInfo.pts.map((p, i) => (
-                            <circle
-                              key={i}
-                              cx={p.x}
-                              cy={p.y}
-                              r="3.5"
-                              fill="#ec4899"
-                              stroke="#0e0e18"
-                              strokeWidth="1.5"
-                              className="hover:r-5 cursor-help transition-all"
-                            >
-                              <title>{`Sessão ${i + 1}: ${p.val}%`}</title>
-                            </circle>
-                          ))}
-                        </svg>
-                      </div>
-                    )}
+              {calibrationData.status === "coletando" ? (
+                <div className="bg-black/25 border border-white/5 p-4 rounded-xl text-center space-y-1.5">
+                  <p className="text-[11px] text-gray-400">
+                    💡 <strong>Coletando dados:</strong> Faltam {5 - calibrationData.n} sessões com previsões de acerto informadas para gerar sua calibração.
+                  </p>
+                  <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-violet-600 h-full transition-all" style={{ width: `${(calibrationData.n / 5) * 100}%` }} />
                   </div>
                 </div>
-
-                {/* Métricas Avançadas (True Retention, Bleeding Areas, Projeção de Nota) */}
-                <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4 relative overflow-hidden">
-                  <div>
-                    <h3 className="text-[13px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                      <Award size={15} className="text-violet-400" /> Modelagem Estatística Avançada
-                    </h3>
-                    <p className="text-[11px] text-gray-500 mt-0.5">Indicadores FSRS e projeções baseadas no seu rendimento.</p>
-                  </div>
-                  
-                  {/* Conteúdo a ser borrado */}
-                  <div className={`space-y-4 flex flex-col justify-between h-[106px] ${totalSessions < 30 ? "blur-sm pointer-events-none select-none" : ""}`}>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3 flex flex-col gap-0.5">
-                        <span className="text-[9.5px] text-gray-500 font-bold uppercase tracking-wider">True Retention</span>
-                        <p className={`text-xl font-black ${trueRet >= 80 ? "text-emerald-400" : trueRet >= 65 ? "text-amber-400" : "text-red-400"}`}>
-                          {trueRet != null ? `${trueRet}%` : "—"}
-                        </p>
-                      </div>
-                      <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3 flex flex-col gap-0.5">
-                        <span className="text-[9.5px] text-gray-500 font-bold uppercase tracking-wider">Projeção de Nota</span>
-                        <p className={`text-xl font-black text-violet-400`}>
-                          {notaProjetada != null ? `${notaProjetada}%` : "—"}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white/[0.01] border border-white/5 rounded-xl p-2.5 flex items-center justify-between text-[11px]">
-                      <span className="text-gray-400 font-semibold flex items-center gap-1">
-                        <AlertTriangle size={12} className="text-amber-400" /> Bleeding Areas:
-                      </span>
-                      <span className="font-bold text-white">
-                        {bleedingAreas.length === 0 
-                          ? "Nenhuma zona de risco" 
-                          : `${bleedingAreas.length} área${bleedingAreas.length > 1 ? "s" : ""} crítica${bleedingAreas.length > 1 ? "s" : ""}`}
-                      </span>
-                    </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-black/40 border border-white/5 rounded-xl p-4 text-center flex flex-col justify-center">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Precisão de Previsão</span>
+                    <span className="text-3xl font-black font-mono text-violet-400">{calibrationData.precisao}%</span>
+                    <span className="text-[9px] text-gray-600 mt-1">Proximidade com o resultado real</span>
                   </div>
 
-                  {/* Lock Overlay */}
-                  {totalSessions < 30 && (
-                    <div className="absolute inset-0 bg-[#0c0c12]/80 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center rounded-2xl border border-white/5">
-                      <span className="text-2xl mb-1">🔒</span>
-                      <h4 className="text-[12px] font-bold text-white uppercase tracking-wider">Modelagem Bloqueada</h4>
-                      <p className="text-[10.5px] text-gray-400 mt-1 max-w-xs leading-relaxed">
-                        Conclua pelo menos 30 sessões de estudo para calibrar os modelos preditivos.
-                      </p>
-                      <div className="w-full max-w-[200px] mt-3">
-                        <div className="bg-white/5 rounded-full h-1.5 overflow-hidden border border-white/5 relative">
-                          <div className="bg-gradient-to-r from-violet-500 to-pink-500 h-full" style={{ width: `${Math.min(100, (totalSessions / 30) * 100)}%` }} />
-                        </div>
-                        <span className="text-[8.5px] font-mono text-gray-500 mt-1 block">{totalSessions} de 30 sessões</span>
-                      </div>
+                  <div className="bg-black/40 border border-white/5 rounded-xl p-4 text-center flex flex-col justify-center">
+                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Viés de Confiança</span>
+                    <span className={`text-3xl font-black font-mono ${calibrationData.vies > 0 ? "text-amber-400" : calibrationData.vies < 0 ? "text-blue-400" : "text-emerald-400"}`}>
+                      {calibrationData.vies > 0 ? `+${calibrationData.vies}%` : `${calibrationData.vies}%`}
+                    </span>
+                    <span className="text-[9px] text-gray-600 mt-1">{calibrationData.vies > 0 ? "Otimista / Confiante" : calibrationData.vies < 0 ? "Pessimista / Prudente" : "Totalmente Alinhado"}</span>
+                  </div>
+
+                  <div className="bg-purple-950/20 border border-purple-500/10 rounded-xl p-4 col-span-1 sm:col-span-1 flex flex-col justify-center text-left">
+                    <span className="text-[9.5px] font-bold text-purple-300 uppercase tracking-wider block mb-1 flex items-center gap-1">🤖 Mentor Metacognitivo</span>
+                    <p className="text-[11.5px] text-gray-400 leading-relaxed mt-0.5 italic">
+                      "{calibrationMentorPhrase}"
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Histórico e Evolução */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Gráfico de Evolução de Acertos */}
+              <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4 shadow-lg">
+                <div>
+                  <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">Evolução Cronológica de Acertos</h3>
+                  <p className="text-[11px] text-gray-500 mt-0.5">Acompanhe a precisão média de cada sessão executada em ordem cronológica.</p>
+                </div>
+                
+                <div className="h-44 flex items-center justify-center bg-black/40 border border-white/5 rounded-xl p-3">
+                  {chronologicalAccuracy.length < 2 ? (
+                    <p className="text-[11.5px] text-gray-500 text-center leading-relaxed">
+                      ℹ️ Insuficientes dados para traçar gráfico de linha cronológica. Continue estudando!
+                    </p>
+                  ) : (
+                    <div className="w-full h-full relative">
+                      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="xMidYMid meet" className="w-full h-full">
+                        <defs>
+                          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.4"/>
+                            <stop offset="100%" stopColor="#ec4899" stopOpacity="0.0"/>
+                          </linearGradient>
+                          <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="#8b5cf6" />
+                            <stop offset="100%" stopColor="#ec4899" />
+                          </linearGradient>
+                        </defs>
+                        
+                        {/* Grid Lines */}
+                        <line x1="15" y1={svgHeight - 10} x2={svgWidth - 15} y2={svgHeight - 10} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                        <line x1="15" y1={(svgHeight - 25) * 0.5 + 15} x2={svgWidth - 15} y2={(svgHeight - 25) * 0.5 + 15} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                        <line x1="15" y1={(svgHeight - 25) * 0.2 + 15} x2={svgWidth - 15} y2={(svgHeight - 25) * 0.2 + 15} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                        <line x1="15" y1="15" x2={svgWidth - 15} y2="15" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                        
+                        {/* Labels */}
+                        <text x="17" y={svgHeight - 14} fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">0%</text>
+                        <text x="17" y={(svgHeight - 25) * 0.5 + 20} fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">50%</text>
+                        <text x="17" y={(svgHeight - 25) * 0.2 + 20} fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">80%</text>
+                        <text x="17" y="23" fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">100%</text>
+
+                        {/* Gradient Shading */}
+                        {pointsInfo.area && <path d={pointsInfo.area} fill="url(#areaGrad)" />}
+                        
+                        {/* Path Line */}
+                        {pointsInfo.line && <path d={pointsInfo.line} fill="none" stroke="url(#lineGrad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />}
+
+                        {/* Dots */}
+                        {pointsInfo.pts.map((p, i) => (
+                          <circle
+                            key={i}
+                            cx={p.x}
+                            cy={p.y}
+                            r="3.5"
+                            fill="#ec4899"
+                            stroke="#0e0e18"
+                            strokeWidth="1.5"
+                            className="hover:r-5 cursor-help transition-all"
+                          >
+                            <title>{`Sessão ${i + 1}: ${p.val}%`}</title>
+                          </circle>
+                        ))}
+                      </svg>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Análise de Erros Estruturados */}
-              <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4">
-                <div>
-                  <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">Análise Metacognitiva de Erros</h3>
-                  <p className="text-[11px] text-gray-500 mt-0.5">Identifique os motivos por trás de seus erros e os subtópicos mais afetados.</p>
-                </div>
-
-                {errorStats.total === 0 ? (
-                  <div className="p-8 text-center text-gray-600 text-xs border border-white/5 rounded-xl bg-black/20">
-                    Nenhum erro estruturado registrado ainda. Registre erros detalhados no painel de marcação de etapas.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Tipo de Erros */}
-                    <div className="space-y-3">
-                      <p className="text-[10.5px] text-gray-500 uppercase tracking-wider font-bold">Distribuição por Categoria</p>
-                      <div className="space-y-2.5">
-                        {errorStats.distribution.map(item => (
-                          <div key={item.key} className="space-y-1">
-                            <div className="flex justify-between text-[11px] font-semibold">
-                              <span className="text-gray-300">{item.label}</span>
-                              <span className="text-violet-400 font-bold">{item.pct}% <span className="text-[9px] text-gray-500 font-normal">({item.count})</span></span>
-                            </div>
-                            <div className="h-1.5 bg-black rounded-full overflow-hidden border border-white/5">
-                              <div className="h-full bg-gradient-to-r from-violet-500 to-pink-500 rounded-full" style={{ width: `${item.pct}%` }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Subtópicos com Mais Erros */}
-                    <div className="space-y-3">
-                      <p className="text-[10.5px] text-gray-500 uppercase tracking-wider font-bold">Principais Gaps / Subtópicos com Erro</p>
-                      <div className="flex flex-col gap-2">
-                        {errorStats.topSubtopics.map((item, index) => (
-                          <div key={index} className="flex items-center justify-between p-2.5 bg-white/[0.01] border border-white/5 rounded-xl">
-                            <span className="text-[11.5px] font-semibold text-gray-200 truncate pr-3">{item.name}</span>
-                            <span className="text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-bold font-mono">
-                              {item.count} erro{item.count > 1 ? "s" : ""}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Forecast Section */}
-              <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4">
+              {/* Forecast Section (Previsão de Carga FSRS) */}
+              <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4 shadow-lg">
                 <div>
                   <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">Previsão de Carga FSRS (Próximos 14 dias)</h3>
                   <p className="text-[11px] text-gray-500 mt-0.5">Estimativa de revisões programadas por dia para guiar seu planejamento.</p>
@@ -750,96 +548,111 @@ export default function StatsPanel() {
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* By specialty */}
-              <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4">
-                <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">Desempenho por Especialidade</h3>
-                <div className="space-y-4">
-                  {personalStats?.espStats.map(e => {
-                    const espC = ESP_COLORS[e.esp] || "#94a3b8";
-                    const accColor = e.acc == null ? "text-gray-600" : e.acc >= 80 ? "text-emerald-400" : e.acc >= 65 ? "text-yellow-400" : "text-red-400";
-                    return (
-                      <div key={e.esp} className="space-y-1.5">
-                        <div className="flex justify-between text-[12px]">
-                          <span className="font-semibold text-gray-300">{e.esp}</span>
-                          <div className="flex items-center gap-3">
-                            <span className="text-gray-600 text-[11px]">{e.questoes.toLocaleString("pt-BR")} questões</span>
-                            <span className={`font-black tabular-nums ${accColor}`}>{e.acc != null ? `${e.acc}%` : "—"}</span>
-                          </div>
-                        </div>
-                        <div className="h-2 bg-black rounded-full overflow-hidden border border-white/5">
-                          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${e.progress}%`, background: espC + "cc" }} />
-                        </div>
-                        <p className="text-[10px] text-gray-600">{e.doneSteps}/{e.total} etapas · {e.progress}% do ciclo concluído</p>
-                      </div>
-                    );
-                  })}
+            {/* Redação ENEM Competencies for Vestibular */}
+            {plat === "vest" && (
+              <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4 shadow-lg">
+                <div>
+                  <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">Evolução por Competência (Redação ENEM)</h3>
+                  <p className="text-[11px] text-gray-500 mt-0.5">Evolução detalhada nas 5 competências do ENEM ao longo de suas redações escritas.</p>
                 </div>
-              </div>
-            </>
-          )}
-        </div>
-      )}
+                
+                {redacaoHistory.length === 0 ? (
+                  <div className="p-8 text-center text-gray-600 text-xs border border-white/5 rounded-xl bg-black/20">
+                    Nenhuma redação registrada ainda. Conclua o ciclo de estudos D0 ou revisões em temas de redação para ver a evolução.
+                  </div>
+                ) : redacaoHistory.length < 2 ? (
+                  <div className="space-y-4">
+                    <p className="text-xs text-gray-400 italic">Uma redação registrada. Registre pelo menos duas para visualizar a linha de tendência.</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                      {[
+                        { label: "C1: Norma Culta", val: redacaoHistory[0].c1 },
+                        { label: "C2: Tema/Gênero", val: redacaoHistory[0].c2 },
+                        { label: "C3: Argumentação", val: redacaoHistory[0].c3 },
+                        { label: "C4: Coesão", val: redacaoHistory[0].c4 },
+                        { label: "C5: Proposta", val: redacaoHistory[0].c5 }
+                      ].map((c, idx) => (
+                        <div key={idx} className="bg-black/40 border border-white/5 rounded-xl p-3 text-center">
+                          <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block mb-1">{c.label}</span>
+                          <span className="text-lg font-black text-violet-400">{c.val} pts</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* SVG Chart */}
+                    <div className="h-44 flex items-center justify-center bg-black/40 border border-white/5 rounded-xl p-3">
+                      <div className="w-full h-full relative">
+                        <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="xMidYMid meet" className="w-full h-full">
+                          {/* Grid Lines */}
+                          <line x1="15" y1={svgHeight - 10} x2={svgWidth - 15} y2={svgHeight - 10} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                          <line x1="15" y1={(svgHeight - 25) * 0.4 + 15} x2={svgWidth - 15} y2={(svgHeight - 25) * 0.4 + 15} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                          <line x1="15" y1={(svgHeight - 25) * 0.8 + 15} x2={svgWidth - 15} y2={(svgHeight - 25) * 0.8 + 15} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                          <line x1="15" y1="15" x2={svgWidth - 15} y2="15" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                          
+                          {/* Labels */}
+                          <text x="17" y={svgHeight - 14} fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">0</text>
+                          <text x="17" y={(svgHeight - 25) * 0.4 + 20} fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">120</text>
+                          <text x="17" y={(svgHeight - 25) * 0.8 + 20} fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">160</text>
+                          <text x="17" y="23" fill="rgba(255,255,255,0.2)" fontSize="8" fontWeight="bold">200</text>
 
-      {/* ─── ABA: ANÁLISE DE PROVAS ──────────────────────────────────────── */}
-      {mainTab === "provas" && (
-        <div className="space-y-5">
-          <div className="flex gap-1.5 bg-white/5 p-1 rounded-xl border border-white/5 w-fit">
-            {provasDisponiveis.map(p => (
-              <button type="button" key={p} onClick={() => setSelectedProva(p)} className={`px-4 py-2 rounded-lg text-[12px] font-black transition-all ${validProva === p ? "bg-violet-600 text-white" : "text-gray-500 hover:text-gray-300"}`}>{p}</button>
-            ))}
-          </div>
-          
-          {prova && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4">
-                <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">Incidência Geral por Área</h3>
-                <div className="space-y-3">
-                  {prova.areas?.map(a => (
-                    <div key={a.name} className="space-y-1">
-                      <div className="flex justify-between text-[11.5px] font-semibold text-gray-300">
-                        <span>{a.name}</span><span className="font-mono text-purple-400">{a.pct}%</span>
+                          {/* C1 Line */}
+                          <path d={redacaoPoints.c1.path} fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                          {/* C2 Line */}
+                          <path d={redacaoPoints.c2.path} fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                          {/* C3 Line */}
+                          <path d={redacaoPoints.c3.path} fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                          {/* C4 Line */}
+                          <path d={redacaoPoints.c4.path} fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                          {/* C5 Line */}
+                          <path d={redacaoPoints.c5.path} fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    {/* Legend */}
+                    <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[10px] font-bold uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5 text-blue-400"><span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> C1: Norma Culta</span>
+                      <span className="flex items-center gap-1.5 text-red-400"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> C2: Tema/Gênero</span>
+                      <span className="flex items-center gap-1.5 text-emerald-400"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> C3: Argumentação</span>
+                      <span className="flex items-center gap-1.5 text-amber-400"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> C4: Coesão</span>
+                      <span className="flex items-center gap-1.5 text-purple-400"><span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> C5: Proposta</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Performance by Specialty */}
+            <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4 shadow-lg">
+              <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">Desempenho por Especialidade</h3>
+              <div className="space-y-4">
+                {personalStats?.espStats.map(e => {
+                  const espC = ESP_COLORS[e.esp] || "#94a3b8";
+                  const accColor = e.acc == null ? "text-gray-600" : e.acc >= 80 ? "text-emerald-400" : e.acc >= 65 ? "text-yellow-400" : "text-red-400";
+                  return (
+                    <div key={e.esp} className="space-y-1.5">
+                      <div className="flex justify-between text-[12px]">
+                        <span className="font-semibold text-gray-300">{e.esp}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-600 text-[11px]">{e.questoes.toLocaleString("pt-BR")} questões</span>
+                          <span className={`font-black tabular-nums ${accColor}`}>{e.acc != null ? `${e.acc}%` : "—"}</span>
+                        </div>
                       </div>
                       <div className="h-2 bg-black rounded-full overflow-hidden border border-white/5">
-                        <div className="h-full bg-gradient-to-r from-purple-600 to-pink-500 rounded-full transition-all" style={{ width: `${a.pct}%` }} />
+                        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${e.progress}%`, background: espC + "cc" }} />
                       </div>
+                      <p className="text-[10px] text-gray-600">{e.doneSteps}/{e.total} etapas · {e.progress}% do ciclo concluído</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-              <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4">
-                <h3 className="text-[13px] font-bold text-orange-400 uppercase tracking-wider">{subtemasTitle}</h3>
-                <div className="space-y-3">
-                  {subtemasData.map(s => (
-                    <div key={s.name} className="space-y-1">
-                      <div className="flex justify-between text-[11.5px] font-semibold text-gray-300">
-                        <span>{s.name}</span><span className="font-mono text-orange-400">{s.pct}%</span>
-                      </div>
-                      <div className="h-2 bg-black rounded-full overflow-hidden border border-white/5">
-                        <div className="h-full bg-orange-500 rounded-full transition-all" style={{ width: `${s.pct}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="md:col-span-2 bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-3">
-                <h3 className="text-[13px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <ShieldAlert size={15} className="text-red-400" /> Tópicos de Risco — Prova 2026
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {prova.gaps2025?.map((g, idx) => (
-                    <div key={idx} className="p-3 border border-red-500/15 rounded-xl bg-red-500/[0.02]">
-                      <p className="text-[13px] font-bold text-gray-200">{g.name}</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">{g.especialidade}</p>
-                      <span className="mt-2 inline-block text-[9px] font-black tracking-widest uppercase bg-red-600/20 text-red-400 border border-red-600/30 px-1.5 py-0.5 rounded">Risco {g.risk}</span>
-                    </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
-          )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

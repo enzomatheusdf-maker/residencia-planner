@@ -14,6 +14,35 @@ export function addDays(dateStr, n) {
 
 export const diffDays = (a, b) => Math.round((new Date(b) - new Date(a)) / 86_400_000);
 
+export function getWorkloadProjection(temas, numDays = 14) {
+  const projection = {};
+  const today = todayStr();
+  
+  // Initialize projection keys for the next N days
+  for (let i = 0; i < numDays; i++) {
+    const dateStr = addDays(today, i);
+    projection[dateStr] = 0;
+  }
+  
+  // Count pending reviews scheduled on each date
+  temas.forEach(t => {
+    if (t.unstarted) return;
+    Object.keys(t.rev).forEach(stepKey => {
+      const r = t.rev[stepKey];
+      if (r && !r.done && r.date) {
+        // If it is overdue, it counts towards today's workload
+        if (r.date < today) {
+          projection[today]++;
+        } else if (projection.hasOwnProperty(r.date)) {
+          projection[r.date]++;
+        }
+      }
+    });
+  });
+  
+  return projection;
+}
+
 export const fmtDate = (d) => {
   if (!d) return "—";
   const [, m, day] = d.split("-");
@@ -25,6 +54,16 @@ export const fmtFull = (d) => {
   const [y, m, day] = d.split("-");
   return `${day}/${m}/${y}`;
 };
+
+export function fmtRelativo(dateStr) {
+  if (!dateStr) return "—";
+  const diff = diffDays(todayStr(), dateStr);
+  if (diff === 0) return "hoje";
+  if (diff === 1) return "amanhã";
+  if (diff === -1) return "ontem";
+  if (diff > 1) return `em ${diff} dias`;
+  return `há ${Math.abs(diff)} dias`;
+}
 
 export const fmtMonth = (d) => {
   const [, m, y] = d.split("-");
@@ -73,10 +112,14 @@ export function updateStability(S_prev, acerto) {
   return Math.max(0.5, S_prev * Math.exp(deltas[toRating(acerto)]));
 }
 
-export function nextInterval(S, baseOffset) {
-  const raw = (S / FSRS_FACTOR) * (DESIRED_RETENTION ** (1 / FSRS_DECAY) - 1);
+export function nextInterval(S, baseOffset, desiredRetention = 0.90, maxInterval = 180) {
+  const raw = (S / FSRS_FACTOR) * (desiredRetention ** (1 / FSRS_DECAY) - 1);
   const floor = Math.max(1, Math.round(baseOffset * 0.5));
-  return Math.round(Math.max(raw, floor)); // sem teto
+  let val = Math.round(Math.max(raw, floor));
+  if (maxInterval && val > maxInterval) {
+    val = maxInterval;
+  }
+  return val;
 }
 
 // ─── STEPS DEFINITION ────────────────────────────────────────────────────────
@@ -96,11 +139,24 @@ export function buildRev(d0) {
   return r;
 }
 
-export function recalcAfterMark(rev, doneKey, acerto) {
+export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, maxInterval = 180) {
   const rating = toRating(acerto);
-  const S_new = updateStability(rev[doneKey].S ?? S_BASE[doneKey], acerto);
+  const prevS = doneKey === "manutencao" 
+    ? (rev.manutencao?.S ?? 45) 
+    : (rev[doneKey]?.S ?? S_BASE[doneKey]);
+  const S_new = updateStability(prevS, acerto);
 
   if (rating === "again") {
+    if (doneKey === "manutencao") {
+      return {
+        ...rev,
+        manutencao: {
+          ...rev.manutencao,
+          S: S_new,
+          date: addDays(todayStr(), 1),
+        }
+      };
+    }
     return {
       ...rev,
       [doneKey]: {
@@ -114,10 +170,40 @@ export function recalcAfterMark(rev, doneKey, acerto) {
     };
   }
 
+  if (doneKey === "manutencao") {
+    const prevInterval = rev.manutencao?.interval || 45;
+    const nextInt = nextInterval(S_new, prevInterval * 2, desiredRetention, maxInterval);
+    const baseDate = rev.manutencao.date >= todayStr() ? rev.manutencao.date : todayStr();
+    return {
+      ...rev,
+      manutencao: {
+        done: false,
+        date: addDays(baseDate, nextInt),
+        S: S_new,
+        interval: prevInterval * 2
+      }
+    };
+  }
+
+  if (doneKey === "d21") {
+    const nextInt = nextInterval(S_new, 45, desiredRetention, maxInterval);
+    const baseDate = rev.d21.date >= todayStr() ? rev.d21.date : todayStr();
+    return {
+      ...rev,
+      d21: { ...rev.d21, S: S_new },
+      manutencao: {
+        done: false,
+        date: addDays(baseDate, nextInt),
+        S: S_new,
+        interval: 45
+      }
+    };
+  }
+
   const doneIdx = STEPS.findIndex((s) => s.key === doneKey);
   const nextStep = STEPS[doneIdx + 1];
   if (!nextStep) return rev;
-  const interval = nextInterval(S_new, nextStep.offset);
+  const interval = nextInterval(S_new, nextStep.offset, desiredRetention, maxInterval);
   const baseDate = rev[doneKey].date >= todayStr() ? rev[doneKey].date : todayStr();
   return {
     ...rev,
@@ -143,6 +229,14 @@ export function normalizeTema(t) {
   });
   return { ...t, rev };
 }
+
+export function getFaseItem(tema, stepKey) {
+  if (stepKey === "d0" && (!tema?.rev?.d0?.done)) {
+    return "aquisicao";
+  }
+  return "recuperacao";
+}
+
 
 // ─── DOMAIN CONFIGURATIONS & COLORS ──────────────────────────────────────────
 export const ESP_COLORS = {

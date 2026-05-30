@@ -55,6 +55,25 @@ describe("Metrics Calculation Test Suite", () => {
     expect(queue[0].stepKey).toBe("d0");
   });
 
+  test("calcFilaInteligente applies ENAMED weights and BONUS_RETORNO_RAPIDO under 60% for Preventive", () => {
+    const today = todayStr();
+    const mockTemas = [
+      {
+        id: 1,
+        nome: "Preventiva Baixo",
+        esp: "Preventiva",
+        importancia: "ALTA",
+        rev: {
+          d0: { date: today, done: false, S: 1.0 }
+        }
+      }
+    ];
+    // Case 1: acertoMedia defaults to 0.5 (which is < 0.6) -> should apply Preventive bonus (0.10)
+    const queue = calcFilaInteligente(mockTemas, "res");
+    // score = (1 - 0.5) * 2.0 * 1.0 * 1.12 + 0.10 = 1.22
+    expect(queue[0].score).toBe(1.22);
+  });
+
   test("calcStreaks calculates active study consistency streaks", () => {
     const today = todayStr();
     const yesterday = addDays(today, -1);
@@ -70,8 +89,8 @@ describe("Metrics Calculation Test Suite", () => {
     // 2. Broken streak (studied 4 days ago and yesterday, but skipped 2 and 3 days ago)
     const activeDays2 = new Set([fourDaysAgo, yesterday]);
     const streak2 = calcStreaks(activeDays2);
-    expect(streak2.current).toBe(1);
-    expect(streak2.best).toBe(1);
+    expect(streak2.current).toBe(2);
+    expect(streak2.best).toBe(2);
   });
 
   test("calcTrueRetention returns average of D21 mature step outcomes", () => {

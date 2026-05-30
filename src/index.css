@@ -4,12 +4,38 @@
 @tailwind components;
 @tailwind utilities;
 
+:root{
+  --bg:#070b14;
+  --surface-1:#0b1220;
+  --surface-2:#111a2e;
+  --surface-3:#16213a;
+  --border:rgba(255,255,255,.06);
+  --border-strong:rgba(120,160,255,.18);
+  --primary:#3b82f6;
+  --primary-strong:#2563eb;
+  --primary-soft:rgba(59,130,246,.12);
+  --accent:#38bdf8;
+  --text-1:rgba(255,255,255,.92);
+  --text-2:rgba(255,255,255,.62);
+  --text-3:rgba(255,255,255,.40);
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --crit:#f87171;
+  --dur-fast:.14s;
+  --dur-base:.24s;
+  --dur-slow:.4s;
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --radius:18px;
+  --radius-sm:12px;
+}
+
 * { box-sizing: border-box; }
 
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: #000000;
-  color: #ffffff;
+  background-color: var(--bg);
+  color: var(--text-1);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -17,7 +43,37 @@ input[type=date] { color-scheme: dark; }
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: #1e2a44; border-radius: 10px; }
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;animation-iteration-count:1!important}
+}
+
+.medrev-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+.medrev-card-hover {
+  transition: transform var(--dur-base) var(--ease-spring), background-color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+
+.medrev-card-hover:hover {
+  transform: translateY(-2px);
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 16px 36px -18px rgba(0,0,0,.75);
+}
+
+.medrev-cta-primary {
+  transition: transform var(--dur-base) var(--ease-spring), background-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+
+.medrev-cta-primary:active {
+  transform: scale(.97);
+}
 
 @keyframes confetti-fall {
   to {

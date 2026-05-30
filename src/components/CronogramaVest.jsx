@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check, BookOpen, Trash2, Plus, Zap, AlertTriangle } from "lucide-react";
 import { useStore } from "../core/store";
 import { todayStr, fmtDate, STEPS } from "../core/fsrs";
+import { getEstadoDominio } from "../core/mastery";
 import { CATALOGO_VEST, parseCatalogEntry } from "../constants/catalogos";
 import { Btn, Input, Textarea, Modal, Field } from "./Primitives";
 
@@ -121,17 +122,38 @@ export function gerarCronogramaVazio(titulo, dataInicio, numSemanas) {
 
 export function gerarCronogramaInteligente(titulo, dataInicio, numSemanas, horasDisponiveis, materiasAlvo) {
   const semanas = [];
+  const state = useStore.getState();
+  const plat = state.plat;
+  const temas = state[plat]?.temas || [];
+  const temaStats = state.temaStats || {};
+
   const targetSubjects = materiasAlvo && materiasAlvo.length > 0
     ? CATALOGO_VEST.filter(x => materiasAlvo.includes(x.nome))
     : CATALOGO_VEST;
   
   const topicsQueue = [];
-  targetSubjects.forEach(sub => {
-    sub.t.forEach(topic => {
-      const { nome, esp, prio } = parseCatalogEntry(topic);
-      topicsQueue.push({ nome, esp, prio, weight: prio === "Diamante" ? 4 : prio === "Alta" ? 3 : prio === "Média" ? 2 : 1 });
+  
+  if (state.modoProva) {
+    // Only study themes auto-generated from simulado errors
+    temas.forEach(t => {
+      if (t.obs && t.obs.includes("Auto-gerado via erro em simulado")) {
+        topicsQueue.push({
+          nome: t.nome,
+          esp: t.esp,
+          prio: t.prio || "Alta",
+          weight: t.prio === "Diamante" ? 4 : t.prio === "Alta" ? 3 : t.prio === "Média" ? 2 : 1
+        });
+      }
     });
-  });
+  } else {
+    // Standard catalog-based queue
+    targetSubjects.forEach(sub => {
+      sub.t.forEach(topic => {
+        const { nome, esp, prio } = parseCatalogEntry(topic);
+        topicsQueue.push({ nome, esp, prio, weight: prio === "Diamante" ? 4 : prio === "Alta" ? 3 : prio === "Média" ? 2 : 1 });
+      });
+    });
+  }
   
   // Sort topics by priority desc
   topicsQueue.sort((a, b) => b.weight - a.weight);
@@ -152,13 +174,47 @@ export function gerarCronogramaInteligente(titulo, dataInicio, numSemanas, horas
         let conteudo = "";
         let tNome = null;
         let tEsp = null;
+        let finalTipo = b.tipo;
         
-        if (b.tipo === "foco" && topicsQueue.length > 0) {
-          const t = topicsQueue[topicIndex % topicsQueue.length];
-          topicIndex++;
-          tNome = t.nome;
-          tEsp = t.esp;
-          conteudo = `${t.esp} - ${t.nome}`;
+        if (b.tipo === "foco") {
+          if (topicsQueue.length > 0) {
+            const t = topicsQueue[topicIndex % topicsQueue.length];
+            topicIndex++;
+            tNome = t.nome;
+            tEsp = t.esp;
+
+            const existingTema = temas.find(x => x.nome === t.nome);
+            const currentStats = existingTema ? (temaStats[existingTema.id] || []) : [];
+            const dominio = getEstadoDominio(existingTema, currentStats);
+
+            const areaTemas = temas.filter(x => x.esp === t.esp);
+            const countConsolidandoOuDomino = areaTemas.filter(x => {
+              const st = getEstadoDominio(x, temaStats[x.id] || []);
+              return st === "consolidando" || st === "dominado";
+            }).length;
+            const isAreaConsolidando = areaTemas.length > 0 && (countConsolidandoOuDomino / areaTemas.length) >= 0.6;
+
+            if (dominio === "dominado") {
+              const simuladosNames = ["Simulado UFG 2023", "Simulado UFG 2022", "Simulado UFG 2021"];
+              const simNome = simuladosNames[topicIndex % 3];
+              conteudo = `Simulado / Prova Antiga: ${simNome} (Área: ${t.esp})`;
+              tNome = simNome;
+              tEsp = t.esp;
+              finalTipo = "simulado";
+            } else if (isAreaConsolidando || dominio === "consolidando") {
+              conteudo = `Bateria de Questões Focadas: ${t.esp} - ${t.nome}`;
+            } else {
+              conteudo = `${t.esp} - ${t.nome} (Estudo + Questões)`;
+            }
+          } else {
+            const simuladosNames = ["Simulado UFG 2023", "Simulado UFG 2022", "Simulado UFG 2021"];
+            const simNome = simuladosNames[topicIndex % 3];
+            conteudo = `Simulado UFG / Prova Antiga: ${simNome}`;
+            tNome = simNome;
+            tEsp = "Geral";
+            finalTipo = "simulado";
+            topicIndex++;
+          }
         } else if (b.tipo === "revisao") {
           conteudo = "Revisar fila inteligente do FSRS + Anki";
         } else if (b.tipo === "questoes") {
@@ -173,7 +229,8 @@ export function gerarCronogramaInteligente(titulo, dataInicio, numSemanas, horas
           conteudo,
           temaNome: tNome,
           temaEsp: tEsp,
-          concluido: false
+          concluido: false,
+          tipo: finalTipo
         };
       });
 
@@ -522,7 +579,7 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
             ) : (
               <div className="space-y-4 text-left">
                 <h2 className="text-[15px] font-bold text-gray-100">Estruturar Nova Grade</h2>
-                <Field label="Nome/Título"><Input value={cfTitulo} onChange={e => setCfTitulo(e.target.value)} /></Field>
+                <Field label="Nome/Título" info="Um título amigável para este plano (ex: Reta Final, Intensivo)."><Input value={cfTitulo} onChange={e => setCfTitulo(e.target.value)} /></Field>
 
                 <div className="flex gap-1 bg-black/40 border border-white/10 rounded-xl p-1">
                   {[["inteligente","Gerador Inteligente"],["manual","Manual Vazio"],["pdf","Importar PDF"]].map(([v,l]) => (
@@ -535,20 +592,20 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
 
                 {cfModo === "manual" && (
                   <div className="grid grid-cols-2 gap-3">
-                    <Field label="Início"><Input type="date" value={cfDataIni} onChange={e => setCfDataIni(e.target.value)} /></Field>
-                    <Field label="Semanas"><Input type="number" value={cfSemanas} onChange={e => setCfSemanas(+e.target.value)} /></Field>
+                    <Field label="Início" info="A data em que os blocos de estudos do cronograma começarão."><Input type="date" value={cfDataIni} onChange={e => setCfDataIni(e.target.value)} /></Field>
+                    <Field label="Semanas" info="O número total de semanas de duração do cronograma."><Input type="number" value={cfSemanas} onChange={e => setCfSemanas(+e.target.value)} /></Field>
                   </div>
                 )}
 
                 {cfModo === "inteligente" && (
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
-                      <Field label="Data de Início"><Input type="date" value={cfDataIni} onChange={e => setCfDataIni(e.target.value)} /></Field>
-                      <Field label="Semanas"><Input type="number" value={cfSemanas} onChange={e => setCfSemanas(+e.target.value)} /></Field>
+                      <Field label="Data de Início" info="A data inicial para a distribuição de matérias."><Input type="date" value={cfDataIni} onChange={e => setCfDataIni(e.target.value)} /></Field>
+                      <Field label="Semanas" info="O número total de semanas de duração do plano."><Input type="number" value={cfSemanas} onChange={e => setCfSemanas(+e.target.value)} /></Field>
                     </div>
 
                     <div className="grid grid-cols-1 gap-3">
-                      <Field label="Carga Horária Diária (Horas)">
+                      <Field label="Carga Horária Diária (Horas)" info="Média de horas dedicadas diariamente aos estudos (gerará blocos compatíveis).">
                         <select
                           value={horasDisponiveis}
                           onChange={(e) => setHorasDisponiveis(+e.target.value)}

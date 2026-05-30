@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Mail, Lock, User, Eye, EyeOff, Loader } from "lucide-react";
 import { criarConta, fazerLogin, resetarSenha } from "../services/firebase";
+import { MedRevLogo } from "./Primitives";
 
 export default function AuthModal({ onSuccess }) {
   const [modo, setModo] = useState("login"); // login, signup ou reset
@@ -54,13 +55,9 @@ export default function AuthModal({ onSuccess }) {
       <div className="bg-[#111113] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
         {/* Logo */}
         <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 via-violet-500 to-pink-500 flex items-center justify-center mx-auto mb-3">
-            <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6">
-              <rect x="9" y="2" width="6" height="20" rx="2" fill="white" opacity="0.95"/>
-              <rect x="2" y="9" width="20" height="6" rx="2" fill="white" opacity="0.95"/>
-            </svg>
+          <div className="inline-flex">
+            <MedRevLogo size="lg" showTagline />
           </div>
-          <p className="text-[13px] font-black text-white"><span>Med</span><span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Rev</span></p>
         </div>
 
         {/* Tabs login/signup (hidden in reset mode) */}
@@ -68,7 +65,7 @@ export default function AuthModal({ onSuccess }) {
           <div className="flex gap-1 bg-white/5 p-1 rounded-xl border border-white/5 mb-6">
             {[["login","Entrar"],["signup","Criar Conta"]].map(([k, l]) => (
               <button key={k} type="button" onClick={() => { setModo(k); setErro(null); setMensagemSucesso(null); }}
-                className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${modo === k ? "bg-gradient-to-r from-violet-600 to-pink-500 text-white shadow" : "text-gray-500 hover:text-gray-300"}`}>
+                className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${modo === k ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow" : "text-gray-500 hover:text-gray-300"}`}>
                 {l}
               </button>
             ))}
@@ -95,7 +92,7 @@ export default function AuthModal({ onSuccess }) {
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   placeholder="Seu nome"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-colors"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-colors"
                   required
                 />
               </div>
@@ -114,7 +111,7 @@ export default function AuthModal({ onSuccess }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu-email@example.com"
-                className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-colors"
+                className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-colors"
                 required
               />
             </div>
@@ -133,7 +130,7 @@ export default function AuthModal({ onSuccess }) {
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-10 py-2.5 text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-colors"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-10 py-2.5 text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-colors"
                   required
                 />
                 <button
@@ -156,7 +153,7 @@ export default function AuthModal({ onSuccess }) {
                   <button
                     type="button"
                     onClick={() => { setModo("reset"); setErro(null); setMensagemSucesso(null); }}
-                    className="text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors"
+                    className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
                   >
                     Esqueceu a senha?
                   </button>
@@ -173,7 +170,7 @@ export default function AuthModal({ onSuccess }) {
                 id="manterConectado"
                 checked={manterConectado}
                 onChange={(e) => setManterConectado(e.target.checked)}
-                className="w-4 h-4 rounded border-white/10 bg-white/5 text-violet-600 focus:ring-violet-500 accent-violet-600 cursor-pointer"
+                className="w-4 h-4 rounded border-white/10 bg-white/5 text-blue-600 focus:ring-blue-500 accent-blue-600 cursor-pointer"
               />
               <label htmlFor="manterConectado" className="text-xs font-semibold text-gray-400 select-none cursor-pointer hover:text-gray-300 transition-colors">
                 Manter conectado
@@ -199,7 +196,7 @@ export default function AuthModal({ onSuccess }) {
           <button
             type="submit"
             disabled={carregando}
-            className="w-full bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 text-xs"
+            className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 text-xs"
           >
             {carregando && <Loader size={16} className="animate-spin" />}
             {modo === "login" ? "Entrar" : modo === "signup" ? "Criar Conta" : "Enviar E-mail de Redefinição"}

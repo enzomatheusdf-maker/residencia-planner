@@ -5,18 +5,22 @@ import { AlertCircle, Eye, EyeOff, Settings } from "lucide-react";
 
 // Camada Core & State
 import { useStore } from "./core/store";
-import { STEPS, isOverdue, todayStr, normalizeTema } from "./core/fsrs";
+import { STEPS, isOverdue, todayStr, normalizeTema, getWorkloadProjection } from "./core/fsrs";
+import { xpForReview } from "./core/gamif";
+import { ACHIEVEMENTS } from "./core/achievements";
+import { getReadinessData } from "./core/readiness";
 
-// Camada de Hooks/Estatísticas
-import { calcFilaInteligente } from "./hooks/useMetrics";
-import { getMentorPhrase, getRecentPhrases } from "./core/mentor";
+// Camada de Hooks/EstatÃƒÂ­sticas
+import { useFilaInteligente } from "./hooks/useMetrics";
+import { getMentorPhrase, getRecentPhrases, trackRecentPhrase } from "./core/mentor";
 
-// Camada de Serviços
+// Camada de ServiÃƒÂ§os
 import {
   monitorarAuth,
   sincronizarComFirebase,
   carregarDadosUsuario,
-  fazerLogout
+  fazerLogout,
+  trackEvent
 } from "./services/firebase";
 
 // Camada de Componentes
@@ -29,6 +33,7 @@ import BancoDados from "./components/BancoDados";
 import StatsPanel from "./components/StatsPanel";
 import Simulados from "./components/Simulados";
 import AnkiAudit from "./components/AnkiAudit";
+import AcademiaMetodo from "./components/AcademiaMetodo";
 import FocusMode from "./components/FocusMode";
 import AuthModal from "./components/AuthModal";
 
@@ -39,7 +44,8 @@ import {
   OnboardingModal,
   TemaModal,
   AjustesModal,
-  GlobalSearchModal
+  GlobalSearchModal,
+  LojaModal
 } from "./components/Modals";
 
 import {
@@ -47,13 +53,23 @@ import {
   Btn,
   Input,
   Toast,
+  ConfirmDialog,
   ConfettiOverlay,
   Modal,
   playTick,
   CheckmarkOverlay
 } from "./components/Primitives";
+function prioToImportancia(prio) {
+  switch ((prio || "").toLowerCase()) {
+    case "diamante": return "CRITICA";
+    case "alta":     return "ALTA";
+    case "mÃƒÂ©dia": case "media": return "MEDIA";
+    case "baixa": case "bÃƒÂ´nus": case "bonus": return "MEDIA";
+    default: return "ALTA";
+  }
+}
 
-/* ERROR BOUNDARY ─────────────────────────────────────────────────────────────── */
+/* ERROR BOUNDARY Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -68,10 +84,10 @@ class ErrorBoundary extends React.Component {
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <AlertCircle size={40} className="text-red-400" />
           <p className="text-[13px] text-red-400 font-semibold">
-            Instabilidade detectada na renderização.
+            Instabilidade detectada na renderizaÃƒÂ§ÃƒÂ£o.
           </p>
           <Btn onClick={() => this.setState({ error: null })} variant="ghost">
-            Reiniciar Módulo
+            Reiniciar MÃƒÂ³dulo
           </Btn>
         </div>
       );
@@ -80,7 +96,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-/* APP ROOT MAIN ENTRY ────────────────────────────────────────────────────────── */
+/* APP ROOT MAIN ENTRY Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
 export default function App() {
   const {
     plat,
@@ -105,19 +121,20 @@ export default function App() {
     addTemaStats,
     resetStore,
     tourStep,
-    setTourStep
+    setTourStep,
+    addXp,
+    updateGamifStreak
   } = useStore();
 
   const temas = useStore((s) => s[plat]?.temas || []);
 
-  // ─── AUTENTICAÇÃO FIREBASE ────────────────────────────────────────────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ AUTENTICAÃƒâ€¡ÃƒÆ’O FIREBASE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
   const [usuarioLogado, setUsuarioLogado] = useState(null);
   const [carregandoAuth, setCarregandoAuth] = useState(true);
 
   const [view, setView] = useState("login");
   const [helpModal, setHelpModal] = useState(false);
 
-  const [toast, setToast] = useState(null);
   const [temaEdit, setTemaEdit] = useState(null);
   const [ajustes, setAjustes] = useState(false);
   const [editName, setEditName] = useState(false);
@@ -127,6 +144,12 @@ export default function App() {
   const [targetedFocusItem, setTargetedFocusItem] = useState(null);
   const [syncStatus, setSyncStatus] = useState(navigator.onLine ? "saved" : "offline");
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  const [lojaOpen, setLojaOpen] = useState(false);
+  const toast = useStore((s) => s.toast);
+  const dismissToast = useStore((s) => s.dismissToast);
+  const showToastStore = useStore((s) => s.showToast);
+  const confirmDialog = useStore((s) => s.confirmDialog);
+  const closeConfirm = useStore((s) => s.closeConfirm);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -150,12 +173,47 @@ export default function App() {
     };
   }, []);
   useEffect(() => {
+    if (!usuarioLogado) return;
+    const hoje = todayStr();
+    const currentMeta = useStore.getState().meta || {};
+    const hist = currentMeta.prontidaoHist || [];
+    const lastRecord = hist[hist.length - 1];
+    
+    const currentState = useStore.getState();
+    const currentPlat = currentState.plat;
+    const currentTemas = currentState[currentPlat]?.temas || [];
+    const currentSims = currentState[currentPlat]?.simulados || [];
+    
+    const readiness = getReadinessData({
+      temas: currentTemas,
+      simulados: currentSims,
+      meta: currentMeta,
+      plat: currentPlat
+    });
+    const score = readiness.score || 0;
+    
+    if (!lastRecord || lastRecord.d !== hoje || lastRecord.score !== score) {
+      const newHist = [...hist];
+      if (lastRecord && lastRecord.d === hoje) {
+        newHist[newHist.length - 1] = { d: hoje, score };
+      } else {
+        newHist.push({ d: hoje, score });
+      }
+      useStore.setState({
+        meta: {
+          ...currentMeta,
+          prontidaoHist: newHist.slice(-120)
+        }
+      });
+    }
+  }, [usuarioLogado, temas]);
+
+  useEffect(() => {
     let isMounted = true;
     let timeoutId;
 
     const unsubscribe = monitorarAuth(async (user) => {
       if (!isMounted) return;
-      console.log("🔐 monitorarAuth callback:", user ? `Logado como ${user.email}` : "NÃO logado");
 
       if (user) {
         setUsuarioLogado(user);
@@ -176,7 +234,9 @@ export default function App() {
           const localTime = currentState.updatedAt || 0;
 
           if (remoteTime > localTime) {
-            console.log("📥 Dados remotos do Firebase são mais recentes. Atualizando Zustand.");
+            if (Math.abs(remoteTime - localTime) > 24 * 60 * 60 * 1000) {
+              showToastStore("Dados da nuvem mais recentes Ã¢â‚¬â€ atualizando.");
+            }
 
             const normalizePlatTemas = (platObj, initialPlatObj) => {
               if (!platObj) return initialPlatObj;
@@ -197,6 +257,8 @@ export default function App() {
 
             useStore.setState({
               plat: dados.plat || "res",
+              cronogramaSel: dados.cronogramaSel || currentState.cronogramaSel,
+              gamif: dados.gamif ? { ...currentState.gamif, ...dados.gamif } : currentState.gamif,
               userName: dados.userName || user.displayName || user.email?.split("@")[0] || "Estudante",
               userEmail: user.email || "",
               meta: dados.meta || { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0 },
@@ -212,9 +274,10 @@ export default function App() {
               updatedAt: remoteTime,
             });
           } else {
-            console.log("📤 Estado do localStorage é mais recente ou igual. Sincronizando com Firebase.");
             const stateToSave = {
               plat: currentState.plat,
+              cronogramaSel: currentState.cronogramaSel,
+              gamif: currentState.gamif,
               meta: currentState.meta,
               res: currentState.res,
               vest: currentState.vest,
@@ -246,10 +309,9 @@ export default function App() {
       }
     });
 
-    // Timeout de segurança: se Firebase não responder em 5s, mostra AuthModal
+    // Timeout de seguranÃƒÂ§a: se Firebase nÃƒÂ£o responder em 5s, mostra AuthModal
     timeoutId = setTimeout(() => {
       if (isMounted) {
-        console.log("⚠️ Firebase auth timeout - terminando carregamento");
         setCarregandoAuth(false);
       }
     }, 5000);
@@ -259,9 +321,9 @@ export default function App() {
       clearTimeout(timeoutId);
       unsubscribe();
     };
-  }, [setUserName, setPlat, setMeta]);
+  }, [setUserName, setPlat, setMeta, showToastStore]);
 
-  // ─── SINCRONIZAR DADOS COM FIREBASE (AO MUDAR ESTADO) ──────────────────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ SINCRONIZAR DADOS COM FIREBASE (AO MUDAR ESTADO) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
   useEffect(() => {
     if (!usuarioLogado) return;
 
@@ -274,6 +336,8 @@ export default function App() {
       timeoutId = setTimeout(() => {
         const stateToSave = {
           plat: state.plat,
+          cronogramaSel: state.cronogramaSel,
+          gamif: state.gamif,
           meta: state.meta,
           res: state.res,
           vest: state.vest,
@@ -306,7 +370,7 @@ export default function App() {
             }
           })
           .catch((err) => {
-            console.error("Erro na sincronização reativa:", err);
+            console.error("Erro na sincronizaÃƒÂ§ÃƒÂ£o reativa:", err);
             setSyncStatus("offline");
           });
       }, 3000);
@@ -318,7 +382,7 @@ export default function App() {
     };
   }, [usuarioLogado]);
 
-  // ─── GARANTIR FLUSH ANTES DE SAIR DA PÁGINA ───────────────────────────────
+  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ GARANTIR FLUSH ANTES DE SAIR DA PÃƒÆ’Ã‚ÂGINA ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
   useEffect(() => {
     if (!usuarioLogado) return;
 
@@ -326,6 +390,8 @@ export default function App() {
       const state = useStore.getState();
       const stateToSave = {
         plat: state.plat,
+        cronogramaSel: state.cronogramaSel,
+        gamif: state.gamif,
         meta: state.meta,
         res: state.res,
         vest: state.vest,
@@ -351,7 +417,7 @@ export default function App() {
 
 
 
-  const filaHoje = useMemo(() => calcFilaInteligente(temas), [temas]);
+  const filaHoje = useFilaInteligente();
   const totalFilaHoje = filaHoje.length;
   const concluidosHoje = useMemo(() => {
     return temas
@@ -369,13 +435,27 @@ export default function App() {
     );
   }, [temas]);
 
-  const showToast = useCallback((msg, withUndo = false) => setToast({ msg, undo: withUndo }), []);
-  const dismissToast = useCallback(() => setToast(null), []);
+  const showToast = useCallback((msg, withUndo = false) => showToastStore(msg, { undo: withUndo }), [showToastStore]);
+
+  const checkWorkloadAndWarn = useCallback(() => {
+    const state = useStore.getState();
+    const temasList = state[plat]?.temas || [];
+    const maxRevisoesDia = state.meta?.maxRevisoesDia || 30;
+    const proj = getWorkloadProjection(temasList, 7);
+    const exceeds = Object.values(proj).some((count) => count > maxRevisoesDia);
+    if (exceeds) {
+      showToast("Carga alta na proxima semana. Revise seu teto diario antes de adicionar novos temas.");
+    }
+    return true;
+  }, [plat, showToast]);
 
   const handleFocusModeCompleteStep = useCallback(
     (temaId, stepKey, markData) => {
       playTick();
       setShowCheckmark(true);
+      if (stepKey === "d1") trackEvent("retorno_d1", { plat, temaId });
+      if (stepKey === "d7") trackEvent("retorno_d7", { plat, temaId });
+      if (stepKey !== "d0") trackEvent("primeira_revisao", { plat, temaId, step: stepKey });
 
       if (stepKey === "d1") {
         pushUndo(plat);
@@ -387,13 +467,18 @@ export default function App() {
           stepKey: "d1",
           brainDump: true,
           ...markData.fields,
+          modoReduzido: markData.modoReduzido,
+          descansoPrescrito: markData.descansoPrescrito
         });
         markStep(plat, temaId, "d1", {
-          acerto: 1.0,
+          acerto: markData.acerto !== undefined ? markData.acerto : 1.0,
           questoes: 1,
           motivosErro: [],
+          tempoMin: markData.tempoMin,
+          modoReduzido: markData.modoReduzido,
+          descansoPrescrito: markData.descansoPrescrito
         });
-        showToast("🧠 Brain Dump consolidado e gravado no perfil!");
+        showToast("Ã°Å¸Â§Â  Brain Dump consolidado e gravado no perfil!");
       } else if (stepKey === "d0") {
         pushUndo(plat);
         markStep(plat, temaId, "d0", {
@@ -401,6 +486,13 @@ export default function App() {
           questoes: markData.questoes !== undefined ? markData.questoes : 0,
           motivosErro: markData.motivosErro || [],
           erros: markData.erros || [],
+          c1: markData.c1,
+          c2: markData.c2,
+          c3: markData.c3,
+          c4: markData.c4,
+          c5: markData.c5,
+          modoReduzido: markData.modoReduzido,
+          descansoPrescrito: markData.descansoPrescrito
         });
         addTemaStats(temaId, {
           stepKey: "d0",
@@ -408,26 +500,49 @@ export default function App() {
           questoes: markData.questoes !== undefined ? markData.questoes : 0,
           motivosErro: markData.motivosErro || [],
           erros: markData.erros || [],
+          c1: markData.c1,
+          c2: markData.c2,
+          c3: markData.c3,
+          c4: markData.c4,
+          c5: markData.c5,
+          modoReduzido: markData.modoReduzido,
+          descansoPrescrito: markData.descansoPrescrito
         });
         updateTema(plat, temaId, {
           pico: markData.pico || "",
           ankiDeck: markData.ankiDeck || "",
         });
-        showToast("✓ Tema iniciado com sucesso!");
+        showToast("ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Tema iniciado com sucesso!");
       } else {
         pushUndo(plat);
         markStep(plat, temaId, stepKey, {
           acerto: markData.acerto,
+          previsao: markData.previsao,
           questoes: markData.questoes,
           motivosErro: markData.motivosErro,
           erros: markData.erros || [],
+          c1: markData.c1,
+          c2: markData.c2,
+          c3: markData.c3,
+          c4: markData.c4,
+          c5: markData.c5,
+          modoReduzido: markData.modoReduzido,
+          descansoPrescrito: markData.descansoPrescrito
         });
         addTemaStats(temaId, {
           stepKey,
           acerto: markData.acerto,
+          previsao: markData.previsao,
           questoes: markData.questoes,
           motivosErro: markData.motivosErro,
           erros: markData.erros || [],
+          c1: markData.c1,
+          c2: markData.c2,
+          c3: markData.c3,
+          c4: markData.c4,
+          c5: markData.c5,
+          modoReduzido: markData.modoReduzido,
+          descansoPrescrito: markData.descansoPrescrito
         });
 
         // Confetti for D21
@@ -440,20 +555,125 @@ export default function App() {
             const temaAtualizado = state[plat].temas.find((t) => t.id === temaId);
             if (temaAtualizado && STEPS.every((s) => temaAtualizado.rev[s.key].done)) {
               setCycleComplete(temaAtualizado);
+              
+              // Dispara frase do mentor pÃƒÂ³s-D21
+              const recent = getRecentPhrases();
+              const { text, id } = getMentorPhrase("ciclo_pos_d21", {
+                userName: state.userName || "Estudante",
+                tema: temaAtualizado.nome
+              }, recent, plat, state.meta?.tomMentor || "gentil");
+              if (id) trackRecentPhrase(id);
+              setTimeout(() => {
+                showToast(`Ã°Å¸Â§Â  Mentor: "${text}"`);
+              }, 1500);
             }
           }, 100);
         }
 
-        showToast(`✓ Etapa computada com sucesso!`, true);
+        showToast(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Etapa computada com sucesso!`, true);
       }
+
+      // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ CENTRALIZED GAMIFICATION LOGIC Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+      const stateBefore = useStore.getState();
+      const currentGamif = stateBefore.gamif || { xp: 0, level: 1, streakCurrent: 0, streakBest: 0, freezesOwned: 1, freezesUsedDates: [], recoveryOwned: 0, badges: [], graceUsedThisWeek: false };
+
+      let acerto = 1.0;
+      if (stepKey === "d1") {
+        acerto = 1.0;
+      } else if (stepKey === "d0") {
+        acerto = markData.acerto !== undefined ? markData.acerto : 1.0;
+      } else {
+        acerto = markData.acerto !== undefined ? markData.acerto : 0;
+      }
+      const isInterleaved = !!markData.interleaved;
+      const xpGained = xpForReview({ acerto, stepKey, isInterleaved });
+
+      const source = acerto >= 0.8 ? "acertos" : "constancia";
+      addXp(xpGained, source);
+      updateGamifStreak(todayStr());
+
+      const stateAfterStreak = useStore.getState();
+      const gamifBefore = stateBefore.gamif || {};
+      const gamifAfter = stateAfterStreak.gamif || {};
+
+      if (gamifAfter.freezesOwned < gamifBefore.freezesOwned) {
+        const recent = getRecentPhrases();
+        const { text, id } = getMentorPhrase("descanso_saudavel", { userName: userName || "Estudante" }, recent, plat, stateAfterStreak.meta?.tomMentor || "gentil");
+        trackRecentPhrase(id);
+        setTimeout(() => {
+          showToast(`ÃƒÂ¢Ã‚ÂÃ¢â‚¬Å¾ÃƒÂ¯Ã‚Â¸Ã‚Â Ofensiva Protegida! Mentor: "${text}"`, false, 6000);
+        }, 1500);
+      } else if (gamifAfter.graceUsedThisWeek && !gamifBefore.graceUsedThisWeek && (gamifAfter.streakCurrent === gamifBefore.streakCurrent)) {
+        const recent = getRecentPhrases();
+        const { text, id } = getMentorPhrase("descanso_saudavel", { userName: userName || "Estudante" }, recent, plat, stateAfterStreak.meta?.tomMentor || "gentil");
+        trackRecentPhrase(id);
+        setTimeout(() => {
+          showToast(`Ã°Å¸Å’Â± TolerÃƒÂ¢ncia Ativa! Mentor: "${text}"`, false, 6000);
+        }, 1500);
+      } else if (gamifBefore.streakCurrent > 1 && gamifAfter.streakCurrent === 1 && gamifAfter.lostStreakDate === todayStr()) {
+        const recent = getRecentPhrases();
+        const { text, id } = getMentorPhrase("streak_perdida", { userName: userName || "Estudante" }, recent, plat, stateAfterStreak.meta?.tomMentor || "gentil");
+        trackRecentPhrase(id);
+        setTimeout(() => {
+          showToast(`Ã°Å¸â€Â¥ Ofensiva Reiniciada! Mentor: "${text}"`, false, 6000);
+        }, 1500);
+      }
+
+      setTimeout(() => {
+        const stateAfter = useStore.getState();
+        const existingBadges = stateAfter.gamif?.badges || [];
+        const newlyUnlocked = [];
+        let totalXpBonus = 0;
+
+        ACHIEVEMENTS.forEach((ach) => {
+          if (!existingBadges.includes(ach.id) && ach.criterio(stateAfter)) {
+            newlyUnlocked.push(ach.id);
+            totalXpBonus += ach.xpReward;
+            showToast(`Ã°Å¸Ââ€  Conquista Desbloqueada: ${ach.icon} ${ach.nome} (+${ach.xpReward} XP)!`);
+          }
+        });
+
+        if (newlyUnlocked.length > 0) {
+          useStore.setState((s) => {
+            const g = s.gamif || {};
+            const nextXp = (g.xp || 0) + totalXpBonus;
+            const nextLvl = Math.floor(Math.sqrt(nextXp / 50)) + 1;
+            
+            const xpAudit = g.xpAudit ? { ...g.xpAudit } : { acertos: 0, constancia: 0, outros: 0 };
+            xpAudit.outros = (xpAudit.outros || 0) + totalXpBonus;
+
+            if (nextLvl > (g.level || 1)) {
+              setTimeout(() => {
+                showToast(`Ã°Å¸Å½â€° NÃƒÂ­vel Subiu: VocÃƒÂª alcanÃƒÂ§ou o NÃƒÂ­vel ${nextLvl}!`);
+              }, 1000);
+            }
+
+            return {
+              gamif: {
+                ...g,
+                xp: nextXp,
+                level: nextLvl,
+                badges: [...new Set([...(g.badges || []), ...newlyUnlocked])],
+                xpAudit
+              }
+            };
+          });
+        } else {
+          const nextLvl = stateAfter.gamif?.level || 1;
+          const prevLvl = currentGamif.level || 1;
+          if (nextLvl > prevLvl) {
+            showToast(`Ã°Å¸Å½â€° NÃƒÂ­vel Subiu: VocÃƒÂª alcanÃƒÂ§ou o NÃƒÂ­vel ${nextLvl}!`);
+          }
+        }
+      }, 250);
 
       // Milestone check
       const allDone = Object.values(useStore.getState().temaStats).flat().length + 1;
       if ([7, 14, 30, 100, 200].includes(allDone)) {
-        setTimeout(() => showToast(`🎯 Marco de ${allDone} revisões concluídas!`), 1500);
+        setTimeout(() => showToast(`Ã°Å¸Å½Â¯ Marco de ${allDone} revisÃƒÂµes concluÃƒÂ­das!`), 1500);
       }
 
-      // Meta diária check
+      // Meta diÃƒÂ¡ria check
       if ((meta.metaDiaria || 0) > 0 && concluidosHoje + 1 === meta.metaDiaria) {
         setTimeout(() => {
           setShowConfetti(true);
@@ -464,11 +684,11 @@ export default function App() {
             userName: useStore.getState().userName || "Estudante",
             totalQuestoes: markData.questoes || 15
           }, recent, plat);
-          showToast(`🎯 Meta Cumprida: "${text}"`);
+          showToast(`Ã°Å¸Å½Â¯ Meta Cumprida: "${text}"`);
         }, 1500);
       }
     },
-    [plat, pushUndo, setBrainDumpD1, addTemaStats, markStep, updateTema, showToast, meta.metaDiaria, concluidosHoje]
+    [plat, pushUndo, setBrainDumpD1, addTemaStats, markStep, updateTema, showToast, meta.metaDiaria, concluidosHoje, addXp, updateGamifStreak, userName]
   );
 
   const handleSaveTema = useCallback(
@@ -476,10 +696,10 @@ export default function App() {
       pushUndo(plat);
       if (!temaEdit?.id) {
         addTema(plat, f);
-        showToast(f.unstarted ? `✓ "${f.nome}" priorizado no catálogo` : `✓ "${f.nome}" acoplado à grade`, true);
+        showToast(f.unstarted ? `Ã¢Å“â€œ "${f.nome}" priorizado no catÃƒÂ¡logo` : `Ã¢Å“â€œ "${f.nome}" acoplado ÃƒÂ  grade`, true);
       } else {
         updateTema(plat, temaEdit.id, f);
-        showToast("✓ Configurações do tema atualizadas", true);
+        showToast("Ã¢Å“â€œ ConfiguraÃƒÂ§ÃƒÂµes do tema atualizadas", true);
       }
       setTemaEdit(null);
     },
@@ -491,7 +711,7 @@ export default function App() {
     useStore.setState({ focusMode: true });
   };
 
-  // ─── CARREGANDO AUTH ───────────────────────────────────────────────────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ CARREGANDO AUTH Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
   if (carregandoAuth) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#07070f]">
@@ -505,7 +725,7 @@ export default function App() {
     );
   }
 
-  // ─── NÃO AUTENTICADO ───────────────────────────────────────────────────────
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ NÃƒÆ’O AUTENTICADO Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
   if (!usuarioLogado) {
     return (
       <AuthModal
@@ -531,6 +751,7 @@ export default function App() {
               setPlat(foco);
               if (metaConfig) setMeta({ ...meta, ...metaConfig });
               setTourStep("crono");
+              trackEvent("onboarding_done", { plat: foco });
               setView("crono");
             }}
           />
@@ -564,6 +785,7 @@ export default function App() {
             setPlat(foco);
             if (metaConfig) setMeta({ ...meta, ...metaConfig });
             setTourStep("crono");
+            trackEvent("onboarding_done", { plat: foco });
             setView("crono");
           }}
         />
@@ -576,10 +798,13 @@ export default function App() {
         setHelpModal={setHelpModal}
         usuarioLogado={usuarioLogado}
         syncStatus={syncStatus}
+        onOpenLoja={() => setLojaOpen(true)}
         onLogout={async () => {
           const state = useStore.getState();
           const stateToSave = {
             plat: state.plat,
+            cronogramaSel: state.cronogramaSel,
+            gamif: state.gamif,
             userName: state.userName,
             meta: state.meta,
             res: state.res,
@@ -636,9 +861,17 @@ export default function App() {
             {!focusMode && (
               <div className="flex items-center gap-2">
                 {syncStatus === 'saving' && <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" title="Sincronizando..." />}
-                {syncStatus === 'saved' && <span className="w-2 h-2 rounded-full bg-emerald-500" title="Sincronizado com nuvem ✓" />}
+                {syncStatus === 'saved' && <span className="w-2 h-2 rounded-full bg-emerald-500" title="Sincronizado com nuvem ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“" />}
                 {syncStatus === 'offline' && <span className="w-2 h-2 rounded-full bg-red-500" title="Modo Offline" />}
 
+                <button
+                  type="button"
+                  onClick={() => setPlat(plat === "res" ? "vest" : "res")}
+                  className="md:hidden px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-violet-600/20 to-pink-500/20 border border-violet-500/30 text-violet-300 hover:text-white flex items-center justify-center text-[10.5px] font-black tracking-wide uppercase shrink-0 transition-all active:scale-95 cursor-pointer"
+                  title="Alternar Foco"
+                >
+                  {plat === "res" ? "ResidÃƒÂªncia" : "Vestibular"}
+                </button>
                 <button
                   type="button"
                   onClick={() => setAjustes(true)}
@@ -685,7 +918,7 @@ export default function App() {
                 onStudy={handleStudyTrigger}
                 onDelete={(id) => {
                   deleteTema(plat, id);
-                  showToast("🗑 Tema deletado");
+                  showToast("Ã°Å¸â€”â€˜ Tema deletado");
                 }}
                 userName={userName}
                 onEditName={() => setEditName(true)}
@@ -695,6 +928,8 @@ export default function App() {
                 concluidosHoje={concluidosHoje}
                 totalFilaHoje={totalFilaHoje}
                 setView={setView}
+                showToast={showToast}
+                onOpenAjustes={() => setAjustes(true)}
               />
             </ErrorBoundary>
           )}
@@ -703,6 +938,7 @@ export default function App() {
               onStep={handleStudyTrigger}
               onEdit={(t) => setTemaEdit(t)}
               onIniciarTema={(temaConfig) => {
+                if (!checkWorkloadAndWarn()) return;
                 if (temaConfig.id) {
                   updateTema(plat, temaConfig.id, { unstarted: false, d0: todayStr() });
                   handleStudyTrigger(temaConfig.id, "d0");
@@ -726,6 +962,7 @@ export default function App() {
                 onStep={handleStudyTrigger}
                 onEdit={(t) => setTemaEdit(t)}
                 onIniciarTema={(temaConfig) => {
+                  if (!checkWorkloadAndWarn()) return;
                   if (temaConfig.id) {
                     updateTema(plat, temaConfig.id, { unstarted: false, d0: todayStr() });
                     handleStudyTrigger(temaConfig.id, "d0");
@@ -752,16 +989,21 @@ export default function App() {
           )}
           {view === "sims" && (
             <ErrorBoundary>
-              <Simulados />
+              <Simulados onStudy={handleStudyTrigger} setView={setView} />
             </ErrorBoundary>
           )}
           {view === "anki" && <AnkiAudit />}
+          {view === "academia" && (
+            <ErrorBoundary>
+              <AcademiaMetodo />
+            </ErrorBoundary>
+          )}
         </main>
       </div>
 
       <BottomNav view={view} setView={setView} />
 
-      {/* Renderização de Modais */}
+      {/* RenderizaÃƒÂ§ÃƒÂ£o de Modais */}
       {temaEdit !== null && (
         <TemaModal
           initial={temaEdit}
@@ -771,7 +1013,7 @@ export default function App() {
           onDelete={(id) => {
             deleteTema(plat, id);
             setTemaEdit(null);
-            showToast("🗑 Tema removido");
+            showToast("Ã°Å¸â€”â€˜ Tema removido");
           }}
         />
       )}
@@ -781,6 +1023,9 @@ export default function App() {
           overdueCount={overdueCount}
           onResetOnboarding={resetOnboarding}
         />
+      )}
+      {lojaOpen && (
+        <LojaModal onClose={() => setLojaOpen(false)} />
       )}
 
       {showConfetti && <ConfettiOverlay />}
@@ -794,7 +1039,7 @@ export default function App() {
 
       {editName && (
         <Modal onClose={() => setEditName(false)}>
-          <h2 className="text-[14px] font-bold text-white mb-2">Alterar Identificação</h2>
+          <h2 className="text-[14px] font-bold text-white mb-2">Alterar IdentificaÃƒÂ§ÃƒÂ£o</h2>
           <Input
             type="text"
             value={userName}
@@ -817,16 +1062,17 @@ export default function App() {
               handleStudyTrigger(t.id, firstUndoneStep.key);
             } else {
               setView("banco");
-              showToast(`Tema concluído! Abrindo Banco de Dados.`);
+              showToast(`Tema concluÃƒÂ­do! Abrindo Banco de Dados.`);
             }
           }}
           onIniciarTema={(catalogItem) => {
+            if (!checkWorkloadAndWarn()) return;
             const novoId = Date.now();
             addTema(plat, {
               nome: catalogItem.nome,
               esp: catalogItem.esp,
-              prio: catalogItem.prio || "Média",
-              importancia: "ALTA",
+              prio: catalogItem.prio || "MÃƒÂ©dia",
+              importancia: prioToImportancia(catalogItem.prio),
               obs: catalogItem.blockName,
               pico: "",
               ankiDeck: "",
@@ -843,10 +1089,29 @@ export default function App() {
         onUndo={() => {
           undo();
           dismissToast();
-          showToast("✓ Desfeito!");
+          showToast("ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Desfeito!");
         }}
         onDismiss={dismissToast}
+      />
+      <ConfirmDialog
+        open={!!confirmDialog}
+        title={confirmDialog?.title}
+        message={confirmDialog?.message}
+        confirmLabel={confirmDialog?.confirmLabel}
+        cancelLabel={confirmDialog?.cancelLabel}
+        danger={confirmDialog?.danger}
+        onCancel={closeConfirm}
+        onConfirm={() => {
+          try {
+            confirmDialog?.onConfirm?.();
+          } finally {
+            closeConfirm();
+          }
+        }}
       />
     </div>
   );
 }
+
+
+

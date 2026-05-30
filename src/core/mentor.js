@@ -3,6 +3,8 @@
 
 import { calcTrend, calcProjecao } from "../hooks/useMetrics";
 import { detectErrorPatterns } from "./errorPatterns";
+import { getReadinessData } from "./readiness";
+import { useStore } from "./store";
 
 const PHRASES = {
   sessao_concluida_high: [
@@ -18,16 +20,16 @@ const PHRASES = {
     { id: "sc_mid_4", text: "{tema} revisado com {acerto}%. Está na média, mas seu potencial é acima de 80%. Analise os distractors antes da revisão de {data}." }
   ],
   sessao_concluida_low: [
-    { id: "sc_low_1", text: "{tema} está sangrando. {acerto}% é abaixo do threshold crítico. Eu bloqueei a progressão — você refaz o D0 antes de avançar. Esse é exatamente o tema que reprova." },
-    { id: "sc_low_2", text: "Alerta vermelho em {tema}, {userName}. {acerto}% de acerto. Esse rendimento é crítico. Precisamos reestudar o D0 antes de tentar avançar." },
-    { id: "sc_low_3", text: "Rendimento de {acerto}% em {tema} não é suficiente para aprovação. Bloqueado para revisão imediata. Vamos corrigir essa base agora." },
-    { id: "sc_low_4", text: "{userName}, {tema} precisa de atenção urgente. {acerto}% está abaixo do limite de segurança. Volte ao D0 e sane as dúvidas." }
+    { id: "sc_low_1", text: "{tema} ainda não fixou bem — {acerto}%. Isso é perfeitamente normal: indica que vale a pena reestudar a base antes de seguir adiante. É para isso que serve revisar.", tone: "gentil" },
+    { id: "sc_low_2", text: "Identifiquei que {tema} precisa de um reforço extra. O rendimento de {acerto}% sugere que revisar a base agora vai evitar dores de cabeça no futuro. Vamos juntos?", tone: "gentil" },
+    { id: "sc_low_3", text: "Rendimento de {acerto}% em {tema}. Que tal focar em entender as causas dos erros antes de avançar? Assim garantimos um progresso mais consistente.", tone: "neutro" },
+    { id: "sc_low_4", text: "Atenção em {tema}, {userName}. Esse rendimento de {acerto}% mostra que o conteúdo ainda está instável. Um ajuste na base hoje vai economizar muito tempo amanhã.", tone: "firme" }
   ],
   atrasado: [
-    { id: "atr_1", text: "{tema} está {diasAtraso} dias atrasado. A curva de esquecimento já reduziu a retrievabilidade. Quanto mais espera, mais precisa revisar. Hoje. Agora." },
-    { id: "atr_2", text: "Atenção, {userName}. {tema} está acumulando há {diasAtraso} dias. O esforço para recuperar a memória dobra a cada dia de atraso. Resolva isso hoje." },
-    { id: "atr_3", text: "Sua retenção de {tema} está caindo. Já são {diasAtraso} dias de atraso. Não deixe a bola cair. Vá para a fila agora." },
-    { id: "atr_4", text: "O FSRS precisa de constância. {tema} está atrasado há {diasAtraso} dias. Menos de 15 minutos e você mata essa pendência." }
+    { id: "atr_1", text: "Faz uns dias que {tema} não aparece. Sem problemas: já reorganizei a fila para caber no seu ritmo. Bora retomar por ele?", tone: "gentil" },
+    { id: "atr_2", text: "Oi, {userName}. {tema} está aguardando revisão. Retomar agora custa muito menos esforço do que parece — uns minutinhos e você restabelece a curva.", tone: "gentil" },
+    { id: "atr_3", text: "{tema} é uma boa prioridade hoje. Reencaixar esse assunto na memória agora garante que você não perca o progresso anterior.", tone: "neutro" },
+    { id: "atr_4", text: "O algoritmo de revisão programou {tema} para hoje. Estudar hoje protege o esforço que você já investiu nele. Vamos nessa?", tone: "firme" }
   ],
   streak: [
     { id: "str_1", text: "{streak} dias seguidos. Isso não é motivação — é sistema. Você já internalizou o ritmo. A partir daqui o estudo fica mais fácil, não mais difícil." },
@@ -66,9 +68,9 @@ const PHRASES = {
     { id: "va_high_3", text: "{acerto}% em {tema} — resultado de elite, {userName}. Próximo reforço em {data}. Mantenha isso e as outras áreas serão o diferencial." }
   ],
   vest_acerto_baixo: [
-    { id: "va_low_1", text: "{tema} está te custando pontos na {prova}. {acerto}% não é suficiente. Revise o conteúdo-base antes de avançar — a curva de esquecimento não perdoa lacunas." },
-    { id: "va_low_2", text: "Alerta em {tema}: {acerto}%. Identifique se é lacuna de conteúdo ou armadilha de distrator — eles têm soluções diferentes. Não empurre com a barriga." },
-    { id: "va_low_3", text: "{userName}, {acerto}% em {tema} indica ponto fraco real. Bloqueei a progressão até a base estar sólida. Isso é exatamente o que separa aprovados de reprovados." }
+    { id: "va_low_1", text: "Identifiquei que {tema} está abaixo da meta com {acerto}%. O que acha de reforçar a base teórica antes de avançar? Assim protegemos seu progresso.", tone: "gentil" },
+    { id: "va_low_2", text: "Alerta de atenção em {tema}: {acerto}%. Identificar se é lacuna de conteúdo ou distração é o primeiro passo para recalibrar seu foco.", tone: "neutro" },
+    { id: "va_low_3", text: "{userName}, o acerto de {acerto}% em {tema} sugere que o conteúdo ainda está instável. Sugiro fortemente focar em revisar a teoria antes de acumular novas revisões.", tone: "firme" }
   ],
   vest_segunda_tentativa: [
     { id: "vst_1", text: "Segunda tentativa, {userName}. Você já sabe o que não funcionou. Agora é hora de atacar com precisão — não quantidade. Foco no que a {prova} mais cobra." },
@@ -81,9 +83,123 @@ const PHRASES = {
     { id: "vans_3", text: "Cada sessão concluída hoje é menos lacuna na prova. O processo não para de funcionar. Você precisa aparecer — o algoritmo faz o resto." }
   ],
   vest_semana_prova: [
-    { id: "vsp_1", text: "Semana da prova, {userName}. Nada de conteúdo novo. Só revisão das pendências da fila. O cérebro precisa consolidar, não de mais informação." },
-    { id: "vsp_2", text: "Últimos dias. Priorize: 1) dormir bem, 2) comer direito, 3) revisar a fila. Nessa ordem. Rendimento cognitivo na prova depende dos 3." },
-    { id: "vsp_3", text: "O que você sabe, você sabe. Agora é sobre execução, não aprendizado. Foco, respiração e confiança no processo." }
+    { id: "vsp_1", text: "Semana da prova, {userName}. Nada de conteúdo novo. Só revisão das pendências da fila. O cérebro precisa consolidar, não de mais informação.", tone: "firme" },
+    { id: "vsp_2", text: "Últimos dias. Priorize: 1) dormir bem, 2) comer direito, 3) revisar a fila. Nessa ordem. Rendimento cognitivo na prova depende dos 3.", tone: "neutro" },
+    { id: "vsp_3", text: "O que você sabe, você sabe. Agora é sobre execução, não aprendizado. Foco, respiração e confiança no processo.", tone: "gentil" }
+  ],
+  ciclo_pos_d21: [
+    { id: "pd21_1", text: "{userName}, {tema} fechou o ciclo D0→D21. Não some do mapa: o FSRS agora agenda reforços com intervalos crescentes (45, 90+ dias) só quando sua retenção real pedir. Você revisa menos e lembra mais.", tone: "gentil" },
+    { id: "pd21_2", text: "Ciclo completo em {tema}. A partir daqui entra em manutenção: revisões raras e espaçadas, calculadas pela sua estabilidade (S). Quanto melhor seu acerto, mais longe a próxima.", tone: "firme" },
+    { id: "pd21_3", text: "{tema} consolidado. O D21 não é o fim — é quando o tema vira memória de longo prazo. Eu te chamo de volta só no ponto ótimo de esquecimento, pra não desperdiçar seu tempo.", tone: "gentil" },
+    { id: "pd21_4", text: "Pronto! {tema} está na fase de manutenção de longo prazo. O algoritmo FSRS agora aumenta o espaçamento de forma exponencial (45, 90+ dias). O aprendizado está sedimentado.", tone: "neutro" }
+  ],
+  etapa_d1: [
+    { id: "e_d1_1", text: "D1 é recuperação ativa: escrever de memória (Brain Dump) sem olhar o material. Esse esforço é o que fixa — não é reler, é lembrar. (Karpicke & Blunt, 2011)", tone: "neutro" },
+    { id: "e_d1_2", text: "A força da sua memória é criada na dificuldade de puxar a informação. Forçar a mente no Brain Dump hoje reduz pela metade sua chance de esquecer amanhã.", tone: "firme" },
+    { id: "e_d1_3", text: "Brain Dump agora. Não consulte nada por 5 minutos. Tente reescrever de cabeça os pontos principais. Errar e forçar a busca mental reconsolida as sinapses.", tone: "firme" },
+    { id: "e_d1_4", text: "Resgate ativo no D1: colocar o cérebro para trabalhar. O esforço inicial no Brain Dump é a parte cientificamente comprovada mais importante do método.", tone: "gentil" }
+  ],
+  etapa_d4: [
+    { id: "e_d4_1", text: "D4: agora questões. Testar é estudar — o efeito teste supera reler na retenção de longo prazo. (Adesope et al., 2017)", tone: "neutro" },
+    { id: "e_d4_2", text: "Questões ativas hoje. Errar e ler a justificativa agora ativa a sua memória episódica, blindando você contra distratores na hora da prova.", tone: "gentil" },
+    { id: "e_d4_3", text: "Prática de teste: fazer questões é muito melhor do que reler resumos. O cérebro aprende a buscar respostas sob pressão.", tone: "firme" },
+    { id: "e_d4_4", text: "Hora do treino real. O rendimento nas questões de D4 calibra a estabilidade inicial do tema. Resolva com atenção plena.", tone: "firme" }
+  ],
+  etapa_d7: [
+    { id: "e_d7_1", text: "D7: questões + flashcards. Você está espaçando no ponto certo da curva de esquecimento. Espaçar > amontoar. (Dunlosky et al., 2013)", tone: "neutro" },
+    { id: "e_d7_2", text: "Hora de acoplar as questões aos flashcards do Anki. O espaçamento ideal no D7 evita que o tema caia no esquecimento profundo.", tone: "gentil" },
+    { id: "e_d7_3", text: "Sétimo dia: consolidação. Revisar no ponto exato de esquecimento economiza tempo e aumenta a retenção de longo prazo.", tone: "gentil" },
+    { id: "e_d7_4", text: "Questões e Anki. O reforço no D7 solidifica a curva. Mantenha os flashcards em dia para manter o tema fresco.", tone: "firme" }
+  ],
+  etapa_d21: [
+    { id: "e_d21_1", text: "D21 intercalado: misturar temas parecidos treina seu cérebro a diferenciar — exatamente o que a prova cobra. (Foster et al., 2019)", tone: "neutro" },
+    { id: "e_d21_2", text: "Sessão interleaved no D21. Ao misturar tópicos, você simula as condições reais do exame, onde as questões vêm misturadas.", tone: "gentil" },
+    { id: "e_d21_3", text: "Último passo do ciclo principal: prática misturada. Treinar a flexibilidade cognitiva hoje prepara você para qualquer surpresa.", tone: "gentil" },
+    { id: "e_d21_4", text: "Chegamos ao D21. Misturar subtemas força você a discernir diagnósticos diferenciais parecidos. Foco total.", tone: "firme" }
+  ],
+  dia_sem_fila: [
+    { id: "dsf_1", text: "Fila zerada. Nada para hoje! Descansar também é parte do método — sua retenção de longo prazo agradece.", tone: "gentil" },
+    { id: "dsf_2", text: "Curva sob controle e fila limpa. Aproveite o tempo livre para descansar ou fazer atividades físicas. Equilíbrio é chave.", tone: "gentil" },
+    { id: "dsf_3", text: "Parabéns, {userName}, sua fila está limpa. Dê férias parciais ao cérebro hoje para consolidar os estudos da semana.", tone: "neutro" },
+    { id: "dsf_4", text: "Sem pendências no FSRS por hoje. O descanso estratégico é essencial para a saúde cognitiva e fixação das memórias.", tone: "firme" }
+  ],
+  descanso_saudavel: [
+    { id: "ds_1", text: "Está tudo bem descansar, {userName}. A curva de esquecimento do algoritmo de revisão tolera pausas estratégicas. O importante é voltar com foco.", tone: "gentil" },
+    { id: "ds_2", text: "Estudo de alta performance exige descanso de qualidade. Salvei sua ofensiva hoje para você se recuperar sem culpa.", tone: "gentil" },
+    { id: "ds_3", text: "Descanso estratégico é parte do método, {userName}. Ofensiva mantida. Durma bem e volte quando estiver pronto.", tone: "neutro" },
+    { id: "ds_4", text: "Pausa necessária. Sua ofensiva está congelada e protegida. Lembre-se: consistência não é exaustão.", tone: "firme" }
+  ],
+  streak_perdida: [
+    { id: "str_lost_1", text: "A sequência zerou, mas o que você aprendeu não. Recomeçar no dia 1 com método é melhor que manter streak no piloto automático. Bora?", tone: "gentil" },
+    { id: "str_lost_2", text: "A ofensiva recomeça hoje, {userName}. O importante é a constância do aprendizado acumulado, não um contador. De volta ao trabalho!", tone: "neutro" }
+  ],
+  modo_reduzido_aquisicao_pendente: [
+    { id: "mr_aq_p_1", text: "Hoje tá pesado. Tema novo agora vira tempo jogado fora — encoding exausto não fixa. Bora só nas {n} revisões que já estão maduras? Elas pedem menos e rendem mais. O tema novo te espera amanhã." }
+  ],
+  modo_reduzido_aquisicao_descanso: [
+    { id: "mr_aq_d_1", text: "Você zerou as revisões e hoje não é dia de tema novo. Descansar não é falha — é o que consolida o que você já aprendeu. Te vejo amanhã, inteiro." }
+  ],
+  modo_reduzido_recuperacao: [
+    { id: "mr_rec_1", text: "Dia difícil? Então vamos no essencial: um recall rápido e 10 questões de {tema}. Mantém a curva sem te quebrar." }
+  ],
+  transicao_modo_prova: [
+    { id: "tmp_1", text: "Seus números dizem que você passou da fase de aprender e entrou na fase de treinar pra prova. Quer que eu reescreva seu plano em modo simulado? Você ainda pode revisar pontos fracos quando eles aparecerem." }
+  ],
+  tema_consolidando: [
+    { id: "tc_1", text: "Você já viu o essencial de {area} e está em {acerto}%. Parar de ver teoria nova e focar em fazer questões em volume é o que te ajuda a alcançar a meta de 80%. Sugiro focar na prática de questões para consolidar." }
+  ],
+  tema_voltou_fila: [
+    { id: "tvf_1", text: "{tema} caiu pra {acerto}% no simulado. Saiu do modo prova, voltou pra fila de questões. Sem drama — é pra isso que serve simular." }
+  ],
+  boas_vindas_retorno: [
+    { id: "bv_ret_1", text: "Bom te ver de volta, {userName}. Você já acumulou {totalRevisoesFeitas} revisões e tem {prontidao}% de prontidão. Vamos reajustar o ritmo? Temos {pending} revisões ({tempoEstimado} min) hoje.", tone: "gentil" },
+    { id: "bv_ret_2", text: "Bem-vindo de volta, {userName}. Com {totalRevisoesFeitas} revisões feitas e {prontidao}% de prontidão, seu potencial está guardado. De volta ao foco com {pending} pendências hoje.", tone: "neutro" }
+  ],
+  boas_vindas_inicio: [
+    { id: "bv_ini_1", text: "Seja muito bem-vindo, {userName}! Sua jornada de elite começa agora. O algoritmo já está pronto para mapear sua curva de esquecimento. Qual tema iniciamos?", tone: "gentil" },
+    { id: "bv_ini_2", text: "Olá, {userName}! Primeiro acesso concluído. Cada grande conquista começa com a coragem de iniciar. Vamos cadastrar o primeiro assunto do dia?", tone: "gentil" }
+  ],
+  boas_vindas_streak: [
+    { id: "bv_str_1", text: "Consistência incrível, {userName}! Você já fez {totalRevisoesFeitas} revisões e sua prontidão está em {prontidao}%. Esses {streakCurrent} dias seguidos provam seu foco. Bora liquidar as {pending} revisões de hoje?", tone: "gentil" },
+    { id: "bv_str_2", text: "{streakCurrent} dias seguidos de consistência, {userName}. Com {totalRevisoesFeitas} revisões feitas e {prontidao}% de prontidão, a vaga se aproxima. Foco nas {pending} de hoje!", tone: "neutro" }
+  ],
+  boas_vindas_pendente: [
+    { id: "bv_pen_1", text: "Olá, {userName}. Você já concluiu {totalRevisoesFeitas} revisões com prontidão de {prontidao}%. Hoje temos {pending} temas agendados ({tempoEstimado} min). Bora recall ativo!", tone: "gentil" },
+    { id: "bv_pen_2", text: "Hoje temos {pending} tópicos na fila, {userName}. Com {totalRevisoesFeitas} revisões feitas e prontidão em {prontidao}%, continue firme no método para proteger sua curva.", tone: "neutro" }
+  ],
+  boas_vindas_zerada: [
+    { id: "bv_zero_1", text: "Fila zerada e mente blindada, {userName}! Você já fez {totalRevisoesFeitas} revisões e sua prontidão é de {prontidao}%. Descanse sem culpa hoje.", tone: "gentil" },
+    { id: "bv_zero_2", text: "Manutenção em dia! Fila zerada hoje, {userName}. Com {totalRevisoesFeitas} revisões e {prontidao}% de prontidão, seu cérebro merece o descanso para consolidar.", tone: "neutro" }
+  ],
+  calibracao_excesso_confianca: [
+    { id: "cal_over_1", text: "{userName}, sua previsão de acerto está muito otimista. Cuidado com a ilusão de fluência: achar que domina o assunto antes de testar de verdade é o maior risco. Ajuste a autocrítica." },
+    { id: "cal_over_2", text: "Você está estimando acertos acima do real. Estudar com a falsa sensação de facilidade prejudica a retenção. Tente focar mais nos erros por distração." }
+  ],
+  calibracao_subestima: [
+    { id: "cal_under_1", text: "Excelente surpresa, {userName}: seu acerto real está superando sua previsão. Você sabe mais do que pensa! Acredite na sua curva de esquecimento consolidada." },
+    { id: "cal_under_2", text: "Você está subestimando seu desempenho. Confie mais no recall ativo e na estabilidade que o Anki e o FSRS criaram." }
+  ],
+  calibracao_calibrado: [
+    { id: "cal_ok_1", text: "Sua percepção está perfeitamente alinhada com seu acerto real. Essa alta autoconsciência cognitiva permite priorizar o que realmente precisa de foco. Excelente." },
+    { id: "cal_ok_2", text: "Calibração ideal, {userName}. Você conhece perfeitamente seus limites cognitivos, o que otimiza seu tempo de estudo." }
+  ],
+  calibracao_coletando: [
+    { id: "cal_col_1", text: "Ainda estou reunindo dados. Continue informando sua previsão antes das revisões ativas para calibrarmos seu viés." }
+  ],
+  estado_new: [
+    { id: "st_new_1", text: "Comece pequeno hoje: 1 tema já cria tração real. Depois o ritmo vem com consistência." }
+  ],
+  estado_current: [
+    { id: "st_cur_1", text: "Ritmo estável. Mantenha o plano de hoje e preserve a curva de retenção." }
+  ],
+  estado_at_risk: [
+    { id: "st_risk_1", text: "Seu ritmo está caindo. Faça um bloco curto agora para não perder a sequência da semana." }
+  ],
+  estado_dormant: [
+    { id: "st_dorm_1", text: "Retome com um passo mínimo: 20 minutos e um único tema. Começar pequeno já conta como virada." }
+  ],
+  estado_resurrected: [
+    { id: "st_res_1", text: "Boa volta. Mantenha leve hoje: um bloco curto bem feito é melhor que tentar compensar tudo." }
   ]
 };
 
@@ -100,9 +216,23 @@ export function interpolate(template, vars) {
  * Pures selects a randomized phrase for a situation, avoiding recent ones.
  * Updates local storage history when called (if browser context is available).
  */
-export function getMentorPhrase(situation, vars, recentPhrases = [], plat = "res") {
-  const options = PHRASES[situation];
+export function getMentorPhrase(situation, vars, recentPhrases = [], plat = "res", tom = "neutro") {
+  let options = PHRASES[situation];
   if (!options || options.length === 0) return { text: "", id: "" };
+
+  // Filtragem por tom estrita
+  if (tom) {
+    const strictTone = options.filter(o => o.tone === tom);
+    if (strictTone.length > 0) {
+      options = strictTone;
+    } else {
+      options = options.filter(o => {
+        if (tom === "gentil" && o.tone === "firme") return false;
+        if (tom === "firme" && o.tone === "gentil") return false;
+        return true;
+      });
+    }
+  }
 
   let available = options.filter(o => !recentPhrases.includes(o.id));
   if (available.length === 0) {
@@ -110,20 +240,59 @@ export function getMentorPhrase(situation, vars, recentPhrases = [], plat = "res
   }
 
   const selected = available[Math.floor(Math.random() * available.length)];
+  if (!selected) {
+    return {
+      text: "Força nos estudos! Vamos focar na revisão de hoje.",
+      id: ""
+    };
+  }
   let text = selected.text;
 
   if (plat === "vest") {
-    // Purge medical jargon: replace "especialidade" with "matéria" / "área", and "sangrando" with "crítico"
+    // Purge medical jargon
     text = text.replace(/\{especialidade\}/g, "{materia}");
     text = text.replace(/especialidade/g, "área");
     text = text.replace(/sangrando/g, "com lacunas críticas");
     text = text.replace(/MedRev/g, "Bro");
+    text = text.replace(/FSRS/g, "algoritmo de revisão");
+    text = text.replace(/D0→D21/g, "de estudos");
   }
 
   return {
     text: interpolate(text, { ...vars, materia: vars.especialidade || vars.materia }),
     id: selected.id
   };
+}
+
+export function getMentorVoice({ situation, userName, pending, streakCurrent, meta, plat, tom = "neutro", totalSessions, totalRevisoesFeitas = 0, prontidao = 0 }) {
+  if (situation === "boas_vindas_diario" && Math.random() < (1 / 6)) {
+    return "A única coisa que rouba o nosso conhecimento é o tempo: o que não revemos, se perde.";
+  }
+
+  const tempoEstimado = Math.round(pending * 1.5);
+  const vars = { userName, pending, streakCurrent, tempoEstimado, totalRevisoesFeitas, prontidao };
+  
+  let key = situation;
+  if (situation === "boas_vindas_diario") {
+    if (meta?.isRetornoAcolhedor) {
+      key = "boas_vindas_retorno";
+    } else if (totalSessions === 0 || meta?.totalSessions === 0 || !meta?.lastActiveDate) {
+      key = "boas_vindas_inicio";
+    } else if (streakCurrent >= 3) {
+      key = "boas_vindas_streak";
+    } else if (pending === 0) {
+      key = "boas_vindas_zerada";
+    } else {
+      key = "boas_vindas_pendente";
+    }
+  }
+  
+  const recent = getRecentPhrases();
+  const phrase = getMentorPhrase(key, vars, recent, plat, tom);
+  if (phrase.id) {
+    trackRecentPhrase(phrase.id);
+  }
+  return phrase.text;
 }
 
 /**
@@ -135,8 +304,8 @@ export function trackRecentPhrase(phraseId) {
     const raw = localStorage.getItem("medrev_recent_mentor_phrases");
     let list = raw ? JSON.parse(raw) : [];
     
-    // Keep last 15 phrase IDs
-    list = [phraseId, ...list.filter(id => id !== phraseId)].slice(0, 15);
+    // Keep last 25 phrase IDs
+    list = [phraseId, ...list.filter(id => id !== phraseId)].slice(0, 25);
     localStorage.setItem("medrev_recent_mentor_phrases", JSON.stringify(list));
   } catch (e) {
     console.error("Erro ao rastrear frase recente do Mentor:", e);
@@ -202,24 +371,32 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
       if (avgMorning > avgNight) {
         insights.push({
           type: "horario",
-          text: `Notei que você rende muito melhor pela manhã: ${Math.round(avgMorning)}% de acerto vs ${Math.round(avgNight)}% à noite.`
+          text: `Notei que você rende muito melhor pela manhã: ${Math.round(avgMorning)}% de acerto vs ${Math.round(avgNight)}% à noite.`,
+          confidence: statsList.length >= 10 ? "alta" : "média",
+          action: { type: "agendar", time: "09:00", label: "Agendar lembrete pra 09:00" }
         });
       } else {
         insights.push({
           type: "horario",
-          text: `Notei que você rende muito melhor no período da noite: ${Math.round(avgNight)}% de acerto vs ${Math.round(avgMorning)}% pela manhã.`
+          text: `Notei que você rende muito melhor no período da noite: ${Math.round(avgNight)}% de acerto vs ${Math.round(avgMorning)}% pela manhã.`,
+          confidence: statsList.length >= 10 ? "alta" : "média",
+          action: { type: "agendar", time: "20:00", label: "Agendar lembrete pra 20:00" }
         });
       }
     } else if (avgAfternoon !== null && avgNight !== null && Math.abs(avgAfternoon - avgNight) >= 6) {
       if (avgAfternoon > avgNight) {
         insights.push({
           type: "horario",
-          text: `Notei que você rende muito melhor no período da tarde: ${Math.round(avgAfternoon)}% de acerto vs ${Math.round(avgNight)}% à noite.`
+          text: `Notei que você rende muito melhor no período da tarde: ${Math.round(avgAfternoon)}% de acerto vs ${Math.round(avgNight)}% à noite.`,
+          confidence: statsList.length >= 10 ? "alta" : "média",
+          action: { type: "agendar", time: "15:00", label: "Agendar lembrete pra 15:00" }
         });
       } else {
         insights.push({
           type: "horario",
-          text: `Notei que você rende muito melhor à noite: ${Math.round(avgNight)}% de acerto vs ${Math.round(avgAfternoon)}% pela tarde.`
+          text: `Notei que você rende muito melhor à noite: ${Math.round(avgNight)}% de acerto vs ${Math.round(avgAfternoon)}% pela tarde.`,
+          confidence: statsList.length >= 10 ? "alta" : "média",
+          action: { type: "agendar", time: "20:00", label: "Agendar lembrete pra 20:00" }
         });
       }
     }
@@ -241,7 +418,9 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
   if (weakestEsp && weakestEsp.avg < 75) {
     insights.push({
       type: "alerta",
-      text: `Atenção com ${weakestEsp.esp}: sua média de acerto está em ${Math.round(weakestEsp.avg)}%. Bloqueie temas novos nela e priorize revisar as pendências.`
+      text: `Atenção com ${weakestEsp.esp}: sua média de acerto está em ${Math.round(weakestEsp.avg)}%. Bloqueie temas novos nela e priorize revisar as pendências.`,
+      confidence: weakestEsp.count >= 5 ? "alta" : "média",
+      action: { type: "focar", esp: weakestEsp.esp, label: `Focar ${weakestEsp.esp === "GO" ? "GO" : weakestEsp.esp} agora` }
     });
   }
 
@@ -254,12 +433,14 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
       if (trend > 0.4) {
         insights.push({
           type: "tendencia_alta",
-          text: `Tendência de alta: sua precisão nas revisões subiu cerca de ${Math.round(trend * 3)}% nos últimos ciclos. Mantenha a consistência.`
+          text: `Tendência de alta: sua precisão nas revisões subiu cerca de ${Math.round(trend * 3)}% nos últimos ciclos. Mantenha a consistência.`,
+          confidence: recentAcc.length >= 10 ? "alta" : "média"
         });
       } else if (trend < -0.4) {
         insights.push({
           type: "tendencia_baixa",
-          text: `Cuidado: tendência de queda de ${Math.round(Math.abs(trend) * 3)}% nos acertos recentes. Estude os erros por raciocínio.`
+          text: `Cuidado: tendência de queda de ${Math.round(Math.abs(trend) * 3)}% nos acertos recentes. Estude os erros por raciocínio.`,
+          confidence: recentAcc.length >= 10 ? "alta" : "média"
         });
       }
     }
@@ -276,19 +457,22 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
     if (delta > 15) {
       insights.push({
         type: "vies_excesso",
-        text: `Viés de excesso de confiança detectado: percepção de domínio em ${Math.round(confPercent)}% vs acerto real de ${Math.round(avgAcc)}%. Seja mais autocrítico.`
+        text: `Viés de excesso de confiança detectado: percepção de domínio em ${Math.round(confPercent)}% vs acerto real de ${Math.round(avgAcc)}%. Seja mais autocrítico.`,
+        confidence: withConf.length >= 8 ? "alta" : "média"
       });
     } else if (delta < -15) {
       insights.push({
         type: "vies_inseguranca",
-        text: `Insegurança produtiva: você está acertando mais do que estima (percepção de ${Math.round(confPercent)}% vs acerto real de ${Math.round(avgAcc)}%). Confie no seu progresso.`
+        text: `Insegurança produtiva: você está acertando mais do que estima (percepção de ${Math.round(confPercent)}% vs acerto real de ${Math.round(avgAcc)}%). Confie no seu progresso.`,
+        confidence: withConf.length >= 8 ? "alta" : "média"
       });
     }
   }
 
   // Insight E: Vestibular-specific insights
   if (plat === "vest") {
-    const provaAlvo = (meta?.provasAlvo || [])[0] || "ENEM";
+    const filtered = (meta?.provasAlvo || []).filter(p => ["UnB", "UFG"].includes(p));
+    const provaAlvo = filtered[0] || "UnB";
 
     // E1: Segunda tentativa encouragement (early stage)
     if (meta?.isSegundaTentativa && totalSessions < 15) {
@@ -296,7 +480,8 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
         type: "horario",
         text: plat === "vest"
           ? `Segunda tentativa com método, ${userName}. Você conhece o ${provaAlvo} — agora o FSRS vai eliminar as lacunas com precisão absoluta.`
-          : `Segunda tentativa com método, ${userName}. Você conhece o ${provaAlvo} — agora o FSRS vai eliminar as lacunas com precisão cirúrgica.`
+          : `Segunda tentativa com método, ${userName}. Você conhece o ${provaAlvo} — agora o FSRS vai eliminar as lacunas com precisão cirúrgica.`,
+        confidence: "alta"
       });
     }
 
@@ -306,7 +491,9 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
       if (areaData && areaData.avg < 70) {
         insights.push({
           type: "alerta",
-          text: `${meta.areaPuxouBaixo} continua sendo seu ponto crítico: ${Math.round(areaData.avg)}% de acerto. A fila inteligente está priorizando ela — siga as sugestões.`
+          text: `${meta.areaPuxouBaixo} continua sendo seu ponto crítico: ${Math.round(areaData.avg)}% de acerto. A fila inteligente está priorizando ela — siga as sugestões.`,
+          confidence: areaData.count >= 5 ? "alta" : "média",
+          action: { type: "focar", esp: meta.areaPuxouBaixo, label: `Focar ${meta.areaPuxouBaixo} agora` }
         });
       }
     }
@@ -315,19 +502,89 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
     if (meta?.notaCorteAlvo > 0 && weakestEsp && weakestEsp.avg < 60) {
       insights.push({
         type: "tendencia_baixa",
-        text: `Com ${weakestEsp.esp} em ${Math.round(weakestEsp.avg)}%, você está em risco de não atingir a nota de corte de ${meta.notaCorteAlvo}%. Priorize essa área hoje.`
+        text: `Com ${weakestEsp.esp} em ${Math.round(weakestEsp.avg)}%, você está em risco de não atingir a nota de corte de ${meta.notaCorteAlvo}%. Priorize essa área hoje.`,
+        confidence: weakestEsp.count >= 5 ? "alta" : "média",
+        action: { type: "focar", esp: weakestEsp.esp, label: `Focar ${weakestEsp.esp} agora` }
       });
     }
+  }
+
+  // Insight R: Reflexão sobre o Método (F4)
+  try {
+    const readiness = getReadinessData({ temas, simulados: useStore.getState()[plat]?.simulados || [], meta, plat });
+    const priorityList = readiness?.priorityList || [];
+    const redZoneAreas = priorityList.filter(p => p.zona === "vermelha");
+    
+    if (redZoneAreas.length > 0) {
+      for (const areaObj of redZoneAreas) {
+        const areaName = areaObj.area;
+        const areaReviews = doneReviews.filter(r => r.esp && r.esp.toLowerCase().trim() === areaName.toLowerCase().trim() && r.acerto != null);
+        if (areaReviews.length >= 2) {
+          const recentAreaAcc = (areaReviews.slice(-3).reduce((sum, r) => sum + r.acerto, 0) / Math.min(3, areaReviews.length)) * 100;
+          if (recentAreaAcc < 55) {
+            const tomSelected = meta?.tomMentor || "gentil";
+            const msg = tomSelected === "firme"
+              ? `${areaName} veio abaixo de novo (média de ${Math.round(recentAreaAcc)}%). Você está fazendo o Brain Dump (D1) e as questões D4/D7, ou pulando etapas? O método protege quando seguido inteiro.`
+              : `${areaName} está abaixo da meta recente (${Math.round(recentAreaAcc)}%). Lembra de seguir o método completo: o Brain Dump (D1) e as questões (D4/D7) são fundamentais para segurar a curva. O método te protege se você o seguir inteiro.`;
+            
+            insights.push({
+              type: "alerta",
+              text: msg,
+              confidence: "alta",
+              action: { type: "focar", esp: areaName, label: `Revisar ${areaName}` }
+            });
+            break;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Erro ao calcular insight de reflexao_metodo:", err);
   }
 
   // Insight EP: Error pattern detection
   const errPatterns = detectErrorPatterns(doneReviews);
   errPatterns.forEach(pat => {
+    const espCount = espAcc[pat.esp]?.length || 0;
     insights.push({
       type: "tendencia_baixa",
-      text: pat.text
+      text: pat.text,
+      confidence: espCount >= 5 ? "alta" : "média",
+      action: { type: "focar", esp: pat.esp, label: `Focar ${pat.esp} agora` }
     });
   });
+
+  // Insight EH: Exhaustion detection / Guardrail de Bem-estar (Parte 9)
+  const sortedStats = statsList
+    .filter(s => s && s.completedAt)
+    .sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
+
+  let consecutiveExhausted = 0;
+  let hasExhaustion = false;
+  for (let i = 0; i < sortedStats.length; i++) {
+    const s = sortedStats[i];
+    const dateObj = new Date(s.completedAt);
+    const hour = dateObj.getHours();
+    const isNight = hour >= 23 || hour < 5;
+    const isHighAnxiety = s.ansiedade === "Alta" || s.ansiedade === "alta";
+    if (isNight && isHighAnxiety) {
+      consecutiveExhausted++;
+      if (consecutiveExhausted >= 3) {
+        hasExhaustion = true;
+      }
+    } else {
+      consecutiveExhausted = 0;
+    }
+  }
+
+  if (hasExhaustion) {
+    insights.push({
+      type: "alerta",
+      text: "Vi 3 noites seguidas de estudo tarde com ansiedade alta. Rendimento cai e retenção também. Hoje, durma — é estratégia, não preguiça.",
+      confidence: "alta",
+      action: { type: "aliviar", label: "Aliviar minha fila de amanhã" }
+    });
+  }
 
   // Fallback se não disparar nenhum insight específico
   if (insights.length === 0) {
@@ -355,4 +612,31 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
     insights: insights.slice(0, 3), // limit to top 3 insights
     projection: projInfo
   };
+}
+
+export function isExhaustionDetected(temaStats = {}, doneReviews = []) {
+  const currentHour = new Date().getHours();
+  const isNight = currentHour >= 22 || currentHour < 5;
+  if (!isNight) return false;
+
+  const statsList = Object.values(temaStats).flat();
+  const sortedStats = statsList
+    .filter(s => s && s.completedAt)
+    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+
+  if (sortedStats.length === 0) return false;
+  const recentStat = sortedStats[0];
+  const isRecentAnxietyHigh = recentStat.ansiedade === "Alta" || recentStat.ansiedade === "alta";
+  if (!isRecentAnxietyHigh) return false;
+
+  const recentAcc = doneReviews.filter(r => r.acerto != null).map(r => r.acerto * 100);
+  if (recentAcc.length >= 4) {
+    const trendVals = recentAcc.slice(-6);
+    const trend = calcTrend(trendVals);
+    if (trend !== null && trend < 0) {
+      return true;
+    }
+  }
+
+  return isNight && isRecentAnxietyHigh;
 }
