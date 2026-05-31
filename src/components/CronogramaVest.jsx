@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Check, BookOpen, Trash2, Plus, 
 import { useStore } from "../core/store";
 import { todayStr, fmtDate, STEPS } from "../core/fsrs";
 import { getEstadoDominio } from "../core/mastery";
+import { canUseMultipleSchedules } from "../core/entitlements";
 import { CATALOGO_VEST, parseCatalogEntry } from "../constants/catalogos";
 import { Btn, Input, Textarea, Modal, Field } from "./Primitives";
 
@@ -277,31 +278,31 @@ export function DiaCard({ dia, diaIdx, eHoje, semanaIdx, crono, plat, toggleBloc
   }, [dia.blocos]);
 
   return (
-    <div className={`bg-[#111113] border rounded-2xl overflow-hidden transition-all ${eHoje ? "border-violet-500/40 shadow-[0_0_20px_rgba(139,92,246,0.1)]" : "border-white/5"}`}>
+    <div className={`bg-[#111113] border rounded-2xl overflow-hidden transition-all ${eHoje ? "border-blue-500/40 shadow-[0_0_20px_rgba(139,92,246,0.1)]" : "border-white/5"}`}>
       <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-3 p-4 text-left border-none">
-        <div className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center shrink-0 ${eHoje ? "bg-violet-600" : "bg-white/5"}`}>
+        <div className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center shrink-0 ${eHoje ? "bg-blue-600" : "bg-white/5"}`}>
           <span className="text-[9px] font-bold text-gray-400 leading-none">{dia.dia}</span>
           <span className={`text-[13px] font-black leading-none mt-0.5 ${eHoje ? "text-white" : "text-gray-200"}`}>{dia.data?.split("/")[0] || ""}</span>
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`text-[13px] font-semibold ${eHoje ? "text-violet-300" : "text-gray-300"}`}>
+            <span className={`text-[13px] font-semibold ${eHoje ? "text-blue-300" : "text-gray-300"}`}>
               {dia.dia}{dia.data ? `, ${dia.data}` : ""}
             </span>
-            {eHoje && <span className="text-[9px] bg-violet-600 text-white font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide">Hoje</span>}
+            {eHoje && <span className="text-[9px] bg-blue-600 text-white font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide">Hoje</span>}
             {feitos === total && total > 0 && <span className="text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide">✓ Completo</span>}
           </div>
           <div className="flex flex-col gap-1.5 mt-1">
             <div className="flex items-center gap-2">
               <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-violet-500"}`} style={{ width: `${pct}%` }} />
+                <div className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-blue-500"}`} style={{ width: `${pct}%` }} />
               </div>
               <span className="text-[10px] text-gray-600 tabular-nums shrink-0">{feitos}/{total}</span>
             </div>
             
             {(reviewsCount > 0 || newStudiesCount > 0) && (
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-violet-500/10 text-violet-400 border border-violet-500/25">
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/25">
                   📚 Carga: {reviewsCount} revisões FSRS + {newStudiesCount} novos estudos
                 </span>
               </div>
@@ -320,7 +321,7 @@ export function DiaCard({ dia, diaIdx, eHoje, semanaIdx, crono, plat, toggleBloc
                 <div className="flex gap-3 flex-1 min-w-0">
                   <button
                     onClick={() => toggleBloco(plat, crono.id, semanaIdx, diaIdx, bi)}
-                    className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-all ${bloco.concluido ? "bg-emerald-500 border-emerald-500" : "border-white/20 hover:border-violet-500"}`}>
+                    className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-all ${bloco.concluido ? "bg-emerald-500 border-emerald-500" : "border-white/20 hover:border-blue-500"}`}>
                     {bloco.concluido && <Check size={12} className="text-white" strokeWidth={3} />}
                   </button>
                   <div className="flex-1 min-w-0">
@@ -361,7 +362,7 @@ export function DiaCard({ dia, diaIdx, eHoje, semanaIdx, crono, plat, toggleBloc
                             onIniciarTema({ nome: bloco.temaNome, esp: bloco.temaEsp });
                           }
                         }}
-                        className="px-2.5 py-1.5 rounded-xl bg-violet-600/20 hover:bg-violet-600 text-violet-400 hover:text-white text-[10px] font-black transition-all border border-violet-500/20"
+                        className="px-2.5 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white text-[10px] font-black transition-all border border-blue-500/20"
                       >
                         ⚡ Iniciar FSRS
                       </button>
@@ -379,6 +380,8 @@ export function DiaCard({ dia, diaIdx, eHoje, semanaIdx, crono, plat, toggleBloc
 
 export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
   const { plat, addCronograma, deleteCronograma, toggleBloco } = useStore();
+  const openConfirm = useStore((s) => s.openConfirm);
+  const showToast = useStore((s) => s.showToast);
   const _rawCronos   = useStore((s) => s[plat]?.cronogramas);
   const cronogramas  = useMemo(() => _rawCronos || [], [_rawCronos]);
 
@@ -429,17 +432,21 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
   };
 
   const handleCriar = () => {
+    if (!canUseMultipleSchedules() && cronogramas.length >= 1) {
+      showToast("Seu plano atual permite 1 cronograma ativo.");
+      return;
+    }
     if (cfModo === "pdf") {
       if (!previewCrono) {
         if (!cfPDFText.trim()) return;
         const crono = parsePDFText(cfPDFText, cfTitulo);
         if (!crono) {
-          const manualFallback = window.confirm(
-            "Não conseguimos detectar nenhuma semana no texto do PDF.\n\nDeseja mudar para o modo Inteligente?"
-          );
-          if (manualFallback) {
-            setCfModo("inteligente");
-          }
+          openConfirm({
+            title: "Importação não detectada",
+            message: "Não conseguimos detectar semanas no texto do PDF. Deseja mudar para o modo Inteligente?",
+            confirmLabel: "Mudar modo",
+            onConfirm: () => setCfModo("inteligente"),
+          });
           return;
         }
         setPreviewCrono(crono);
@@ -508,7 +515,19 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
                       <p className="text-[14px] font-bold text-white truncate">{c.titulo}</p>
                       <p className="text-[11px] text-gray-500 mt-0.5">{c.semanas.length} semanas · Criado {fmtDate(c.criadoEm)}</p>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); if (window.confirm("Remover cronograma completo?")) deleteCronograma(plat, c.id); }}
+                    <button onClick={(e) => {
+                      e.stopPropagation();
+                      openConfirm({
+                        title: "Remover cronograma",
+                        message: "Remover cronograma completo?",
+                        confirmLabel: "Remover",
+                        danger: true,
+                        onConfirm: () => {
+                          deleteCronograma(plat, c.id);
+                          showToast("Cronograma removido.");
+                        },
+                      });
+                    }}
                       className="w-8 h-8 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 flex items-center justify-center shrink-0 ml-2 transition-colors border-none">
                       <Trash2 size={15} />
                     </button>
@@ -519,7 +538,7 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
                       <span className="tabular-nums">{pct}%</span>
                     </div>
                     <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-violet-500 to-cyan-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 </div>
@@ -533,7 +552,7 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
             {previewCrono ? (
               <div className="space-y-4 text-left">
                 <div>
-                  <h3 className="text-[14px] font-bold text-violet-400">🔍 Pré-visualização do Cronograma</h3>
+                  <h3 className="text-[14px] font-bold text-blue-400">🔍 Pré-visualização do Cronograma</h3>
                   <p className="text-[11px] text-gray-500 mt-0.5">Confira abaixo se os blocos de estudo da Semana 1 foram importados conforme o modelo.</p>
                 </div>
                 
@@ -545,7 +564,7 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
                   
                   {previewCrono.semanas[0] && (
                     <div className="space-y-2.5">
-                      <p className="text-[11px] font-bold text-violet-400 uppercase tracking-wider">Semana 1 {previewCrono.semanas[0].fase && `— ${previewCrono.semanas[0].fase}`}</p>
+                      <p className="text-[11px] font-bold text-blue-400 uppercase tracking-wider">Semana 1 {previewCrono.semanas[0].fase && `— ${previewCrono.semanas[0].fase}`}</p>
                       <div className="space-y-2">
                         {previewCrono.semanas[0].dias.slice(0, 3).map((dia, di) => (
                           <div key={di} className="bg-white/[0.01] border border-white/5 rounded-xl p-3 space-y-1.5">
@@ -556,7 +575,7 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
                             <div className="space-y-1">
                               {dia.blocos.filter(b => b.conteudo).map((b, bi) => (
                                 <div key={bi} className="text-[10.5px] bg-black/40 p-2.5 rounded-lg border border-white/5 leading-relaxed">
-                                  <span className="text-violet-400 font-mono font-semibold">{b.horario}</span> — <strong className="text-gray-300">{b.nome}</strong>:
+                                  <span className="text-blue-400 font-mono font-semibold">{b.horario}</span> — <strong className="text-gray-300">{b.nome}</strong>:
                                   <p className="text-gray-400 mt-1 whitespace-pre-wrap">{b.conteudo}</p>
                                 </div>
                               ))}
@@ -584,7 +603,7 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
                 <div className="flex gap-1 bg-black/40 border border-white/10 rounded-xl p-1">
                   {[["inteligente","Gerador Inteligente"],["manual","Manual Vazio"],["pdf","Importar PDF"]].map(([v,l]) => (
                     <button key={v} type="button" onClick={() => setCfModo(v)}
-                      className={`flex-1 py-1.5 rounded-lg text-[11.5px] font-semibold transition-all ${cfModo === v ? "bg-violet-600 text-white" : "text-gray-500 hover:text-gray-300"}`}>
+                      className={`flex-1 py-1.5 rounded-lg text-[11.5px] font-semibold transition-all ${cfModo === v ? "bg-blue-600 text-white" : "text-gray-500 hover:text-gray-300"}`}>
                       {l}
                     </button>
                   ))}
@@ -634,7 +653,7 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
                                     setSelectedMaterias(selectedMaterias.filter(x => x !== item.nome));
                                   }
                                 }}
-                                className="w-3.5 h-3.5 rounded border-white/10 text-violet-600 focus:ring-violet-500 bg-black"
+                                className="w-3.5 h-3.5 rounded border-white/10 text-blue-600 focus:ring-blue-500 bg-black"
                               />
                               {item.nome}
                             </label>
@@ -648,7 +667,7 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
                 {cfModo === "pdf" && (
                   <div className="flex flex-col gap-3">
                     <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl text-[11px] text-gray-400 space-y-1.5 leading-relaxed">
-                      <p className="font-bold text-purple-400">💡 Modelo de importação:</p>
+                      <p className="font-bold text-indigo-400">💡 Modelo de importação:</p>
                       <pre className="bg-black/60 p-2.5 rounded-xl text-[10px] text-gray-500 font-mono overflow-x-auto whitespace-pre leading-normal">
 {`SEMANA 1
 SEG 12/05
@@ -704,7 +723,7 @@ Ligações Químicas`}
           </button>
           <div className="text-center">
             <p className="text-[13px] font-bold text-white">Semana {semana?.numero}</p>
-            {semana?.fase && <p className="text-[10px] text-violet-400 font-semibold">{semana.fase}</p>}
+            {semana?.fase && <p className="text-[10px] text-blue-400 font-semibold">{semana.fase}</p>}
           </div>
           <button onClick={() => setSemanaIdx(Math.min(crono.semanas.length - 1, semanaIdx + 1))} className="w-9 h-9 rounded-xl bg-white/5 disabled:opacity-30 flex items-center justify-center border-none" disabled={semanaIdx === crono.semanas.length - 1}>
             <ChevronRight size={18} />

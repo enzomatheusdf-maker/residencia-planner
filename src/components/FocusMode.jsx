@@ -402,7 +402,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
           <div className="space-y-2">
             <h2 className="text-2xl font-black text-white font-sans">Etapa Concluída!</h2>
             <p className="text-xs text-gray-400">
-              Você completou com sucesso a etapa <strong className="text-violet-400">{lastCompletedItem?.stepLabel}</strong> de <strong className="text-white">{lastCompletedItem?.nome}</strong>.
+              Você completou com sucesso a etapa <strong className="text-blue-400">{lastCompletedItem?.stepLabel}</strong> de <strong className="text-white">{lastCompletedItem?.nome}</strong>.
             </p>
           </div>
 
@@ -419,12 +419,12 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
           )}
 
           <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 text-left space-y-3">
-            <p className="text-[10px] font-black text-violet-400 uppercase tracking-widest font-mono">⚡ Próximo da fila</p>
+            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest font-mono">⚡ Próximo da fila</p>
             {nextItem ? (
               <div className="space-y-2">
                 <div>
                   <h4 className="text-sm font-bold text-white leading-tight">{nextItem.temaNome}</h4>
-                  <span className="text-[9px] font-mono bg-violet-500/10 text-violet-400 border border-violet-500/20 px-2 py-0.5 rounded-full inline-block mt-1">
+                  <span className="text-[9px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full inline-block mt-1">
                     ETAPA {nextItem.stepKey.toUpperCase()}
                   </span>
                 </div>
@@ -444,7 +444,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                   setCurrentTarget({ temaId: nextItem.temaId, stepKey: nextItem.stepKey });
                   setShowTransitionScreen(false);
                 }}
-                className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-purple-900/25 cursor-pointer border-none"
+                className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-slate-900/25 cursor-pointer border-none"
               >
                 Próximo da Fila →
               </button>
@@ -472,7 +472,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
           </p>
           <button
             onClick={onExit}
-            className="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 font-bold text-[12.5px] transition-all cursor-pointer border-none text-white"
+            className="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 font-bold text-[12.5px] transition-all cursor-pointer border-none text-white"
           >
             Sair do Modo Foco
           </button>
@@ -515,7 +515,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                       onExit();
                     }
                   }}
-                  className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-purple-900/25 cursor-pointer border-none"
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-slate-900/25 cursor-pointer border-none"
                 >
                   Bora para as Revisões
                 </button>
@@ -554,7 +554,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                     });
                     onExit();
                   }}
-                  className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-purple-900/25 cursor-pointer border-none"
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-slate-900/25 cursor-pointer border-none"
                 >
                   Seguir Orientação e Descansar
                 </button>
@@ -578,7 +578,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
             <div className="text-5xl">⚡</div>
             <div className="space-y-2">
               <h2 className="text-2xl font-black text-white font-sans">Recuperação Reduzida</h2>
-              <p className="text-sm text-violet-400 font-bold uppercase tracking-wider">Modo Reduzido Ativo</p>
+              <p className="text-sm text-blue-400 font-bold uppercase tracking-wider">Modo Reduzido Ativo</p>
             </div>
             <p className="text-xs text-gray-300 leading-relaxed font-medium">
               "Dia difícil? Então vamos no essencial: um recall rápido e 10 questões de {tema.nome}. Mantém a curva sem te quebrar."
@@ -590,7 +590,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                   setExhaustionConfirmed(true);
                   setQuestoes("10");
                 }}
-                className="w-full py-3.5 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-purple-900/25 cursor-pointer border-none"
+                className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-slate-900/25 cursor-pointer border-none"
               >
                 Ativar Modo Reduzido
               </button>
@@ -612,8 +612,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   return (
     <div className="fixed inset-0 bg-[#07070f] text-white flex flex-col z-[200] overflow-hidden select-none select-text-safe">
       {modoReduzidoAtivo && (
-        <div className="bg-violet-950/40 border-b border-violet-500/20 py-1 text-center select-none">
-          <span className="text-[10px] font-black text-violet-400 uppercase tracking-widest font-mono">⚡ Modo Reduzido Ativo: 10 Questões + Recall Essencial</span>
+        <div className="bg-blue-950/40 border-b border-blue-500/20 py-1 text-center select-none">
+          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest font-mono">⚡ Modo Reduzido Ativo: 10 Questões + Recall Essencial</span>
         </div>
       )}
       {/* 1. TOP HEADER DISCRETO */}
@@ -636,11 +636,11 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
           <div className="space-y-1.5 border-b border-white/5 pb-4">
             <div className="flex justify-between text-[9px] font-black text-gray-400 uppercase tracking-widest font-mono">
               <span>Sessão Diária: {completedInSession + 1} de {initialQueueLength || 1} da fila de hoje</span>
-              <span className="text-violet-400 font-extrabold">{Math.round(((completedInSession) / Math.max(1, initialQueueLength)) * 100)}%</span>
+              <span className="text-blue-400 font-extrabold">{Math.round(((completedInSession) / Math.max(1, initialQueueLength)) * 100)}%</span>
             </div>
             <div className="bg-white/5 rounded-full h-1 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-violet-600 to-pink-500 h-full transition-all duration-300"
+                className="bg-gradient-to-r from-blue-600 to-sky-500 h-full transition-all duration-300"
                 style={{ width: `${Math.min(100, ((completedInSession) / Math.max(1, initialQueueLength)) * 100)}%` }}
               />
             </div>
@@ -674,42 +674,42 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                 {plat !== "vest" && (
                   <div>
                     <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                      <Target size={13} className="text-violet-400" /> Caso Clínico PICO / Âncora Mental (Opcional)
+                      <Target size={13} className="text-blue-400" /> Caso Clínico PICO / Âncora Mental (Opcional)
                     </label>
                     <textarea
                       rows={3}
                       value={pico}
                       onChange={(e) => setPico(e.target.value)}
                       placeholder="Ex: Paciente 35a com quadro compatível com Apendicite, dor em fossa ilíaca direita..."
-                      className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-all resize-none"
+                      className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-all resize-none"
                     />
                   </div>
                 )}
 
                 <div>
                   <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                    <Zap size={13} className="text-violet-400" /> Deck do Anki Alvo (Opcional)
+                    <Zap size={13} className="text-blue-400" /> Deck do Anki Alvo (Opcional)
                   </label>
                   <input
                     type="text"
                     value={ankiDeck}
                     onChange={(e) => setAnkiDeck(e.target.value)}
                     placeholder={plat === "vest" ? "Ex: Vestibular::Matemática::Funções" : "Ex: Medicina::Ginecologia::Onco"}
-                    className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-all"
+                    className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-all"
                   />
                 </div>
 
                 {canInterleave && (
-                  <div className="bg-violet-950/20 border border-violet-500/20 rounded-xl p-3 flex items-start gap-3">
+                  <div className="bg-blue-950/20 border border-blue-500/20 rounded-xl p-3 flex items-start gap-3">
                     <input
                       type="checkbox"
                       id="interleave-toggle-d0"
                       checked={interleaved}
                       onChange={(e) => setInterleaved(e.target.checked)}
-                      className="mt-1 rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black/40 h-4 w-4 cursor-pointer"
+                      className="mt-1 rounded border-white/20 text-blue-600 focus:ring-blue-500 bg-black/40 h-4 w-4 cursor-pointer"
                     />
                     <label htmlFor="interleave-toggle-d0" className="text-xs leading-relaxed text-gray-300 cursor-pointer">
-                      <span className="font-bold text-violet-400 block mb-0.5">🔀 Prática Intercalada (Opcional)</span>
+                      <span className="font-bold text-blue-400 block mb-0.5">🔀 Prática Intercalada (Opcional)</span>
                       Você tem {temas.filter(t => t.parentTopic === tema.parentTopic).length} subtemas ativos em <strong className="text-white">{tema.parentTopic}</strong>.
                       A evidência sugere que misturar questões de múltiplos subsegmentos melhora a retenção de longo prazo (Brunmair & Richter, 2019). <em className="text-[10px] text-gray-500">Nota: efeitos em provas cumulativas podem variar.</em>
                     </label>
@@ -720,7 +720,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
               <button
                 type="button"
                 onClick={() => setStartedD0(true)}
-                className="w-full py-4 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-purple-900/25 flex items-center justify-center gap-2"
+                className="w-full py-4 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-slate-900/25 flex items-center justify-center gap-2"
               >
                 <Play size={14} /> Iniciar D0: {stepDefs.length} Etapas Científicas
               </button>
@@ -734,7 +734,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
               <div className="space-y-2">
                 <div className="bg-white/5 rounded-full h-1.5 overflow-hidden border border-white/5">
                   <div
-                    className="bg-violet-600 h-full transition-all duration-300"
+                    className="bg-blue-600 h-full transition-all duration-300"
                     style={{ width: `${((d0StepIdx + 1) / stepDefs.length) * 100}%` }}
                   />
                 </div>
@@ -747,7 +747,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
               {/* Step info */}
               <div className="bg-white/[0.01] border border-white/5 p-5 rounded-2xl space-y-4">
                 <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-violet-400 shrink-0">
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-blue-400 shrink-0">
                     {React.createElement(STEP_ICONS[currentStepDef.id] || FileText, { size: 22 })}
                   </div>
                   <div className="space-y-1.5 flex-1 text-left">
@@ -758,7 +758,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                     {/* Evidence / Justification no topo */}
                     {!isModoProva && currentStepDef.justification && (
                       <div className="border-t border-white/5 pt-2.5 space-y-1">
-                        <div className="text-[11px] text-gray-400 leading-relaxed italic border-l-2 border-violet-500/40 pl-2">
+                        <div className="text-[11px] text-gray-400 leading-relaxed italic border-l-2 border-blue-500/40 pl-2">
                           {formatTextWithPlatform(currentStepDef.justification.split("\n")[0])}
                         </div>
                         {currentStepDef.justification.split("\n").length > 1 && (
@@ -766,13 +766,13 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                             <button
                               type="button"
                               onClick={() => setExpandedJustification(!expandedJustification)}
-                              className="text-[9px] text-violet-400 hover:text-violet-300 font-bold flex items-center gap-1 border-none bg-transparent p-0 cursor-pointer"
+                              className="text-[9px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 border-none bg-transparent p-0 cursor-pointer"
                             >
                               <span>{expandedJustification ? "▼" : "▶"}</span>
                               Ver fonte científica
                             </button>
                             {expandedJustification && (
-                              <div className="bg-violet-500/[0.01] border-l border-violet-500/20 p-2.5 rounded-r-xl mt-1.5 w-full animate-fade-up text-[10px] text-gray-500 leading-relaxed whitespace-pre-line italic">
+                              <div className="bg-blue-500/[0.01] border-l border-blue-500/20 p-2.5 rounded-r-xl mt-1.5 w-full animate-fade-up text-[10px] text-gray-500 leading-relaxed whitespace-pre-line italic">
                                 {formatTextWithPlatform(currentStepDef.justification.split("\n").slice(1).join("\n"))}
                               </div>
                             )}
@@ -793,7 +793,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
               {/* Timer & controls */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/5 pt-4">
                 <div className="flex items-center gap-3">
-                  <span className={`text-4xl font-black font-mono tracking-tight tabular-nums ${secondsLeft <= 60 ? "text-red-400 animate-pulse" : "text-violet-400"}`}>
+                  <span className={`text-4xl font-black font-mono tracking-tight tabular-nums ${secondsLeft <= 60 ? "text-red-400 animate-pulse" : "text-blue-400"}`}>
                     {formatTimer()}
                   </span>
                   {!isModoProva && (
@@ -828,7 +828,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                   <button
                     type="button"
                     onClick={handleCompleteD0Step}
-                    className="flex-1 sm:flex-none px-6 py-3.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-[11px] transition-all active:scale-[0.98] shadow-lg shadow-violet-900/20"
+                    className="flex-1 sm:flex-none px-6 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-[11px] transition-all active:scale-[0.98] shadow-lg shadow-blue-900/20"
                   >
                     {d0StepIdx === stepDefs.length - 1 ? "Finalizar D0" : "Concluir Passo"}
                   </button>
@@ -841,7 +841,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
           {stepKey === "d0" && startedD0 && showD0StatsForm && (
             <div className="space-y-6 text-left animate-fade-up">
               <div className="bg-white/[0.01] border border-white/5 p-4 rounded-xl">
-                <h4 className="text-xs font-bold text-violet-400 uppercase tracking-wide">Finalização do Estudo Ativo (D0)</h4>
+                <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wide">Finalização do Estudo Ativo (D0)</h4>
                 <p className="text-xs text-gray-400 leading-relaxed mt-1.5">
                   Informe o resultado das questões feitas para registrar seu ponto de partida e calibrar o algoritmo FSRS.
                 </p>
@@ -903,7 +903,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                           }}
                           className={`flex-1 flex flex-col items-center gap-1 p-3 rounded-2xl border transition-all duration-300 ${
                             isSelected 
-                              ? "bg-violet-600/20 border-violet-500 text-white scale-[1.03]" 
+                              ? "bg-blue-600/20 border-blue-500 text-white scale-[1.03]" 
                               : "bg-black/40 border-white/5 text-gray-400 hover:bg-black/60 hover:text-white"
                           }`}
                         >
@@ -924,16 +924,16 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                       showDetails 
                         ? "bg-white/10 border-white/10 text-white" 
                         : sugerirDetalhes 
-                        ? "bg-violet-950/40 border-violet-500/40 text-violet-300 hover:bg-violet-900/40 hover:border-violet-500 animate-pulse" 
+                        ? "bg-blue-950/40 border-blue-500/40 text-blue-300 hover:bg-blue-900/40 hover:border-blue-500 animate-pulse" 
                         : "bg-white/5 border-white/5 text-gray-400 hover:text-white hover:bg-white/10"
                     }`}
                   >
                     <span>📊 {showDetails ? "Ocultar Detalhes" : "Adicionar Detalhes / Refinar Diagnóstico"}</span>
-                    {sugerirDetalhes && !showDetails && <span className="bg-violet-500 text-white text-[8px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold font-mono">Amostra</span>}
+                    {sugerirDetalhes && !showDetails && <span className="bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold font-mono">Amostra</span>}
                   </button>
                   
                   {sugerirDetalhes && !showDetails && (
-                    <p className="text-[10px] text-violet-400/80 mt-1.5 text-center italic">
+                    <p className="text-[10px] text-blue-400/80 mt-1.5 text-center italic">
                       💡 Coleta Amostral Diagnóstica: Considere expandir e detalhar como se sente hoje para calibrar o Mentor!
                     </p>
                   )}
@@ -950,7 +950,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                               onClick={() => setCansaco(val)}
                               className={`flex-1 py-2 text-xs font-semibold rounded-lg border transition-all ${
                                 cansaco === val 
-                                  ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                                  ? "bg-blue-600 border-blue-500 text-white font-bold" 
                                   : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
                               }`}
                             >
@@ -970,7 +970,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                               onClick={() => setAnsiedade(val)}
                               className={`flex-1 py-2 text-xs font-semibold rounded-lg border transition-all ${
                                 ansiedade === val 
-                                  ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                                  ? "bg-blue-600 border-blue-500 text-white font-bold" 
                                   : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
                               }`}
                             >
@@ -990,7 +990,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                               onClick={() => setConfianca(val)}
                               className={`flex-1 py-2 text-xs font-semibold rounded-lg border transition-all ${
                                 confianca === val 
-                                  ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                                  ? "bg-blue-600 border-blue-500 text-white font-bold" 
                                   : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
                               }`}
                             >
@@ -1010,7 +1010,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                               onClick={() => setFoco(val)}
                               className={`flex-1 py-2 text-xs font-semibold rounded-lg border transition-all ${
                                 foco === val 
-                                  ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                                  ? "bg-blue-600 border-blue-500 text-white font-bold" 
                                   : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
                               }`}
                             >
@@ -1079,7 +1079,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                       });
                     }
                   }}
-                  className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-bold text-[11.5px] transition-all active:scale-[0.98] shadow-lg shadow-purple-900/20"
+                  className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-bold text-[11.5px] transition-all active:scale-[0.98] shadow-lg shadow-slate-900/20"
                 >
                   ✓ Concluir Estudo D0
                 </button>
@@ -1091,8 +1091,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
           {stepKey === "d1" && (
             showSelfEvalD1 ? (
               <div className="space-y-5 text-left animate-fade-up">
-                <div className="bg-[#141421]/60 border border-violet-500/10 rounded-2xl p-4 mb-2">
-                  <h4 className="text-xs font-black text-violet-400 uppercase tracking-wider">Metacognição: Auto-avaliação do Brain Dump</h4>
+                <div className="bg-[#141421]/60 border border-blue-500/10 rounded-2xl p-4 mb-2">
+                  <h4 className="text-xs font-black text-blue-400 uppercase tracking-wider">Metacognição: Auto-avaliação do Brain Dump</h4>
                   <p className="text-[11.5px] text-gray-400 mt-1 leading-relaxed">
                     Compare o que você acabou de escrever de memória com as diretrizes do seu material de apoio. Sejam honestos: o que acabou faltando ou sendo esquecido?
                   </p>
@@ -1113,7 +1113,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                             type="checkbox"
                             checked={isForgot}
                             onChange={(e) => setD1ForgotFields({ ...d1ForgotFields, [field.k]: e.target.checked })}
-                            className="rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black cursor-pointer"
+                            className="rounded border-white/20 text-blue-600 focus:ring-blue-500 bg-black cursor-pointer"
                           />
                           <span>Esqueci / confundi detalhes essenciais de {field.label.replace(/^[^\s]+\s+/, "")}</span>
                         </label>
@@ -1132,7 +1132,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                   </button>
                   <button
                     type="button"
-                    className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-bold text-[11px] transition-all active:scale-[0.98] shadow-lg shadow-purple-900/20"
+                    className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-bold text-[11px] transition-all active:scale-[0.98] shadow-lg shadow-slate-900/20"
                     onClick={() => {
                       const forgotCount = Object.keys(d1ForgotFields).filter(k => d1ForgotFields[k]).length;
                       let d1Acerto = 1.0;
@@ -1156,8 +1156,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
               </div>
             ) : (
               <div className="space-y-5 text-left">
-                <div className="bg-[#141421]/60 border border-violet-500/10 rounded-2xl p-4 mb-2">
-                  <p className="text-[11.5px] text-violet-300 leading-relaxed italic">
+                <div className="bg-[#141421]/60 border border-blue-500/10 rounded-2xl p-4 mb-2">
+                  <p className="text-[11.5px] text-blue-300 leading-relaxed italic">
                     🧠 {formatTextWithPlatform(mentorPhrase) || "D1 é recuperação ativa: escrever de memória (Brain Dump) sem olhar o material."}
                   </p>
                 </div>
@@ -1177,7 +1177,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                           value={d1Fields[field.k] || ""}
                           onChange={(e) => setD1Fields({ ...d1Fields, [field.k]: e.target.value })}
                           placeholder={field.placeholder}
-                          className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-all resize-none"
+                          className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-all resize-none"
                         />
                       </div>
                     ))}
@@ -1186,7 +1186,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/5 pt-4">
                   <div className="flex items-center gap-3">
-                    <span className={`text-4xl font-black font-mono tracking-tight tabular-nums ${secondsLeft <= 60 ? "text-red-400 animate-pulse" : "text-violet-400"}`}>
+                    <span className={`text-4xl font-black font-mono tracking-tight tabular-nums ${secondsLeft <= 60 ? "text-red-400 animate-pulse" : "text-blue-400"}`}>
                       {formatTimer()}
                     </span>
                     {!isModoProva && (
@@ -1218,7 +1218,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                       disabled={Object.values(d1Fields).reduce((sum, v) => sum + (v || "").trim().length, 0) < 10}
                       className={`flex-1 sm:flex-none px-6 py-3.5 rounded-xl font-bold text-[11px] transition-all active:scale-[0.98] shadow-lg ${
                         Object.values(d1Fields).reduce((sum, v) => sum + (v || "").trim().length, 0) >= 10
-                          ? "bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white shadow-purple-900/20"
+                          ? "bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white shadow-slate-900/20"
                           : "bg-white/5 border border-white/5 text-gray-500 cursor-not-allowed"
                       }`}
                     >
@@ -1233,8 +1233,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
           {/* ─── D4 / D7 / D21 REVIEW STEPS ─── */}
           {["d4", "d7", "d21", "manutencao"].includes(stepKey) && (
             <div className="space-y-6 text-left">
-              <div className="bg-[#141421]/60 border border-violet-500/10 p-4 rounded-xl">
-                <h4 className="text-xs font-bold text-violet-400 uppercase tracking-wide">Mentor Científico</h4>
+              <div className="bg-[#141421]/60 border border-blue-500/10 p-4 rounded-xl">
+                <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wide">Mentor Científico</h4>
                 <p className="text-xs text-gray-300 leading-relaxed mt-1.5 italic">
                   {formatTextWithPlatform(mentorPhrase) || formatTextWithPlatform(
                     stepKey === "d4" ? "Resolva questões ativas sobre o tema. O objetivo é forçar a recuperação mental de pontos-chave e mapear lacunas." :
@@ -1246,10 +1246,10 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
               </div>
 
               {tema?.esp !== "Redação" && (
-                <div className="bg-purple-950/20 border border-purple-500/20 p-4 rounded-2xl text-left space-y-1.5 animate-fade-in">
+                <div className="bg-indigo-950/20 border border-indigo-500/20 p-4 rounded-2xl text-left space-y-1.5 animate-fade-in">
                   <div className="flex items-center gap-2">
-                    <span className="text-purple-400 text-sm">💻</span>
-                    <h5 className="text-xs font-black text-purple-300 uppercase tracking-wider">Treino Prático Externo</h5>
+                    <span className="text-indigo-400 text-sm">💻</span>
+                    <h5 className="text-xs font-black text-indigo-300 uppercase tracking-wider">Treino Prático Externo</h5>
                   </div>
                   <p className="text-[10.5px] text-gray-400 leading-relaxed">
                     Hora de treinar no <strong>{platformName}</strong>. Resolva as questões lá e, ao finalizar, retorne aqui para registrar seu resultado. Eu uso esses dados para recalcular sua próxima revisão no momento ideal!
@@ -1282,16 +1282,16 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                 )}
 
                 {canInterleave && (
-                  <div className="bg-violet-950/20 border border-violet-500/20 rounded-xl p-3 flex items-start gap-3 mt-2">
+                  <div className="bg-blue-950/20 border border-blue-500/20 rounded-xl p-3 flex items-start gap-3 mt-2">
                     <input
                       type="checkbox"
                       id="interleave-toggle-rev"
                       checked={interleaved}
                       onChange={(e) => setInterleaved(e.target.checked)}
-                      className="mt-1 rounded border-white/20 text-violet-600 focus:ring-violet-500 bg-black/40 h-4 w-4 cursor-pointer"
+                      className="mt-1 rounded border-white/20 text-blue-600 focus:ring-blue-500 bg-black/40 h-4 w-4 cursor-pointer"
                     />
                     <label htmlFor="interleave-toggle-rev" className="text-xs leading-relaxed text-gray-300 cursor-pointer">
-                      <span className="font-bold text-violet-400 block mb-0.5">🔀 Prática Intercalada (Opcional)</span>
+                      <span className="font-bold text-blue-400 block mb-0.5">🔀 Prática Intercalada (Opcional)</span>
                       Você tem {temas.filter(t => t.parentTopic === tema.parentTopic).length} subtemas ativos em <strong className="text-white">{tema.parentTopic}</strong>.
                       A abordagem intercalada otimiza a consolidação (Brunmair & Richter, 2019).
                     </label>
@@ -1330,7 +1330,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                           }}
                           className={`flex-1 flex flex-col items-center gap-1 p-3 rounded-2xl border transition-all duration-300 ${
                             isSelected 
-                              ? "bg-violet-600/20 border-violet-500 text-white scale-[1.03]" 
+                              ? "bg-blue-600/20 border-blue-500 text-white scale-[1.03]" 
                               : "bg-black/40 border-white/5 text-gray-400 hover:bg-black/60 hover:text-white"
                           }`}
                         >
@@ -1351,16 +1351,16 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                       showDetails 
                         ? "bg-white/10 border-white/10 text-white" 
                         : sugerirDetalhes 
-                        ? "bg-violet-950/40 border-violet-500/40 text-violet-300 hover:bg-violet-900/40 hover:border-violet-500 animate-pulse" 
+                        ? "bg-blue-950/40 border-blue-500/40 text-blue-300 hover:bg-blue-900/40 hover:border-blue-500 animate-pulse" 
                         : "bg-white/5 border-white/5 text-gray-400 hover:text-white hover:bg-white/10"
                     }`}
                   >
                     <span>📊 {showDetails ? "Ocultar Detalhes" : "Adicionar Detalhes / Refinar Diagnóstico"}</span>
-                    {sugerirDetalhes && !showDetails && <span className="bg-violet-500 text-white text-[8px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold font-mono">Amostra</span>}
+                    {sugerirDetalhes && !showDetails && <span className="bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-extrabold font-mono">Amostra</span>}
                   </button>
                   
                   {sugerirDetalhes && !showDetails && (
-                    <p className="text-[10px] text-violet-400/80 mt-1.5 text-center italic">
+                    <p className="text-[10px] text-blue-400/80 mt-1.5 text-center italic">
                       💡 Coleta Amostral Diagnóstica: Considere expandir e detalhar como se sente hoje para calibrar o Mentor!
                     </p>
                   )}
@@ -1377,7 +1377,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                               onClick={() => setCansaco(val)}
                               className={`flex-1 py-2 text-xs font-semibold rounded-lg border transition-all ${
                                 cansaco === val 
-                                  ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                                  ? "bg-blue-600 border-blue-500 text-white font-bold" 
                                   : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
                               }`}
                             >
@@ -1397,7 +1397,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                               onClick={() => setAnsiedade(val)}
                               className={`flex-1 py-2 text-xs font-semibold rounded-lg border transition-all ${
                                 ansiedade === val 
-                                  ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                                  ? "bg-blue-600 border-blue-500 text-white font-bold" 
                                   : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
                               }`}
                             >
@@ -1417,7 +1417,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                               onClick={() => setConfianca(val)}
                               className={`flex-1 py-2 text-xs font-semibold rounded-lg border transition-all ${
                                 confianca === val 
-                                  ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                                  ? "bg-blue-600 border-blue-500 text-white font-bold" 
                                   : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
                               }`}
                             >
@@ -1437,7 +1437,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                               onClick={() => setFoco(val)}
                               className={`flex-1 py-2 text-xs font-semibold rounded-lg border transition-all ${
                                 foco === val 
-                                  ? "bg-violet-600 border-violet-500 text-white font-bold" 
+                                  ? "bg-blue-600 border-blue-500 text-white font-bold" 
                                   : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
                               }`}
                             >
@@ -1459,7 +1459,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/5 pt-4">
                 <div className="flex items-center gap-3">
-                  <span className={`text-4xl font-black font-mono tracking-tight tabular-nums ${secondsLeft <= 60 ? "text-red-400 animate-pulse" : "text-violet-400"}`}>
+                  <span className={`text-4xl font-black font-mono tracking-tight tabular-nums ${secondsLeft <= 60 ? "text-red-400 animate-pulse" : "text-blue-400"}`}>
                     {formatTimer()}
                   </span>
                   {!isModoProva && (
@@ -1486,7 +1486,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                     type="button"
                     onClick={handleCompleteReview}
                     disabled={tema?.esp !== "Redação" && !revelado}
-                    className="flex-1 sm:flex-none px-6 py-3.5 bg-gradient-to-r from-violet-600 to-pink-500 hover:from-violet-500 hover:to-pink-400 text-white rounded-xl font-bold text-[11.5px] transition-all active:scale-[0.98] shadow-lg shadow-purple-900/25 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="flex-1 sm:flex-none px-6 py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-bold text-[11.5px] transition-all active:scale-[0.98] shadow-lg shadow-slate-900/25 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     ✓ Confirmar Revisão
                   </button>
@@ -1525,7 +1525,7 @@ function AcertoInputs({ questoes, setQuestoes, acertos, setAcertos, pct }) {
             value={questoes}
             onChange={(e) => setQuestoes(e.target.value)}
             placeholder="Ex: 20"
-            className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-all"
+            className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-all"
           />
         </div>
         <div className="space-y-1">
@@ -1537,14 +1537,14 @@ function AcertoInputs({ questoes, setQuestoes, acertos, setAcertos, pct }) {
             value={acertos}
             onChange={(e) => setAcertos(e.target.value)}
             placeholder="Ex: 15"
-            className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-all"
+            className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-all"
           />
         </div>
       </div>
       {pct != null && (
         <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-4 py-2.5">
           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Acerto calculado</span>
-          <span className={`text-2xl font-black font-mono ${pct >= 80 ? "text-emerald-400" : pct >= 65 ? "text-violet-400" : "text-red-400"}`}>
+          <span className={`text-2xl font-black font-mono ${pct >= 80 ? "text-emerald-400" : pct >= 65 ? "text-blue-400" : "text-red-400"}`}>
             {pct}%
           </span>
         </div>
@@ -1575,7 +1575,7 @@ function RedacaoInputs({ c1, setC1, c2, setC2, c3, setC3, c4, setC4, c5, setC5 }
             <select
               value={c.val}
               onChange={(e) => c.set(e.target.value)}
-              className="w-full bg-black/80 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-violet-500 transition-all mt-1"
+              className="w-full bg-black/80 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-blue-500 transition-all mt-1"
             >
               {[200, 160, 120, 80, 40, 0].map(val => (
                 <option key={val} value={val}>{val} pts</option>
@@ -1584,12 +1584,12 @@ function RedacaoInputs({ c1, setC1, c2, setC2, c3, setC3, c4, setC4, c5, setC5 }
           </div>
         ))}
       </div>
-      <div className="flex items-center justify-between bg-[#141421] border border-violet-500/20 rounded-xl px-4 py-3 mt-3">
+      <div className="flex items-center justify-between bg-[#141421] border border-blue-500/20 rounded-xl px-4 py-3 mt-3">
         <div>
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Nota Final Calculada</span>
-          <span className="text-[9px] text-violet-300 font-medium">Soma das 5 competências ENEM</span>
+          <span className="text-[9px] text-blue-300 font-medium">Soma das 5 competências ENEM</span>
         </div>
-        <span className={`text-3xl font-black font-mono tracking-tight ${sum >= 800 ? "text-emerald-400" : sum >= 600 ? "text-violet-400" : "text-red-400"}`}>
+        <span className={`text-3xl font-black font-mono tracking-tight ${sum >= 800 ? "text-emerald-400" : sum >= 600 ? "text-blue-400" : "text-red-400"}`}>
           {sum} / 1000
         </span>
       </div>

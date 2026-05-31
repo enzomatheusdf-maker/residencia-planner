@@ -1,4 +1,4 @@
-﻿# MedRev
+# MedRev
 
 MedRev é uma plataforma de estudo para Residência e Vestibular baseada em revisão ativa, ciclos D0–D21 e priorização por prontidão.
 

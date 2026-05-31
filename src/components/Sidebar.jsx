@@ -2,10 +2,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Target, Zap,
-  ChevronRight, Info, Settings, LogOut
+  ChevronRight, Info, Settings, LogOut, Flame
 } from "lucide-react";
 import { useStore } from "../core/store";
 import { diffDays, todayStr, STEPS } from "../core/fsrs";
+import { levelForXp, xpToNextLevel } from "../core/gamif";
 import { MedRevLogo } from "./Primitives";
 import { calcStreaks } from "../hooks/useMetrics";
 
@@ -40,7 +41,17 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
   }, [focusMode]);
 
   const daysLeft = meta.dataProva ? diffDays(todayStr(), meta.dataProva) : null;
-  const urgency  = daysLeft == null ? "text-violet-400" : daysLeft <= 30 ? "text-red-400" : daysLeft <= 90 ? "text-yellow-400" : "text-violet-400";
+  const urgency  = daysLeft == null ? "text-blue-400" : daysLeft <= 30 ? "text-red-400" : daysLeft <= 90 ? "text-yellow-400" : "text-blue-400";
+  const gamif = useStore((s) => s.gamif) || {};
+  const xp = gamif.xp || 0;
+  const level = gamif.level || levelForXp(xp);
+  const streakCurrent = gamif.streakCurrent || 0;
+  const prevLevelMinXp = (level - 1) ** 2 * 50;
+  const nextLevelMinXp = level ** 2 * 50;
+  const xpFalta = xpToNextLevel(xp);
+  const levelPct = Math.min(100, Math.max(0, ((xp - prevLevelMinXp) / Math.max(1, nextLevelMinXp - prevLevelMinXp)) * 100));
+  const displayName = userName || usuarioLogado?.displayName || usuarioLogado?.email?.split("@")[0] || "Estudante";
+  const initials = (userName || usuarioLogado?.displayName || usuarioLogado?.email || "US").substring(0, 2).toUpperCase();
 
   return (
     <aside className={`hidden md:flex flex-col bg-[#07070f] border-r border-white/5 shrink-0 transition-all duration-200 ${collapsed ? "w-[60px]" : "w-60"}`}>
@@ -58,7 +69,7 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
         <div className="flex gap-1 p-3 pb-2">
           {[["res","Residência"],["vest","Vestibular"]].map(([k, l]) => (
             <button key={k} onClick={() => setPlat(k)}
-              className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${plat === k ? "bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-sm" : "text-gray-500 hover:text-gray-300 bg-white/5"}`}>
+              className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-all ${plat === k ? "bg-gradient-to-r from-blue-600 to-sky-500 text-white shadow-sm" : "text-gray-500 hover:text-gray-300 bg-white/5"}`}>
               {l}
             </button>
           ))}
@@ -73,8 +84,8 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
           const showStreakWarning = n.k === "dash" && streakEmRisco;
           return (
             <button key={n.k} onClick={() => setView(n.k)}
-              className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-all text-left group ${isActive ? "bg-gradient-to-r from-purple-600/20 to-pink-500/10 text-white border border-purple-500/20" : "text-gray-500 hover:text-gray-300 hover:bg-white/5 border border-transparent"}`}>
-              <Icon size={18} className={`shrink-0 transition-colors ${isActive ? "text-purple-400" : "group-hover:text-gray-300"}`} />
+              className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-all text-left group ${isActive ? "bg-gradient-to-r from-blue-600/20 to-sky-500/10 text-white border border-blue-500/20" : "text-gray-500 hover:text-gray-300 hover:bg-white/5 border border-transparent"}`}>
+              <Icon size={18} className={`shrink-0 transition-colors ${isActive ? "text-indigo-400" : "group-hover:text-gray-300"}`} />
               {!collapsed && <span className="text-[12.5px] font-medium truncate flex-1">{n.label}</span>}
               {showStreakWarning && (
                 <span className="flex h-2.5 w-2.5 relative" title="Ofensiva em risco!">
@@ -82,79 +93,110 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
                 </span>
               )}
-              {!collapsed && isActive && !showStreakWarning && <div className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />}
+              {!collapsed && isActive && !showStreakWarning && <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />}
             </button>
           );
         })}
       </nav>
 
-      {/* Bottom actions */}
-      <div className="p-2 border-t border-white/5 flex flex-col gap-1">
-        {!collapsed && daysLeft != null && (
-          <div className={`rounded-xl px-3 py-2 mb-1 border ${daysLeft <= 30 ? "bg-red-500/5 border-red-500/20" : daysLeft <= 90 ? "bg-yellow-500/5 border-yellow-500/20" : "bg-purple-500/5 border-purple-500/20"}`}>
-            <p className="text-[10px] text-gray-600 uppercase mb-0.5">Prova em</p>
-            <p className={`text-xl font-black tabular-nums ${urgency}`}>{daysLeft}d</p>
-          </div>
-        )}
-        <button onClick={() => setHelpModal(true)} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-gray-600 hover:text-purple-400 hover:bg-purple-500/5 transition-all">
-          <Info size={16} className="shrink-0"/>{!collapsed && <span className="text-[12px]">Guia de Uso</span>}
-        </button>
-        <button onClick={() => setAjustes(true)} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-gray-600 hover:text-gray-300 hover:bg-white/5 transition-all">
-          <Settings size={16} className="shrink-0"/>{!collapsed && <span className="text-[12px]">Ajustes</span>}
-        </button>
+      {/* ===== Cockpit: Guia/Ajustes + Perfil + XP + Prova ===== */}
+      <div className="p-2 border-t border-white/5 flex flex-col gap-1.5">
 
-        {/* ── User Profile Card (fixo, sem popup) ── */}
-        {usuarioLogado && (
-          <div className={`mt-1.5 pt-2 border-t border-white/5 ${collapsed ? "flex justify-center" : "block"}`}>
-             {collapsed ? (
-              /* Collapsed: só avatar + logout em coluna */
-              <div className="flex flex-col items-center gap-1.5">
-                <div className="relative">
-                  <div onClick={() => setAjustes(true)} className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 flex items-center justify-center font-bold text-white text-xs shrink-0 select-none shadow-md shadow-purple-950/50 cursor-pointer hover:brightness-110 transition-all">
-                    {(userName || usuarioLogado.displayName || usuarioLogado.email || "US").substring(0, 2).toUpperCase()}
-                  </div>
-                  {syncStatus === 'saving' && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-yellow-400 border border-[#07070f] animate-pulse" title="Sincronizando..." />}
-                  {syncStatus === 'saved' && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#07070f]" title="Sincronizado com nuvem ✓" />}
-                  {syncStatus === 'offline' && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-[#07070f]" title="Modo Offline" />}
-                </div>
-                <button onClick={onLogout} title="Sair da conta" className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-colors">
-                  <LogOut size={13} />
-                </button>
+        {/* Guia + Ajustes */}
+        <div className={`flex gap-1 ${collapsed ? "flex-col items-center" : ""}`}>
+          <button onClick={() => setHelpModal(true)} title="Guia de Uso"
+            className="flex-1 flex items-center justify-center gap-2 px-2 py-2 rounded-xl text-gray-600 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all">
+            <Info size={16} className="shrink-0" />{!collapsed && <span className="text-[12px]">Guia</span>}
+          </button>
+          <button onClick={() => setAjustes(true)} title="Ajustes"
+            className="flex-1 flex items-center justify-center gap-2 px-2 py-2 rounded-xl text-gray-600 hover:text-gray-300 hover:bg-white/5 transition-all">
+            <Settings size={16} className="shrink-0" />{!collapsed && <span className="text-[12px]">Ajustes</span>}
+          </button>
+        </div>
+
+        {usuarioLogado && (collapsed ? (
+          <div className="flex flex-col items-center gap-1.5 pt-1 mt-1 border-t border-white/5">
+            <div onClick={() => setAjustes(true)} className="relative cursor-pointer"
+                 title={`${displayName} · Nível ${level} · ${xp} XP`}>
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center font-black text-white text-[12px] shadow-md shadow-slate-950/50 hover:brightness-110 transition-all">
+                {initials}
               </div>
-            ) : (
-              /* Expanded: card completo */
-              <div onClick={() => setAjustes(true)} className="rounded-2xl border border-white/8 bg-white/[0.025] px-3 py-2.5 flex items-center gap-2.5 hover:border-white/12 hover:bg-white/[0.06] transition-colors cursor-pointer">
-                {/* Avatar */}
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 flex items-center justify-center font-black text-white text-[13px] shrink-0 select-none shadow-lg shadow-purple-950/60">
-                  {(userName || usuarioLogado.displayName || usuarioLogado.email || "US").substring(0, 2).toUpperCase()}
-                </div>
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <p className="text-[12px] font-bold text-gray-100 truncate leading-tight">
-                      {userName || usuarioLogado.displayName || usuarioLogado.email?.split("@")[0]}
-                    </p>
-                    {syncStatus === 'saving' && <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse shrink-0" title="Sincronizando..." />}
-                    {syncStatus === 'saved' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Sincronizado com nuvem ✓" />}
-                    {syncStatus === 'offline' && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" title="Modo Offline" />}
-                  </div>
-                  <p className="text-[9.5px] text-gray-500 truncate leading-none mt-0.5 font-mono">
-                    {plat === "res" ? "Residência Médica" : "Vestibular"}
-                  </p>
-                </div>
-                {/* Logout */}
-                <button
-                  onClick={onLogout}
-                  title="Sair da conta"
-                  className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
-                >
-                  <LogOut size={14} />
-                </button>
-              </div>
-            )}
+              <span className="absolute -bottom-1 -right-1 px-1 rounded-md bg-[#07070f] border border-blue-500/40 text-[8px] font-black text-blue-300 leading-tight">
+                {level}
+              </span>
+              {syncStatus === "saving" && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-yellow-400 border border-[#07070f] animate-pulse" title="Sincronizando..." />}
+              {syncStatus === "saved"  && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#07070f]" title="Sincronizado ✓" />}
+              {syncStatus === "offline"&& <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-[#07070f]" title="Offline" />}
+            </div>
+            {daysLeft != null && <span className={`text-[10px] font-black tabular-nums ${urgency}`}>{daysLeft}d</span>}
+            <button onClick={onLogout} title="Sair da conta"
+              className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-colors">
+              <LogOut size={13} />
+            </button>
           </div>
-        )}
+        ) : (
+          <div className="rounded-2xl border border-white/8 bg-white/[0.025] overflow-hidden mt-0.5">
+
+            <div onClick={() => setAjustes(true)}
+              className="px-3 pt-2.5 pb-2 flex items-center gap-2.5 hover:bg-white/[0.05] transition-colors cursor-pointer">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center font-black text-white text-[13px] shrink-0 shadow-lg shadow-slate-950/60 select-none">
+                {initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <p className="text-[12px] font-bold text-gray-100 truncate leading-tight">{displayName}</p>
+                  {syncStatus === "saving" && <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse shrink-0" title="Sincronizando..." />}
+                  {syncStatus === "saved"  && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Sincronizado ✓" />}
+                  {syncStatus === "offline"&& <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" title="Offline" />}
+                </div>
+                <p className="text-[9.5px] text-gray-500 truncate leading-none mt-0.5 font-mono">
+                  {plat === "res" ? "Residência Médica" : "Vestibular"}
+                </p>
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); onLogout(); }} title="Sair da conta"
+                className="p-1.5 rounded-lg text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0">
+                <LogOut size={14} />
+              </button>
+            </div>
+
+            <div className="px-3 pb-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="flex items-center gap-1 text-[10px] font-black text-blue-300">
+                  <Zap size={11} className="text-blue-400" /> Nível {level}
+                </span>
+                <span className="text-[10px] font-bold text-gray-400 tabular-nums">{xp} XP</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-sky-500 transition-all duration-500"
+                     style={{ width: `${levelPct}%` }} />
+              </div>
+              <p className="text-[8.5px] text-gray-600 mt-0.5 text-right">
+                faltam {xpFalta} XP p/ nível {level + 1}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-2 border-t border-white/5 bg-black/20">
+              {daysLeft != null ? (
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <Calendar size={13} className={`shrink-0 ${urgency}`} />
+                  <span className="text-[10px] text-gray-500">Prova em</span>
+                  <span className={`text-[13px] font-black tabular-nums ${urgency}`}>{daysLeft}d</span>
+                </div>
+              ) : (
+                <button onClick={() => setAjustes(true)}
+                  className="flex-1 text-left text-[10px] text-gray-600 hover:text-gray-400 transition-colors">
+                  + definir data da prova
+                </button>
+              )}
+              <div className="flex items-center gap-1 shrink-0" title="Ofensiva atual">
+                <Flame size={13} className={streakCurrent > 0 ? "text-orange-400" : "text-gray-600"} />
+                <span className="text-[11px] font-black text-gray-300 tabular-nums">{streakCurrent}</span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
+
     </aside>
   );
 }

@@ -174,7 +174,7 @@ export default function AnkiAudit() {
           type="button"
           onClick={() => setActiveTab("logs")}
           className={`px-4 py-2 rounded-lg text-[12px] font-black transition-all border-none cursor-pointer ${
-            activeTab === "logs" ? "bg-violet-600 text-white" : "text-gray-500 hover:text-gray-300 bg-transparent"
+            activeTab === "logs" ? "bg-blue-600 text-white" : "text-gray-500 hover:text-gray-300 bg-transparent"
           }`}
         >
           Histórico de Sessões
@@ -183,7 +183,7 @@ export default function AnkiAudit() {
           type="button"
           onClick={() => setActiveTab("errors")}
           className={`px-4 py-2 rounded-lg text-[12px] font-black transition-all border-none cursor-pointer ${
-            activeTab === "errors" ? "bg-violet-600 text-white" : "text-gray-500 hover:text-gray-300 bg-transparent"
+            activeTab === "errors" ? "bg-blue-600 text-white" : "text-gray-500 hover:text-gray-300 bg-transparent"
           }`}
         >
           Cards por Erros Reais ({cardsFromErrors.length})
@@ -209,7 +209,7 @@ export default function AnkiAudit() {
                 <span className="text-[12px] text-gray-400 font-bold shrink-0">{fmtFull(l.data)}</span>
                 <div className="flex gap-6">
                   {[
-                    ["Revisados", l.revisados, "text-violet-400"],
+                    ["Revisados", l.revisados, "text-blue-400"],
                     ["Novos", l.novos || 0, "text-blue-400"],
                     ["Again (Erros)", `${pct}%`, col]
                   ].map(([lbl, val, c]) => (
@@ -285,7 +285,7 @@ export default function AnkiAudit() {
             <Field label="Novos" info="Número de novos cards que você inseriu na sua rotina de estudos neste dia."><Input type="number" value={f.novos} onChange={(e) => setF({ ...f, novos: +e.target.value })} /></Field>
           </div>
           {f.revisados > 0 && (
-            <p className="text-center text-xl font-black text-violet-400 tabular-nums my-2">
+            <p className="text-center text-xl font-black text-blue-400 tabular-nums my-2">
               {Math.round((f.again / f.revisados) * 100)}% de Erro Real
             </p>
           )}

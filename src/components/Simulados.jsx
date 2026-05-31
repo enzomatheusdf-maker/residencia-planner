@@ -1,4 +1,4 @@
-﻿// src/components/Simulados.jsx
+// src/components/Simulados.jsx
 import React, { useState, useMemo } from "react";
 import { Target, Plus, X, Trash2, ShieldAlert, Award, BarChart3, Info, Brain, Flame, BookOpen, Calendar, HelpCircle, Activity } from "lucide-react";
 import { useStore } from "../core/store";
@@ -94,7 +94,7 @@ export function SimRegistroModal({ onClose, onSave, platKey }) {
 
           {f.acertos > f.total && (
             <p className="text-red-400 text-xs font-bold mt-1 bg-red-500/10 border border-red-500/25 p-2 rounded-xl">
-              ⚠ï¸ O nÃºmero de acertos nÃ£o pode ser maior que o total de questÃµes.
+              ⚠️ O número de acertos não pode ser maior que o total de questões.
             </p>
           )}
 
@@ -844,7 +844,7 @@ export default function Simulados({ onStudy, setView }) {
         </div>
       )}
 
-      {/* ConteÃºdo Aba 3: Desempenho por Ãreas ClÃ­nicas */}
+      {/* Conteúdo Aba 3: Desempenho por Áreas Clínicas */}
       {activeTab === "area" && (
         <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-4">
           <h3 className="text-[13px] font-bold text-white">Rastreador de Lacunas Volumétricas por Matéria</h3>
@@ -901,7 +901,7 @@ export default function Simulados({ onStudy, setView }) {
           onClose={() => setModalOpen(false)}
           onSave={(sim) => {
             addSim(plat, sim);
-            trackEvent("simulado_registrado", { plat, prova: sim.prova || "na" });
+            trackEvent("simulado_registrado", { plat, pct: sim?.pct ?? 0, total: sim?.total ?? 0 });
             setModalOpen(false);
           }}
         />

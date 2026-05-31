@@ -1,0 +1,145 @@
+import React, { useMemo } from "react";
+import { GraduationCap, CheckCircle2, Sparkles } from "lucide-react";
+import { useStore } from "../core/store";
+import { CONCEITOS_METODO } from "../constants/metodo";
+import ConceitoCard from "./ConceitoCard";
+
+export default function AcademiaMetodo() {
+  const { plat, meta, setMeta, addXp } = useStore();
+  const showToast = useStore((s) => s.showToast);
+  const temas = useStore((s) => s[plat]?.temas || []);
+  const simulados = useStore((s) => s[plat]?.simulados || []);
+
+  const progressMap = useMemo(() => {
+    return meta?.metodoProgresso || {};
+  }, [meta?.metodoProgresso]);
+
+  // Checagens automáticas de conclusão por comportamento
+  const autoCompletes = useMemo(() => {
+    return {
+      pretest: temas.some(t => t.rev?.d0?.done || t.rev?.d4?.done),
+      leitura: temas.some(t => t.rev?.d0?.done),
+      esqueleto: temas.some(t => t.rev?.d1?.done),
+      braindump: Object.keys(useStore.getState().brainDumpD1Data || {}).length > 0,
+      questoes: simulados.length > 0 || temas.some(t => t.rev?.d4?.questoes > 0),
+      anki: temas.some(t => t.ankiDeck !== "") || (useStore.getState()[plat]?.ankiLog?.length || 0) > 0
+    };
+  }, [temas, simulados, plat]);
+
+  const totalConcluidos = useMemo(() => {
+    return CONCEITOS_METODO.filter(c => progressMap[c.id] || autoCompletes[c.id]).length;
+  }, [progressMap, autoCompletes]);
+
+  const pct = Math.round((totalConcluidos / CONCEITOS_METODO.length) * 100);
+
+  const handleClaimXp = (id) => {
+    if (progressMap[id]) return; // já resgatado
+    
+    // Atualizar no store
+    setMeta({
+      ...meta,
+      metodoProgresso: {
+        ...progressMap,
+        [id]: true
+      }
+    });
+
+    // Dar XP
+    addXp(100, "outros");
+    showToast("Parabéns! Você dominou este pilar prático e ganhou +100 XP!");
+  };
+
+  return (
+    <div className="space-y-6 text-left animate-fade-up max-w-4xl mx-auto pb-10">
+      {/* Header Herói da Academia */}
+      <div className="bg-gradient-to-r from-blue-600/10 via-sky-500/5 to-amber-500/5 border border-blue-500/15 rounded-3xl p-6 relative overflow-hidden select-none shadow-lg">
+        <div className="absolute right-0 top-0 w-32 h-32 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-1">
+            <span className="text-[10px] uppercase font-black tracking-widest text-blue-400 font-mono">Trilha do Estudante de Elite</span>
+            <h2 className="text-xl font-black text-gray-100 uppercase tracking-wide flex items-center gap-2">
+              <GraduationCap className="text-blue-400" size={24} />
+              Academia do Método MedRev
+            </h2>
+            <p className="text-[12px] text-gray-400 max-w-xl leading-relaxed mt-1">
+              Domine as técnicas de estudo ativo validadas pela neurociência. Realize as ações práticas dentro do app para desbloquear as conquistas e turbinar seu aprendizado.
+            </p>
+          </div>
+
+          <div className="bg-black/30 border border-white/5 p-4 rounded-2xl flex items-center gap-4 shrink-0">
+            <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
+              {/* Círculo de Progresso SVG */}
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                <path
+                  className="text-white/5"
+                  strokeWidth="2.5"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className="text-blue-500 transition-all duration-500"
+                  strokeWidth="2.5"
+                  strokeDasharray={`${pct}, 100`}
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+              </svg>
+              <div className="absolute text-[12px] font-black text-white font-mono">
+                {pct}%
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Seu Domínio</p>
+              <p className="text-sm font-bold text-white mt-0.5">{totalConcluidos} de 6 pilares</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid de Conceitos */}
+      <div className="space-y-4">
+        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest pl-1">Pilares do Método de Estudos</h3>
+        
+        <div className="grid grid-cols-1 gap-3.5">
+          {CONCEITOS_METODO.map(conceito => {
+            const isAuto = autoCompletes[conceito.id];
+            const isClaimed = progressMap[conceito.id];
+            return (
+              <div key={conceito.id} className="relative">
+                <ConceitoCard conceito={conceito} />
+                
+                {/* Badge/Ação de Status no Canto Direito */}
+                <div className="absolute right-12 top-4 flex items-center gap-2">
+                  {isClaimed ? (
+                    <span className="text-[9.5px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 select-none">
+                      <CheckCircle2 size={12} />
+                      Dominado (+100 XP)
+                    </span>
+                  ) : isAuto ? (
+                    <button
+                      type="button"
+                      onClick={() => handleClaimXp(conceito.id)}
+                      className="text-[9.5px] bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white px-2.5 py-1 rounded-xl font-black uppercase tracking-wider flex items-center gap-1 shadow-md shadow-indigo-950/40 hover:scale-[1.02] active:scale-[0.98] transition-all border-none cursor-pointer"
+                    >
+                      <Sparkles size={11} className="animate-pulse" />
+                      Resgatar +100 XP
+                    </button>
+                  ) : (
+                    <span className="text-[9.5px] bg-white/5 text-gray-500 border border-white/5 px-2.5 py-1 rounded-xl font-bold select-none">
+                      Pilar Pendente
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+

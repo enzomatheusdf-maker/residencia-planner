@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --bg:#070b14;
+  --surface-1:#0b1220;
+  --surface-2:#111a2e;
+  --surface-3:#16213a;
+  --border:rgba(255,255,255,.06);
+  --border-strong:rgba(120,160,255,.18);
+  --primary:#3b82f6;
+  --primary-strong:#2563eb;
+  --primary-soft:rgba(59,130,246,.12);
+  --accent:#38bdf8;
+  --text-1:rgba(255,255,255,.92);
+  --text-2:rgba(255,255,255,.62);
+  --text-3:rgba(255,255,255,.40);
+  --ok:#34d399;
+  --warn:#fbbf24;
+  --crit:#f87171;
+  --dur-fast:.14s;
+  --dur-base:.24s;
+  --dur-slow:.4s;
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --radius:18px;
+  --radius-sm:12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--bg);
+  color: var(--text-1);
+  -webkit-font-smoothing: antialiased;
+}
+
+input[type=date] { color-scheme: dark; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1e2a44; border-radius: 10px; }
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;animation-iteration-count:1!important}
+}
+
+.medrev-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+.medrev-card-hover {
+  transition: transform var(--dur-base) var(--ease-spring), background-color var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+
+.medrev-card-hover:hover {
+  transform: translateY(-2px);
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  box-shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 16px 36px -18px rgba(0,0,0,.75);
+}
+
+.medrev-cta-primary {
+  transition: transform var(--dur-base) var(--ease-spring), background-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+}
+
+.medrev-cta-primary:active {
+  transform: scale(.97);
+}
+
+@keyframes confetti-fall {
+  to {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes confetti-sway {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  50% { transform: translateX(var(--sway-amount)) rotate(180deg); }
+}
+
+.confetti-piece {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  animation: confetti-fall linear forwards, confetti-sway ease-in-out forwards;
+}
+
+@keyframes scale-up {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes draw-checkmark {
+  0% { stroke-dashoffset: 24; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.animate-scale-up {
+  animation: scale-up 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+.animate-draw-checkmark {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: draw-checkmark 0.4s ease-in-out 0.2s forwards;
+}

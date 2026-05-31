@@ -1,4 +1,4 @@
-﻿// src/components/Primitives.jsx
+// src/components/Primitives.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Info, X } from "lucide-react";
@@ -41,7 +41,7 @@ export function Badge({ color, children }) {
 
 export function SBadge({ S, nextDate }) {
   return (
-    <span title={`Estabilidade: ${Math.round(S||1)}d â€” prÃ³xima revisÃ£o ${fmtDate(nextDate)}`}
+    <span title={`Estabilidade: ${Math.round(S||1)}d — próxima revisão ${fmtDate(nextDate)}`}
       className="text-[9px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded">
       S:{Math.round(S||1)}d
     </span>
@@ -65,7 +65,7 @@ export function MedRevLogo({ collapsed = false, showTagline = false, size = "md"
             <span className="text-white">Med</span>
             <span className="bg-gradient-to-r from-blue-400 to-sky-400 bg-clip-text text-transparent">Rev</span>
           </p>
-          {showTagline && <p className="text-[8px] text-gray-500 tracking-[0.18em] font-semibold mt-1 uppercase">Medicina Â· RevisÃ£o Â· Performance</p>}
+          {showTagline && <p className="text-[8px] text-gray-500 tracking-[0.18em] font-semibold mt-1 uppercase">Medicina · Revisão · Performance</p>}
         </div>
       )}
     </div>
@@ -154,18 +154,24 @@ export function Modal({ children, onClose, wide = false }) {
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
   }, [onClose]);
-  return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+  return createPortal(
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 p-4 overflow-y-auto"
       onClick={onClose}>
       <div
-        className={`bg-[#111113] border border-white/10 rounded-2xl p-6 w-full ${wide ? "max-w-xl" : "max-w-sm"} max-h-[92vh] flex flex-col gap-4 animate-slide-up overflow-y-auto relative`}
+        className={`bg-[#111113] border border-white/10 rounded-2xl p-6 w-full my-auto ${wide ? "max-w-xl" : "max-w-sm"} max-h-[90dvh] flex flex-col gap-4 animate-slide-up overflow-y-auto relative`}
         onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 transition-colors">
           <X size={20} />
         </button>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -191,7 +197,7 @@ export function Toast({ toast, onUndo, onDismiss }) {
   );
 }
 
-export function ConfirmDialog({ open, title = "Confirmar aÃ§Ã£o", message, confirmLabel = "Confirmar", cancelLabel = "Cancelar", danger = false, onCancel, onConfirm }) {
+export function ConfirmDialog({ open, title = "Confirmar ação", message, confirmLabel = "Confirmar", cancelLabel = "Cancelar", danger = false, onCancel, onConfirm }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[520] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onCancel}>
@@ -250,7 +256,7 @@ export function ConfettiOverlay() {
   );
 }
 
-// â”€â”€â”€ PROGRESSIVE TOOLTIP (USE STORE TO REGISTER VISTOS) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── PROGRESSIVE TOOLTIP (USE STORE TO REGISTER VISTOS) ────────────────────────
 export function ProgressiveTooltip({ tooltipId, text, children }) {
   const vistos = useStore((s) => s.vistos || []);
   const adicionarVisto = useStore((s) => s.adicionarVisto);
@@ -282,8 +288,8 @@ export function ProgressiveTooltip({ tooltipId, text, children }) {
 
   if (visto) return children;
 
-  let bubbleClasses = "absolute bottom-full mb-2.5 w-[min(16rem,calc(100vw-2rem))] bg-gradient-to-br from-[#1b1035] to-[#0c0c14] border border-violet-500/35 rounded-xl p-3 shadow-2xl z-[200] animate-slide-up text-left ";
-  let arrowClasses = "absolute top-full w-2.5 h-2.5 bg-[#0c0c14] border-r border-b border-violet-500/35 rotate-45 -mt-[6px] ";
+  let bubbleClasses = "absolute bottom-full mb-2.5 w-[min(16rem,calc(100vw-2rem))] bg-gradient-to-br from-[#1b1035] to-[#0c0c14] border border-blue-500/35 rounded-xl p-3 shadow-2xl z-[200] animate-slide-up text-left ";
+  let arrowClasses = "absolute top-full w-2.5 h-2.5 bg-[#0c0c14] border-r border-b border-blue-500/35 rotate-45 -mt-[6px] ";
 
   if (placement === "center") {
     bubbleClasses += "left-1/2 -translate-x-1/2";
@@ -321,11 +327,11 @@ export function ProgressiveTooltip({ tooltipId, text, children }) {
   );
 }
 
-// â”€â”€â”€ TOUR BALLOON (WALKTHROUGH POPUPS) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── TOUR BALLOON (WALKTHROUGH POPUPS) ──────────────────────────────────────────
 export function TourBalloon({ text, onNext, nextLabel = "Continuar →" }) {
   return createPortal(
-    <div className="fixed inset-0 z-[300] bg-black/40 backdrop-blur-[1px] flex items-center justify-center p-4">
-      <div className="w-full max-w-[min(24rem,calc(100vw-2rem))] bg-gradient-to-br from-[#12121e] to-[#0a0a0f] border border-blue-500/30 rounded-2xl p-5 shadow-2xl shadow-blue-900/10 animate-slide-up text-left relative overflow-hidden max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 z-[300] bg-black/40 backdrop-blur-[1px] flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+      <div className="w-full max-w-[min(24rem,calc(100vw-2rem))] bg-gradient-to-br from-[#12121e] to-[#0a0a0f] border border-blue-500/30 rounded-2xl p-5 shadow-2xl shadow-blue-900/10 animate-slide-up text-left relative overflow-hidden max-h-[85dvh] my-auto flex flex-col">
         <div className="absolute -right-8 -top-8 w-20 h-20 rounded-full bg-blue-500/5 blur-xl pointer-events-none" />
         
         <div className="flex items-center gap-2 mb-3 border-b border-white/5 pb-2 shrink-0">
@@ -384,7 +390,7 @@ export function CheckmarkOverlay({ onComplete }) {
             <polyline points="20 6 9 17 4 12" className="animate-draw-checkmark" />
           </svg>
         </div>
-        <p className="text-xs font-black text-gray-200 uppercase tracking-widest">Etapa ConcluÃ­da</p>
+        <p className="text-xs font-black text-gray-200 uppercase tracking-widest">Etapa Concluída</p>
       </div>
     </div>
   );

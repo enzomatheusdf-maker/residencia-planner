@@ -71,34 +71,34 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
           
           <div>
             <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
-              <Target size={14} className="text-violet-400"/> Caso Clínico PICO (Opcional)
+              <Target size={14} className="text-blue-400"/> Caso Clínico PICO (Opcional)
             </label>
             <textarea
               rows={3}
               placeholder="Ex: Paciente masculino, 24 anos, dor abdominal periumbilical que migrou para FID..."
               value={pico}
               onChange={(e) => setPico(e.target.value)}
-              className="w-full bg-black border border-white/10 rounded-xl px-3 py-2.5 text-[13px] text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-colors resize-none"
+              className="w-full bg-black border border-white/10 rounded-xl px-3 py-2.5 text-[13px] text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-colors resize-none"
             />
           </div>
 
           <div>
             <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
-              <Zap size={14} className="text-violet-400"/> Deck do Anki (Opcional)
+              <Zap size={14} className="text-blue-400"/> Deck do Anki (Opcional)
             </label>
             <input
               type="text"
               placeholder="Ex: Medicina::Cirurgia::Apendicite"
               value={ankiDeck}
               onChange={(e) => setAnkiDeck(e.target.value)}
-              className="w-full bg-black border border-white/10 rounded-xl px-3 py-2.5 text-[13px] text-white placeholder-gray-600 outline-none focus:border-violet-500 transition-colors"
+              className="w-full bg-black border border-white/10 rounded-xl px-3 py-2.5 text-[13px] text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-colors"
             />
           </div>
 
           <button
             type="button"
             onClick={() => setStarted(true)}
-            className="w-full px-4 py-3.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-[13px] transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-violet-900/20 border-none cursor-pointer"
+            className="w-full px-4 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-[13px] transition-all flex items-center justify-center gap-2 mt-2 shadow-lg shadow-blue-900/20 border-none cursor-pointer"
           >
             <Play size={15} /> Confirmar e Iniciar D0
           </button>
@@ -125,7 +125,7 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
       <div className="space-y-1.5">
         <div className="bg-white/5 rounded-full h-1.5 overflow-hidden border border-white/5">
           <div
-            className="bg-violet-600 h-full transition-all duration-300"
+            className="bg-blue-600 h-full transition-all duration-300"
             style={{ width: `${((currentStepIndex + 1) / stepDefinitions.length) * 100}%` }}
           />
         </div>
@@ -139,7 +139,7 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
         <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: espColor }} />
         
         <div className="flex items-start gap-4">
-          <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-violet-400 shrink-0">
+          <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-blue-400 shrink-0">
             <StepIconComponent size={24} />
           </div>
           <div>
@@ -158,13 +158,13 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
           <button
             type="button"
             onClick={() => setExpandedJustification(expandedJustification === currentStep?.id ? null : currentStep?.id)}
-            className="text-[11px] text-violet-400 hover:text-violet-300 font-bold flex items-center gap-1.5 py-1 border-none bg-transparent cursor-pointer"
+            className="text-[11px] text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1.5 py-1 border-none bg-transparent cursor-pointer"
           >
             <span>{expandedJustification === currentStep?.id ? '▼' : '▶'}</span>
             Análise de Evidência Científica
           </button>
           {expandedJustification === currentStep?.id && (
-            <div className="bg-violet-500/[0.02] border-l-2 border-violet-500/30 p-4 rounded-r-xl mt-2 w-full animate-fade-up">
+            <div className="bg-blue-500/[0.02] border-l-2 border-blue-500/30 p-4 rounded-r-xl mt-2 w-full animate-fade-up">
               <p className="text-[11.5px] leading-relaxed whitespace-pre-line text-gray-500 italic">
                 {formatText(currentStep?.justification)}
               </p>
@@ -186,7 +186,7 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
         <button
           type="button"
           onClick={handleNextStep}
-          className="flex-1 px-4 py-3.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-bold text-[13px] transition-all active:scale-[0.98] shadow-lg shadow-violet-900/20 flex items-center justify-center gap-1.5 border-none cursor-pointer"
+          className="flex-1 px-4 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-[13px] transition-all active:scale-[0.98] shadow-lg shadow-blue-900/20 flex items-center justify-center gap-1.5 border-none cursor-pointer"
         >
           {isLastStep ? 'Fiz todos os passos → Finalizar D0' : `Concluir ${currentStep?.title}`} <ChevronRight size={16} />
         </button>

@@ -1,19 +1,22 @@
-﻿// src/components/Dashboard.jsx
+// src/components/Dashboard.jsx
 import React, { useMemo, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Edit2, Info, TrendingUp, CheckCircle, ChevronDown, ChevronUp, Brain, Flame, Calendar, AlertTriangle, X, Zap, BookOpen, Layers, Share2 } from "lucide-react";
 import { useStore } from "../core/store";
-import { STEPS, ESP_COLORS, isOverdue, isDueToday, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection } from "../core/fsrs";
-import { calcStreaks, calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
-import { getMentorDiagnosis, getMentorVoice, getMentorPhrase, getRecentPhrases, trackRecentPhrase } from "../core/mentor";
+import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection } from "../core/fsrs";
+import { calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
+import { getMentorDiagnosis, getMentorVoice, getMentorPhrase, getRecentPhrases, trackRecentPhrase, proximaAcao, isExhaustionDetected } from "../core/mentor";
 import { getReadinessData } from "../core/readiness";
 import { getUserState } from "../core/userState";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip, InfoTooltip } from "./Primitives";
 import { Check } from "lucide-react";
 import RetrievabilitySpark from "./RetrievabilitySpark";
 import DicaContextual from "./DicaContextual";
+import TrilhaJornada from "./TrilhaJornada";
 import useCountUp from "../hooks/useCountUp";
+import { trackEvent } from "../services/firebase";
 
-/* ─── CARGA FUTURA WIDGET ─────────────────────────────────────────────────── */
+/* â”€â”€â”€ CARGA FUTURA WIDGET â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function CargaFuturaWidget({ temas, maxRevisoesDia }) {
   const proj = getWorkloadProjection(temas, 14);
   const dates = Object.keys(proj);
@@ -23,8 +26,8 @@ function CargaFuturaWidget({ temas, maxRevisoesDia }) {
     <div className="medrev-card medrev-card-hover p-5 select-none animate-fade-in">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-[12px] font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-          📊 Carga de Revisões (Próximos 14 dias)
-          <InfoTooltip texto="Projeção das revisões pendentes agendadas para os próximos 14 dias com base no algoritmo FSRS." />
+          ðŸ“Š Carga de RevisÃµes (PrÃ³ximos 14 dias)
+          <InfoTooltip texto="ProjeÃ§Ã£o das revisÃµes pendentes agendadas para os prÃ³ximos 14 dias com base no algoritmo FSRS." />
         </h4>
         <span className="text-[10px] text-gray-500 font-mono">Teto: {maxRevisoesDia}</span>
       </div>
@@ -64,34 +67,31 @@ function CargaFuturaWidget({ temas, maxRevisoesDia }) {
   );
 }
 
-/* ─── WELCOME POPUP ─────────────────────────────────────────────────────────── */
-function WelcomePopup({ userName, pending, streakCurrent, totalSessions, onClose, onStartFocus, meta, naReserva, totalRevisoesFeitas, prontidao }) {
+/* â”€â”€â”€ WELCOME POPUP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+function WelcomePopup({ userName, pending, streakCurrent, totalSessions, onClose, onStartFocus, meta, naReserva, totalRevisoesFeitas, prontidao, forceFluencia = false, forceExhausted = false }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // pequeno delay para a animação de entrada
+    // pequeno delay para a animaÃ§Ã£o de entrada
     const t = setTimeout(() => setVisible(true), 80);
     return () => clearTimeout(t);
   }, []);
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
-
   const { plat } = useStore();
   const mentorMsg = useMemo(() => {
     return getMentorVoice({
-      situation: "boas_vindas_diario",
+      situation: forceFluencia ? "fluencia" : "boas_vindas_diario",
       userName,
       pending,
       streakCurrent,
-      meta,
+      meta: { ...meta, isExhaustedNow: forceExhausted },
       plat,
       tom: meta?.tomMentor || "gentil",
       totalSessions,
       totalRevisoesFeitas,
       prontidao
     });
-  }, [userName, pending, streakCurrent, meta, plat, totalSessions, totalRevisoesFeitas, prontidao]);
+  }, [userName, pending, streakCurrent, meta, plat, totalSessions, totalRevisoesFeitas, prontidao, forceFluencia, forceExhausted]);
 
   const handleClose = () => {
     setVisible(false);
@@ -109,9 +109,15 @@ function WelcomePopup({ userName, pending, streakCurrent, totalSessions, onClose
     setTimeout(onStartFocus, 250);
   };
 
-  return (
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[400] flex items-center justify-center md:pl-60 p-4"
+      className="fixed inset-0 z-[400] flex items-start sm:items-center justify-center p-4 overflow-y-auto"
       style={{
         background: "rgba(5,5,12,0.75)",
         backdropFilter: "blur(8px)",
@@ -141,10 +147,10 @@ function WelcomePopup({ userName, pending, streakCurrent, totalSessions, onClose
           <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/5">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center shadow-lg shadow-indigo-900/40">
-                <span className="text-sm">🧠</span>
+                <span className="text-sm">ðŸ§ </span>
               </div>
               <span className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-400">
-                Mentora · MedRev
+                Mentora Â· MedRev
               </span>
             </div>
             <button
@@ -177,7 +183,7 @@ function WelcomePopup({ userName, pending, streakCurrent, totalSessions, onClose
                 <div>
                   <p className="text-[9px] text-gray-500 uppercase tracking-wider font-bold">Hoje</p>
                   <p className={`text-[13px] font-black ${pending > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-                    {pending > 0 ? `${pending} pendente${pending === 1 ? "" : "s"}${naReserva > 0 ? ` (+${naReserva})` : ""}` : "Fila zerada"}
+                    {pending > 0 ? `${pending} pendente${pending === 1 ? "" : "s"}${naReserva > 0 ? ` (+${naReserva})` : ""}` : "Fila zerada âœ“"}
                   </p>
                 </div>
               </div>
@@ -211,7 +217,8 @@ function WelcomePopup({ userName, pending, streakCurrent, totalSessions, onClose
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -254,7 +261,7 @@ function MiniCronogramaWidget({ plat, setView, onStudy, overdue = [], today_ = [
         <div className="flex items-center gap-2">
           <Calendar size={14} className="text-blue-400" />
           <span className="text-[10.5px] font-black uppercase text-gray-300 tracking-wider">
-            Quadro de Revisão & Cronograma
+            Quadro de RevisÃ£o & Cronograma
           </span>
         </div>
         {activeCrono && (
@@ -272,11 +279,11 @@ function MiniCronogramaWidget({ plat, setView, onStudy, overdue = [], today_ = [
         <div className="bg-gradient-to-br from-blue-600/10 via-[var(--surface-1)] to-sky-500/5 border border-blue-500/20 rounded-xl p-3 space-y-2 flex flex-col justify-between min-h-[145px]">
           <div className="space-y-1">
             <span className="text-[9.5px] text-gray-500 font-bold uppercase tracking-wider block">
-              Revisões FSRS de Hoje ({dueTodayItems.length})
+              RevisÃµes FSRS de Hoje ({dueTodayItems.length})
             </span>
             <div className="flex flex-col gap-1.5 max-h-28 overflow-y-auto pr-1">
               {dueTodayItems.length === 0 ? (
-                <p className="text-[10.5px] text-gray-500 italic py-4 text-center">Fila zerada! Parabéns. 🎉</p>
+                <p className="text-[10.5px] text-gray-500 italic py-4 text-center">Fila zerada! ParabÃ©ns. ðŸŽ‰</p>
               ) : (
                 dueTodayItems.map((item, idx) => {
                   const temaObj = temas.find(t => t.id === item.temaId);
@@ -285,7 +292,7 @@ function MiniCronogramaWidget({ plat, setView, onStudy, overdue = [], today_ = [
                       <div className="min-w-0 flex-1 pr-2 flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-semibold text-gray-200 truncate" title={item.temaNome}>{item.temaNome}</p>
-                          <p className="text-[9px] text-gray-500 mt-0.5 uppercase">{item.esp} · {item.step.label}</p>
+                          <p className="text-[9px] text-gray-500 mt-0.5 uppercase">{item.esp} Â· {item.step.label}</p>
                         </div>
                         {temaObj && <RetrievabilitySpark tema={temaObj} />}
                       </div>
@@ -370,9 +377,9 @@ function MetacognitiveChart({ doneReviews }) {
     return (
       <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 flex flex-col items-center justify-center min-h-[140px] text-center">
         <TrendingUp size={16} className="text-gray-600 mb-1" />
-        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Calibração Metacognitiva</p>
+        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">CalibraÃ§Ã£o Metacognitiva</p>
         <p className="text-[10px] text-gray-600 mt-1 max-w-xs leading-relaxed">
-          Dados insuficientes. Faça mais revisões declarando sua confiança para ver o gráfico de calibração.
+          Dados insuficientes. FaÃ§a mais revisÃµes declarando sua confianÃ§a para ver o grÃ¡fico de calibraÃ§Ã£o.
         </p>
       </div>
     );
@@ -396,10 +403,10 @@ function MetacognitiveChart({ doneReviews }) {
   return (
     <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Calibração: Confiança vs Acerto</p>
+        <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">CalibraÃ§Ã£o: ConfianÃ§a vs Acerto</p>
         <div className="flex items-center gap-3 text-[9px] font-bold">
           <span className="flex items-center gap-1 text-blue-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Confiança
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /> ConfianÃ§a
           </span>
           <span className="flex items-center gap-1 text-sky-400">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-400" /> Acerto Real
@@ -473,9 +480,10 @@ function MetacognitiveChart({ doneReviews }) {
         </svg>
       </div>
       <p className="text-[8.5px] text-gray-600 leading-normal">
-        Idealmente, as linhas devem andar juntas. Se a linha de <strong>Confiança</strong> estiver muito acima da de <strong>Acerto</strong>, você está subestimando a dificuldade (excesso de confiança).
+        Idealmente, as linhas devem andar juntas. Se a linha de <strong>ConfianÃ§a</strong> estiver muito acima da de <strong>Acerto</strong>, vocÃª estÃ¡ subestimando a dificuldade (excesso de confianÃ§a).
       </p>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -557,25 +565,18 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
   const handleInsightAction = (action) => {
     if (action.type === "focar") {
-      const matchedQueueItem = filaInteligente.find(item => {
-        const t = temasFiltrados.find(x => x.id === item.temaId);
-        return t && t.esp === action.esp;
-      });
-      if (matchedQueueItem) {
-        onStudy(matchedQueueItem.temaId, matchedQueueItem.stepKey);
-      } else {
-        const matchedTema = temasFiltrados.find(t => t.esp === action.esp);
-        if (matchedTema) {
-          onStudy(matchedTema.id, "d0");
-        } else {
-          (showToast || showToastGlobal)(`Nenhum tema cadastrado em ${action.esp}`);
-        }
-      }
+      setView && setView("crono");
+      (showToast || showToastGlobal)(`Priorizando ${action.esp}`);
     } else if (action.type === "agendar") {
-      const updatedMeta = { ...meta, horarioPreferido: action.time };
+      const updatedMeta = { ...meta, notif: { ...(meta?.notif || {}), hora: action.time, enabled: true } };
       useStore.setState({ meta: updatedMeta });
-      if (showToast) {
-        (showToast || showToastGlobal)(`Lembrete agendado para as ${action.time}.`);
+      onOpenAjustes && onOpenAjustes();
+      (showToast || showToastGlobal)(`Lembrete agendado para as ${action.time}.`);
+    } else if (action.type === "study") {
+      if (action.temaId && action.stepKey && onStudy) {
+        onStudy(action.temaId, action.stepKey);
+      } else {
+        setView && setView("crono");
       }
     } else if (action.type === "setView") {
       setView(action.view);
@@ -585,7 +586,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       const updatedMeta = { ...meta, maxRevisoesDia: newCap };
       useStore.setState({ meta: updatedMeta });
       if (showToast) {
-        (showToast || showToastGlobal)(`Fila aliviada: limite diário ajustado de ${currentCap} para ${newCap}.`);
+        (showToast || showToastGlobal)(`Fila aliviada: limite diÃ¡rio ajustado de ${currentCap} para ${newCap}.`);
       }
     }
   };
@@ -610,11 +611,11 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       const isVest = plat === "vest";
       const mockTema = {
         id: isVest ? "demo-funcoes" : "demo-apendicite",
-        nome: isVest ? "Funções e Gráficos [DEMO]" : "Apendicite Aguda [DEMO]",
-        esp: isVest ? "Matemática" : "Cirurgia",
+        nome: isVest ? "FunÃ§Ãµes e GrÃ¡ficos [DEMO]" : "Apendicite Aguda [DEMO]",
+        esp: isVest ? "MatemÃ¡tica" : "Cirurgia",
         importancia: "ALTA",
-        pico: isVest ? "Função afim f(x)=ax+b, coeficiente angular, raiz da função, representação no plano cartesiano..." : "Paciente com dor epigástrica que migrou para a fossa ilíaca direita, sinal de Blumberg +",
-        ankiDeck: isVest ? "Vestibular::Matemática" : "Medicina::Cirurgia",
+        pico: isVest ? "FunÃ§Ã£o afim f(x)=ax+b, coeficiente angular, raiz da funÃ§Ã£o, representaÃ§Ã£o no plano cartesiano..." : "Paciente com dor epigÃ¡strica que migrou para a fossa ilÃ­aca direita, sinal de Blumberg +",
+        ankiDeck: isVest ? "Vestibular::MatemÃ¡tica" : "Medicina::Cirurgia",
         rev: {
           d0: { done: true, date: todayStr(), acerto: 1.0 },
           d1: { done: false, date: todayStr() },
@@ -633,8 +634,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     autoCatchUp();
   }, [autoCatchUp]);
 
-  const estaPausado = meta.pausadoAte && todayStr() <= meta.pausadoAte;
-  const allRev  = estaPausado ? [] : temasFiltrados.flatMap((t) => STEPS.map((s) => ({ ...t.rev[s.key], esp: t.esp, step: s, temaNome: t.nome, temaId: t.id, ankiDeck: t.ankiDeck })));
   const done    = temasFiltrados.flatMap((t) => STEPS.map((s) => ({ ...t.rev[s.key], esp: t.esp, step: s, temaNome: t.nome, temaId: t.id, ankiDeck: t.ankiDeck }))).filter((r) => r.done);
 
   const filaInteligente = useFilaInteligente(temasFiltrados);
@@ -701,6 +700,11 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     const readiness = getReadinessData({ temas: temasFiltrados, simulados, meta, plat });
     return readiness.score || 0;
   }, [temasFiltrados, plat, meta]);
+  const readinessData = useMemo(() => {
+    const state = useStore.getState();
+    const simulados = state[plat]?.simulados || [];
+    return getReadinessData({ temas: temasFiltrados, simulados, meta, plat });
+  }, [temasFiltrados, plat, meta]);
 
   const readinessTrend = useMemo(() => {
     const hist = meta.prontidaoHist || [];
@@ -750,6 +754,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     if (!diag || !diag.insights) return [];
     return diag.insights.filter(ins => ins.type !== "alerta" && ins.type !== "vies_excesso" && ins.type !== "vies_inseguranca");
   }, [diag]);
+  const hasFluenciaTrigger = useMemo(() => {
+    if (!diag?.insights) return false;
+    return diag.insights.some((ins) => ins.type === "tendencia_baixa" || ins.type === "vies_excesso");
+  }, [diag]);
+  const hasExhaustionNow = useMemo(() => isExhaustionDetected(temaStats, done), [temaStats, done]);
+  const nextAction = useMemo(() => {
+    return proximaAcao({ temas: temasFiltrados, meta, plat, diag, readiness: readinessData, pending });
+  }, [temasFiltrados, meta, plat, diag, readinessData, pending]);
 
   const totalSessions = useMemo(() => {
     return temas.flatMap((t) => Object.values(t.rev)).filter((r) => r.done).length;
@@ -757,14 +769,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
   const doneDays = useMemo(() => new Set(done.map((r) => r.date)), [done]);
   const streakCurrent = gamif?.streakCurrent || 0;
-  const streakBest = gamif?.streakBest || 0;
   const trueRet = calcTrueRetention(temasFiltrados);
   const bleeding = calcBleedingScore(temasFiltrados);
   const temasManutencao = useMemo(() => {
     return temasFiltrados.filter(t => t.rev?.manutencao && !t.rev.manutencao.done);
   }, [temasFiltrados]);
 
-  // ─── VESTIBULAR COMPUTED METRICS ────────────────────────────────────────────
+  // â”€â”€â”€ VESTIBULAR COMPUTED METRICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const areaRetention = useMemo(() => {
     if (plat !== "vest") return {};
     const byArea = {};
@@ -809,7 +820,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const semanaDeProva = daysToProva != null && daysToProva >= 0 && daysToProva <= 7;
 
   useEffect(() => {
-    if (!onboardingDone) return;       // still in tour — don't show
+    if (!onboardingDone) return;       // still in tour â€” don't show
     if (tourStep) return;              // tour in progress
     const shown = sessionStorage.getItem(SESSION_KEY);
     if (shown) {
@@ -875,27 +886,15 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     return null;
   }, [filaInteligente, overdue, today_, temasFiltrados]);
 
-  const optimalItemsCount = useMemo(() => {
-    return [...overdue, ...today_].filter(item => {
-      const tema = temasFiltrados.find(t => t.id === item.temaId);
-      if (!tema) return false;
-      const R = getRetrievability(tema, item.step.key);
-      return R >= 0.85 && R <= 0.90;
-    }).length;
-  }, [overdue, today_, temasFiltrados]);
-
   const days = Array.from({ length: 35 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - 34 + i);
     return d.toISOString().slice(0, 10);
   });
 
   const espAbbr = (esp) => {
-    const map = { "Cirurgia": "CI", "Clínica Médica": "CM", "GO": "GO", "Pediatria": "PE", "Preventiva": "PR" };
+    const map = { "Cirurgia": "CI", "ClÃ­nica MÃ©dica": "CM", "GO": "GO", "Pediatria": "PE", "Preventiva": "PR" };
     return map[esp] || esp.slice(0, 2).toUpperCase();
   };
-
-  const triggerStreakFreeze = useStore((s) => s.useStreakFreeze);
-  const resetStreakFreeze = useStore((s) => s.resetStreakFreeze);
 
   const exportarCartaoProntidao = () => {
     const canvas = document.createElement("canvas");
@@ -949,7 +948,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     // 5. Main Title & Readiness metric
     ctx.fillStyle = "#a1a1aa"; // zinc-400
     ctx.font = "bold 11px system-ui, -apple-system, sans-serif";
-    ctx.fillText("ÍNDICE DE PRONTIDÃO GERAL", 45, 140);
+    ctx.fillText("ÃNDICE DE PRONTIDÃƒO GERAL", 45, 140);
 
     // Big score
     ctx.fillStyle = "#ffffff";
@@ -959,16 +958,16 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     // Trend Indicator
     const deltaVal = readinessTrend.delta7 || 0;
     const isUp = deltaVal >= 0;
-    const trendText = isUp ? `▲ +${deltaVal}% nos últimos 7 dias` : `▼ ${deltaVal}% nos últimos 7 dias`;
+    const trendText = isUp ? `â–² +${deltaVal}% nos Ãºltimos 7 dias` : `â–¼ ${deltaVal}% nos Ãºltimos 7 dias`;
     ctx.fillStyle = isUp ? "#10b981" : "#ef4444";
     ctx.font = "bold 13px system-ui, -apple-system, sans-serif";
     ctx.fillText(trendText, 50, 270);
 
     // 6. Stats boxes (3-columns layout)
     const stats = [
-      { label: "🔥 OFENSIVA", val: `${streakCurrent} dias`, color: "#f59e0b" },
-      { label: "🎯 ACERTO", val: acertoMedio != null ? `${acertoMedio}%` : "—", color: "#3b82f6" },
-      { label: "✅ REVISÕES", val: `${totalRevisoesFeitas}`, color: "#10b981" }
+      { label: "ðŸ”¥ OFENSIVA", val: `${streakCurrent} dias`, color: "#f59e0b" },
+      { label: "ðŸŽ¯ ACERTO", val: acertoMedio != null ? `${acertoMedio}%` : "â€”", color: "#3b82f6" },
+      { label: "âœ… REVISÃ•ES", val: `${totalRevisoesFeitas}`, color: "#10b981" }
     ];
 
     const boxWidth = 160;
@@ -1008,7 +1007,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     // 7. Footer slogan and signature
     ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
     ctx.font = "italic 13px system-ui, -apple-system, sans-serif";
-    const slogan = "A única coisa que rouba o nosso conhecimento é o tempo: o que não revemos, se perde.";
+    const slogan = "A Ãºnica coisa que rouba o nosso conhecimento Ã© o tempo: o que nÃ£o revemos, se perde.";
     ctx.fillText(slogan, 45, 475);
 
     // Subtle line before bottom signature
@@ -1031,11 +1030,11 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       link.href = canvas.toDataURL("image/png");
       link.click();
       if (showToast) {
-        showToast("🎨 Cartão de Prontidão exportado com sucesso!");
+        showToast("ðŸŽ¨ CartÃ£o de ProntidÃ£o exportado com sucesso!");
       }
     } catch (err) {
       console.error(err);
-      (showToast || showToastGlobal)("Erro ao exportar o cartão de prontidão.");
+      (showToast || showToastGlobal)("Erro ao exportar o cartÃ£o de prontidÃ£o.");
     }
   };
 
@@ -1065,8 +1064,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const showMilestoneCelebration = useMemo(() => {
     return streakCurrent > 0 && (streakCurrent === 7 || streakCurrent === 30 || streakCurrent === 100);
   }, [streakCurrent]);
+  useEffect(() => {
+    if (streakCurrent >= 100 && !meta?.streakMaxAvisado) {
+      (showToast || showToastGlobal)("Streak consolidado: agora priorize retenção real, não o número.");
+      useStore.setState({ meta: { ...meta, streakMaxAvisado: true } });
+    }
+  }, [streakCurrent, meta, showToast, showToastGlobal]);
 
-  // 📌 ESTADO VAZIO: Mostrar apenas o CTA de onboarding se não houver temas cadastrados
+  // ðŸ“Œ ESTADO VAZIO: Mostrar apenas o CTA de onboarding se nÃ£o houver temas cadastrados
   if (temasFiltrados.length === 0) {
     return (
       <div className="flex flex-col gap-6 animate-fade-up text-left max-w-4xl mx-auto py-4">
@@ -1081,12 +1086,12 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
         <div className="bg-gradient-to-br from-blue-600/10 via-sky-600/5 to-indigo-600/10 border border-blue-500/20 rounded-3xl p-8 md:p-12 flex flex-col items-center justify-center text-center gap-6 shadow-xl shadow-indigo-900/5 my-4">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-3xl shadow-lg shadow-indigo-500/30 animate-pulse">
-            🎯
+            ðŸŽ¯
           </div>
           <div className="max-w-md">
-            <h2 className="text-xl font-black text-white mb-2">Sua jornada começa aqui!</h2>
+            <h2 className="text-xl font-black text-white mb-2">Sua jornada comeÃ§a aqui!</h2>
             <p className="text-[13px] text-gray-400 leading-relaxed">
-              O seu cronograma e algoritmo de repetição FSRS estão prontos para rodar. Clique no botão abaixo para escolher ou cadastrar seu primeiro tema de estudo.
+              O seu cronograma e algoritmo de repetiÃ§Ã£o FSRS estÃ£o prontos para rodar. Clique no botÃ£o abaixo para escolher ou cadastrar seu primeiro tema de estudo.
             </p>
           </div>
           <button
@@ -1105,7 +1110,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     <div className="flex flex-col gap-6 md:gap-8 animate-fade-up text-left max-w-6xl mx-auto">
       {(userState === "at_risk" || userState === "dormant" || userState === "resurrected") && userStateMentorMsg && (
         <div className="bg-[var(--surface-1)] border border-amber-500/25 rounded-2xl p-3">
-          <p className="text-[10px] uppercase tracking-wider text-amber-400 font-black">Intervenção do Mentor</p>
+          <p className="text-[10px] uppercase tracking-wider text-amber-400 font-black">IntervenÃ§Ã£o do Mentor</p>
           <p className="text-xs text-gray-200 mt-1">{userStateMentorMsg}</p>
         </div>
       )}
@@ -1126,8 +1131,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               <div className="flex flex-wrap items-center gap-2.5">
                 <div className="flex items-center gap-1 rounded-xl border border-white/5 bg-black/25 px-2.5 py-1.5">
                   <span className="text-[8.5px] font-bold text-gray-500 uppercase tracking-wider mr-1 select-none flex items-center gap-1">
-                    Consistência
-                    <InfoTooltip texto="Mapeia seu histórico de estudos nos últimos 7 dias. Cada bloco colorido indica que você realizou revisões naquele dia." />
+                    Consistencia
+                    <InfoTooltip texto="Mapeia seu hist?rico de estudos nos ?ltimos 7 dias. Cada bloco colorido indica que voc? realizou revis?es naquele dia." />
                   </span>
                   {Array.from({ length: 7 }, (_, i) => {
                     const d = new Date();
@@ -1158,16 +1163,16 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             </div>
 
             <div className="space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-blue-300">Ação do Dia</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-blue-300">Acao do dia</p>
               <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
-                {pending > 0 ? "Você tem " + pending + " revisões para hoje" : "Fila zerada por hoje"}
+                {pending > 0 ? "Voc? tem " + pending + " revis?es para hoje" : "Fila zerada por hoje"}
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-[var(--text-2)]">
                 {pending > 0
                   ? topFilaItem
                     ? "Comece por " + topFilaItem.temaNome + (naReserva > 0 ? " e mantenha " + naReserva + " na reserva." : ".")
-                    : "O algoritmo já ordenou sua fila pelo melhor custo cognitivo."
-                  : "Curva protegida. Você pode descansar ou iniciar um novo tema sem pressa."}
+                    : "O algoritmo j? ordenou sua fila pelo melhor custo cognitivo."
+                  : "Curva protegida. Voc? pode descansar ou iniciar um novo tema sem pressa."}
               </p>
             </div>
 
@@ -1207,14 +1212,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           label="Pendentes"
           value={String(pendingCountUp) + (naReserva > 0 ? " +" + naReserva : "")}
           tone={pending > 0 ? "text-amber-400" : "text-emerald-400"}
-          tooltip="Total de revisões programadas pelo algoritmo de repetição espaçada FSRS para o dia atual."
+          tooltip="Total de revis?es programadas pelo algoritmo de repeti??o espa?ada FSRS para o dia atual."
           delayMs={0}
         />
         <DashboardKpiCard
-          label="Simulados"
+          label="Prontidao"
           value={String(readinessCountUp) + "%"}
           tone="text-blue-400"
-          tooltip="Métrica Geral de Simulados calculada com base na cobertura e acertos do cronograma e simulados."
+          tooltip="M?trica geral de prontid?o calculada com base na cobertura e acertos do cronograma e simulados."
           delayMs={50}
           action={(
             <button
@@ -1242,14 +1247,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           label="Acerto"
           value={acertoMedio != null ? String(acertoCountUp) + "%" : "-"}
           tone={acertoMedio != null ? (acertoMedio >= 80 ? "text-emerald-400" : acertoMedio >= 65 ? "text-blue-400" : "text-red-400") : "text-gray-500"}
-          tooltip="Precisão média ponderada das questões resolvidas nas etapas D0/revisão concluídas."
+          tooltip="Precis?o m?dia ponderada das quest?es resolvidas nas etapas D0/revis?o conclu?das."
           delayMs={100}
         />
         <DashboardKpiCard
           label="Dominados"
           value={temasFiltrados.length > 0 ? String(masteredCountUp) + "/" + temasFiltrados.length : "0"}
           tone="text-emerald-400"
-          tooltip="Número de temas cadastrados que completaram o ciclo completo de fixação no FSRS."
+          tooltip="N?mero de temas cadastrados que completaram o ciclo completo de fixa??o no FSRS."
           delayMs={150}
         />
         <DashboardKpiCard
@@ -1262,12 +1267,49 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         />
       </section>
 
+      {!modoSimples && (
+        <TrilhaJornada
+          totalSessions={totalSessions}
+          onOpenAjustes={onOpenAjustes}
+          setView={setView}
+          onStudy={onStudy}
+          showToast={showToast}
+        />
+      )}
+
+      <section className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Sua próxima ação</p>
+          <p className="text-sm font-bold text-white mt-0.5 truncate">{nextAction?.label}</p>
+          <p className="text-[11px] text-gray-400 mt-1">{nextAction?.sub}</p>
+        </div>
+        {nextAction?.action && (
+          <button
+            type="button"
+            onClick={() => handleInsightAction(nextAction.action)}
+            className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] border-none cursor-pointer shrink-0"
+          >
+            {nextAction.action.label || "Executar"}
+          </button>
+        )}
+      </section>
+
+      <div className="mt-1">
+        <MiniCronogramaWidget
+          plat={plat}
+          setView={setView}
+          onStudy={onStudy}
+          overdue={overdue}
+          today_={today_}
+        />
+      </div>
+
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="medrev-card medrev-card-hover p-5 min-h-[132px] flex flex-col justify-between">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[10px] text-[var(--text-3)] uppercase tracking-wide font-bold flex items-center gap-1">
               Ofensiva
-              <InfoTooltip texto="Mede sua consistência de estudos na última semana. Menos punitivo que a contagem consecutiva clássica." />
+              <InfoTooltip texto="Mede sua consist?ncia estudada na ?ltima semana. Menos punitivo que a contagem consecutiva cl?ssica." />
             </p>
             <div className="flex gap-1 select-none items-center">
               {Array.from({ length: 2 }).map((_, i) => (
@@ -1283,7 +1325,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           </div>
           <div>
             <p className="text-3xl md:text-4xl font-bold tabular-nums text-orange-400">{streakCountUp}/7</p>
-            <p className="text-[11px] text-[var(--text-3)] mt-1">dias ativos nos últimos 7 dias</p>
+            <p className="text-[11px] text-[var(--text-3)] mt-1">dias ativos nos ?ltimos 7 dias</p>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {gamif?.lostStreakDate && (gamif?.recoveryOwned || 0) > 0 && (
@@ -1292,8 +1334,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 onClick={() => {
                   openConfirm({
                     title: "Recuperar ofensiva",
-                    message: "Deseja usar 1 Recuperacao de Streak para reerguer sua ofensiva perdida?",
-                    confirmLabel: "Usar recuperacao",
+                    message: "Deseja usar 1 Recupera??o de Streak para reerguer sua ofensiva perdida?",
+                    confirmLabel: "Usar recupera??o",
                     onConfirm: () => useStore.getState().useRecovery(),
                   });
                 }}
@@ -1322,27 +1364,27 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       </section>
 
-      {/* ALERTAS CRÍTICOS DO MENTOR */}
+      {/* ALERTAS CRÃTICOS DO MENTOR */}
       {criticalAlerts.map((alert, idx) => {
         let borderStyle = "border-amber-500/25";
         let glowStyle = "from-amber-600/15 via-[var(--surface-1)] to-amber-950/20";
         let badgeStyle = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-        let icon = "⚠️";
+        let icon = "âš ï¸";
         if (alert.type === "vies_excesso") {
           borderStyle = "border-red-500/25";
           glowStyle = "from-red-600/15 via-[var(--surface-1)] to-red-950/20";
           badgeStyle = "bg-red-500/10 text-red-400 border-red-500/20";
-          icon = "🤝";
+          icon = "ðŸ¤";
         } else if (alert.type === "vies_inseguranca") {
           borderStyle = "border-emerald-500/25";
           glowStyle = "from-emerald-600/15 via-[var(--surface-1)] to-emerald-950/20";
           badgeStyle = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-          icon = "🤝";
+          icon = "ðŸ¤";
         } else if (alert.action?.type === "aliviar") {
           borderStyle = "border-amber-500/25";
           glowStyle = "from-amber-600/15 via-[var(--surface-1)] to-amber-950/20";
           badgeStyle = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-          icon = "🤝";
+          icon = "ðŸ¤";
         }
         return (
           <div key={idx} className={`bg-gradient-to-br ${glowStyle} border ${borderStyle} rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden shadow-lg shadow-black/40 select-none`}>
@@ -1351,9 +1393,9 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               <span className="text-4xl animate-pulse">{icon}</span>
               <div>
                 <div className="flex items-center gap-2">
-                  <h4 className="text-[13px] font-black text-white uppercase tracking-wider">Alerta Crítico</h4>
+                  <h4 className="text-[13px] font-black text-white uppercase tracking-wider">Alerta CrÃ­tico</h4>
                   <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${badgeStyle}`}>
-                    {alert.type === "alerta" ? "Fadiga" : "Viés Metacognitivo"}
+                    {alert.type === "alerta" ? "Fadiga" : "ViÃ©s Metacognitivo"}
                   </span>
                 </div>
                 <p className="text-[11px] text-gray-300 mt-1.5 leading-relaxed max-w-2xl">
@@ -1374,16 +1416,16 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         );
       })}
 
-      {/* BANNER DE PAUSA / FÉRIAS */}
+      {/* BANNER DE PAUSA / FÃ‰RIAS */}
       {meta.pausadoAte && todayStr() <= meta.pausadoAte && (
         <div className="bg-gradient-to-br from-blue-500/10 via-[var(--surface-1)] to-indigo-950/20 border border-blue-500/15 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden shadow-lg select-none">
           <div className="absolute right-0 top-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
           <div className="flex items-center gap-4">
-            <span className="text-4xl animate-pulse">🌴</span>
+            <span className="text-4xl animate-pulse">ðŸŒ´</span>
             <div>
-              <h4 className="text-[13px] font-black text-white uppercase tracking-wider">Modo Pausa / Férias Ativo</h4>
+              <h4 className="text-[13px] font-black text-white uppercase tracking-wider">Modo Pausa / FÃ©rias Ativo</h4>
               <p className="text-[11px] text-gray-400 mt-1">
-                Seus agendamentos estão congelados até {fmtFull(meta.pausadoAte)}. Aproveite para descansar sem culpa!
+                Seus agendamentos estÃ£o congelados atÃ© {fmtFull(meta.pausadoAte)}. Aproveite para descansar sem culpa!
               </p>
             </div>
           </div>
@@ -1392,7 +1434,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             onClick={() => {
               openConfirm({
                 title: "Retomar estudos",
-                message: "Deseja cancelar a pausa e retomar suas revisões hoje?",
+                message: "Deseja cancelar a pausa e retomar suas revisÃµes hoje?",
                 confirmLabel: "Retomar",
                 onConfirm: () => useStore.getState().cancelarPausa(),
               });
@@ -1404,19 +1446,19 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       )}
 
-      {/* CARD REFINAR ESTRATÉGIA */}
+      {/* CARD REFINAR ESTRATÃ‰GIA */}
       {!meta?.estrategiaRefinada && (
         <div className="bg-gradient-to-br from-blue-600/10 via-[var(--surface-1)] to-sky-500/10 border border-blue-500/20 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden shadow-lg select-none">
           <div className="absolute right-0 top-0 w-24 h-24 bg-sky-500/5 rounded-full blur-2xl pointer-events-none" />
           <div className="flex items-center gap-4">
-            <span className="text-4xl">🎯</span>
+            <span className="text-4xl">ðŸŽ¯</span>
             <div>
               <h4 className="text-[13px] font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                Refinar sua estratégia
-                <InfoTooltip texto="Defina detalhes cruciais como a data da prova, meta de acertos e seu banco de questões para que o algoritmo do MedRev trabalhe perfeitamente ajustado ao seu objetivo." />
+                Refinar sua estratÃ©gia
+                <InfoTooltip texto="Defina detalhes cruciais como a data da prova, meta de acertos e seu banco de questÃµes para que o algoritmo do MedRev trabalhe perfeitamente ajustado ao seu objetivo." />
               </h4>
               <p className="text-[11px] text-gray-400 mt-1">
-                Você está utilizando configurações padrão. Personalize suas datas e metas de acerto para calibrar o motor FSRS.
+                VocÃª estÃ¡ utilizando configuraÃ§Ãµes padrÃ£o. Personalize suas datas e metas de acerto para calibrar o motor FSRS.
               </p>
             </div>
           </div>
@@ -1425,7 +1467,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             onClick={onOpenAjustes}
             className="px-4 py-2 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white font-extrabold text-[11px] rounded-xl shadow-md active:scale-95 transition-all border-none cursor-pointer"
           >
-            Configurar Estratégia
+            Configurar EstratÃ©gia
           </button>
         </div>
       )}
@@ -1434,41 +1476,28 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       {showMilestoneCelebration && (
         <div className="bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-orange-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-center justify-between gap-4 animate-bounce">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🏆</span>
+            <span className="text-2xl">ðŸ†</span>
             <div>
-              <h4 className="text-[11px] font-black text-white uppercase tracking-wider">Marco de Consistência!</h4>
-              <p className="text-[11.5px] text-amber-400 font-medium">Você atingiu a marca de <strong className="text-white font-extrabold">{streakCurrent} dias ativos nos últimos 7 dias</strong> de estudos!</p>
+              <h4 className="text-[11px] font-black text-white uppercase tracking-wider">Marco de ConsistÃªncia!</h4>
+              <p className="text-[11.5px] text-amber-400 font-medium">VocÃª atingiu a marca de <strong className="text-white font-extrabold">{streakCurrent} dias ativos nos Ãºltimos 7 dias</strong> de estudos!</p>
             </div>
           </div>
-          <span className="text-[9.5px] bg-amber-500 text-black font-black px-2 py-0.5 rounded-full select-none">Incrível!</span>
+          <span className="text-[9.5px] bg-amber-500 text-black font-black px-2 py-0.5 rounded-full select-none">IncrÃ­vel!</span>
         </div>
       )}
 
       {/* Camada terciaria: carga e detalhes */}
       <CargaFuturaWidget temas={temas} maxRevisoesDia={meta.maxRevisoesDia || 30} />
 
-      {/* SEMANA DE PROVA — Banner de urgência (apenas vest, dentro de 7 dias) */}
+      {/* SEMANA DE PROVA â€” Banner de urgÃªncia (apenas vest, dentro de 7 dias) */}
       {plat === "vest" && semanaDeProva && (
         <div className="bg-gradient-to-r from-red-500/10 via-orange-500/8 to-red-500/10 border border-red-500/25 rounded-2xl p-4 flex items-center gap-4 animate-fade-up">
-          <div className="text-2xl shrink-0 select-none">🏁</div>
+          <div className="text-2xl shrink-0 select-none">ðŸ</div>
           <div>
             <p className="text-[9.5px] text-red-400 uppercase tracking-wider font-bold">Semana de Prova</p>
-            <p className="text-sm font-black text-white">{daysToProva === 0 ? "Hoje é o dia!" : `Faltam ${daysToProva} dia${daysToProva === 1 ? "" : "s"}`}</p>
-            <p className="text-[10px] text-red-300/70 mt-0.5">Foco em revisões de alta prioridade. Descanse e confie no processo.</p>
+            <p className="text-sm font-black text-white">{daysToProva === 0 ? "Hoje Ã© o dia!" : `Faltam ${daysToProva} dia${daysToProva === 1 ? "" : "s"}`}</p>
+            <p className="text-[10px] text-red-300/70 mt-0.5">Foco em revisÃµes de alta prioridade. Descanse e confie no processo.</p>
           </div>
-        </div>
-      )}
-
-      {/* MiniCronogramaWidget shown prominently on main page when in modoSimples */}
-      {modoSimples && (
-        <div className="mt-1">
-          <MiniCronogramaWidget
-            plat={plat}
-            setView={setView}
-            onStudy={onStudy}
-            overdue={overdue}
-            today_={today_}
-          />
         </div>
       )}
 
@@ -1482,7 +1511,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           >
             <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
               <Brain size={14} className="text-blue-400" />
-              <span>Ver diagnóstico completo</span>
+              <span>Ver diagnÃ³stico completo</span>
             </div>
             {showCompleto ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
           </button>
@@ -1491,7 +1520,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
       {(!modoSimples || showCompleto) && (
         <div className="space-y-5 flex flex-col gap-5">
-          {/* NOTA PROJETADA — só para Vestibular */}
+          {/* NOTA PROJETADA â€” sÃ³ para Vestibular */}
           {plat === "vest" && totalSessions > 0 && notaProjetada != null && (
         <div className="medrev-card p-5 flex flex-col gap-3 relative overflow-hidden">
           <div className="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-emerald-600/5 blur-2xl pointer-events-none" />
@@ -1506,7 +1535,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                 : "bg-amber-500/10 text-amber-400 border-amber-500/20"
             }`}>
-              {meta?.notaCorteAlvo > 0 && notaProjetada >= meta.notaCorteAlvo ? "✅ Aprovado" : meta?.notaCorteAlvo > 0 ? "⚠️ Abaixo da Corte" : "📊 Em progresso"}
+              {meta?.notaCorteAlvo > 0 && notaProjetada >= meta.notaCorteAlvo ? "âœ… Aprovado" : meta?.notaCorteAlvo > 0 ? "âš ï¸ Abaixo da Corte" : "ðŸ“Š Em progresso"}
             </span>
           </div>
           <div className="flex items-end gap-3">
@@ -1532,26 +1561,26 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             </div>
           )}
           <p className="text-[9.5px] text-gray-600 leading-relaxed">
-            Estimativa ponderada por área, baseada no seu acerto médio e nos pesos do exame.
+            Estimativa ponderada por Ã¡rea, baseada no seu acerto mÃ©dio e nos pesos do exame.
           </p>
         </div>
       )}
 
-      {/* ZONA 2 — Diagnóstico do Mentor */}
+      {/* ZONA 2 â€” DiagnÃ³stico do Mentor */}
       <div className="medrev-card p-5 flex flex-col gap-4 relative overflow-hidden">
         <div className="absolute -left-12 -bottom-12 w-28 h-28 rounded-full bg-cyan-600/5 blur-2xl pointer-events-none" />
         
         <div className="flex items-center justify-between border-b border-white/5 pb-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Brain size={16} className="text-blue-400" />
-            <h3 className="text-[10px] font-black uppercase text-gray-300 tracking-wider mr-2">Diagnóstico do Mentor</h3>
+            <h3 className="text-[10px] font-black uppercase text-gray-300 tracking-wider mr-2">DiagnÃ³stico do Mentor</h3>
             <span className="text-[9px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">
-              {totalSessions < 7 ? "Fase 1: Calibração" : totalSessions < 30 ? "Fase 2: Ritmo" : "Fase 3: Elite"}
+              {totalSessions < 7 ? "Fase 1: CalibraÃ§Ã£o" : totalSessions < 30 ? "Fase 2: Ritmo" : "Fase 3: Elite"}
             </span>
           </div>
           {diag.projection && (
             <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-              Projeção: {diag.projection.score}%
+              ProjeÃ§Ã£o: {diag.projection.score}%
             </span>
           )}
         </div>
@@ -1559,10 +1588,10 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         {diag.status === "calibracao" ? (
           <div className="space-y-4">
             <div className="flex items-start gap-3 p-4 bg-white/[0.02] border border-white/5 rounded-xl flex-col sm:flex-row">
-              <div className="text-2xl shrink-0">🤖</div>
+              <div className="text-2xl shrink-0">ðŸ¤–</div>
               <div className="space-y-2 flex-1">
                 <p className="text-xs text-gray-300 leading-relaxed font-semibold">
-                  Estou calibrando meu algoritmo de inteligência cognitiva para seu perfil.
+                  Estou calibrando meu algoritmo de inteligÃªncia cognitiva para seu perfil.
                 </p>
                 <div className="space-y-1">
                   <div className="bg-white/5 rounded-full h-2 overflow-hidden border border-white/5 relative">
@@ -1572,8 +1601,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                     />
                   </div>
                   <div className="flex justify-between text-[9px] font-black text-gray-500 uppercase tracking-wider font-mono">
-                    <span>Progresso de Calibração</span>
-                    <span>{totalSessions} de 7 sessões concluídas</span>
+                    <span>Progresso de CalibraÃ§Ã£o</span>
+                    <span>{totalSessions} de 7 sessÃµes concluÃ­das</span>
                   </div>
                 </div>
               </div>
@@ -1581,15 +1610,15 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
-                <span className="text-[10px] font-black text-blue-400 uppercase tracking-wide">🔓 Nível 7+ (Calibrado)</span>
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-wide">ðŸ”“ NÃ­vel 7+ (Calibrado)</span>
                 <p className="text-[10.5px] text-gray-400 leading-relaxed">
-                  Desbloqueia análise de horário ótimo, fraquezas por especialidade e detecção de viés de confiança.
+                  Desbloqueia anÃ¡lise de horÃ¡rio Ã³timo, fraquezas por especialidade e detecÃ§Ã£o de viÃ©s de confianÃ§a.
                 </p>
               </div>
               <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
-                <span className="text-[10px] font-black text-sky-400 uppercase tracking-wide">🔓 Nível 30+ (Elite)</span>
+                <span className="text-[10px] font-black text-sky-400 uppercase tracking-wide">ðŸ”“ NÃ­vel 30+ (Elite)</span>
                 <p className="text-[10.5px] text-gray-400 leading-relaxed">
-                  Desbloqueia projeção estatística de nota/aprovação com base no seu histórico e peso das provas.
+                  Desbloqueia projeÃ§Ã£o estatÃ­stica de nota/aprovaÃ§Ã£o com base no seu histÃ³rico e peso das provas.
                 </p>
               </div>
             </div>
@@ -1597,27 +1626,27 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         ) : (
           <div className="flex flex-col gap-2.5">
             <div className="flex items-start gap-3 p-3 bg-blue-500/5 text-blue-300 border border-blue-500/10 rounded-xl mb-1">
-              <span className="text-base shrink-0 mt-0.5">🧠</span>
+              <span className="text-base shrink-0 mt-0.5">ðŸ§ </span>
               <p className="text-[12px] leading-relaxed font-bold">
                 {totalSessions < 30 
-                  ? "Já conheço seu ritmo. Ajustei a fila para seus horários de pico." 
-                  : "Perfil completo. A fila agora é 100% sua."}
+                  ? "JÃ¡ conheÃ§o seu ritmo. Ajustei a fila para seus horÃ¡rios de pico." 
+                  : "Perfil completo. A fila agora Ã© 100% sua."}
               </p>
             </div>
             {nonCriticalInsights.map((insight, idx) => {
-              let icon = "💡";
+              let icon = "ðŸ’¡";
               let colorClass = "bg-white/[0.02] text-gray-300 border border-white/5";
               if (insight.type === "alerta" || insight.type === "vies_excesso") {
-                icon = "🤝";
+                icon = "ðŸ¤";
                 colorClass = "bg-amber-500/5 text-amber-300 border border-amber-500/10";
               } else if (insight.type === "tendencia_baixa") {
-                icon = "🤝";
+                icon = "ðŸ¤";
                 colorClass = "bg-red-500/5 text-red-300 border border-red-500/10";
               } else if (insight.type === "tendencia_alta") {
-                icon = "🤝";
+                icon = "ðŸ¤";
                 colorClass = "bg-emerald-500/5 text-emerald-300 border border-emerald-500/10";
               } else if (insight.type === "horario") {
-                icon = "🤝";
+                icon = "ðŸ¤";
                 colorClass = "bg-indigo-500/5 text-indigo-300 border border-indigo-500/10";
               }
               return (
@@ -1628,7 +1657,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                     <div className="flex items-center justify-between gap-2 mt-0.5 flex-wrap">
                       {insight.confidence && (
                         <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wider">
-                          confiança: {insight.confidence}
+                          confianÃ§a: {insight.confidence}
                         </span>
                       )}
                       {insight.action && (
@@ -1654,13 +1683,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         )}
       </div>
 
-      {/* ZONA 3 — Métricas (Grid 3 colunas) — só exibe após a primeira sessão */}
+      {/* ZONA 3 â€” MÃ©tricas (Grid 3 colunas) â€” sÃ³ exibe apÃ³s a primeira sessÃ£o */}
       {totalSessions > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Acerto Médio */}
+          {/* Acerto MÃ©dio */}
           <div className="bg-white/5 border border-white/5 rounded-2xl p-4 relative group">
             <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5 cursor-help">
-              Acerto Médio
+              Acerto MÃ©dio
               <Info size={13} className="text-gray-600 hover:text-gray-400 transition-colors" />
             </p>
             {acertoMedio != null ? (
@@ -1669,11 +1698,11 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               </p>
             ) : (
               <button onClick={() => setView && setView("crono")} className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors mt-1 block text-left">
-                Iniciar tema →
+                Iniciar tema â†’
               </button>
             )}
             <div className="absolute bottom-full left-0 mb-2 w-[min(13rem,calc(100vw-2rem))] bg-[#141417] border border-white/10 rounded-xl p-3 text-[10px] text-gray-400 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none leading-relaxed">
-              Média de precisão combinada das suas sessões de estudo. A recomendação padrão é manter acima de 80%.
+              MÃ©dia de precisÃ£o combinada das suas sessÃµes de estudo. A recomendaÃ§Ã£o padrÃ£o Ã© manter acima de 80%.
             </div>
           </div>
 
@@ -1691,14 +1720,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               <span className="text-[10px] text-gray-500 block mt-1">Nenhum tema ativo</span>
             )}
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[min(13rem,calc(100vw-2rem))] bg-[#141417] border border-white/10 rounded-xl p-3 text-[10px] text-gray-400 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none leading-relaxed">
-              Número de temas cadastrados que completaram com sucesso todas as etapas da curva FSRS (D0 até o D21).
+              NÃºmero de temas cadastrados que completaram com sucesso todas as etapas da curva FSRS (D0 atÃ© o D21).
             </div>
           </div>
 
           {/* True Retention */}
           <ProgressiveTooltip
             tooltipId="true_retention"
-            text="Mentor: True Retention mede a taxa de acerto nas revisões de longo prazo (D21+). Manter esse índice acima de 80% indica retenção sólida de conteúdo."
+            text="Mentor: True Retention mede a taxa de acerto nas revisÃµes de longo prazo (D21+). Manter esse Ã­ndice acima de 80% indica retenÃ§Ã£o sÃ³lida de conteÃºdo."
           >
             <div className="bg-white/5 border border-white/5 rounded-2xl p-4 relative group w-full">
               <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5 cursor-help">
@@ -1710,48 +1739,48 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                   {trueRet}%
                 </p>
               ) : (
-                <span className="text-[10px] text-gray-500 block mt-1">Requer D21+ concluído</span>
+                <span className="text-[10px] text-gray-500 block mt-1">Requer D21+ concluÃ­do</span>
               )}
               <div className="absolute bottom-full right-0 mb-2 w-[min(13rem,calc(100vw-2rem))] bg-[#141417] border border-white/10 rounded-xl p-3 text-[10px] text-gray-400 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none leading-relaxed">
-                Rendimento em revisões feitas em intervalos maiores (D21+). Mede o verdadeiro aprendizado de longo prazo.
+                Rendimento em revisÃµes feitas em intervalos maiores (D21+). Mede o verdadeiro aprendizado de longo prazo.
               </div>
             </div>
           </ProgressiveTooltip>
         </div>
       ) : (
-        /* Estado Vazio Inteligente: temas cadastrados mas nenhuma sessão iniciada */
+        /* Estado Vazio Inteligente: temas cadastrados mas nenhuma sessÃ£o iniciada */
         <div className="bg-gradient-to-br from-blue-600/8 via-transparent to-sky-600/5 border border-blue-500/15 rounded-2xl p-5 flex items-center gap-4">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-xl shrink-0 shadow-lg shadow-indigo-900/30">
-            🚀
+            ðŸš€
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-black text-white mb-0.5">Pronto para começar!</p>
+            <p className="text-[12px] font-black text-white mb-0.5">Pronto para comeÃ§ar!</p>
             <p className="text-[11px] text-gray-400 leading-relaxed">
-              Suas métricas vão aparecer aqui após a primeira sessão de estudo.
+              Suas mÃ©tricas vÃ£o aparecer aqui apÃ³s a primeira sessÃ£o de estudo.
             </p>
           </div>
           <button
             onClick={() => setView && setView("crono")}
             className="shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white font-bold text-[11.5px] transition-all hover:scale-[1.02] active:scale-95 shadow-md shadow-indigo-900/20"
           >
-            Iniciar tema →
+            Iniciar tema â†’
           </button>
         </div>
       )}
 
 
-      {/* ZONA 4 — Detalhe (Filas & Colapsável de Estatísticas) */}
+      {/* ZONA 4 â€” Detalhe (Filas & ColapsÃ¡vel de EstatÃ­sticas) */}
       <div className="flex flex-col gap-5">
         {/* Filas Ativas */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <div className={`${focusMode ? "lg:col-span-12" : "lg:col-span-12"} flex flex-col gap-4`}>
             
-            {/* TOP 3 TÓPICOS-ALAVANCA — apenas Vestibular */}
+            {/* TOP 3 TÃ“PICOS-ALAVANCA â€” apenas Vestibular */}
             {plat === "vest" && filaInteligente.length > 0 && (
               <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-3 shadow-sm">
                 <div className="flex items-center gap-2">
                   <Zap size={15} className="text-amber-400" />
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">Top 3 Tópicos-Alavanca</h3>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">Top 3 TÃ³picos-Alavanca</h3>
                   <span className="text-[9px] text-gray-600 ml-auto">prioridade por peso do exame</span>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -1759,10 +1788,10 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                     <div key={index} className="flex items-center justify-between p-2.5 bg-white/[0.01] border border-white/5 rounded-xl hover:border-white/10 transition-colors">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-base shrink-0">{["🥇","🥈","🥉"][index]}</span>
+                          <span className="text-base shrink-0">{["ðŸ¥‡","ðŸ¥ˆ","ðŸ¥‰"][index]}</span>
                           <p className="text-xs font-bold text-gray-200 truncate">{item.temaNome}</p>
                         </div>
-                        <p className="text-[10px] text-gray-500 mt-0.5 ml-6">{item.esp} · Etapa {item.step.label}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5 ml-6">{item.esp} Â· Etapa {item.step.label}</p>
                       </div>
                       <button
                         type="button"
@@ -1777,11 +1806,11 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               </div>
             )}
 
-            {/* Fila Inteligente — apenas Residência (vest usa Top 3 acima) */}
+            {/* Fila Inteligente â€” apenas ResidÃªncia (vest usa Top 3 acima) */}
             {!modoSimples && totalSessions >= 30 && plat !== "vest" && (
               <ProgressiveTooltip
                 tooltipId="priority_queue"
-                text="Mentor: Esta é a Fila Inteligente. Ordenamos seus temas com base em um cálculo dinâmico de urgência, importância e pesos de prova para maximizar sua retenção diária (INEP 2009–2024: CM 28% / GO 21% / Cir 19% / Ped 19% / Prev 12%)."
+                text="Mentor: Esta Ã© a Fila Inteligente. Ordenamos seus temas com base em um cÃ¡lculo dinÃ¢mico de urgÃªncia, importÃ¢ncia e pesos de prova para maximizar sua retenÃ§Ã£o diÃ¡ria (INEP 2009â€“2024: CM 28% / GO 21% / Cir 19% / Ped 19% / Prev 12%)."
               >
                 <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-3 shadow-sm w-full">
                   <div className="flex items-center gap-2">
@@ -1790,7 +1819,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                   </div>
                   {filaInteligente.length === 0 ? (
                     <p className="text-[10.5px] text-gray-500 italic py-4 text-center leading-relaxed">
-                      "Fila inteligente limpa. Seu planejamento está em dia. Aproveite para descansar!"
+                      "Fila inteligente limpa. Seu planejamento estÃ¡ em dia. Aproveite para descansar!"
                     </p>
                   ) : (
                     <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
@@ -1801,7 +1830,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                               <span className="text-[9px] font-mono bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded">Score: {item.score}</span>
                               <p className="text-xs font-bold text-gray-200 truncate">{item.temaNome}</p>
                             </div>
-                            <p className="text-[10px] text-gray-500 mt-0.5">{item.esp} · Etapa {item.step.label}</p>
+                            <p className="text-[10px] text-gray-500 mt-0.5">{item.esp} Â· Etapa {item.step.label}</p>
                           </div>
                           <button
                             type="button"
@@ -1818,12 +1847,12 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               </ProgressiveTooltip>
             )}
 
-            {/* Fila Cronológica */}
+            {/* Fila CronolÃ³gica */}
             <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-3 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Calendar size={15} className="text-blue-400" />
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">Fila Cronológica</h3>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">Fila CronolÃ³gica</h3>
                 </div>
                 <span className="text-[10px] bg-white/5 text-gray-400 border border-white/5 px-2 py-0.5 rounded-full font-bold">
                   {pending} pendentes
@@ -1836,7 +1865,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                   <div className="space-y-1">
                     <p className="text-[12px] font-black text-gray-200 font-sans">Fila limpa por hoje!</p>
                     <p className="text-[10.5px] text-gray-500 italic max-w-xs mx-auto leading-relaxed">
-                      "Fila zerada — e isso é vitória, não tédio. Descanso consolida. Te vejo amanhã."
+                      "Fila zerada â€” e isso Ã© vitÃ³ria, nÃ£o tÃ©dio. Descanso consolida. Te vejo amanhÃ£."
                     </p>
                   </div>
                 </div>
@@ -1856,11 +1885,11 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                             <p className="text-xs font-bold text-white truncate">{r.temaNome}</p>
                             {isOptimalItem && (
                               <span className="text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-black shrink-0 ml-1.5" title="Retrievabilidade FSRS em ~87%: Ponto ideal de revisibilidade deliberada">
-                                🎯 Ponto Ótimo
+                                ðŸŽ¯ Ponto Ã“timo
                               </span>
                             )}
                           </div>
-                          <p className="text-[10px] text-gray-500 font-mono mt-0.5 uppercase">{r.step.label} · {r.step.desc}</p>
+                          <p className="text-[10px] text-gray-500 font-mono mt-0.5 uppercase">{r.step.label} Â· {r.step.desc}</p>
                         </div>
                         <button
                           type="button"
@@ -1876,13 +1905,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               )}
             </div>
 
-            {/* Seção Em Manutenção */}
+            {/* SeÃ§Ã£o Em ManutenÃ§Ã£o */}
             {temasManutencao.length > 0 && (
               <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-3 shadow-sm select-none">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Layers size={15} className="text-emerald-400" />
-                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">Temas em Manutenção (Pós-D21)</h3>
+                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">Temas em ManutenÃ§Ã£o (PÃ³s-D21)</h3>
                   </div>
                   <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
                     {temasManutencao.length} tema{temasManutencao.length > 1 ? "s" : ""}
@@ -1903,7 +1932,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                             <p className="text-xs font-bold text-white truncate">{tema.nome}</p>
                           </div>
                           <p className="text-[9.5px] text-gray-500 mt-1">
-                            Próxima revisão em: <strong className={overdueManut ? "text-amber-400" : "text-gray-400"}>{m.date}</strong> (Intervalo: {m.interval} dias)
+                            PrÃ³xima revisÃ£o em: <strong className={overdueManut ? "text-amber-400" : "text-gray-400"}>{m.date}</strong> (Intervalo: {m.interval} dias)
                           </p>
                         </div>
                         <button
@@ -1923,7 +1952,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           </div>
         </div>
 
-        {/* Estatísticas e Heatmap Colapsável */}
+        {/* EstatÃ­sticas e Heatmap ColapsÃ¡vel */}
         {totalSessions >= 7 && (
           <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl shadow-sm overflow-hidden">
             <button
@@ -1933,7 +1962,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             >
               <div className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
                 <TrendingUp size={15} className="text-gray-500" />
-                <span>Painel de Estatísticas Avançadas & Heatmap</span>
+                <span>Painel de EstatÃ­sticas AvanÃ§adas & Heatmap</span>
               </div>
               {showDetailedPanels ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
             </button>
@@ -1944,7 +1973,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                   
                   {/* Heatmap */}
                   <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 flex flex-col gap-3">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Consistência Diária (35 dias)</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">ConsistÃªncia DiÃ¡ria (35 dias)</p>
                     <div className="grid grid-cols-7 gap-1.5 justify-center max-w-xs mx-auto">
                       {days.map((d) => (
                         <div
@@ -1960,17 +1989,17 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                     </div>
                   </div>
 
-                  {/* Zonas de Alerta Crítico */}
+                  {/* Zonas de Alerta CrÃ­tico */}
                   <ProgressiveTooltip
                     tooltipId="bleeding_score"
-                    text="Mentor: As Zonas de Alerta mostram especialidades onde seu acerto médio acumulado está abaixo de 60%. Concentre-se nelas para evitar perda de pontos na prova."
+                    text="Mentor: As Zonas de Alerta mostram especialidades onde seu acerto mÃ©dio acumulado estÃ¡ abaixo de 60%. Concentre-se nelas para evitar perda de pontos na prova."
                   >
                     <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 flex flex-col gap-3 w-full">
                       <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold flex items-center gap-1.5">
-                        Zonas de Alerta Crítico
+                        Zonas de Alerta CrÃ­tico
                       </p>
                       {bleeding.length === 0 ? (
-                        <p className="text-[11px] text-gray-600 italic py-4 text-center">Nenhuma zona crítica abaixo de 60%.</p>
+                        <p className="text-[11px] text-gray-600 italic py-4 text-center">Nenhuma zona crÃ­tica abaixo de 60%.</p>
                       ) : (
                         <div className="flex flex-col gap-1.5">
                           {bleeding.map(b => (
@@ -1987,14 +2016,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                     </div>
                   </ProgressiveTooltip>
 
-                  {/* Calibração Metacognitiva */}
+                  {/* CalibraÃ§Ã£o Metacognitiva */}
                   <MetacognitiveChart doneReviews={done} />
                 </div>
 
-                {/* GRID MINHAS ÁREAS — apenas Vestibular */}
+                {/* GRID MINHAS ÃREAS â€” apenas Vestibular */}
                 {plat === "vest" && Object.keys(areaRetention).length > 0 && (
                   <div className="bg-white/[0.01] border border-white/5 rounded-xl p-4 flex flex-col gap-3 md:col-span-2">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Minhas Áreas</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Minhas Ãreas</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {Object.entries(areaRetention).map(([area, ret]) => {
                         const retColor = ret == null ? "text-gray-600" : ret >= 80 ? "text-emerald-400" : ret >= 60 ? "text-amber-400" : "text-red-400";
@@ -2003,9 +2032,9 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                           <div key={area} className={`p-3 rounded-xl border ${retBg} flex flex-col gap-1`}>
                             <p className="text-[10px] text-gray-400 font-semibold leading-tight">{area}</p>
                             <p className={`text-2xl font-black tabular-nums ${retColor}`}>
-                              {ret != null ? `${ret}%` : "–"}
+                              {ret != null ? `${ret}%` : "â€“"}
                             </p>
-                            <p className="text-[9px] text-gray-600">{ret == null ? "sem dados" : ret >= 80 ? "sólido" : ret >= 60 ? "em progresso" : "reforçar"}</p>
+                            <p className="text-[9px] text-gray-600">{ret == null ? "sem dados" : ret >= 80 ? "sÃ³lido" : ret >= 60 ? "em progresso" : "reforÃ§ar"}</p>
                           </div>
                         );
                       })}
@@ -2013,17 +2042,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                   </div>
                 )}
 
-                {!modoSimples && totalSessions >= 30 && (
-                  <div className="border-t border-white/5 pt-4">
-                    <MiniCronogramaWidget
-                      plat={plat}
-                      setView={setView}
-                      onStudy={onStudy}
-                      overdue={overdue}
-                      today_={today_}
-                    />
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -2039,6 +2057,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           totalSessions={totalSessions}
           totalRevisoesFeitas={totalRevisoesFeitas}
           prontidao={prontidao}
+          forceFluencia={hasFluenciaTrigger}
+          forceExhausted={hasExhaustionNow}
           meta={meta}
           naReserva={naReserva}
           onClose={() => {
@@ -2062,7 +2082,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
       {showWeeklyDiag && (
         <div
-          className="fixed inset-0 z-[400] flex items-center justify-center md:pl-60 p-4"
+          className="fixed inset-0 z-[400] flex items-center justify-center p-4"
           style={{
             background: "rgba(5,5,12,0.85)",
             backdropFilter: "blur(12px)",
@@ -2098,16 +2118,16 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             <div className="p-5 space-y-4">
               <div className="space-y-1">
                 <h4 className="text-base font-extrabold text-white leading-tight">Sua semana em 3 frases:</h4>
-                <p className="text-xs text-gray-400">Aqui está o ajuste de rota recomendado pelo seu Mentor:</p>
+                <p className="text-xs text-gray-400">Aqui estÃ¡ o ajuste de rota recomendado pelo seu Mentor:</p>
               </div>
 
               <div className="space-y-3">
                 {diag?.insights && diag.insights.map((insight, idx) => {
-                  let icon = "💡";
-                  if (insight.type === "alerta" || insight.type === "vies_excesso") icon = "⚠️";
-                  else if (insight.type === "tendencia_baixa") icon = "📉";
-                  else if (insight.type === "tendencia_alta") icon = "📈";
-                  else if (insight.type === "horario") icon = "⚡";
+                  let icon = "ðŸ’¡";
+                  if (insight.type === "alerta" || insight.type === "vies_excesso") icon = "âš ï¸";
+                  else if (insight.type === "tendencia_baixa") icon = "ðŸ“‰";
+                  else if (insight.type === "tendencia_alta") icon = "ðŸ“ˆ";
+                  else if (insight.type === "horario") icon = "Ã¢Å¡Â¡";
 
                   return (
                     <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5 text-gray-300">
@@ -2126,7 +2146,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 }}
                 className="w-full py-3 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] cursor-pointer border-none shadow-lg shadow-indigo-900/25"
               >
-                Bora ajustar! →
+                Bora ajustar! â†’
               </button>
             </div>
           </div>
@@ -2135,7 +2155,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
       {tourStep === "dash" && showTourBalloon && (
         <TourBalloon
-          text="Mentor: Viu as datas de D1, D4, D7, D21 que apareceram? Eu calculei quando você vai esquecer e agendei as revisões. Você nunca mais decide quando revisar — eu decido."
+          text="Mentor: Viu as datas de D1, D4, D7, D21 que apareceram? Eu calculei quando vocÃª vai esquecer e agendei as revisÃµes. VocÃª nunca mais decide quando revisar â€” eu decido."
           nextLabel="Concluir Tour"
           onNext={() => {
             setShowTourBalloon(false);
@@ -2149,25 +2169,27 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       {showCompletionModal && (
         <Modal onClose={() => {
           setShowCompletionModal(false);
+          trackEvent("onboarding_done");
           setOnboardingDone();
           setTourStep(null);
         }}>
           <div className="text-center py-4 space-y-4 max-w-sm mx-auto text-left">
             <div className="text-center">
-              <span className="text-5xl animate-bounce block">🎓</span>
-              <h2 className="text-xl font-black text-white mt-3">Tour Concluído!</h2>
-              <p className="text-xs text-gray-400 mt-1">Você está pronto para usar a metodologia de elite do MedRev.</p>
+              <span className="text-5xl animate-bounce block">ðŸŽ“</span>
+              <h2 className="text-xl font-black text-white mt-3">Tour ConcluÃ­do!</h2>
+              <p className="text-xs text-gray-400 mt-1">VocÃª estÃ¡ pronto para usar a metodologia de elite do MedRev.</p>
             </div>
             
             <div className="bg-white/5 border border-white/5 rounded-2xl p-4 text-xs leading-relaxed text-gray-300">
-              <span className="font-bold text-blue-400 block mb-1">🧠 Mentor:</span>
-              "Você completou o demo. Agora faça de verdade. Qual tema quer iniciar primeiro?"
+              <span className="font-bold text-blue-400 block mb-1">ðŸ§  Mentor:</span>
+              "VocÃª completou o demo. Agora faÃ§a de verdade. Qual tema quer iniciar primeiro?"
             </div>
 
             <Btn
               className="w-full py-3"
               onClick={() => {
                 setShowCompletionModal(false);
+                trackEvent("onboarding_done");
                 setOnboardingDone();
                 setTourStep(null);
                 setView && setView("crono");
@@ -2183,5 +2205,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     </div>
   );
 }
+
 
 

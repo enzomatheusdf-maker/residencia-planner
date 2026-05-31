@@ -283,7 +283,7 @@ export default function StatsPanel() {
   return (
     <div className="space-y-5 animate-fade-up text-left">
       <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-        <BarChart3 size={20} className="text-purple-400" />
+        <BarChart3 size={20} className="text-indigo-400" />
         <h2 className="text-[15px] font-bold text-gray-100">Histórico de Desempenho</h2>
       </div>
 
@@ -301,11 +301,11 @@ export default function StatsPanel() {
                 { 
                   label: "Prontidão", 
                   value: `${readinessTrend.current}%`, 
-                  color: "text-violet-400",
+                  color: "text-blue-400",
                   trend: readinessTrend.delta7,
                   trend30: readinessTrend.delta30
                 },
-                { label: "Temas", value: temas.length, color: "text-purple-400" },
+                { label: "Temas", value: temas.length, color: "text-indigo-400" },
                 { label: "Questões", value: (personalStats?.totalQuestoes || 0).toLocaleString("pt-BR"), color: "text-blue-400" },
                 { label: "Ciclos Completos", value: personalStats?.totalConcluidos ?? 0, color: "text-emerald-400" },
                 { label: "Acerto Médio", value: personalStats?.overallAcc != null ? `${personalStats.overallAcc}%` : "—",
@@ -375,7 +375,7 @@ export default function StatsPanel() {
                             title={`${fmtDate(d)}: ${studied ? "Estudo Realizado" : "Nenhuma Atividade"}`}
                             className={`aspect-square w-3.5 h-3.5 rounded-sm transition-all duration-300 ${
                               studied
-                                ? "bg-gradient-to-br from-violet-500 to-pink-500 shadow-sm shadow-purple-950/50"
+                                ? "bg-gradient-to-br from-blue-500 to-sky-500 shadow-sm shadow-slate-950/50"
                                 : "bg-white/[0.03] hover:bg-white/[0.08]"
                             }`}
                           />
@@ -415,14 +415,14 @@ export default function StatsPanel() {
                     💡 <strong>Coletando dados:</strong> Faltam {5 - calibrationData.n} sessões com previsões de acerto informadas para gerar sua calibração.
                   </p>
                   <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-violet-600 h-full transition-all" style={{ width: `${(calibrationData.n / 5) * 100}%` }} />
+                    <div className="bg-blue-600 h-full transition-all" style={{ width: `${(calibrationData.n / 5) * 100}%` }} />
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-black/40 border border-white/5 rounded-xl p-4 text-center flex flex-col justify-center">
                     <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Precisão de Previsão</span>
-                    <span className="text-3xl font-black font-mono text-violet-400">{calibrationData.precisao}%</span>
+                    <span className="text-3xl font-black font-mono text-blue-400">{calibrationData.precisao}%</span>
                     <span className="text-[9px] text-gray-600 mt-1">Proximidade com o resultado real</span>
                   </div>
 
@@ -434,8 +434,8 @@ export default function StatsPanel() {
                     <span className="text-[9px] text-gray-600 mt-1">{calibrationData.vies > 0 ? "Otimista / Confiante" : calibrationData.vies < 0 ? "Pessimista / Prudente" : "Totalmente Alinhado"}</span>
                   </div>
 
-                  <div className="bg-purple-950/20 border border-purple-500/10 rounded-xl p-4 col-span-1 sm:col-span-1 flex flex-col justify-center text-left">
-                    <span className="text-[9.5px] font-bold text-purple-300 uppercase tracking-wider block mb-1 flex items-center gap-1">🤖 Mentor Metacognitivo</span>
+                  <div className="bg-indigo-950/20 border border-indigo-500/10 rounded-xl p-4 col-span-1 sm:col-span-1 flex flex-col justify-center text-left">
+                    <span className="text-[9.5px] font-bold text-indigo-300 uppercase tracking-wider block mb-1 flex items-center gap-1">🤖 Mentor Metacognitivo</span>
                     <p className="text-[11.5px] text-gray-400 leading-relaxed mt-0.5 italic">
                       "{calibrationMentorPhrase}"
                     </p>
@@ -526,7 +526,7 @@ export default function StatsPanel() {
                       const isToday = idx === 0;
                       return (
                         <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5 group">
-                          <span className="text-[9.5px] font-mono text-purple-300 opacity-0 group-hover:opacity-100 transition-opacity select-none">
+                          <span className="text-[9.5px] font-mono text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity select-none">
                             {d.count}
                           </span>
                           <div 
@@ -535,11 +535,11 @@ export default function StatsPanel() {
                               d.count === 0 
                                 ? "bg-white/5" 
                                 : isToday 
-                                ? "bg-gradient-to-t from-violet-600 to-pink-500" 
-                                : "bg-violet-500/60 group-hover:bg-violet-400"
+                                ? "bg-gradient-to-t from-blue-600 to-sky-500" 
+                                : "bg-blue-500/60 group-hover:bg-blue-400"
                             }`}
                           />
-                          <span className={`text-[9px] font-mono font-bold mt-1 ${isToday ? "text-pink-400 font-black" : "text-gray-600"}`}>
+                          <span className={`text-[9px] font-mono font-bold mt-1 ${isToday ? "text-sky-400 font-black" : "text-gray-600"}`}>
                             {isToday ? "Hoje" : d.label}
                           </span>
                         </div>
@@ -575,7 +575,7 @@ export default function StatsPanel() {
                       ].map((c, idx) => (
                         <div key={idx} className="bg-black/40 border border-white/5 rounded-xl p-3 text-center">
                           <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider block mb-1">{c.label}</span>
-                          <span className="text-lg font-black text-violet-400">{c.val} pts</span>
+                          <span className="text-lg font-black text-blue-400">{c.val} pts</span>
                         </div>
                       ))}
                     </div>
@@ -618,7 +618,7 @@ export default function StatsPanel() {
                       <span className="flex items-center gap-1.5 text-red-400"><span className="w-2.5 h-2.5 rounded-full bg-red-500" /> C2: Tema/Gênero</span>
                       <span className="flex items-center gap-1.5 text-emerald-400"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> C3: Argumentação</span>
                       <span className="flex items-center gap-1.5 text-amber-400"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> C4: Coesão</span>
-                      <span className="flex items-center gap-1.5 text-purple-400"><span className="w-2.5 h-2.5 rounded-full bg-purple-500" /> C5: Proposta</span>
+                      <span className="flex items-center gap-1.5 text-indigo-400"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500" /> C5: Proposta</span>
                     </div>
                   </div>
                 )}

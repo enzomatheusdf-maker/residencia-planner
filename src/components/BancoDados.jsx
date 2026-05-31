@@ -52,7 +52,7 @@ export default function BancoDados() {
 
   const Th = ({ k, children }) => (
     <th onClick={() => setSort(k)}
-      className={`px-4 py-3 text-left text-[10.5px] uppercase tracking-wider font-bold cursor-pointer select-none whitespace-nowrap border-b border-white/5 transition-colors ${sort === k ? "text-violet-400" : "text-gray-600 hover:text-gray-400"}`}>
+      className={`px-4 py-3 text-left text-[10.5px] uppercase tracking-wider font-bold cursor-pointer select-none whitespace-nowrap border-b border-white/5 transition-colors ${sort === k ? "text-blue-400" : "text-gray-600 hover:text-gray-400"}`}>
       {children}{sort === k ? " ↓" : ""}
     </th>
   );
@@ -68,7 +68,7 @@ export default function BancoDados() {
 
       <div className="flex gap-1 flex-wrap">
         {[["todos","Todos"],["baixo_acerto","Acerto < 60%"],["atrasados","Atrasados"],["nunca_revisados","Não Iniciados"]].map(([v, l]) => (
-          <button type="button" key={v} onClick={() => setFiltro(v)} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${filtro === v ? "bg-violet-600 text-white" : "text-gray-500 bg-white/5 hover:text-gray-300"}`}>
+          <button type="button" key={v} onClick={() => setFiltro(v)} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${filtro === v ? "bg-blue-600 text-white" : "text-gray-500 bg-white/5 hover:text-gray-300"}`}>
             {l}
           </button>
         ))}
@@ -116,7 +116,7 @@ export default function BancoDados() {
                     </td>
                     <td className="px-4 py-3">
                       {r.nextStep
-                        ? <span className={`text-[11.5px] font-semibold ${isOverdue(r.nextDate) ? "text-red-400" : isDueToday(r.nextDate) ? "text-violet-400" : "text-gray-500"}`}>
+                        ? <span className={`text-[11.5px] font-semibold ${isOverdue(r.nextDate) ? "text-red-400" : isDueToday(r.nextDate) ? "text-blue-400" : "text-gray-500"}`}>
                             {r.nextStep.toUpperCase()} · {fmtRelativo(r.nextDate)}
                           </span>
                         : <span className="text-[11px] font-bold text-emerald-400">✓ concluído</span>}
@@ -133,7 +133,7 @@ export default function BancoDados() {
             <button
               type="button"
               onClick={toggleModoSimples}
-              className="px-4 py-2 bg-violet-600/20 hover:bg-violet-600/30 text-violet-400 border border-violet-600/30 rounded-xl text-[12px] font-bold transition-all">
+              className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-xl text-[12px] font-bold transition-all">
               ▼ Ver modo avançado
             </button>
           </div>

@@ -142,6 +142,11 @@ const PHRASES = {
   modo_reduzido_recuperacao: [
     { id: "mr_rec_1", text: "Dia difícil? Então vamos no essencial: um recall rápido e 10 questões de {tema}. Mantém a curva sem te quebrar." }
   ],
+  fluencia: [
+    { id: "flu_1", text: "Errar e ter que reconstruir a resposta é o que fixa de verdade. Releitura passa a sensação de domínio, mas é ilusão de fluência (Bjork). Confie no esforço de hoje.", tone: "neutro" },
+    { id: "flu_2", text: "Se a sessão pareceu difícil, ótimo sinal: esforço de recuperação = memória de longo prazo. O que é fácil agora costuma sumir na semana que vem.", tone: "gentil" },
+    { id: "flu_3", text: "Não meça aprendizado pela facilidade do momento. Espaçar e errar dói mais hoje e rende muito mais na prova (storage strength > retrieval strength).", tone: "firme" }
+  ],
   transicao_modo_prova: [
     { id: "tmp_1", text: "Seus números dizem que você passou da fase de aprender e entrou na fase de treinar pra prova. Quer que eu reescreva seu plano em modo simulado? Você ainda pode revisar pontos fracos quando eles aparecerem." }
   ],
@@ -273,6 +278,25 @@ export function getMentorVoice({ situation, userName, pending, streakCurrent, me
   const vars = { userName, pending, streakCurrent, tempoEstimado, totalRevisoesFeitas, prontidao };
   
   let key = situation;
+  let effectiveTone = tom;
+  const daysGap = (() => {
+    if (!meta?.lastActiveDate) return 0;
+    const last = new Date(meta.lastActiveDate);
+    const now = new Date();
+    const diffMs = now.setHours(0, 0, 0, 0) - last.setHours(0, 0, 0, 0);
+    return Number.isFinite(diffMs) ? Math.max(0, Math.floor(diffMs / 86400000)) : 0;
+  })();
+
+  if (situation === "boas_vindas_diario" && daysGap >= 3) {
+    key = "boas_vindas_retorno";
+    effectiveTone = "gentil";
+  }
+
+  if (meta?.isExhaustedNow) {
+    key = meta?.streakFreezeUsed ? "descanso_saudavel" : "descanso";
+    effectiveTone = "gentil";
+  }
+
   if (situation === "boas_vindas_diario") {
     if (meta?.isRetornoAcolhedor) {
       key = "boas_vindas_retorno";
@@ -288,7 +312,7 @@ export function getMentorVoice({ situation, userName, pending, streakCurrent, me
   }
   
   const recent = getRecentPhrases();
-  const phrase = getMentorPhrase(key, vars, recent, plat, tom);
+  const phrase = getMentorPhrase(key, vars, recent, plat, effectiveTone);
   if (phrase.id) {
     trackRecentPhrase(phrase.id);
   }
@@ -402,7 +426,7 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
     }
   }
 
-  // Insight B: Especialidade mais fraca (Bleeding threshold)
+  // Insight B: GARGALO de aprovação (uma área <60% reprova mesmo com outras fortes)
   const espAcc = {};
   doneReviews.forEach(r => {
     if (r.acerto == null || !r.esp) return;
@@ -414,13 +438,22 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
     avg: (vals.reduce((a,b)=>a+b, 0)/vals.length) * 100,
     count: vals.length
   }));
-  const weakestEsp = espAvgs.filter(x => x.count >= 2).sort((a,b) => a.avg - b.avg)[0];
-  if (weakestEsp && weakestEsp.avg < 75) {
+  const gargalo = espAvgs.filter(x => x.count >= 2).sort((a,b) => a.avg - b.avg)[0];
+  if (gargalo && gargalo.avg < 60) {
+    insights.push({
+      type: "gargalo",
+      text: `${gargalo.esp} está em ${Math.round(gargalo.avg)}% — abaixo da linha de corte. Uma única área muito fraca reprova mesmo com as outras fortes. Priorize ${gargalo.esp} antes de abrir temas novos.`,
+      confidence: gargalo.count >= 5 ? "alta" : "média",
+      priority: 100,
+      action: { type: "focar", esp: gargalo.esp, label: `Focar ${gargalo.esp} agora` }
+    });
+  } else if (gargalo && gargalo.avg < 75) {
     insights.push({
       type: "alerta",
-      text: `Atenção com ${weakestEsp.esp}: sua média de acerto está em ${Math.round(weakestEsp.avg)}%. Bloqueie temas novos nela e priorize revisar as pendências.`,
-      confidence: weakestEsp.count >= 5 ? "alta" : "média",
-      action: { type: "focar", esp: weakestEsp.esp, label: `Focar ${weakestEsp.esp === "GO" ? "GO" : weakestEsp.esp} agora` }
+      text: `Atenção com ${gargalo.esp}: média de ${Math.round(gargalo.avg)}%. Ainda dá tempo de fortalecer — revise as pendências antes de avançar.`,
+      confidence: gargalo.count >= 5 ? "alta" : "média",
+      priority: 60,
+      action: { type: "focar", esp: gargalo.esp, label: `Focar ${gargalo.esp} agora` }
     });
   }
 
@@ -499,12 +532,12 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
     }
 
     // E3: Nota de corte gap warning
-    if (meta?.notaCorteAlvo > 0 && weakestEsp && weakestEsp.avg < 60) {
+    if (meta?.notaCorteAlvo > 0 && gargalo && gargalo.avg < 60) {
       insights.push({
         type: "tendencia_baixa",
-        text: `Com ${weakestEsp.esp} em ${Math.round(weakestEsp.avg)}%, você está em risco de não atingir a nota de corte de ${meta.notaCorteAlvo}%. Priorize essa área hoje.`,
-        confidence: weakestEsp.count >= 5 ? "alta" : "média",
-        action: { type: "focar", esp: weakestEsp.esp, label: `Focar ${weakestEsp.esp} agora` }
+        text: `Com ${gargalo.esp} em ${Math.round(gargalo.avg)}%, você está em risco de não atingir a nota de corte de ${meta.notaCorteAlvo}%. Priorize essa área hoje.`,
+        confidence: gargalo.count >= 5 ? "alta" : "média",
+        action: { type: "focar", esp: gargalo.esp, label: `Focar ${gargalo.esp} agora` }
       });
     }
   }
@@ -594,6 +627,17 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
     });
   }
 
+  const hasTendenciaBaixa = insights.some((ins) => ins.type === "tendencia_baixa");
+  const hasViesExcesso = insights.some((ins) => ins.type === "vies_excesso");
+  if (hasTendenciaBaixa || hasViesExcesso) {
+    insights.push({
+      type: "fluencia",
+      text: "Dificuldade e erro com recuperação ativa são sinais de aprendizado real. Evite releitura passiva e siga no esforço ativo.",
+      confidence: "média",
+      priority: 70
+    });
+  }
+
   // 2. Diagnóstico Completo (Dias 30+ ou 30 sessões concluídas)
   let projInfo = null;
   if (totalSessions >= 30) {
@@ -607,9 +651,14 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
     };
   }
 
+  const prioritizedInsights = insights
+    .map((ins) => ({ priority: 50, ...ins }))
+    .sort((a, b) => (b.priority || 50) - (a.priority || 50))
+    .map(({ priority, ...rest }) => rest);
+
   return {
     status: totalSessions >= 30 ? "completo" : "ativo",
-    insights: insights.slice(0, 3), // limit to top 3 insights
+    insights: prioritizedInsights.slice(0, 3), // limit to top 3 insights
     projection: projInfo
   };
 }
@@ -640,3 +689,49 @@ export function isExhaustionDetected(temaStats = {}, doneReviews = []) {
 
   return isNight && isRecentAnxietyHigh;
 }
+
+
+
+
+export function proximaAcao({ temas = [], diag = null, readiness = null, pending = 0 }) {
+  if (pending > 0) {
+    return {
+      label: `Revisar fila (${pending} itens, ~${Math.max(5, Math.round(pending * 1.5))} min)`,
+      sub: "Revisão espaçada no prazo protege sua retenção.",
+      action: { type: "setView", view: "crono", label: "Abrir Foco" }
+    };
+  }
+
+  const critical = (diag?.insights || []).find((i) => i.type === "gargalo" || i.type === "alerta");
+  if (critical?.action?.esp) {
+    return {
+      label: `Fortalecer ${critical.action.esp}`,
+      sub: "Uma área fraca derruba a aprovação mesmo com as outras fortes.",
+      action: { type: "focar", esp: critical.action.esp, label: `Focar ${critical.action.esp}` }
+    };
+  }
+
+  const nextArea = (readiness?.priorityList || []).find((p) => p.zona === "vermelha" || p.zona === "roxa");
+  if (nextArea?.area) {
+    const temaDaArea = temas.find((t) => t?.esp === nextArea.area);
+    if (temaDaArea) {
+      return {
+        label: `Iniciar tema de alta incidência: ${temaDaArea.nome}`,
+        sub: `Cobertura baixa em ${nextArea.area}.`,
+        action: { type: "study", temaId: temaDaArea.id, stepKey: "d0", label: "Iniciar agora" }
+      };
+    }
+    return {
+      label: `Fortalecer ${nextArea.area}`,
+      sub: "Cobertura baixa em área de alta prioridade.",
+      action: { type: "focar", esp: nextArea.area, label: `Focar ${nextArea.area}` }
+    };
+  }
+
+  return {
+    label: "Fila zerada: descanse ou adiante 1 tema",
+    sub: "Sem pressão: consistência vale mais que volume forçado.",
+    action: { type: "setView", view: "crono", label: "Ver cronograma" }
+  };
+}
+

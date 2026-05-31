@@ -1,6 +1,6 @@
 // src/App.js
 // Main entry point for MedRev - Clean & Modular Architecture
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AlertCircle, Eye, EyeOff, Settings } from "lucide-react";
 
 // Camada Core & State
@@ -10,11 +10,11 @@ import { xpForReview } from "./core/gamif";
 import { ACHIEVEMENTS } from "./core/achievements";
 import { getReadinessData } from "./core/readiness";
 
-// Camada de Hooks/EstatÃƒÂ­sticas
+// Camada de Hooks/Estatísticas
 import { useFilaInteligente } from "./hooks/useMetrics";
 import { getMentorPhrase, getRecentPhrases, trackRecentPhrase } from "./core/mentor";
 
-// Camada de ServiÃƒÂ§os
+// Camada de Serviços
 import {
   monitorarAuth,
   sincronizarComFirebase,
@@ -63,13 +63,13 @@ function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
     case "diamante": return "CRITICA";
     case "alta":     return "ALTA";
-    case "mÃƒÂ©dia": case "media": return "MEDIA";
-    case "baixa": case "bÃƒÂ´nus": case "bonus": return "MEDIA";
+    case "média": case "media": return "MEDIA";
+    case "baixa": case "bônus": case "bonus": return "MEDIA";
     default: return "ALTA";
   }
 }
 
-/* ERROR BOUNDARY Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ERROR BOUNDARY ─────────────────────────────────────────────────────────────── */
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -84,10 +84,10 @@ class ErrorBoundary extends React.Component {
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <AlertCircle size={40} className="text-red-400" />
           <p className="text-[13px] text-red-400 font-semibold">
-            Instabilidade detectada na renderizaÃƒÂ§ÃƒÂ£o.
+            Instabilidade detectada na renderização.
           </p>
           <Btn onClick={() => this.setState({ error: null })} variant="ghost">
-            Reiniciar MÃƒÂ³dulo
+            Reiniciar Módulo
           </Btn>
         </div>
       );
@@ -96,7 +96,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-/* APP ROOT MAIN ENTRY Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* APP ROOT MAIN ENTRY ────────────────────────────────────────────────────────── */
 export default function App() {
   const {
     plat,
@@ -128,7 +128,7 @@ export default function App() {
 
   const temas = useStore((s) => s[plat]?.temas || []);
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ AUTENTICAÃƒâ€¡ÃƒÆ’O FIREBASE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ─── AUTENTICAÇÃO FIREBASE ────────────────────────────────────────────────
   const [usuarioLogado, setUsuarioLogado] = useState(null);
   const [carregandoAuth, setCarregandoAuth] = useState(true);
 
@@ -150,6 +150,18 @@ export default function App() {
   const showToastStore = useStore((s) => s.showToast);
   const confirmDialog = useStore((s) => s.confirmDialog);
   const closeConfirm = useStore((s) => s.closeConfirm);
+  const trackedReturnRef = useRef(false);
+
+  useEffect(() => {
+    if (!usuarioLogado || trackedReturnRef.current) return;
+    const lastActive = useStore.getState().meta?.lastActiveDate;
+    if (!lastActive) return;
+    const gap = Math.max(0, Math.round((new Date(todayStr()) - new Date(lastActive)) / (1000 * 60 * 60 * 24)));
+    if (gap >= 1) {
+      trackEvent(gap >= 7 ? "retorno_d7" : "retorno_d1", { gap_dias: gap, uid: usuarioLogado.uid });
+      trackedReturnRef.current = true;
+    }
+  }, [usuarioLogado]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -235,7 +247,7 @@ export default function App() {
 
           if (remoteTime > localTime) {
             if (Math.abs(remoteTime - localTime) > 24 * 60 * 60 * 1000) {
-              showToastStore("Dados da nuvem mais recentes Ã¢â‚¬â€ atualizando.");
+              showToastStore("Dados da nuvem mais recentes — atualizando.");
             }
 
             const normalizePlatTemas = (platObj, initialPlatObj) => {
@@ -309,7 +321,7 @@ export default function App() {
       }
     });
 
-    // Timeout de seguranÃƒÂ§a: se Firebase nÃƒÂ£o responder em 5s, mostra AuthModal
+    // Timeout de segurança: se Firebase não responder em 5s, mostra AuthModal
     timeoutId = setTimeout(() => {
       if (isMounted) {
         setCarregandoAuth(false);
@@ -323,7 +335,7 @@ export default function App() {
     };
   }, [setUserName, setPlat, setMeta, showToastStore]);
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ SINCRONIZAR DADOS COM FIREBASE (AO MUDAR ESTADO) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ─── SINCRONIZAR DADOS COM FIREBASE (AO MUDAR ESTADO) ──────────────────────
   useEffect(() => {
     if (!usuarioLogado) return;
 
@@ -370,7 +382,7 @@ export default function App() {
             }
           })
           .catch((err) => {
-            console.error("Erro na sincronizaÃƒÂ§ÃƒÂ£o reativa:", err);
+            console.error("Erro na sincronização reativa:", err);
             setSyncStatus("offline");
           });
       }, 3000);
@@ -382,7 +394,7 @@ export default function App() {
     };
   }, [usuarioLogado]);
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ GARANTIR FLUSH ANTES DE SAIR DA PÃƒÆ’Ã‚ÂGINA ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
+  // ─── GARANTIR FLUSH ANTES DE SAIR DA PÁGINA ───────────────────────────────
   useEffect(() => {
     if (!usuarioLogado) return;
 
@@ -444,7 +456,7 @@ export default function App() {
     const proj = getWorkloadProjection(temasList, 7);
     const exceeds = Object.values(proj).some((count) => count > maxRevisoesDia);
     if (exceeds) {
-      showToast("Carga alta na proxima semana. Revise seu teto diario antes de adicionar novos temas.");
+      showToast("Atenção: próxima semana já está carregada de revisões.");
     }
     return true;
   }, [plat, showToast]);
@@ -453,9 +465,6 @@ export default function App() {
     (temaId, stepKey, markData) => {
       playTick();
       setShowCheckmark(true);
-      if (stepKey === "d1") trackEvent("retorno_d1", { plat, temaId });
-      if (stepKey === "d7") trackEvent("retorno_d7", { plat, temaId });
-      if (stepKey !== "d0") trackEvent("primeira_revisao", { plat, temaId, step: stepKey });
 
       if (stepKey === "d1") {
         pushUndo(plat);
@@ -478,7 +487,7 @@ export default function App() {
           modoReduzido: markData.modoReduzido,
           descansoPrescrito: markData.descansoPrescrito
         });
-        showToast("Ã°Å¸Â§Â  Brain Dump consolidado e gravado no perfil!");
+        showToast("🧠 Brain Dump consolidado e gravado no perfil!");
       } else if (stepKey === "d0") {
         pushUndo(plat);
         markStep(plat, temaId, "d0", {
@@ -512,7 +521,7 @@ export default function App() {
           pico: markData.pico || "",
           ankiDeck: markData.ankiDeck || "",
         });
-        showToast("ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Tema iniciado com sucesso!");
+        showToast("✓ Tema iniciado com sucesso!");
       } else {
         pushUndo(plat);
         markStep(plat, temaId, stepKey, {
@@ -556,7 +565,7 @@ export default function App() {
             if (temaAtualizado && STEPS.every((s) => temaAtualizado.rev[s.key].done)) {
               setCycleComplete(temaAtualizado);
               
-              // Dispara frase do mentor pÃƒÂ³s-D21
+              // Dispara frase do mentor pós-D21
               const recent = getRecentPhrases();
               const { text, id } = getMentorPhrase("ciclo_pos_d21", {
                 userName: state.userName || "Estudante",
@@ -564,16 +573,16 @@ export default function App() {
               }, recent, plat, state.meta?.tomMentor || "gentil");
               if (id) trackRecentPhrase(id);
               setTimeout(() => {
-                showToast(`Ã°Å¸Â§Â  Mentor: "${text}"`);
+                showToast(`🧠 Mentor: "${text}"`);
               }, 1500);
             }
           }, 100);
         }
 
-        showToast(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Etapa computada com sucesso!`, true);
+        showToast(`✓ Etapa computada com sucesso!`, true);
       }
 
-      // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ CENTRALIZED GAMIFICATION LOGIC Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+      // ─── CENTRALIZED GAMIFICATION LOGIC ─────────────────────────────────────
       const stateBefore = useStore.getState();
       const currentGamif = stateBefore.gamif || { xp: 0, level: 1, streakCurrent: 0, streakBest: 0, freezesOwned: 1, freezesUsedDates: [], recoveryOwned: 0, badges: [], graceUsedThisWeek: false };
 
@@ -601,21 +610,21 @@ export default function App() {
         const { text, id } = getMentorPhrase("descanso_saudavel", { userName: userName || "Estudante" }, recent, plat, stateAfterStreak.meta?.tomMentor || "gentil");
         trackRecentPhrase(id);
         setTimeout(() => {
-          showToast(`ÃƒÂ¢Ã‚ÂÃ¢â‚¬Å¾ÃƒÂ¯Ã‚Â¸Ã‚Â Ofensiva Protegida! Mentor: "${text}"`, false, 6000);
+          showToast(`❄️ Ofensiva Protegida! Mentor: "${text}"`, false, 6000);
         }, 1500);
       } else if (gamifAfter.graceUsedThisWeek && !gamifBefore.graceUsedThisWeek && (gamifAfter.streakCurrent === gamifBefore.streakCurrent)) {
         const recent = getRecentPhrases();
         const { text, id } = getMentorPhrase("descanso_saudavel", { userName: userName || "Estudante" }, recent, plat, stateAfterStreak.meta?.tomMentor || "gentil");
         trackRecentPhrase(id);
         setTimeout(() => {
-          showToast(`Ã°Å¸Å’Â± TolerÃƒÂ¢ncia Ativa! Mentor: "${text}"`, false, 6000);
+          showToast(`🌱 Tolerância Ativa! Mentor: "${text}"`, false, 6000);
         }, 1500);
       } else if (gamifBefore.streakCurrent > 1 && gamifAfter.streakCurrent === 1 && gamifAfter.lostStreakDate === todayStr()) {
         const recent = getRecentPhrases();
         const { text, id } = getMentorPhrase("streak_perdida", { userName: userName || "Estudante" }, recent, plat, stateAfterStreak.meta?.tomMentor || "gentil");
         trackRecentPhrase(id);
         setTimeout(() => {
-          showToast(`Ã°Å¸â€Â¥ Ofensiva Reiniciada! Mentor: "${text}"`, false, 6000);
+          showToast(`🔥 Ofensiva Reiniciada! Mentor: "${text}"`, false, 6000);
         }, 1500);
       }
 
@@ -629,7 +638,7 @@ export default function App() {
           if (!existingBadges.includes(ach.id) && ach.criterio(stateAfter)) {
             newlyUnlocked.push(ach.id);
             totalXpBonus += ach.xpReward;
-            showToast(`Ã°Å¸Ââ€  Conquista Desbloqueada: ${ach.icon} ${ach.nome} (+${ach.xpReward} XP)!`);
+            showToast(`🏆 Conquista Desbloqueada: ${ach.icon} ${ach.nome} (+${ach.xpReward} XP)!`);
           }
         });
 
@@ -644,7 +653,7 @@ export default function App() {
 
             if (nextLvl > (g.level || 1)) {
               setTimeout(() => {
-                showToast(`Ã°Å¸Å½â€° NÃƒÂ­vel Subiu: VocÃƒÂª alcanÃƒÂ§ou o NÃƒÂ­vel ${nextLvl}!`);
+                showToast(`🎉 Nível Subiu: Você alcançou o Nível ${nextLvl}!`);
               }, 1000);
             }
 
@@ -662,7 +671,7 @@ export default function App() {
           const nextLvl = stateAfter.gamif?.level || 1;
           const prevLvl = currentGamif.level || 1;
           if (nextLvl > prevLvl) {
-            showToast(`Ã°Å¸Å½â€° NÃƒÂ­vel Subiu: VocÃƒÂª alcanÃƒÂ§ou o NÃƒÂ­vel ${nextLvl}!`);
+            showToast(`🎉 Nível Subiu: Você alcançou o Nível ${nextLvl}!`);
           }
         }
       }, 250);
@@ -670,10 +679,31 @@ export default function App() {
       // Milestone check
       const allDone = Object.values(useStore.getState().temaStats).flat().length + 1;
       if ([7, 14, 30, 100, 200].includes(allDone)) {
-        setTimeout(() => showToast(`Ã°Å¸Å½Â¯ Marco de ${allDone} revisÃƒÂµes concluÃƒÂ­das!`), 1500);
+        setTimeout(() => showToast(`🎯 Marco de ${allDone} revisões concluídas!`), 1500);
       }
 
-      // Meta diÃƒÂ¡ria check
+      const stateAfterTrack = useStore.getState();
+      const analyticsMeta = stateAfterTrack.meta?.analytics || {};
+      if (!analyticsMeta.primeira_revisao_done) {
+        trackEvent("primeira_revisao", { uid: usuarioLogado?.uid, step: stepKey, plat });
+        useStore.setState({
+          meta: {
+            ...stateAfterTrack.meta,
+            analytics: { ...analyticsMeta, primeira_revisao_done: true }
+          }
+        });
+      }
+      if (totalFilaHoje === 1 && analyticsMeta.last_zero_day !== todayStr()) {
+        trackEvent("revisoes_zeradas_dia", { uid: usuarioLogado?.uid, plat });
+        useStore.setState({
+          meta: {
+            ...useStore.getState().meta,
+            analytics: { ...(useStore.getState().meta?.analytics || {}), last_zero_day: todayStr() }
+          }
+        });
+      }
+
+      // Meta diária check
       if ((meta.metaDiaria || 0) > 0 && concluidosHoje + 1 === meta.metaDiaria) {
         setTimeout(() => {
           setShowConfetti(true);
@@ -684,11 +714,11 @@ export default function App() {
             userName: useStore.getState().userName || "Estudante",
             totalQuestoes: markData.questoes || 15
           }, recent, plat);
-          showToast(`Ã°Å¸Å½Â¯ Meta Cumprida: "${text}"`);
+          showToast(`🎯 Meta Cumprida: "${text}"`);
         }, 1500);
       }
     },
-    [plat, pushUndo, setBrainDumpD1, addTemaStats, markStep, updateTema, showToast, meta.metaDiaria, concluidosHoje, addXp, updateGamifStreak, userName]
+    [plat, pushUndo, setBrainDumpD1, addTemaStats, markStep, updateTema, showToast, meta.metaDiaria, concluidosHoje, addXp, updateGamifStreak, userName, totalFilaHoje, usuarioLogado?.uid]
   );
 
   const handleSaveTema = useCallback(
@@ -696,10 +726,10 @@ export default function App() {
       pushUndo(plat);
       if (!temaEdit?.id) {
         addTema(plat, f);
-        showToast(f.unstarted ? `Ã¢Å“â€œ "${f.nome}" priorizado no catÃƒÂ¡logo` : `Ã¢Å“â€œ "${f.nome}" acoplado ÃƒÂ  grade`, true);
+        showToast(f.unstarted ? `✓ "${f.nome}" priorizado no catálogo` : `✓ "${f.nome}" acoplado à grade`, true);
       } else {
         updateTema(plat, temaEdit.id, f);
-        showToast("Ã¢Å“â€œ ConfiguraÃƒÂ§ÃƒÂµes do tema atualizadas", true);
+        showToast("✓ Configurações do tema atualizadas", true);
       }
       setTemaEdit(null);
     },
@@ -711,7 +741,7 @@ export default function App() {
     useStore.setState({ focusMode: true });
   };
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ CARREGANDO AUTH Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ─── CARREGANDO AUTH ───────────────────────────────────────────────────────
   if (carregandoAuth) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#07070f]">
@@ -725,7 +755,7 @@ export default function App() {
     );
   }
 
-  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ NÃƒÆ’O AUTENTICADO Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+  // ─── NÃO AUTENTICADO ───────────────────────────────────────────────────────
   if (!usuarioLogado) {
     return (
       <AuthModal
@@ -751,7 +781,6 @@ export default function App() {
               setPlat(foco);
               if (metaConfig) setMeta({ ...meta, ...metaConfig });
               setTourStep("crono");
-              trackEvent("onboarding_done", { plat: foco });
               setView("crono");
             }}
           />
@@ -785,7 +814,6 @@ export default function App() {
             setPlat(foco);
             if (metaConfig) setMeta({ ...meta, ...metaConfig });
             setTourStep("crono");
-            trackEvent("onboarding_done", { plat: foco });
             setView("crono");
           }}
         />
@@ -838,7 +866,7 @@ export default function App() {
                 <span>Hoje:</span>
                 <div className="w-16 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
                   <div
-                    className="h-full bg-violet-600 transition-all"
+                    className="h-full bg-blue-600 transition-all"
                     style={{
                       width: `${
                         (meta.metaDiaria || 0) > 0
@@ -861,16 +889,16 @@ export default function App() {
             {!focusMode && (
               <div className="flex items-center gap-2">
                 {syncStatus === 'saving' && <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" title="Sincronizando..." />}
-                {syncStatus === 'saved' && <span className="w-2 h-2 rounded-full bg-emerald-500" title="Sincronizado com nuvem ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“" />}
+                {syncStatus === 'saved' && <span className="w-2 h-2 rounded-full bg-emerald-500" title="Sincronizado com nuvem ✓" />}
                 {syncStatus === 'offline' && <span className="w-2 h-2 rounded-full bg-red-500" title="Modo Offline" />}
 
                 <button
                   type="button"
                   onClick={() => setPlat(plat === "res" ? "vest" : "res")}
-                  className="md:hidden px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-violet-600/20 to-pink-500/20 border border-violet-500/30 text-violet-300 hover:text-white flex items-center justify-center text-[10.5px] font-black tracking-wide uppercase shrink-0 transition-all active:scale-95 cursor-pointer"
+                  className="md:hidden px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600/20 to-sky-500/20 border border-blue-500/30 text-blue-300 hover:text-white flex items-center justify-center text-[10.5px] font-black tracking-wide uppercase shrink-0 transition-all active:scale-95 cursor-pointer"
                   title="Alternar Foco"
                 >
-                  {plat === "res" ? "ResidÃƒÂªncia" : "Vestibular"}
+                  {plat === "res" ? "Residência" : "Vestibular"}
                 </button>
                 <button
                   type="button"
@@ -887,7 +915,7 @@ export default function App() {
               onClick={toggleFocusMode}
               className={`px-3 py-1 rounded-xl text-[12px] font-bold transition-all border flex items-center gap-1 ${
                 focusMode
-                  ? "bg-violet-600 text-white border-violet-500"
+                  ? "bg-blue-600 text-white border-blue-500"
                   : "bg-white/5 text-gray-400 border-white/10 hover:text-white"
               }`}
             >
@@ -918,7 +946,7 @@ export default function App() {
                 onStudy={handleStudyTrigger}
                 onDelete={(id) => {
                   deleteTema(plat, id);
-                  showToast("Ã°Å¸â€”â€˜ Tema deletado");
+                  showToast("🗑 Tema deletado");
                 }}
                 userName={userName}
                 onEditName={() => setEditName(true)}
@@ -1003,7 +1031,7 @@ export default function App() {
 
       <BottomNav view={view} setView={setView} />
 
-      {/* RenderizaÃƒÂ§ÃƒÂ£o de Modais */}
+      {/* Renderização de Modais */}
       {temaEdit !== null && (
         <TemaModal
           initial={temaEdit}
@@ -1013,7 +1041,7 @@ export default function App() {
           onDelete={(id) => {
             deleteTema(plat, id);
             setTemaEdit(null);
-            showToast("Ã°Å¸â€”â€˜ Tema removido");
+            showToast("🗑 Tema removido");
           }}
         />
       )}
@@ -1039,7 +1067,7 @@ export default function App() {
 
       {editName && (
         <Modal onClose={() => setEditName(false)}>
-          <h2 className="text-[14px] font-bold text-white mb-2">Alterar IdentificaÃƒÂ§ÃƒÂ£o</h2>
+          <h2 className="text-[14px] font-bold text-white mb-2">Alterar Identificação</h2>
           <Input
             type="text"
             value={userName}
@@ -1062,7 +1090,7 @@ export default function App() {
               handleStudyTrigger(t.id, firstUndoneStep.key);
             } else {
               setView("banco");
-              showToast(`Tema concluÃƒÂ­do! Abrindo Banco de Dados.`);
+              showToast(`Tema concluído! Abrindo Banco de Dados.`);
             }
           }}
           onIniciarTema={(catalogItem) => {
@@ -1071,7 +1099,7 @@ export default function App() {
             addTema(plat, {
               nome: catalogItem.nome,
               esp: catalogItem.esp,
-              prio: catalogItem.prio || "MÃƒÂ©dia",
+              prio: catalogItem.prio || "Média",
               importancia: prioToImportancia(catalogItem.prio),
               obs: catalogItem.blockName,
               pico: "",
@@ -1089,7 +1117,7 @@ export default function App() {
         onUndo={() => {
           undo();
           dismissToast();
-          showToast("ÃƒÂ¢Ã…â€œÃ¢â‚¬Å“ Desfeito!");
+          showToast("✓ Desfeito!");
         }}
         onDismiss={dismissToast}
       />
@@ -1112,6 +1140,3 @@ export default function App() {
     </div>
   );
 }
-
-
-
