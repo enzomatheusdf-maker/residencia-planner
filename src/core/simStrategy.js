@@ -22,6 +22,7 @@ export function todayStr() {
 
 /**
  * Recomenda a estratégia de simulados com base na data da prova, cobertura e histórico.
+ * Gated por cobertura × calendário (não só calendário).
  */
 export function getSimRecommendation(dataProva, simulados = [], temas = [], plat = "res") {
   if (!dataProva) {
@@ -32,7 +33,8 @@ export function getSimRecommendation(dataProva, simulados = [], temas = [], plat
       justificativa: "O Mentor precisa saber quanto tempo resta até seu exame para agendar simulados de forma inteligente.",
       frequenciaRecomendada: "—",
       focoEspecialidades: [],
-      diasRestantes: 0
+      diasRestantes: 0,
+      cobertura: 0,
     };
   }
 
@@ -40,49 +42,62 @@ export function getSimRecommendation(dataProva, simulados = [], temas = [], plat
   const diasRestantes = diffDays(hoje, dataProva);
   const nSim = simulados.length;
 
-  // Classificação do tipo de simulado
-  let tipo = "Stamina";
-  let titulo = "Simulado Stamina";
-  let descricao = "Foco em resistência física e mental, controle do ritmo (tempo por questão) e cobertura de lacunas.";
-  let justificativa = "Estamos na fase intermediária dos estudos. O objetivo principal é acostumar o cérebro ao volume de questões sob pressão de tempo.";
+  // Cobertura = % de temas iniciados
+  const totalTemas = temas.length;
+  const iniciados = temas.filter(t => !t.unstarted).length;
+  const cobertura = totalTemas > 0 ? Math.round((iniciados / totalTemas) * 100) : 0;
+
+  let tipo, titulo, descricao, justificativa, freq;
 
   if (nSim === 0) {
     tipo = "Baseline";
-    titulo = "Simulado Baseline";
-    descricao = "Estabelecer seu ponto de partida para mapear suas forças e fraquezas iniciais.";
+    titulo = "Simulado Diagnóstico (Baseline)";
+    descricao = "Estabeleça seu ponto de partida. A nota não importa — o objetivo é mapear fraquezas.";
     justificativa = "Sem um simulado de nivelamento, o algoritmo não possui dados históricos para calibrar sua prioridade de temas e prever seu viés metacognitivo.";
+    freq = "1 agora (diagnóstico)";
   } else if (diasRestantes <= 0) {
-    tipo = "Foco Revisão";
+    tipo = "Reta final";
     titulo = "Revisão Geral Final";
     descricao = "A prova é hoje ou já passou! Foco em revisões leves e controle de ansiedade.";
     justificativa = "Não realize novos simulados densos. Preserve sua energia cognitiva.";
+    freq = "Concluído";
+  } else if (diasRestantes <= 15) {
+    tipo = "Lapidação";
+    titulo = "Fase de Lapidação";
+    descricao = "Pare simulados densos. Revise a planilha de erros + FSRS. Preserve energia.";
+    justificativa = "A <15 dias o custo de energia supera o ganho de novos simulados. Foque nas revisões ativas pendentes.";
+    freq = "Sem novos simulados";
   } else if (diasRestantes <= 30) {
     tipo = "Confirmação";
     titulo = "Simulado de Confirmação";
-    descricao = "Simulado de reta final. Ajustes milimétricos de controle de ansiedade e consolidação da nota de aprovação.";
-    justificativa = "Faltando menos de 30 dias para a prova, os simulados servem para simular as condições exatas do dia do exame (ambiente, horários, alimentação).";
-  }
-
-  // Recomendação de frequência
-  let freq = "A cada 30 dias";
-  if (diasRestantes <= 0) {
-    freq = "Concluído";
-  } else if (diasRestantes <= 15) {
-    freq = "Sem novos simulados (Foco em erros)";
-    descricao = "Fase de lapidação final. Foque estritamente em revisar a planilha de erros e fazer cards do Anki.";
+    descricao = "Semanal, no mesmo horário/duração da prova real. Foco em pacing e ansiedade.";
+    justificativa = "Faltando menos de 30 dias, os simulados simulam condições exatas do dia do exame (ambiente, horários, alimentação).";
+    freq = "Semanal";
   } else if (diasRestantes <= 60) {
-    freq = "A cada 7 dias";
-  } else if (diasRestantes <= 120) {
-    freq = "A cada 15 dias";
+    tipo = "Stamina+";
+    titulo = "Simulado Stamina+";
+    descricao = "Quinzenal, prova inteira, para construir resistência e ritmo (tempo/questão).";
+    justificativa = "A 30–60 dias, simulados completos a cada 2 semanas treinam resistência e calibram o tempo por questão.";
+    freq = "A cada 14 dias";
+  } else if (diasRestantes <= 120 && cobertura >= 40) {
+    tipo = "Stamina";
+    titulo = "Simulado Stamina";
+    descricao = "Simulado completo, cronometrado e misto a cada 3 semanas. Calibração espaçada.";
+    justificativa = "Com cobertura ≥40% e 60–120 dias até a prova, simulados espaçados calibram seu desempenho sem drenar energia de cobertura.";
+    freq = "A cada 21 dias";
+  } else {
+    tipo = "Construção";
+    titulo = "Fase de Construção";
+    descricao = "Cedo demais para simulados frequentes. Construa cobertura + questões diárias intercaladas.";
+    justificativa = `Cobertura atual ${cobertura}% — abaixo de 40% ou mais de 120 dias até a prova. Simulados completos têm pouco sinal agora e desmotivam. Foco em construir base.`;
+    freq = "1 baseline opcional (já feito)";
   }
 
   // Identificar especialidades prioritárias com base nas fraquezas de simulados
   const espErrors = {};
   simulados.forEach(s => {
     (s.questoesErradas || []).forEach(q => {
-      if (q.esp) {
-        espErrors[q.esp] = (espErrors[q.esp] || 0) + 1;
-      }
+      if (q.esp) espErrors[q.esp] = (espErrors[q.esp] || 0) + 1;
     });
   });
 
@@ -98,7 +113,8 @@ export function getSimRecommendation(dataProva, simulados = [], temas = [], plat
     justificativa,
     frequenciaRecomendada: freq,
     focoEspecialidades,
-    diasRestantes
+    diasRestantes,
+    cobertura,
   };
 }
 
@@ -188,6 +204,39 @@ export function getResultActions(questoesErradas = []) {
 
   // Ordenar ações pela frequência do erro (decrescente)
   return actions.sort((a, b) => b.pct - a.pct);
+}
+
+/**
+ * Protocolo de execução do simulado, dependente da fase.
+ */
+export function getSimuladoProtocolo(tipo) {
+  const base = [
+    { t: "Cronometre e simule a prova", d: "Primeira tentativa, tempo real, sem pausar. Treina pacing e stamina como no dia D." },
+    { t: "Misture as áreas (intercalado)", d: "Não faça por matéria isolada. Misturar força você a escolher a abordagem certa — ganho de transferência (interleaving)." },
+    { t: "Não persiga o número", d: "Primeiras provas pontuam 40–55% e isso é normal. O que vale é a tendência da média móvel, não um simulado isolado." },
+    { t: "Triagem de erro obrigatória", d: "Para cada erro, classifique a causa (lacuna / raciocínio / distrator / descuido / interpretação / não visto). Sem isso o simulado vira só uma nota." },
+    { t: "Revise o racional de TODAS as erradas", d: "Leia o comentário inteiro, inclusive de acertos por chute. Re-leitura passiva engana; explicar o porquê consolida." },
+    { t: "Refaça só as erradas em 48–72h", d: "Relearning sucessivo: reencontrar o que você errou alguns dias depois é o que fixa de verdade. Lacunas viram tema no FSRS + card atômico (cloze)." },
+    { t: "Use provas NOVAS para prever desempenho", d: "Refazer prova já vista infla a nota por reconhecimento. Reaproveite provas antigas só como treino de erro, nunca como previsão." },
+  ];
+  if (tipo === "Confirmação") {
+    return [
+      { t: "Condições idênticas à prova", d: "Mesmo horário, mesma duração, mesmo intervalo, sem celular. Está treinando o protocolo do dia, não só conteúdo." },
+      ...base.slice(0, 5),
+    ];
+  }
+  if (tipo === "Lapidação" || tipo === "Reta final") {
+    return [
+      { t: "Sem simulados novos", d: "A <15 dias o custo de energia supera o ganho. Foque a planilha de erros e as revisões ativas pendentes." },
+    ];
+  }
+  if (tipo === "Construção") {
+    return [
+      { t: "Questões diárias intercaladas", d: "Nessa fase, questões diárias do FSRS têm mais retorno que simulados completos. Construa cobertura primeiro." },
+      { t: "1 simulado diagnóstico (baseline)", d: "Se ainda não fez nenhum, faça 1 para mapear fraquezas — mas sem pressão de nota." },
+    ];
+  }
+  return base;
 }
 
 export function getSimuladoGuidance({ dataProva, simulados = [], cobertura = 0, score = 0 }) {

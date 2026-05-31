@@ -1,7 +1,7 @@
 import { STEPS } from "./fsrs";
 import { PROVA_STATS_RES, PROVA_STATS_VEST, PROVAS_RES, PROVAS_VEST } from "../constants/provaStats";
 import { saldoRitmo, scoreProntidao } from "./volume";
-import { calcTrueRetention } from "../hooks/useMetrics";
+import { calcTrueRetention, calcTrend } from "../hooks/useMetrics";
 
 // Combined stats lookup
 const PROVA_STATS = {
@@ -38,11 +38,13 @@ export function getReadinessData({ temas, simulados, meta, plat }) {
   // 2. True Retention (FSRS retention on D15+ steps)
   const trueRetention = calcTrueRetention(temas); // returns 0-100 or null
 
-  // 3. Mock Exam average (Acerto Simulado)
+  // 3. Mock Exam average — média móvel dos últimos 4 simulados
   const simPcts = simulados.map(s => s.pct);
-  const acertoSimulado = simPcts.length > 0
-    ? Math.round(simPcts.reduce((a, b) => a + b, 0) / simPcts.length)
+  const simsRecentes = simulados.slice(-4);
+  const acertoSimulado = simsRecentes.length > 0
+    ? Math.round(simsRecentes.reduce((a, s) => a + s.pct, 0) / simsRecentes.length)
     : null;
+  const tendenciaSim = calcTrend(simPcts);
 
   // 4. Rhythm Balance Normalized (0-100)
   // Positive/zero balance = 100%, negative is normalized down
@@ -173,6 +175,7 @@ export function getReadinessData({ temas, simulados, meta, plat }) {
     cobertura,
     trueRetention,
     acertoSimulado,
+    tendenciaSim,
     saldoRitmoNorm,
     targetProva,
     examData,

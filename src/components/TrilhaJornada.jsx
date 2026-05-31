@@ -71,11 +71,20 @@ export default function TrilhaJornada({ totalSessions = 0, onOpenAjustes, setVie
         cta: "",
         action: null,
       },
+      {
+        id: "baseline",
+        icon: "🧪",
+        title: "Fazer simulado diagnóstico (baseline)",
+        desc: "Mapeia suas fraquezas para o algoritmo priorizar — a nota aqui não importa.",
+        done: (useStore.getState()[plat]?.simulados || []).length > 0,
+        cta: "Ir a Simulados",
+        action: () => setView && setView("sims"),
+      },
     ];
-  }, [provasAlvo, temas, gamif?.streakCurrent, onOpenAjustes, setView, onStudy]);
+  }, [provasAlvo, temas, gamif?.streakCurrent, onOpenAjustes, setView, onStudy, plat]);
 
   const doneCount = steps.filter((s) => s.done).length;
-  const hidden = doneCount === 5 || totalSessions >= 10 || trilhaDispensada;
+  const hidden = doneCount === 6 || totalSessions >= 10 || trilhaDispensada;
 
   useEffect(() => {
     const awarded = trilhaXpDados;
@@ -106,7 +115,7 @@ export default function TrilhaJornada({ totalSessions = 0, onOpenAjustes, setVie
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Trilha de Jornada</p>
-          <p className="text-sm text-white font-bold">{doneCount}/5 marcos concluídos</p>
+          <p className="text-sm text-white font-bold">{doneCount}/6 marcos concluídos</p>
         </div>
         <button type="button" onClick={dismiss} className="text-gray-500 hover:text-gray-300 border-none bg-transparent cursor-pointer" title="Dispensar trilha">
           <X size={16} />
@@ -114,7 +123,7 @@ export default function TrilhaJornada({ totalSessions = 0, onOpenAjustes, setVie
       </div>
 
       <div className="mt-3 h-2 w-full rounded-full bg-white/5 overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 transition-all duration-500" style={{ width: `${Math.max(8, (doneCount / 5) * 100)}%` }} />
+        <div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 transition-all duration-500" style={{ width: `${Math.max(8, (doneCount / 6) * 100)}%` }} />
       </div>
 
       <div className="mt-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-3">

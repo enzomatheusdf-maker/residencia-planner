@@ -1132,7 +1132,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 <div className="flex items-center gap-1 rounded-xl border border-white/5 bg-black/25 px-2.5 py-1.5">
                   <span className="text-[8.5px] font-bold text-gray-500 uppercase tracking-wider mr-1 select-none flex items-center gap-1">
                     Consistencia
-                    <InfoTooltip texto="Mapeia seu hist?rico de estudos nos ?ltimos 7 dias. Cada bloco colorido indica que voc? realizou revis?es naquele dia." />
+                    <InfoTooltip texto="Mapeia seu histórico de estudos nos últimos 7 dias. Cada bloco colorido indica que você realizou revisões naquele dia." />
                   </span>
                   {Array.from({ length: 7 }, (_, i) => {
                     const d = new Date();
@@ -1165,7 +1165,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             <div className="space-y-3">
               <p className="text-[10px] font-bold uppercase tracking-wide text-blue-300">Acao do dia</p>
               <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
-                {pending > 0 ? "Voc? tem " + pending + " revis?es para hoje" : "Fila zerada por hoje"}
+                {pending > 0 ? "Você tem " + pending + " revisões para hoje" : "Fila zerada por hoje"}
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-[var(--text-2)]">
                 {pending > 0
@@ -1212,14 +1212,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           label="Pendentes"
           value={String(pendingCountUp) + (naReserva > 0 ? " +" + naReserva : "")}
           tone={pending > 0 ? "text-amber-400" : "text-emerald-400"}
-          tooltip="Total de revis?es programadas pelo algoritmo de repeti??o espa?ada FSRS para o dia atual."
+          tooltip="Total de revisões programadas pelo algoritmo de repetição espaçada FSRS para o dia atual."
           delayMs={0}
         />
         <DashboardKpiCard
           label="Prontidao"
           value={String(readinessCountUp) + "%"}
           tone="text-blue-400"
-          tooltip="M?trica geral de prontid?o calculada com base na cobertura e acertos do cronograma e simulados."
+          tooltip="Métrica geral de prontidão calculada com base na cobertura e acertos do cronograma e simulados."
           delayMs={50}
           action={(
             <button
@@ -1247,24 +1247,28 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           label="Acerto"
           value={acertoMedio != null ? String(acertoCountUp) + "%" : "-"}
           tone={acertoMedio != null ? (acertoMedio >= 80 ? "text-emerald-400" : acertoMedio >= 65 ? "text-blue-400" : "text-red-400") : "text-gray-500"}
-          tooltip="Precis?o m?dia ponderada das quest?es resolvidas nas etapas D0/revis?o conclu?das."
+          tooltip="Precisão média ponderada das questões resolvidas nas etapas D0/revisão concluídas."
           delayMs={100}
         />
         <DashboardKpiCard
           label="Dominados"
           value={temasFiltrados.length > 0 ? String(masteredCountUp) + "/" + temasFiltrados.length : "0"}
           tone="text-emerald-400"
-          tooltip="N?mero de temas cadastrados que completaram o ciclo completo de fixa??o no FSRS."
+          tooltip="Número de temas cadastrados que completaram o ciclo completo de fixação no FSRS."
           delayMs={150}
         />
         <DashboardKpiCard
           label="True Retention"
-          value={trueRet != null ? String(trueRetCountUp) + "%" : "-"}
-          tone={trueRet != null ? (trueRet >= 80 ? "text-emerald-400" : trueRet >= 65 ? "text-blue-400" : "text-red-400") : "text-gray-500"}
-          tooltip="Taxa de acerto real medida apenas em etapas com intervalos maiores de 15 dias (D21+)."
+          value={trueRet != null ? String(trueRetCountUp) + "%" : "coletando"}
+          tone={trueRet != null ? (trueRet >= 80 ? "text-emerald-400" : trueRet >= 65 ? "text-blue-400" : "text-red-400") : "text-gray-600"}
+          tooltip="Taxa de acerto real medida em etapas D21+. Fica disponível após ~3 semanas de revisões. Componentes sem dados ainda não entram no Score de Prontidão — entram automaticamente quando houver histórico."
           className="col-span-2 lg:col-span-1"
           delayMs={200}
-        />
+        >
+          {trueRet == null && (
+            <p className="text-[9px] text-gray-600 mt-1">a partir do D21</p>
+          )}
+        </DashboardKpiCard>
       </section>
 
       {!modoSimples && (
@@ -1309,7 +1313,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           <div className="flex items-center justify-between gap-3">
             <p className="text-[10px] text-[var(--text-3)] uppercase tracking-wide font-bold flex items-center gap-1">
               Ofensiva
-              <InfoTooltip texto="Mede sua consist?ncia estudada na ?ltima semana. Menos punitivo que a contagem consecutiva cl?ssica." />
+              <InfoTooltip texto="Mede sua consistência estudada na última semana. Menos punitivo que a contagem consecutiva clássica." />
             </p>
             <div className="flex gap-1 select-none items-center">
               {Array.from({ length: 2 }).map((_, i) => (
@@ -1488,6 +1492,34 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
       {/* Camada terciaria: carga e detalhes */}
       <CargaFuturaWidget temas={temas} maxRevisoesDia={meta.maxRevisoesDia || 30} />
+
+      {/* DICA P5: retenção FSRS alta demais → sobrecarga */}
+      {(() => {
+        const proj = getWorkloadProjection(temas, 14);
+        const cap_ = meta.maxRevisoesDia || 30;
+        const diasSobrecarga = Object.values(proj).filter(n => n > cap_).length;
+        const retAtual = meta?.retencaoFSRS || 0.90;
+        if (diasSobrecarga >= 3 && retAtual >= 0.90) {
+          return (
+            <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-amber-400 font-black">Dica de Eficiência FSRS</p>
+                <p className="text-[11.5px] text-gray-300 mt-1 leading-relaxed max-w-lg">
+                  Você está afogado em revisões por {diasSobrecarga} dias. Considere baixar a retenção-alvo para 85% temporariamente — menos revisões/dia, mantendo a maior parte do conhecimento.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenAjustes}
+                className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-[11px] border border-amber-500/25 cursor-pointer shrink-0"
+              >
+                Ajustar retenção
+              </button>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* SEMANA DE PROVA â€” Banner de urgÃªncia (apenas vest, dentro de 7 dias) */}
       {plat === "vest" && semanaDeProva && (

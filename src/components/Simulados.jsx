@@ -7,7 +7,7 @@ import { calcMetricasElite, migrarSim } from "../hooks/useMetrics";
 import { Btn, Modal, Field, Input, Select, Tabs } from "./Primitives";
 import { getReadinessData, matchesArea, pickTargetProva } from "../core/readiness";
 import { totalQuestoesFeitas, saldoRitmo } from "../core/volume";
-import { getSimRecommendation, getResultActions, getSimuladoGuidance } from "../core/simStrategy";
+import { getSimRecommendation, getResultActions, getSimuladoGuidance, getSimuladoProtocolo } from "../core/simStrategy";
 import { trackEvent } from "../services/firebase";
 
 const ZONA_UI = {
@@ -391,6 +391,67 @@ export default function Simulados({ onStudy, setView }) {
             <p className="text-xs text-gray-300 mt-1">{simGuidance.recomendacao}</p>
             <p className="text-[11px] text-gray-500 mt-1">{simGuidance.porque}</p>
           </div>
+
+          {/* ROADMAP DE FASES ATÉ A PROVA */}
+          {meta?.dataProva && (() => {
+            const fases = ["Construção", "Stamina", "Stamina+", "Confirmação", "Lapidação"];
+            const faseAtual = simRecommendation.tipo;
+            return (
+              <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-black mb-3">Plano até a prova</p>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {fases.map((fase, i) => {
+                    const isAtual = fase === faseAtual || (faseAtual === "Baseline" && i === 0);
+                    const isPast = fases.indexOf(faseAtual) > i;
+                    return (
+                      <React.Fragment key={fase}>
+                        <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                          isAtual
+                            ? "bg-blue-500/20 border-blue-500/40 text-blue-300"
+                            : isPast
+                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 opacity-60"
+                            : "bg-white/[0.03] border-white/5 text-gray-600"
+                        }`}>
+                          {isAtual && <span className="mr-1">▶</span>}{fase}
+                        </div>
+                        {i < fases.length - 1 && <span className="text-gray-700 text-[10px]">→</span>}
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+                {simRecommendation.cobertura !== undefined && (
+                  <p className="text-[10px] text-gray-500 mt-2">Cobertura atual: <strong className="text-gray-300">{simRecommendation.cobertura}%</strong> · {simRecommendation.diasRestantes}d restantes</p>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* CARD: COMO FAZER ESTE SIMULADO */}
+          {(() => {
+            const protocolo = getSimuladoProtocolo(simRecommendation.tipo);
+            return (
+              <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-black mb-3 flex items-center gap-1.5">
+                  <BookOpen size={12} className="text-blue-400" />
+                  Como fazer este simulado
+                </p>
+                <div className="flex flex-col gap-3">
+                  {protocolo.map((passo, i) => (
+                    <div key={i} className="flex gap-3">
+                      <span className="text-[10px] font-black text-gray-600 font-mono mt-0.5 shrink-0 w-4">{i + 1}.</span>
+                      <div>
+                        <p className="text-[11.5px] font-bold text-gray-200">{passo.t}</p>
+                        <p className="text-[10.5px] text-gray-500 leading-relaxed mt-0.5">{passo.d}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[9.5px] text-gray-600 mt-3 italic">
+                  Correlação simulado↔prova é parcial (r≈0,6–0,7). Use como bússola, não como nota final.
+                </p>
+              </div>
+            );
+          })()}
           {/* BLOCK 1: PRONTIDÃO GERAL (KPIs & Volume & Ritmo) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Score de Prontidão */}
@@ -399,7 +460,7 @@ export default function Simulados({ onStudy, setView }) {
               <div>
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
                   Score de Prontidão
-                  <Info size={11} className="text-gray-600 cursor-help" title="Cálculo combinado: acertos simulados, True Retention, edital e ritmo de estudos." />
+                  <Info size={11} className="text-gray-600 cursor-help" title="Cálculo combinado: acertos simulados (média móvel 4 últimos), True Retention D21+, cobertura e ritmo. Componentes sem dados ainda (simulados, retenção D21) não entram no cálculo e são incluídos automaticamente quando houver histórico." />
                 </p>
                 <div className="flex items-baseline gap-2 mt-2">
                   <p className={`text-4xl font-black tabular-nums ${readiness.score !== null ? (readiness.score >= 75 ? "text-emerald-400" : readiness.score >= 60 ? "text-blue-400" : "text-amber-400") : "text-gray-600"}`}>
@@ -409,6 +470,11 @@ export default function Simulados({ onStudy, setView }) {
                 {readiness.range && (
                   <p className="text-[10px] text-gray-400 mt-1">
                     Intervalo real estimado: <span className="font-bold text-white">{readiness.range[0]}% – {readiness.range[1]}%</span>
+                  </p>
+                )}
+                {readiness.tendenciaSim !== null && readiness.tendenciaSim !== undefined && (
+                  <p className={`text-[10px] font-bold mt-1 ${readiness.tendenciaSim > 0 ? "text-emerald-400" : readiness.tendenciaSim < 0 ? "text-red-400" : "text-gray-500"}`}>
+                    Tendência simulados: {readiness.tendenciaSim > 0 ? "▲ melhorando" : readiness.tendenciaSim < 0 ? "▼ caindo" : "→ estável"}
                   </p>
                 )}
               </div>
@@ -463,15 +529,22 @@ export default function Simulados({ onStudy, setView }) {
                       {ritmoPace.saldo >= 0 ? `+${ritmoPace.saldo}` : ritmoPace.saldo}
                     </p>
                     <p className="text-[10px] text-gray-400 leading-relaxed font-semibold">
-                      {ritmoPace.saldo >= 0 
-                        ? "Excelente! Você está adiantado nas suas metas." 
+                      {ritmoPace.saldo >= 0
+                        ? "Excelente! Você está adiantado nas suas metas."
                         : `Você está ${Math.abs(ritmoPace.saldo)} questões atrás do planejado.`}
                     </p>
                   </div>
                 ) : (
-                  <div className="mt-2">
-                    <p className="text-xl font-bold text-gray-500">Opt-in / Inativo</p>
-                    <p className="text-[10px] text-gray-500 mt-1 italic">Defina uma meta diária nos ajustes para ativar o saldo de ritmo.</p>
+                  <div className="mt-2 space-y-2">
+                    <p className="text-xl font-bold text-gray-500">—</p>
+                    <p className="text-[10px] text-gray-500 italic">Meta diária não configurada. Defina nos Ajustes para ativar o Equilíbrio de Ritmo e o Score de Prontidão completo.</p>
+                    <button
+                      type="button"
+                      onClick={() => setView && setView("ajustes")}
+                      className="text-[9.5px] bg-blue-600/20 text-blue-400 border border-blue-500/25 px-2 py-1 rounded-xl font-bold cursor-pointer border-none"
+                    >
+                      Configurar meta
+                    </button>
                   </div>
                 )}
               </div>
