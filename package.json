@@ -17,13 +17,14 @@
     "zustand": "^5.0.13"
   },
   "scripts": {
-    "check:encoding": "node scripts/check-encoding.js",
+    "check:mojibake": "node scripts/check-mojibake.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "start": "react-scripts start",
-    "build": "npm run check:encoding && react-scripts build",
+    "build": "node scripts/check-mojibake.mjs && react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "eslintConfig": {
     "extends": [

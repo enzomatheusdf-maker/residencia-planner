@@ -628,8 +628,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
       </header>
 
       {/* 2. BODY CONTENT */}
-      <main className="flex-1 overflow-y-auto flex items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-2xl bg-[#0d0d14]/60 border border-white/5 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative overflow-hidden backdrop-blur-md animate-fade-up">
+      <main className="flex-1 overflow-y-auto flex items-start md:items-center justify-center p-4 md:p-8">
+        <div className="w-full max-w-2xl my-auto bg-[#0d0d14]/60 border border-white/5 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl relative overflow-hidden backdrop-blur-md animate-fade-up">
           <div className="absolute top-0 left-0 w-2 h-full" style={{ backgroundColor: espColor }} />
 
           {/* 3 de 7 da fila de hoje */}

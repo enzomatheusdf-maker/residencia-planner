@@ -1,0 +1,13 @@
+#!/bin/sh
+# Barreira anti-mojibake: bloqueia commits com texto corrompido (UTF-8 quebrado).
+# Ativado via "git config core.hooksPath .githooks" (rodado no npm "prepare").
+# Para ativar manualmente: git config core.hooksPath .githooks
+
+echo "[pre-commit] Verificando mojibake..."
+node scripts/check-mojibake.mjs
+status=$?
+if [ "$status" -ne 0 ]; then
+  echo "[pre-commit] Commit bloqueado: corrija os caracteres corrompidos acima."
+  exit 1
+fi
+exit 0

@@ -386,6 +386,7 @@ export function OnboardingModal({ onComplete }) {
   const [plataforma, setPlataforma] = useState("res");
   const [tempoDisponivel, setTempoDisponivel] = useState(2);
   const [provasAlvo, setProvasAlvo] = useState(["ENAMED"]);
+  const [treinarRaciocinioClinico, setTreinarRaciocinioClinico] = useState(false);
 
   useEffect(() => {
     setProvasAlvo(plataforma === "res" ? ["ENAMED"] : []);
@@ -406,12 +407,15 @@ export function OnboardingModal({ onComplete }) {
       areaPuxouBaixo: "",
       acertosAlvo: 0,
       totalQuestoesAlvo: 100,
-      notaCorteAlvo: 0,
-      notasTentativaAnterior: {},
-      tomMentor: "gentil",
-      estrategiaRefinada: false,
-    });
-  };
+        notaCorteAlvo: 0,
+        notasTentativaAnterior: {},
+        tomMentor: "gentil",
+        estrategiaRefinada: false,
+        modulos: {
+          raciocinioClinico: treinarRaciocinioClinico,
+        },
+      });
+    };
 
   return (
     <div className="fixed inset-0 bg-[#05050d]/97 backdrop-blur-md flex items-center justify-center z-[100] p-4">
@@ -457,10 +461,10 @@ export function OnboardingModal({ onComplete }) {
             </div>
           </Field>
 
-          <Field label="Provas-alvo" info="Selecione as provas que quer priorizar nas recomendações e estatísticas.">
-            <div className="grid grid-cols-2 gap-2">
-              {(plataforma === "res" ? PROVAS_RES : PROVAS_VEST).map((prova) => {
-                const selected = provasAlvo.includes(prova);
+            <Field label="Provas-alvo" info="Selecione as provas que quer priorizar nas recomendações e estatísticas.">
+              <div className="grid grid-cols-2 gap-2">
+                {(plataforma === "res" ? PROVAS_RES : PROVAS_VEST).map((prova) => {
+                  const selected = provasAlvo.includes(prova);
                 return (
                   <button
                     key={prova}
@@ -477,11 +481,37 @@ export function OnboardingModal({ onComplete }) {
                     {prova}
                   </button>
                 );
-              })}
-            </div>
-          </Field>
+                })}
+              </div>
+            </Field>
 
-          <div className="bg-indigo-950/20 border border-indigo-500/20 p-4 rounded-2xl text-left space-y-2 mt-2">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-[11px] font-bold text-gray-300 uppercase tracking-wider">Módulos opcionais</p>
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Brain size={15} className="text-cyan-400 shrink-0" />
+                    Treinar Raciocínio Clínico
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTreinarRaciocinioClinico((prev) => !prev)}
+                  className={`shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${
+                    treinarRaciocinioClinico
+                      ? "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+                      : "bg-white/5 text-gray-400 border-white/10 hover:text-gray-200"
+                  }`}
+                >
+                  {treinarRaciocinioClinico ? "Ativado" : "Opcional"}
+                </button>
+              </div>
+              <p className="text-[11px] text-gray-400 leading-relaxed">
+                Além de passar na prova, treine anamnese, diagnósticos diferenciais e raciocínio para o dia a dia clínico (illness scripts, casos e Script Concordance). Pode ligar/desligar depois nos Ajustes.
+              </p>
+            </div>
+
+            <div className="bg-indigo-950/20 border border-indigo-500/20 p-4 rounded-2xl text-left space-y-2 mt-2">
             <div className="flex items-center gap-2">
               <span className="text-indigo-400 text-base">🎻</span>
               <h3 className="text-xs font-black text-indigo-300 uppercase tracking-wider">Maestro, não Banco de Questões</h3>
@@ -1195,7 +1225,7 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
 
 // ==================================================
 export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
-  const { meta, setMeta, plat, setPlat, optimize, sprint, setSprint, userName, setUserName, userEmail, setUserEmail, gamif } = useStore();
+  const { meta, setMeta, plat, setPlat, optimize, sprint, setSprint, userName, setUserName, userEmail, setUserEmail, gamif, toggleModulo } = useStore();
   const showToast = useStore((s) => s.showToast);
   const openConfirm = useStore((s) => s.openConfirm);
   const temas = useStore((s) => s[plat]?.temas || []);
@@ -1647,7 +1677,7 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
             {/* Otimizador FSRS */}
             <div className="bg-white/5 rounded-2xl p-4 space-y-3">
               <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                <span>âš¡ Otimizador de Ciclos FSRS</span>
+                <Zap size={13} className="shrink-0" /><span>Otimizador de Ciclos FSRS</span>
                 <InfoTooltip texto="Reorganiza as revisões que estão atrasadas de forma que você possa colocá-las em dia sem desregular o peso cognitivo agendado FSRS." />
               </p>
               <p className="text-[11px] text-gray-500 leading-relaxed font-medium">
@@ -1659,7 +1689,36 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
               </Btn>
             </div>
 
-            {/* Sprint Semanal */}
+              <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Módulos opcionais</p>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Brain size={15} className="text-cyan-400 shrink-0" />
+                      Treinar Raciocínio Clínico
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleModulo("raciocinioClinico", !meta.modulos?.raciocinioClinico)}
+                    className={`shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all ${
+                      meta.modulos?.raciocinioClinico
+                        ? "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+                        : "bg-white/5 text-gray-400 border-white/10 hover:text-gray-200"
+                    }`}
+                  >
+                    {meta.modulos?.raciocinioClinico ? "Ativado" : "Desativado"}
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-400 leading-relaxed">
+                  Além de passar na prova, treine anamnese, diagnósticos diferenciais e raciocínio para o dia a dia clínico (illness scripts, casos e Script Concordance).
+                </p>
+                <p className="text-[10px] text-gray-500">
+                  Você pode ligar ou desligar esse trilho a qualquer momento sem alterar os outros módulos do app.
+                </p>
+              </div>
+
+              {/* Sprint Semanal */}
             <div className="bg-white/5 rounded-2xl p-4 space-y-3">
               <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
                 <span>🏃‍♂️ Sprint Semanal de Foco</span>
