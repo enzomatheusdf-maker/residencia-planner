@@ -1,4 +1,4 @@
-import { CATALOGO_RES, CATALOGO_VEST } from "./catalogos";
+import { CATALOGO_RES, CATALOGO_VEST, CATALOGO_ESTRATEGIA_MED } from "./catalogos";
 
 export const CRONOGRAMAS = [
   {
@@ -11,6 +11,17 @@ export const CRONOGRAMAS = [
     blocos: CATALOGO_RES.length,
     catalogo: CATALOGO_RES,
     default: true
+  },
+  {
+    id: "res-estrategia-2026",
+    plat: "res",
+    nome: "Estratégia MED 2026",
+    fonte: "Estratégia MED",
+    ano: 2026,
+    descricao: "Extensivo 50 semanas — 330 tópicos organizados por especialidade",
+    blocos: CATALOGO_ESTRATEGIA_MED.length,
+    catalogo: CATALOGO_ESTRATEGIA_MED,
+    default: false
   },
   {
     id: "vest-base",

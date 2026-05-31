@@ -332,6 +332,23 @@ export const ESP_COLORS = {
   "Linguagens": "#a3e635",
   "Ciências da Natureza": "#2dd4bf",
   "Redação": "#f0abfc",
+  // Estratégia MED
+  "Cardiologia": "#ef4444",
+  "Gastro": "#f59e0b",
+  "Infectologia": "#10b981",
+  "Nefrologia": "#3b82f6",
+  "Neuro": "#8b5cf6",
+  "Endocrino": "#ec4899",
+  "Pneumo": "#06b6d4",
+  "Reumato": "#f97316",
+  "Hemato": "#14b8a6",
+  "Dermato": "#a78bfa",
+  "Ortopedia": "#6366f1",
+  "Oftalmo": "#0ea5e9",
+  "Otorrino": "#84cc16",
+  "Psiquiatria": "#e879f9",
+  "Ginecologia": "#fb7185",
+  "Obstetrícia": "#fb7185",
 };
 
 export const PRIO = {

@@ -5,7 +5,7 @@ import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, Chevro
 import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection } from "../core/fsrs";
 import { calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
-import { getMentorDiagnosis, getMentorVoice, getMentorPhrase, getRecentPhrases, trackRecentPhrase, proximaAcao, isExhaustionDetected } from "../core/mentor";
+import { getMentorDiagnosis, getMentorVoice, getMentorPhrase, getRecentPhrases, trackRecentPhrase, isExhaustionDetected } from "../core/mentor";
 import { getReadinessData } from "../core/readiness";
 import { getUserState } from "../core/userState";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip, InfoTooltip } from "./Primitives";
@@ -23,6 +23,7 @@ import useCountUp from "../hooks/useCountUp";
 import { trackEvent } from "../services/firebase";
 import { CALENDAR_PROVIDERS } from "../constants/calendarProviders";
 import { getPeakModePolicy, getPeakPhase } from "../core/peakMode";
+import { CATALOGO_ESTRATEGIA_MED, parseCatalogEntry } from "../constants/catalogos";
 import ActionInbox from "./ActionInbox";
 import WeeklyReview from "./WeeklyReview";
 import EmptyState from "./EmptyState";
@@ -546,26 +547,122 @@ function MetacognitiveChart({ doneReviews }) {
   );
 }
 
+/* --- ESTRATÉGIA WEEK WIDGET --- */
+function EstrategiaWeekWidget({ cronogramaSel, plat, temas, temasPerWeek, estrategiaStartDate, setView }) {
+  const selId = cronogramaSel?.[plat];
+  if (plat !== "res" || selId !== "res-estrategia-2026") return null;
+
+  const hoje = todayStr();
+  const startDate = estrategiaStartDate || hoje;
+  const diffMs = new Date(hoje) - new Date(startDate);
+  const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+  const semanaAtual = Math.floor(diffDays / 7) + 1;
+  const semanaIdx = Math.min(semanaAtual - 1, CATALOGO_ESTRATEGIA_MED.length - 1);
+  const blocoAtual = CATALOGO_ESTRATEGIA_MED[semanaIdx];
+  const limit = temasPerWeek ?? 6;
+  const topicosHoje = blocoAtual ? blocoAtual.t.slice(0, limit) : [];
+
+  return (
+    <div className="bg-[var(--surface-1)] border border-blue-500/15 rounded-2xl p-4 flex flex-col gap-3 shadow-md relative overflow-hidden">
+      <div className="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-blue-600/8 blur-2xl pointer-events-none" />
+      <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
+        <div className="flex items-center gap-2">
+          <Calendar size={14} className="text-blue-400" />
+          <span className="text-[10.5px] font-black uppercase text-gray-300 tracking-wider">
+            Estratégia MED · Semana {semanaAtual}
+          </span>
+          <span className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-bold">
+            {topicosHoje.length}/{blocoAtual?.t?.length || 0} tópicos
+          </span>
+        </div>
+        <button
+          onClick={() => setView && setView("crono")}
+          className="text-[9.5px] font-bold text-blue-400 hover:text-blue-300 transition-colors bg-transparent border-none cursor-pointer p-0"
+        >
+          Ver completo
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {topicosHoje.map((entry, idx) => {
+          const { nome, esp } = parseCatalogEntry(entry);
+          const espColor = ESP_COLORS[esp] || "#94a3b8";
+          const temaSt = temas.find(t => t.nome === nome);
+          const started = temaSt && !temaSt.unstarted;
+          const allDone = started && STEPS.every(s => temaSt.rev[s.key]?.done);
+
+          return (
+            <div
+              key={idx}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border transition-all ${
+                allDone
+                  ? "border-emerald-500/20 bg-emerald-500/5 opacity-60"
+                  : started
+                  ? "border-blue-500/20 bg-blue-500/5"
+                  : "border-white/5 bg-white/[0.02] hover:border-white/10"
+              }`}
+              style={{ borderLeft: `3px solid ${espColor}` }}
+            >
+              <div className="min-w-0 flex-1">
+                <p className={`text-[10.5px] font-semibold leading-tight truncate ${allDone ? "line-through text-gray-500" : "text-gray-200"}`}>
+                  {nome}
+                </p>
+                <p className="text-[9px] text-gray-500 uppercase tracking-wider mt-0.5">{esp}</p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {allDone ? (
+                  <span className="text-[8px] bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded font-bold">✓ Fixado</span>
+                ) : started ? (
+                  <span className="text-[8px] bg-blue-500/15 text-blue-400 px-1.5 py-0.5 rounded font-bold">Em curso</span>
+                ) : (
+                  <span className="text-[8px] bg-white/5 text-gray-500 px-1.5 py-0.5 rounded font-bold">Pendente</span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {!estrategiaStartDate && (
+        <p className="text-[9.5px] text-amber-400/80 bg-amber-500/5 border border-amber-500/15 rounded-lg px-3 py-2">
+          Defina a data de início do cronograma em <strong>Cronograma → Plano Ativo</strong> para calcular a semana correta.
+        </p>
+      )}
+    </div>
+  );
+}
+
 const SESSION_KEY = "medrev_welcome_shown";
 
-function DashboardKpiCard({ label, value, tone = "text-white", children, action, tooltip, className = "", delayMs = 0 }) {
+function DashboardKpiCard({ label, value, tone = "text-white", children, action, tooltip, className = "", delayMs = 0, icon, accentColor }) {
   return (
     <div
-      className={`medrev-card medrev-card-hover p-5 min-h-[132px] relative group flex flex-col justify-between overflow-hidden animate-fade-up ${className}`}
-      style={{ animationDelay: `${Math.min(delayMs, 300)}ms` }}
+      className={`medrev-card medrev-card-hover relative group flex flex-col justify-between overflow-hidden animate-fade-up ${className}`}
+      style={{
+        animationDelay: `${Math.min(delayMs, 300)}ms`,
+        borderLeft: accentColor ? `3px solid ${accentColor}` : undefined,
+        padding: "1.1rem 1.25rem",
+        minHeight: "7.5rem",
+      }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-[10px] text-[var(--text-3)] uppercase tracking-wide font-bold flex items-center gap-1">
+      {accentColor && (
+        <div className="absolute -right-6 -top-6 w-16 h-16 rounded-full blur-2xl pointer-events-none opacity-30" style={{ background: accentColor }} />
+      )}
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[9.5px] text-[var(--text-3)] uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+          {icon && <span className="text-[13px] leading-none">{icon}</span>}
           {label}
           {tooltip && <InfoTooltip texto={tooltip} />}
         </p>
         {action}
       </div>
-      <div>
-        <p className={`text-3xl md:text-4xl font-bold tabular-nums tracking-normal ${tone}`}>
+      <div className="mt-2">
+        <p className={`text-[2rem] md:text-[2.25rem] font-black tabular-nums leading-none tracking-tight ${tone}`}>
           {value}
         </p>
-        {children}
+        <div className="mt-1.5 space-y-0.5">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -622,6 +719,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const sessionReflections = useStore((s) => s.sessionReflections || []);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
   const calendarProvider = useStore((s) => s.calendarProvider || { activeId: "medcof" });
+  const cronogramaSel = useStore((s) => s.cronogramaSel);
   const providerAtivoLabel = useMemo(() => {
     const found = CALENDAR_PROVIDERS.find((p) => p.id === calendarProvider.activeId);
     return found?.label || "MEDCOF";
@@ -824,10 +922,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     return diag.insights.some((ins) => ins.type === "tendencia_baixa" || ins.type === "vies_excesso");
   }, [diag]);
   const hasExhaustionNow = useMemo(() => isExhaustionDetected(temaStats, done), [temaStats, done]);
-  const nextAction = useMemo(() => {
-    return proximaAcao({ temas: temasFiltrados, meta, plat, diag, readiness: readinessData, pending });
-  }, [temasFiltrados, meta, plat, diag, readinessData, pending]);
-
   const totalSessions = useMemo(() => {
     return temas.flatMap((t) => Object.values(t.rev)).filter((r) => r.done).length;
   }, [temas]);
@@ -1365,212 +1459,201 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
       <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} />
 
-      {hasPendingClosure && (
-        <section className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-amber-300 font-black">Fechamento pendente</p>
-            <p className="text-[12px] text-gray-200 mt-1">Existe uma sessao recente sem fechamento rapido. Registre em 1 clique para ajustar a rota.</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setView && setView("stats")}
-            className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 text-amber-200 text-[11px] font-bold border border-amber-400/30 cursor-pointer"
-          >
-            Abrir revisao semanal
-          </button>
-        </section>
+      {/* Alertas compactos inline */}
+      {(hasPendingClosure || peakModeAtivo) && (
+        <div className="flex flex-wrap gap-2">
+          {hasPendingClosure && (
+            <button
+              type="button"
+              onClick={() => setView && setView("stats")}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-bold hover:bg-amber-500/20 transition-colors cursor-pointer"
+            >
+              <AlertTriangle size={12} />
+              Sessão sem fechamento — registrar agora
+            </button>
+          )}
+          {peakModeAtivo && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-bold">
+              <Zap size={12} />
+              Reta final ativa · {peakPolicy.maxNewTopicsPerWeek == null ? "sem limite" : peakPolicy.maxNewTopicsPerWeek} temas/semana · viés +{peakPolicy.reviewBias}
+            </div>
+          )}
+        </div>
       )}
 
-      {peakModeAtivo && (
-        <section className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4">
-          <p className="text-[10px] uppercase tracking-wider text-blue-300 font-black">Politica ativa de reta final</p>
-          <p className="text-[12px] text-gray-200 mt-1">
-            Novos temas por semana: {peakPolicy.maxNewTopicsPerWeek == null ? "sem limite" : peakPolicy.maxNewTopicsPerWeek}. Revisao com viés +{peakPolicy.reviewBias}.
-          </p>
-        </section>
-      )}
-
-      {/* Camada secundaria: KPIs acionáveis */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 select-none">
+      {/* KPIs — 4 métricas primárias */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 select-none">
         <DashboardKpiCard
           label="Fila de hoje"
+          icon="📋"
+          accentColor={pending > 0 ? "#f59e0b" : "#10b981"}
           value={String(pendingCountUp) + (naReserva > 0 ? " +" + naReserva : "")}
           tone={pending > 0 ? "text-amber-400" : "text-emerald-400"}
           tooltip="Revisões programadas para hoje. A reserva mostra itens fora do teto diário atual."
           delayMs={0}
         >
-          <p className="text-[9.5px] text-gray-500 mt-1">
-            {naReserva > 0 ? `+${naReserva} na reserva` : "dentro do teto diário"}
+          <p className="text-[9px] text-gray-500">
+            {naReserva > 0 ? `+${naReserva} na reserva` : "dentro do teto"}
           </p>
         </DashboardKpiCard>
+
         <DashboardKpiCard
-          label="Preparo estimado"
+          label="Preparo"
+          icon="🎯"
+          accentColor="#3b82f6"
           value={String(readinessCountUp) + "%"}
           tone="text-blue-400"
-          tooltip="Estimativa composta por cobertura, simulados, ritmo, Anki e retenção longa quando disponível. Enquanto faltarem dados D21+, trate como direção de estudo, não como previsão final."
+          tooltip="Estimativa composta por cobertura, simulados, ritmo, Anki e retenção longa quando disponível."
           delayMs={50}
           action={(
             <button
               onClick={exportarCartaoProntidao}
               title="Compartilhar cartão de preparo"
-              className="text-gray-500 hover:text-blue-400 transition-colors focus:outline-none relative z-10 p-0.5"
+              className="text-gray-500 hover:text-blue-400 transition-colors focus:outline-none relative z-10 p-0.5 cursor-pointer bg-transparent border-none"
               aria-label="Compartilhar cartão de preparo"
             >
-              <Share2 size={14} />
+              <Share2 size={13} />
             </button>
           )}
         >
-          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold border ${preparoCalibration.tone}`}>
+          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold border ${preparoCalibration.tone}`}>
             {preparoCalibration.label}
           </span>
-          <p className="text-[9.5px] text-gray-500 mt-1">
-            {trueRet == null ? "Retenção longa: coletando D21+" : `Retenção longa: ${trueRet}%`}
-          </p>
-          {readinessTrend.delta7 !== undefined && (
-            <span className={"text-[10px] font-bold " + (readinessTrend.delta7 >= 0 ? "text-emerald-400" : "text-red-400")} title="Evolução em 7 dias">
-              {readinessTrend.delta7 >= 0 ? "+" + readinessTrend.delta7 + "%" : readinessTrend.delta7 + "%"}
+          {readinessTrend.delta7 !== undefined && readinessTrend.delta7 !== 0 && (
+            <span className={"text-[9.5px] font-bold block " + (readinessTrend.delta7 >= 0 ? "text-emerald-400" : "text-red-400")}>
+              {readinessTrend.delta7 >= 0 ? "▲ +" : "▼ "}{readinessTrend.delta7}% (7d)
             </span>
           )}
           {sparklinePath && (
-            <svg viewBox="0 0 100 20" preserveAspectRatio="none" className="mt-2 h-5 w-full opacity-50">
-              <path d={sparklinePath} fill="none" stroke="var(--primary)" strokeWidth="1.5" />
+            <svg viewBox="0 0 100 20" preserveAspectRatio="none" className="mt-1.5 h-4 w-full opacity-40">
+              <path d={sparklinePath} fill="none" stroke="#3b82f6" strokeWidth="1.5" />
             </svg>
           )}
         </DashboardKpiCard>
+
         <DashboardKpiCard
-          label="Qualidade recente"
-          value={acertoMedio != null ? String(acertoCountUp) + "%" : "coletando"}
+          label="Acerto"
+          icon="✅"
+          accentColor={acertoMedio != null ? (acertoMedio >= 80 ? "#10b981" : acertoMedio >= 65 ? "#3b82f6" : "#ef4444") : "#6b7280"}
+          value={acertoMedio != null ? String(acertoCountUp) + "%" : "—"}
           tone={acertoMedio != null ? (acertoMedio >= 80 ? "text-emerald-400" : acertoMedio >= 65 ? "text-blue-400" : "text-red-400") : "text-gray-500"}
           tooltip="Qualidade recente baseada em questões e revisões concluídas."
           delayMs={100}
         >
-          <p className="text-[9.5px] text-gray-500 mt-1">baseado em questões/revisões concluídas</p>
+          <p className="text-[9px] text-gray-500">{acertoMedio != null ? "revisões concluídas" : "coletando dados"}</p>
         </DashboardKpiCard>
+
         <DashboardKpiCard
-          label="Consistência"
+          label="Streak"
+          icon="🔥"
+          accentColor="#f97316"
           value={String(streakCountUp) + "/7"}
           tone="text-orange-400"
           tooltip="Dias ativos de estudo nos últimos 7 dias."
           delayMs={150}
         >
-          <p className="text-[9.5px] text-gray-500 mt-1">dias ativos nos últimos 7 dias</p>
+          <div className="flex gap-0.5 mt-1">
+            {Array.from({ length: 7 }, (_, i) => {
+              const d = new Date(); d.setDate(d.getDate() - 6 + i);
+              const dStr = d.toISOString().slice(0, 10);
+              const active = doneDays.has(dStr);
+              return (
+                <div key={i} className={"flex-1 h-1 rounded-full " + (active ? "bg-orange-400" : "bg-white/10")} />
+              );
+            })}
+          </div>
+          <p className="text-[9px] text-gray-500 mt-1">últimos 7 dias</p>
         </DashboardKpiCard>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {plat === "vest" ? (
-          <>
-            <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Análise Simulado/Prova</p>
-              {readinessData?.priorityList?.[0] ? (
-                <>
-                  <p className="text-sm font-bold text-white">
-                    {readinessData.priorityList[0].area} · cobertura {Math.round(readinessData.priorityList[0].coverage || 0)}% · desempenho {readinessData.priorityList[0].retention != null ? `${Math.round(readinessData.priorityList[0].retention)}%` : "coletando"}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setView && setView("stats")}
-                    className="self-start px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 text-blue-300 border border-blue-500/20 text-[11px] font-bold cursor-pointer"
-                  >
-                    Ver dados por matéria
-                  </button>
-                </>
-              ) : (
-                <p className="text-[11px] text-gray-500">Coletando dados por matéria/frente. Complete revisões e simulados para gerar prioridade.</p>
-              )}
-            </div>
-            <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Treino por Matéria</p>
-              <p className="text-sm font-bold text-white">
-                {filaInteligente[0]?.esp ? `${filaInteligente[0].esp} com maior urgência hoje` : "Fila inteligente pronta para priorizar sua próxima matéria"}
-              </p>
+      {/* Análise rápida — Gargalo + Próxima ação */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-12 h-12 rounded-full bg-blue-600/8 blur-xl pointer-events-none" />
+          <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+            <TrendingDown size={11} className="text-red-400" />
+            {plat === "vest" ? "Frente prioritária" : "Gargalo ENAMED"}
+          </p>
+          {readinessData?.priorityList?.[0] ? (
+            <>
+              <div>
+                <p className="text-sm font-black text-white leading-tight">{readinessData.priorityList[0].area}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">
+                  cobertura {Math.round(readinessData.priorityList[0].coverage || 0)}%
+                  {readinessData.priorityList[0].retention != null ? ` · acerto ${Math.round(readinessData.priorityList[0].retention)}%` : " · acerto coletando"}
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => setView && setView("crono")}
-                className="self-start px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 text-blue-300 border border-blue-500/20 text-[11px] font-bold cursor-pointer"
+                onClick={() => setView && setView("stats")}
+                className="self-start px-2.5 py-1.5 rounded-xl bg-blue-600/15 hover:bg-blue-600/30 text-blue-400 border border-blue-500/20 text-[10px] font-bold cursor-pointer transition-colors"
               >
-                Ir para cronograma
+                Ver mapa completo →
               </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Gargalo provável ENAMED</p>
-              {readinessData?.priorityList?.[0] ? (
-                <>
-                  <p className="text-sm font-bold text-white">
-                    {readinessData.priorityList[0].area} · cobertura {Math.round(readinessData.priorityList[0].coverage || 0)}% · desempenho {readinessData.priorityList[0].retention != null ? `${Math.round(readinessData.priorityList[0].retention)}%` : "coletando"}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setView && setView("stats")}
-                    className="self-start px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 text-blue-300 border border-blue-500/20 text-[11px] font-bold cursor-pointer"
-                  >
-                    Ver mapa em Estatísticas
-                  </button>
-                </>
-              ) : (
-                <p className="text-[11px] text-gray-500">Coletando dados por área. Complete revisões/simulados para gerar prioridade.</p>
-              )}
-            </div>
-            <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2">
-              {meta.modulos?.raciocinioClinico === true ? (
-                <>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Raciocínio clínico</p>
-                  <p className="text-sm font-bold text-white">Casos clínicos: coletando</p>
-                  <button
-                    type="button"
-                    onClick={() => setView && setView("raciocinio")}
-                    className="self-start px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 text-blue-300 border border-blue-500/20 text-[11px] font-bold cursor-pointer"
-                  >
-                    Treinar caso
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Raciocínio clínico opcional</p>
-                  <p className="text-[11px] text-gray-400">Ative o treino por casos para complementar revisão e questões.</p>
-                  <button
-                    type="button"
-                    onClick={onOpenAjustes}
-                    className="self-start px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 text-[11px] font-bold cursor-pointer"
-                  >
-                    Ativar em ajustes
-                  </button>
-                </>
-              )}
-            </div>
-          </>
-        )}
-      </section>
-
-      <section className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Sua próxima ação</p>
-          <p className="text-sm font-bold text-white mt-0.5 truncate">{nextAction?.label}</p>
-          <p className="text-[11px] text-gray-400 mt-1">{nextAction?.sub}</p>
+            </>
+          ) : (
+            <p className="text-[11px] text-gray-500 leading-relaxed">Complete revisões e simulados para gerar o mapa de prioridades.</p>
+          )}
         </div>
-        {nextAction?.action && (
-          <button
-            type="button"
-            onClick={() => handleInsightAction(nextAction.action)}
-            className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] border-none cursor-pointer shrink-0"
-          >
-            {nextAction.action.label || "Executar"}
-          </button>
-        )}
+
+        <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
+          <div className="absolute -right-4 -top-4 w-12 h-12 rounded-full bg-emerald-600/8 blur-xl pointer-events-none" />
+          {plat === "vest" ? (
+            <>
+              <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+                <Layers size={11} className="text-sky-400" /> Matéria urgente
+              </p>
+              <p className="text-sm font-black text-white leading-tight">
+                {filaInteligente[0]?.esp || "Fila zerada"}
+              </p>
+              <p className="text-[10px] text-gray-500">{filaInteligente[0]?.esp ? "maior urgência hoje" : "revise ou avance temas novos"}</p>
+              <button type="button" onClick={() => setView && setView("crono")}
+                className="self-start px-2.5 py-1.5 rounded-xl bg-sky-600/15 hover:bg-sky-600/30 text-sky-400 border border-sky-500/20 text-[10px] font-bold cursor-pointer transition-colors">
+                Abrir cronograma →
+              </button>
+            </>
+          ) : meta.modulos?.raciocinioClinico ? (
+            <>
+              <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+                <Brain size={11} className="text-emerald-400" /> Raciocínio clínico
+              </p>
+              <p className="text-sm font-black text-white leading-tight">Casos clínicos ativos</p>
+              <button type="button" onClick={() => setView && setView("raciocinio")}
+                className="self-start px-2.5 py-1.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold cursor-pointer transition-colors">
+                Treinar caso →
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+                <Brain size={11} className="text-gray-500" /> Casos clínicos
+              </p>
+              <p className="text-[11px] text-gray-400 leading-relaxed">Ative o treino por casos para complementar questões com raciocínio.</p>
+              <button type="button" onClick={onOpenAjustes}
+                className="self-start px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 text-[10px] font-bold cursor-pointer transition-colors">
+                Ativar em ajustes →
+              </button>
+            </>
+          )}
+        </div>
       </section>
 
-      <div className="mt-1">
-        <MiniCronogramaWidget
-          plat={plat}
-          setView={setView}
-          onStudy={onStudy}
-          overdue={overdue}
-          today_={today_}
-        />
-      </div>
+      <EstrategiaWeekWidget
+        cronogramaSel={cronogramaSel}
+        plat={plat}
+        temas={temasFiltrados}
+        temasPerWeek={meta?.temasPerWeek}
+        estrategiaStartDate={meta?.estrategiaStartDate}
+        setView={setView}
+      />
+
+      <MiniCronogramaWidget
+        plat={plat}
+        setView={setView}
+        onStudy={onStudy}
+        overdue={overdue}
+        today_={today_}
+      />
 
       <WeeklyReview onAdjust={() => setView && setView("crono")} />
 
@@ -1739,22 +1822,24 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       )}
 
-      <div className="mt-1">
+      <div>
         <button
           type="button"
           onClick={() => setShowCompleto(!showCompleto)}
-          className="w-full flex items-center justify-between px-5 py-3.5 bg-[var(--surface-1)] border border-white/5 rounded-2xl hover:bg-white/[0.02] transition-colors border-none text-left"
+          className="w-full flex items-center justify-between px-4 py-3 bg-white/[0.025] border border-white/5 rounded-2xl hover:bg-white/[0.04] transition-all text-left group"
         >
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-gray-300 uppercase tracking-wider">
-              <Brain size={14} className="text-blue-400" />
-              <span>Mentor e análise detalhada</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-xl bg-blue-600/15 flex items-center justify-center group-hover:bg-blue-600/25 transition-colors">
+              <Brain size={13} className="text-blue-400" />
             </div>
-            <p className="text-[10px] text-gray-500 normal-case tracking-normal">
-              Use esta seção para reflexão semanal. A análise completa fica em Estatísticas.
-            </p>
+            <div>
+              <p className="text-[11px] font-black text-gray-200 uppercase tracking-wider">Mentor · Análise completa</p>
+              <p className="text-[9.5px] text-gray-500 mt-0.5">Reflexão semanal, diagnóstico cognitivo e projeção</p>
+            </div>
           </div>
-          {showCompleto ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+          <div className={`w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center transition-transform duration-200 ${showCompleto ? "rotate-180" : ""}`}>
+            <ChevronDown size={13} className="text-gray-500" />
+          </div>
         </button>
       </div>
 

@@ -106,7 +106,9 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
     setCalendarProvider,
     saveImportedCalendarTopics,
     addTema,
+    meta,
   } = useStore();
+  const setMeta = useStore((s) => s.setMeta);
   const iniciarValidacaoDominioPrevio = useStore((s) => s.iniciarValidacaoDominioPrevio);
   const validarDominio = useStore((s) => s.validarDominio);
   const showToast = useStore((s) => s.showToast);
@@ -319,8 +321,46 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                       })}
                     </div>
 
+                    {/* Configuração: temas por semana */}
+                    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="text-[11px] font-black text-white uppercase tracking-wider">Temas por semana</p>
+                          <p className="text-[10px] text-gray-500 mt-0.5">Quantos tópicos você quer estudar por bloco semanal</p>
+                        </div>
+                        <span className="text-2xl font-black text-blue-400 tabular-nums min-w-[2.5rem] text-right">{meta?.temasPerWeek ?? 6}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={1}
+                        max={12}
+                        step={1}
+                        value={meta?.temasPerWeek ?? 6}
+                        onChange={(e) => setMeta({ ...meta, temasPerWeek: Number(e.target.value) })}
+                        className="w-full accent-blue-500 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[9px] text-gray-600 font-mono select-none">
+                        <span>1 — leve</span>
+                        <span>6 — padrão</span>
+                        <span>12 — intensivo</span>
+                      </div>
+                      {/* Data de início do cronograma */}
+                      <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/5">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-300">Data de início do cronograma</p>
+                          <p className="text-[9px] text-gray-600 mt-0.5">Define a semana atual na distribuição</p>
+                        </div>
+                        <input
+                          type="date"
+                          value={meta?.estrategiaStartDate || ""}
+                          onChange={(e) => setMeta({ ...meta, estrategiaStartDate: e.target.value || null })}
+                          className="text-[11px] bg-black/30 border border-white/10 rounded-lg px-2 py-1.5 text-gray-200 focus:outline-none focus:border-blue-500/50 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
                     {plat === "res" && !catalogo && (
-                      <div className="space-y-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <>
                         <CalendarProviderSelector
                           activeId={activeProvider}
                           importedCount={importedTopics.length}
@@ -371,7 +411,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                             <CalendarMappingPanel importedTopics={importedTopics} medcofTemas={medcofTemas} />
                           </React.Suspense>
                         )}
-                      </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -400,7 +440,9 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
           </div>
 
           {cat.map((bl) => {
-            const blTemas = bl.t.filter((entry) => {
+            const temasPerWeek = meta?.temasPerWeek ?? 6;
+            const blTopics = bl.t.slice(0, temasPerWeek);
+            const blTemas = blTopics.filter((entry) => {
               const { nome, subs, prio: topPrio } = parseCatalogEntry(entry);
               const nameMatches = !q || nome.toLowerCase().includes(q.toLowerCase());
               const subMatches = !q || subs.some(s => s.toLowerCase().includes(q.toLowerCase()));
