@@ -3,8 +3,9 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { buildRev, recalcAfterMark, STEPS, S_BASE, todayStr, addDays, normalizeTema, diffDays } from "./fsrs";
+import { buildRev, recalcAfterMark, STEPS, S_BASE, todayStr, addDays, normalizeTema, diffDays, getAreaPrior, getRetencaoArea } from "./fsrs";
 import { computeStreakOnStudy, recoverStreak } from "./gamif";
+import { criarRegistroDominio, buildRevComDominio } from "./domainValidation";
 
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
@@ -16,7 +17,7 @@ function prioToImportancia(prio) {
   }
 }
 
-const initialPlat = () => ({ temas: [], simulados: [], ankiLog: [], cronogramas: [] });
+const initialPlat = () => ({ temas: [], simulados: [], ankiLog: [], cronogramas: [], casosProgresso: {} });
 
 const initialVestibularPlat = () => {
   const temasData = [
@@ -57,8 +58,8 @@ const initialVestibularPlat = () => {
     { id: 24, nome: "Simulado UFG 2021", esp: "Ciências da Natureza", prio: "Alta", importancia: "ALTA", d0: "2026-06-13", obs: "Condição adversa: cadeira dura, ruído" },
   ];
 
-  const temas = temasData.map((t) => ({ ...t, rev: buildRev(t.d0) }));
-  return { temas, simulados: [], ankiLog: [], cronogramas: [] };
+  const temas = temasData.map((t) => ({ ...t, rev: buildRev(t.d0, t.esp) }));
+  return { temas, simulados: [], ankiLog: [], cronogramas: [], casosProgresso: {} };
 };
 
 const timestampMiddleware = (config) => (set, get, api) => {
@@ -87,7 +88,7 @@ export const useStore = create(
         cronogramaSel: { res: "res-medcof-2026", vest: "vest-base" },
       userName: "Estudante",
       userEmail: "",
-      meta: { dataProva: "2026-10-25", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false },
+      meta: { dataProva: "2026-10-25", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false, ankiAdesao: { datas: [] }, modulos: { raciocinioClinico: false } },
       res: initialPlat(),
       vest: initialVestibularPlat(),
       undoStack: [],
@@ -123,6 +124,15 @@ export const useStore = create(
       setUserName: (name) => set({ userName: name }),
       setUserEmail: (email) => set({ userEmail: email }),
       setMeta: (meta) => set({ meta }),
+      toggleModulo: (nome, valor) => set((s) => ({
+        meta: {
+          ...s.meta,
+          modulos: {
+            ...(s.meta?.modulos || {}),
+            [nome]: valor,
+          },
+        },
+      })),
       setModoProva: (modoProva) => set({ modoProva }),
       setOnboardingDone: () => set({ onboardingDone: true }),
       resetOnboarding: () => set({ onboardingDone: false }),
@@ -446,7 +456,7 @@ export const useStore = create(
                 id: tema.id || Date.now(), // Fixed the bug: preserve ID if provided
                 importancia: tema.importancia || "ALTA",
                 ankiDeck: tema.ankiDeck || "",
-                rev: buildRev(tema.d0),
+                rev: buildRev(tema.d0, tema.esp),
               },
             ],
           },
@@ -458,12 +468,14 @@ export const useStore = create(
           if (!old) return {};
           let newRev = old.rev;
           if (fields.d0 && fields.d0 !== old.d0) {
-            newRev = buildRev(fields.d0);
+            const prior = getAreaPrior(fields.esp || old.esp);
+            newRev = buildRev(fields.d0, fields.esp || old.esp);
             STEPS.forEach((step) => {
               newRev[step.key].done = old.rev?.[step.key]?.done ?? false;
               newRev[step.key].acerto = old.rev?.[step.key]?.acerto ?? null;
               newRev[step.key].questoes = old.rev?.[step.key]?.questoes ?? null;
               newRev[step.key].S = old.rev?.[step.key]?.S ?? S_BASE[step.key];
+              newRev[step.key].D = old.rev?.[step.key]?.D ?? prior.difBase;
             });
           }
           return {
@@ -476,6 +488,23 @@ export const useStore = create(
 
       deleteTema: (platKey, id) =>
         set((s) => ({ [platKey]: { ...s[platKey], temas: s[platKey].temas.filter((t) => t.id !== id) } })),
+
+      validarDominio: (platKey, temaId, { questoes, acertos }) =>
+        set((s) => ({
+          [platKey]: {
+            ...s[platKey],
+            temas: s[platKey].temas.map((t) => {
+              if (t.id !== temaId) return t;
+              const registro = criarRegistroDominio(questoes, acertos);
+              const novoRev = buildRevComDominio(t.d0, t.esp, t.importancia, registro.classificacao, registro.pctAcerto);
+              return {
+                ...t,
+                dominio: registro,
+                rev: novoRev ?? t.rev,
+              };
+            }),
+          },
+        })),
 
       markStep: (platKey, temaId, stepKey, { acerto, previsao, questoes, motivosErro, erros, tempoMin, ansiedade, cansaco, confianca, dificuldade, foco, c1, c2, c3, c4, c5, modoReduzido, descansoPrescrito }) =>
         set((s) => ({
@@ -508,9 +537,9 @@ export const useStore = create(
                   descansoPrescrito: descansoPrescrito ?? t.rev[stepKey].descansoPrescrito,
                 },
               };
-              const desiredRetention = s.meta?.retencaoFSRS ?? 0.90;
+              const desiredRetention = getRetencaoArea(t.esp, s.meta?.retencaoFSRS ?? 0.90);
               const maxInterval = s.meta?.intervaloMaxDias ?? 180;
-              return { ...t, rev: recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval) };
+              return { ...t, rev: recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, t.esp) };
             }),
           },
         })),
@@ -531,7 +560,7 @@ export const useStore = create(
                 pico: "",
                 ankiDeck: "",
                 d0,
-                rev: buildRev(d0),
+                rev: buildRev(d0, it.esp),
               })),
             ],
           },
@@ -608,7 +637,7 @@ export const useStore = create(
 
             if (existIndex !== -1) {
               const oldTema = updatedTemas[existIndex];
-              const newRev = buildRev(hoje);
+              const newRev = buildRev(hoje, oldTema.esp);
               updatedTemas[existIndex] = normalizeTema({
                 ...oldTema,
                 d0: hoje,
@@ -622,7 +651,7 @@ export const useStore = create(
                 prio: "Alta",
                 importancia: "ALTA",
                 d0: hoje,
-                rev: buildRev(hoje),
+                rev: buildRev(hoje, areaStr),
                 parentTopic: null,
                 ankiDeck: "",
                 obs: `Auto-gerado via erro em simulado (${q.tipoErro || "Geral"})`
@@ -667,7 +696,7 @@ export const useStore = create(
 
           if (existIndex !== -1) {
             const oldTema = s[platKey].temas[existIndex];
-            const newRev = buildRev(hoje);
+            const newRev = buildRev(hoje, oldTema.esp);
             updatedTemas[existIndex] = normalizeTema({
               ...oldTema,
               d0: hoje,
@@ -681,7 +710,7 @@ export const useStore = create(
               prio: "Alta",
               importancia: "ALTA",
               d0: hoje,
-              rev: buildRev(hoje),
+              rev: buildRev(hoje, areaStr),
               parentTopic: null,
               ankiDeck: "",
               obs: `Auto-gerado via erro em simulado (${questao.tipoErro || "Geral"})`
@@ -733,6 +762,45 @@ export const useStore = create(
       addAnki: (platKey, log) =>
         set((s) => ({ [platKey]: { ...s[platKey], ankiLog: [...s[platKey].ankiLog, { ...log, id: Date.now() }] } })),
 
+      marcarAnkiHoje: () =>
+        set((s) => {
+          const hoje = todayStr();
+          const datas = s.meta?.ankiAdesao?.datas || [];
+          if (datas.includes(hoje)) return {};
+          return {
+            meta: {
+              ...s.meta,
+              ankiAdesao: {
+                datas: [...datas, hoje],
+              },
+            },
+          };
+        }),
+
+      registrarCaso: (platKey, casoId, payload = {}) =>
+        set((s) => {
+          const platState = s[platKey] || initialPlat();
+          const progressoAtual = platState.casosProgresso || {};
+          const anterior = progressoAtual[casoId] || {};
+          const hoje = todayStr();
+          const acertou = payload.acertou ?? payload.fase2Acerto ?? payload.sctAcerto ?? false;
+          return {
+            [platKey]: {
+              ...platState,
+              casosProgresso: {
+                ...progressoAtual,
+                [casoId]: {
+                  ...anterior,
+                  ...payload,
+                  vistos: payload.vistos ?? ((anterior.vistos || 0) + 1),
+                  proximaData: addDays(hoje, acertou ? 7 : 2),
+                  atualizadoEm: hoje,
+                },
+              },
+            },
+          };
+        }),
+
       addCronograma: (platKey, crono) =>
         set((s) => ({
           [platKey]: {
@@ -779,7 +847,7 @@ export const useStore = create(
           cronogramaSel: { res: "res-medcof-2026", vest: "vest-base" },
           userName: "Estudante",
           userEmail: "",
-          meta: { dataProva: "2026-10-25", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false },
+          meta: { dataProva: "2026-10-25", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false, ankiAdesao: { datas: [] }, modulos: { raciocinioClinico: false } },
           onboardingDone: false,
           focusMode: false,
           modoSimples: true,
@@ -849,7 +917,12 @@ export const useStore = create(
           ...initial,
           ...persisted,
           cronogramaSel: persisted.cronogramaSel ? { ...initial.cronogramaSel, ...persisted.cronogramaSel } : initial.cronogramaSel,
-          meta: persisted.meta ? { ...initial.meta, ...persisted.meta } : initial.meta,
+          meta: persisted.meta ? {
+            ...initial.meta,
+            ...persisted.meta,
+            modulos: { ...initial.meta.modulos, ...(persisted.meta.modulos || {}) },
+            ankiAdesao: { ...initial.meta.ankiAdesao, ...(persisted.meta.ankiAdesao || {}) },
+          } : initial.meta,
           res: mergedRes,
           vest: mergedVest,
           userEmail: persisted.userEmail ?? initial.userEmail,

@@ -8,6 +8,7 @@ import { CATALOGO_RES, CATALOGO_VEST, getSubtopics } from "../constants/catalogo
 import { PROVA_STATS_RES, PROVA_STATS_VEST, PROVAS_RES, PROVAS_VEST } from "../constants/provaStats";
 import { getBrainDumpFields } from "../constants/stepDefinitions";
 import { useStore } from "../core/store";
+import { classificarDominio, DOMINIO_META } from "../core/domainValidation";
 import { getReadinessData } from "../core/readiness";
 
 import {
@@ -2282,6 +2283,107 @@ export function LojaModal({ onClose }) {
             </div>
           );
         })}
+      </div>
+    </Modal>
+  );
+}
+
+// ─── MODAL VALIDAR DOMÍNIO ────────────────────────────────────────────────────
+
+export function ModalValidarDominio({ tema, onConfirm, onCancel }) {
+  const [questoes, setQuestoes] = React.useState("15");
+  const [acertos, setAcertos] = React.useState("");
+  const [submitted, setSubmitted] = React.useState(false);
+
+  const qtd = parseInt(questoes, 10) || 0;
+  const acertosNum = parseInt(acertos, 10);
+  const pct = qtd > 0 && !isNaN(acertosNum) ? Math.round((acertosNum / qtd) * 100) : null;
+  const classificacao = pct != null ? classificarDominio(pct) : null;
+  const meta_ = classificacao ? DOMINIO_META[classificacao] : null;
+
+  const canConfirm = qtd >= 1 && !isNaN(acertosNum) && acertosNum >= 0 && acertosNum <= qtd;
+
+  function handleConfirm() {
+    if (!canConfirm) return;
+    setSubmitted(true);
+    onConfirm({ questoes: qtd, acertos: acertosNum });
+  }
+
+  return (
+    <Modal onClose={onCancel}>
+      <div className="space-y-5 p-1">
+        <div className="space-y-1">
+          <h3 className="text-base font-black text-white">Validar Domínio Prévio</h3>
+          <p className="text-xs text-gray-400">
+            <span className="font-semibold text-gray-300">{tema.nome}</span>
+            {" · "}{tema.esp}
+          </p>
+          <p className="text-[11px] text-gray-500 leading-relaxed">
+            Registre o resultado de um mini-teste (15–20 questões). O sistema vai
+            decidir o ciclo adequado para este tema com base no seu desempenho e
+            na incidência da matéria.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Total de questões">
+            <Input
+              type="number"
+              min="1"
+              max="50"
+              value={questoes}
+              onChange={(e) => setQuestoes(e.target.value)}
+              placeholder="15"
+            />
+          </Field>
+          <Field label="Acertos">
+            <Input
+              type="number"
+              min="0"
+              max={qtd || 50}
+              value={acertos}
+              onChange={(e) => setAcertos(e.target.value)}
+              placeholder="ex: 13"
+            />
+          </Field>
+        </div>
+
+        {pct != null && meta_ && (
+          <div
+            className="rounded-xl p-3.5 space-y-1.5 border"
+            style={{ background: meta_.color + "15", borderColor: meta_.color + "40" }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black" style={{ color: meta_.color }}>
+                {pct}% de acerto — {meta_.label}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-400 leading-relaxed">{meta_.desc}</p>
+            {tema.importancia === "CRITICA" && classificacao === "alto" && (
+              <p className="text-[10px] text-amber-400 font-semibold mt-1">
+                Tema crítico: mesmo com domínio alto, entra em manutenção espaçada para garantir a retenção.
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex gap-2 pt-1">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold transition-all border border-white/5 cursor-pointer"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            disabled={!canConfirm || submitted}
+            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white text-xs font-black transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            {submitted ? "Aplicando..." : "Confirmar validação"}
+          </button>
+        </div>
       </div>
     </Modal>
   );

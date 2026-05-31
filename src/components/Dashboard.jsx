@@ -9,6 +9,8 @@ import { getMentorDiagnosis, getMentorVoice, getMentorPhrase, getRecentPhrases, 
 import { getReadinessData } from "../core/readiness";
 import { getUserState } from "../core/userState";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip, InfoTooltip } from "./Primitives";
+import { ModalValidarDominio } from "./Modals";
+import { DOMINIO_META, classificarDominio } from "../core/domainValidation";
 import { Check } from "lucide-react";
 import RetrievabilitySpark from "./RetrievabilitySpark";
 import DicaContextual from "./DicaContextual";
@@ -558,6 +560,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const { plat, sprint, tourStep, setTourStep, setOnboardingDone, onboardingDone } = useStore();
   const showToastGlobal = useStore((s) => s.showToast);
   const openConfirm = useStore((s) => s.openConfirm);
+  const validarDominio  = useStore((s) => s.validarDominio);
   const gamif           = useStore((s) => s.gamif);
   const temas           = useStore((s) => s[plat]?.temas || []);
   const temaStats       = useStore((s) => s.temaStats || {});
@@ -598,6 +601,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const [showWelcome, setShowWelcome] = useState(false);
   const [showWeeklyDiag, setShowWeeklyDiag] = useState(false);
   const [showCompleto, setShowCompleto] = useState(false);
+  const [temaValidando, setTemaValidando] = useState(null);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
@@ -1907,29 +1911,51 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                     const tema = temasFiltrados.find(t => t.id === r.temaId);
                     const R = tema ? getRetrievability(tema, r.step.key) : 1.0;
                     const isOptimalItem = R >= 0.85 && R <= 0.90;
+                    const dominio = tema?.dominio;
+                    const domMeta = dominio ? DOMINIO_META[dominio.classificacao] : null;
+                    const showValidarBtn = r.step.key === "d0" && !dominio;
                     return (
                       <div key={i} className={`flex items-center gap-3 py-2.5 px-2 rounded-xl transition-all ${isOptimalItem ? "bg-amber-500/5 border border-amber-500/10" : ""}`}>
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0" style={{ background: (ESP_COLORS[r.esp] || "#94a3b8") + "15", color: ESP_COLORS[r.esp] }}>
                           {espAbbr(r.esp)}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 flex-wrap">
                             <p className="text-xs font-bold text-white truncate">{r.temaNome}</p>
                             {isOptimalItem && (
-                              <span className="text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-black shrink-0 ml-1.5" title="Retrievabilidade FSRS em ~87%: Ponto ideal de revisibilidade deliberada">
+                              <span className="text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-black shrink-0" title="Retrievabilidade FSRS em ~87%: Ponto ideal de revisibilidade deliberada">
                                 🎯 Ponto Ótimo
+                              </span>
+                            )}
+                            {domMeta && (
+                              <span
+                                className="text-[8px] px-1.5 py-0.5 rounded font-black shrink-0 border"
+                                style={{ background: domMeta.color + "20", color: domMeta.color, borderColor: domMeta.color + "40" }}
+                              >
+                                {domMeta.label}
                               </span>
                             )}
                           </div>
                           <p className="text-[10px] text-gray-500 font-mono mt-0.5 uppercase">{r.step.label} · {r.step.desc}</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => onStudy(r.temaId, r.step.key)}
-                          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-[10.5px] font-semibold hover:bg-blue-500 transition-all shrink-0 active:scale-95"
-                        >
-                          Revisar
-                        </button>
+                        <div className="flex flex-col gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => onStudy(r.temaId, r.step.key)}
+                            className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-[10.5px] font-semibold hover:bg-blue-500 transition-all active:scale-95"
+                          >
+                            Revisar
+                          </button>
+                          {showValidarBtn && (
+                            <button
+                              type="button"
+                              onClick={() => setTemaValidando(tema)}
+                              className="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[9.5px] font-semibold transition-all active:scale-95 border border-white/5"
+                            >
+                              Já domino
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -2195,6 +2221,21 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             setShowCompletionModal(true);
             setTimeout(() => setShowConfettiLocal(false), 5000);
           }}
+        />
+      )}
+
+      {temaValidando && (
+        <ModalValidarDominio
+          tema={temaValidando}
+          onConfirm={({ questoes, acertos }) => {
+            validarDominio(plat, temaValidando.id, { questoes, acertos });
+            const pct = Math.round((acertos / questoes) * 100);
+            const cl = classificarDominio(pct);
+            const metaDom = DOMINIO_META[cl];
+            (showToast || showToastGlobal)(`Domínio validado: ${pct}% — ${metaDom.label}`);
+            setTemaValidando(null);
+          }}
+          onCancel={() => setTemaValidando(null)}
         />
       )}
 

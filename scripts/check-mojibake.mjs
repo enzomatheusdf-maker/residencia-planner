@@ -6,7 +6,7 @@
  *
  * Mojibake = UTF-8 lido/regravado como Windows-1252/Latin-1. Cada caractere
  * acentuado ou emoji vira uma SEQUENCIA de 2-4 caracteres "altos". Ex.:
- *   "ç"  -> "Ã§"      "é"  -> "Ã©"      "–" -> "â€“"     "🔓" -> "ðŸ”“"
+ *   ex: "c-cedilla" -> U+C3 U+A7,  "e-acute" -> U+C3 U+A9,  emoji -> U+F0 U+9F ...
  *
  * IMPORTANTE: NAO detectamos caracteres isolados (Ã, Â, Ð), pois isso geraria
  * falsos-positivos em portugues legitimo ("REVISAO", "NAO", "PRONTIDAO" usam
@@ -36,7 +36,7 @@ const CONT =
 
 const PATTERNS = [
   { label: "Sequencia de mojibake (lider + continuacao)", regex: new RegExp(LEAD + CONT, "g") },
-  { label: "Caractere de substituicao U+FFFD", regex: /�/g },
+  { label: "Caractere de substituicao U+FFFD", regex: new RegExp(String.fromCharCode(65533), "g") },
 ];
 
 const IGNORED_DIRS = new Set([
