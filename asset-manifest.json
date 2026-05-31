@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/residencia-planner/static/css/main.8953af62.css",
-    "main.js": "/residencia-planner/static/js/main.807365b0.js",
+    "main.js": "/residencia-planner/static/js/main.b175328a.js",
     "index.html": "/residencia-planner/index.html",
     "main.8953af62.css.map": "/residencia-planner/static/css/main.8953af62.css.map",
-    "main.807365b0.js.map": "/residencia-planner/static/js/main.807365b0.js.map"
+    "main.b175328a.js.map": "/residencia-planner/static/js/main.b175328a.js.map"
   },
   "entrypoints": [
     "static/css/main.8953af62.css",
-    "static/js/main.807365b0.js"
+    "static/js/main.b175328a.js"
   ]
 }
