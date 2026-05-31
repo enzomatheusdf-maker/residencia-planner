@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/residencia-planner/static/css/main.e6890d6d.css",
+    "main.js": "/residencia-planner/static/js/main.c8a0a0dc.js",
+    "index.html": "/residencia-planner/index.html",
+    "main.e6890d6d.css.map": "/residencia-planner/static/css/main.e6890d6d.css.map",
+    "main.c8a0a0dc.js.map": "/residencia-planner/static/js/main.c8a0a0dc.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e6890d6d.css",
+    "static/js/main.c8a0a0dc.js"
+  ]
+}
