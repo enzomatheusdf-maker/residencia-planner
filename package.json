@@ -18,6 +18,7 @@
   },
   "scripts": {
     "check:mojibake": "node scripts/check-mojibake.mjs",
+    "audit:encoding": "node scripts/audit-encoding.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "start": "react-scripts start",

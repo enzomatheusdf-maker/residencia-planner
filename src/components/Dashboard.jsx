@@ -952,7 +952,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     // 5. Main Title & Readiness metric
     ctx.fillStyle = "#a1a1aa"; // zinc-400
     ctx.font = "bold 11px system-ui, -apple-system, sans-serif";
-    ctx.fillText("ÍNDICE DE PRONTIDÒO GERAL", 45, 140);
+    ctx.fillText("ÍNDICE DE PRONTIDÃO GERAL", 45, 140);
 
     // Big score
     ctx.fillStyle = "#ffffff";
@@ -2278,6 +2278,5 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     </div>
   );
 }
-
 
 
