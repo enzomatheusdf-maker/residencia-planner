@@ -2,21 +2,24 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Target, Zap,
-  ChevronRight, Info, Settings, LogOut, Flame
+  ChevronRight, Info, Settings, LogOut, Flame, Stethoscope, GraduationCap
 } from "lucide-react";
 import { useStore } from "../core/store";
 import { diffDays, todayStr, STEPS } from "../core/fsrs";
 import { levelForXp, xpToNextLevel } from "../core/gamif";
+import { featureEnabled } from "../core/platformFeatures";
 import { MedRevLogo } from "./Primitives";
 import { calcStreaks } from "../hooks/useMetrics";
 
 export const NAV = [
   { k: "dash",  icon: LayoutDashboard, label: "Dashboard"     },
   { k: "crono", icon: Calendar,        label: "Cronograma"     },
+  { k: "academia", icon: GraduationCap, label: "Academia"      },
   { k: "banco", icon: BarChart3,       label: "Banco de Dados" },
   { k: "stats", icon: FileText,        label: "Estatísticas"   },
   { k: "sims",  icon: Target,          label: "Simulados"      },
-  { k: "anki",  icon: Zap,             label: "Anki Audit"     }
+  { k: "anki",  icon: Zap,             label: "Anki Audit"     },
+  { k: "raciocinio", icon: Stethoscope, label: "Raciocínio", requiresModule: "raciocinioClinico" }
 ];
 
 export default function Sidebar({ view, setView, setAjustes, overdueCount, setHelpModal, usuarioLogado, syncStatus, onLogout }) {
@@ -52,6 +55,14 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
   const levelPct = Math.min(100, Math.max(0, ((xp - prevLevelMinXp) / Math.max(1, nextLevelMinXp - prevLevelMinXp)) * 100));
   const displayName = userName || usuarioLogado?.displayName || usuarioLogado?.email?.split("@")[0] || "Estudante";
   const initials = (userName || usuarioLogado?.displayName || usuarioLogado?.email || "US").substring(0, 2).toUpperCase();
+  const filteredNav = useMemo(() => {
+    return NAV.filter((item) => {
+      if (item.k === "raciocinio" && !featureEnabled(plat, "raciocinioClinico")) {
+        return false;
+      }
+      return !item.requiresModule || meta.modulos?.[item.requiresModule] === true;
+    });
+  }, [meta.modulos, plat]);
 
   return (
     <aside className={`hidden md:flex flex-col bg-[#07070f] border-r border-white/5 shrink-0 transition-all duration-200 ${collapsed ? "w-[60px]" : "w-60"}`}>
@@ -78,7 +89,7 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
 
       {/* Nav items */}
       <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">
-        {NAV.map((n) => {
+        {filteredNav.map((n) => {
           const Icon = n.icon;
           const isActive = view === n.k;
           const showStreakWarning = n.k === "dash" && streakEmRisco;

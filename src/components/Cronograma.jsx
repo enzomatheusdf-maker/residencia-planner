@@ -1,12 +1,20 @@
 // src/components/Cronograma.jsx
-import React, { useState } from "react";
-import { Edit2, Plus, Play, ChevronDown, ChevronUp, Calendar } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Edit2, Plus, Play, ChevronDown, ChevronUp, Calendar, BadgeCheck } from "lucide-react";
 import { useStore } from "../core/store";
-import { ESP_COLORS, STEPS, IMPORTANCIA, DEMO_TEMA_ID } from "../core/fsrs";
+import { ESP_COLORS, STEPS, IMPORTANCIA, DEMO_TEMA_ID, todayStr } from "../core/fsrs";
 import { parseCatalogEntry } from "../constants/catalogos";
 import { getCronogramasByPlat, getDefaultCronogramaId, resolveCatalogo } from "../constants/cronogramas";
-import { stepState, STATE_DOT, STATE_TW, Badge, SBadge, Btn, Input, TourBalloon } from "./Primitives";
+import { stepState, STATE_DOT, STATE_TW, Badge, SBadge, Btn, Input, TourBalloon, InfoTooltip } from "./Primitives";
+import { CALENDAR_PROVIDER_IDS } from "../constants/calendarProviders";
+import { attachCalendarIntelligence, getProviderSeed, matchMedcofTopic } from "../core/calendarProvider";
+import CalendarProviderSelector from "./CalendarProviderSelector";
+import { ModalValidarDominio } from "./Modals";
 import RetrievabilitySpark from "./RetrievabilitySpark";
+import EmptyState from "./EmptyState";
+
+const CalendarImportWizard = React.lazy(() => import("./CalendarImportWizard"));
+const CalendarMappingPanel = React.lazy(() => import("./CalendarMappingPanel"));
 
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
@@ -49,15 +57,12 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema }) {
               {imp && <Badge color={imp.color}>{imp.label}</Badge>}
               {next && <SBadge S={tema.rev[next.key]?.S} nextDate={tema.rev[next.key]?.date} />}
               {hasVies && (
-                <span 
-                  className="text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/25 px-2 py-0.5 rounded font-medium flex items-center gap-1 group relative cursor-help"
+                <span
+                  className="text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/25 px-2 py-0.5 rounded font-medium flex items-center gap-1"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  ⚠️ Viés Metacognitivo
-                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-[#1a1a1e] border border-amber-500/30 text-[10px] text-gray-300 rounded-xl p-2 font-normal leading-normal opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-[99] shadow-xl shadow-black/50 text-center">
-                    Sua confiança declarada está muito acima do acerto real nesta especialidade. Seja mais autocrítico ao marcar seu nível de segurança.
-                    <span className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1a1a1e] border-r border-b border-amber-500/30 rotate-45 -mt-[5px]" />
-                  </span>
+                  Viés Metacognitivo
+                  <InfoTooltip texto="Sua confiança declarada está acima do acerto real nesta especialidade. Ajuste o nível de segurança com mais rigor." />
                 </span>
               )}
             </div>
@@ -91,11 +96,70 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema }) {
 }
 
 export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) {
-  const { plat, cronogramaSel, setCronogramaSel, tourStep, setTourStep } = useStore();
+  const {
+    plat,
+    cronogramaSel,
+    setCronogramaSel,
+    tourStep,
+    setTourStep,
+    calendarProvider,
+    setCalendarProvider,
+    saveImportedCalendarTopics,
+    addTema,
+  } = useStore();
+  const iniciarValidacaoDominioPrevio = useStore((s) => s.iniciarValidacaoDominioPrevio);
+  const validarDominio = useStore((s) => s.validarDominio);
+  const showToast = useStore((s) => s.showToast);
   const temas = useStore((s) => s[plat].temas);
   const planos = getCronogramasByPlat(plat);
   const selId = cronogramaSel?.[plat] || getDefaultCronogramaId(plat);
-  const cat = catalogo || resolveCatalogo(plat, selId);
+  const activeProvider = calendarProvider?.activeId || CALENDAR_PROVIDER_IDS.MEDCOF;
+  const importedTopics = useMemo(
+    () => calendarProvider?.importedTopics || [],
+    [calendarProvider?.importedTopics]
+  );
+  const customTopics = useMemo(
+    () => calendarProvider?.customTopics || [],
+    [calendarProvider?.customTopics]
+  );
+  const providerTopics = useMemo(
+    () => (
+      activeProvider === CALENDAR_PROVIDER_IDS.USER_IMPORTED
+        ? importedTopics
+        : activeProvider === CALENDAR_PROVIDER_IDS.CUSTOM
+          ? customTopics
+          : []
+    ),
+    [activeProvider, importedTopics, customTopics]
+  );
+  const [showImportWizard, setShowImportWizard] = useState(false);
+  const [showMappingPanel, setShowMappingPanel] = useState(false);
+  const [temaValidando, setTemaValidando] = useState(null);
+  const cat = useMemo(() => {
+    if (catalogo) return catalogo;
+    if (plat !== "res") return resolveCatalogo(plat, selId);
+    if (activeProvider === CALENDAR_PROVIDER_IDS.MEDCOF) {
+      return resolveCatalogo(plat, selId);
+    }
+    if (!providerTopics.length) return [];
+    const byWeek = providerTopics.reduce((acc, topic) => {
+      const week = topic.semana || "Sem semana definida";
+      if (!acc[week]) acc[week] = [];
+      acc[week].push(topic);
+      return acc;
+    }, {});
+    return Object.entries(byWeek).map(([semana, topics], idx) => ({
+      b: idx + 1,
+      nome: semana,
+      t: [...topics]
+        .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+        .map((topic) => {
+          const intel = attachCalendarIntelligence(topic);
+          const prioridade = intel.intelligence?.enamedHotness >= 0.1 ? "Alta" : "Média";
+          return [topic.temaOriginal, topic.areaCanonica || topic.area || "Outro", prioridade];
+        }),
+    }));
+  }, [catalogo, plat, selId, activeProvider, providerTopics]);
   const showSelector = !catalogo && planos.length >= 1;
   const [q, setQ]         = useState("");
   const [filter, setFilter] = useState("todos");
@@ -103,6 +167,20 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
   const [openBlocks, setOpenBlocks] = useState({ 1: true });
   const [expandedTopics, setExpandedTopics] = useState({});
   const [showPlanPanel, setShowPlanPanel] = useState(true);
+  const medcofTemas = useMemo(
+    () => (resolveCatalogo("res", getDefaultCronogramaId("res")) || []).flatMap((bl) =>
+      (bl.t || []).map((entry) => ({ nome: parseCatalogEntry(entry).nome }))
+    ),
+    []
+  );
+  const importedMappingStats = useMemo(() => {
+    if (!importedTopics.length) return { mapped: 0, pending: 0 };
+    const mapped = importedTopics.reduce((acc, topic) => {
+      const { score } = matchMedcofTopic(topic.temaOriginal, medcofTemas);
+      return acc + (score >= 0.6 ? 1 : 0);
+    }, 0);
+    return { mapped, pending: Math.max(0, importedTopics.length - mapped) };
+  }, [importedTopics, medcofTemas]);
 
   const toggleTopic = (topicName) => {
     setExpandedTopics((prev) => ({
@@ -119,6 +197,30 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
   };
 
   const temaMap = new Map(temas.map((t) => [t.nome, t]));
+
+  const beginDomainValidation = (payload) => {
+    if (!payload) return;
+    const existingById = payload.id ? temas.find((t) => t.id === payload.id) : null;
+    const existingByName = temas.find((t) => t.nome === payload.nome);
+    const targetTema = existingById || existingByName;
+    if (targetTema) {
+      setTemaValidando(targetTema);
+      return;
+    }
+    const newTema = {
+      id: Date.now(),
+      nome: payload.nome,
+      esp: payload.esp || "Outro",
+      prio: payload.prio || "Alta",
+      importancia: payload.importancia || prioToImportancia(payload.prio || "Alta"),
+      obs: payload.obs || "Tema criado para validação de domínio prévio.",
+      unstarted: true,
+      d0: todayStr(),
+      parentTopic: payload.parentTopic || null,
+    };
+    addTema(plat, newTema);
+    setTemaValidando(newTema);
+  };
 
   return (
     <div className="flex flex-col gap-5 animate-fade-up text-left">
@@ -185,35 +287,92 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                 </div>
 
                 {showPlanPanel && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                    {planos.map((p) => {
-                      const isSel = p.id === selId;
-                      return (
-                        <div
-                          key={p.id}
-                          onClick={() => setCronogramaSel(plat, p.id)}
-                          className={`cursor-pointer rounded-2xl p-4 border transition-all text-left flex flex-col justify-between ${
-                            isSel
-                              ? "border-blue-500 bg-blue-500/5 shadow-md shadow-indigo-950/20"
-                              : "border-white/5 bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.02]"
-                          }`}
-                        >
-                          <div>
-                            <div className="flex items-center justify-between gap-2 mb-1">
-                              <h5 className="font-bold text-sm text-gray-100">{p.nome}</h5>
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/5 text-gray-400 font-mono">
-                                {p.blocos} blocos
-                              </span>
+                  <div className="space-y-3 mt-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {planos.map((p) => {
+                        const isSel = p.id === selId;
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => setCronogramaSel(plat, p.id)}
+                            className={`cursor-pointer rounded-2xl p-4 border transition-all text-left flex flex-col justify-between ${
+                              isSel
+                                ? "border-blue-500 bg-blue-500/5 shadow-md shadow-indigo-950/20"
+                                : "border-white/5 bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.02]"
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <h5 className="font-bold text-sm text-gray-100">{p.nome}</h5>
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/5 text-gray-400 font-mono">
+                                  {p.blocos} blocos
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 leading-normal mb-3">{p.descricao}</p>
                             </div>
-                            <p className="text-xs text-gray-500 leading-normal mb-3">{p.descricao}</p>
+                            <div className="flex justify-between items-center text-[10px] text-gray-600 font-medium">
+                              <span>Fonte: {p.fonte} ({p.ano})</span>
+                              {isSel && <span className="text-blue-400 font-bold flex items-center gap-1">Ativo <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /></span>}
+                            </div>
                           </div>
-                          <div className="flex justify-between items-center text-[10px] text-gray-600 font-medium">
-                            <span>Fonte: {p.fonte} ({p.ano})</span>
-                            {isSel && <span className="text-blue-400 font-bold flex items-center gap-1">Ativo <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /></span>}
-                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {plat === "res" && !catalogo && (
+                      <div className="space-y-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <CalendarProviderSelector
+                          activeId={activeProvider}
+                          importedCount={importedTopics.length}
+                          onChange={(id) => {
+                            setCalendarProvider(id);
+                            if (id === CALENDAR_PROVIDER_IDS.USER_IMPORTED && importedTopics.length === 0) {
+                              setShowImportWizard(true);
+                            }
+                          }}
+                          onOpenImport={() => setShowImportWizard(true)}
+                        />
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowImportWizard(true)}
+                            className="px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 text-blue-300 border border-blue-500/20 text-[11px] font-bold"
+                          >
+                            Importar cronograma
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowMappingPanel((v) => !v)}
+                            className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 text-[11px] font-bold"
+                            disabled={importedTopics.length === 0}
+                          >
+                            {showMappingPanel ? "Ocultar mapeamento" : "Ver mapeamento"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => saveImportedCalendarTopics(getProviderSeed(CALENDAR_PROVIDER_IDS.USER_IMPORTED))}
+                            className="px-3 py-2 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/25 text-[11px] font-bold"
+                          >
+                            Usar amostra de desenvolvimento
+                          </button>
                         </div>
-                      );
-                    })}
+
+                        <p className="text-[10px] text-gray-400">
+                          {activeProvider === CALENDAR_PROVIDER_IDS.USER_IMPORTED
+                            ? `Estratégia MED — importado pelo usuário · ${importedTopics.length} tópicos importados · ${importedMappingStats.mapped} mapeados · ${importedMappingStats.pending} pendentes.`
+                            : activeProvider === CALENDAR_PROVIDER_IDS.CUSTOM
+                              ? "Custom — trilho montado manualmente."
+                              : "MEDCOF — catálogo oficial do app."}
+                        </p>
+
+                        {showMappingPanel && importedTopics.length > 0 && (
+                          <React.Suspense fallback={<div className="text-[11px] text-gray-500">Carregando mapeamento...</div>}>
+                            <CalendarMappingPanel importedTopics={importedTopics} medcofTemas={medcofTemas} />
+                          </React.Suspense>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -390,13 +549,26 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                                   return (
                                     <div key={sub} className="p-4 flex items-center justify-between gap-3 hover:bg-white/[0.01] transition-colors">
                                       <p className="text-xs font-medium text-gray-400 min-w-0 flex-1">{sub}</p>
-                                      <button
-                                        type="button"
-                                        onClick={() => onIniciarTema(subTema || { nome: subName, esp, prio: topPrio, parentTopic: topNome })}
-                                        className="px-2.5 py-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white text-[10px] font-black transition-all border border-blue-500/10 shrink-0 cursor-pointer"
-                                      >
-                                        Iniciar FSRS
-                                      </button>
+                                      <div className="flex flex-col gap-1 shrink-0">
+                                        <button
+                                          type="button"
+                                          onClick={() => onIniciarTema(subTema || { nome: subName, esp, prio: topPrio, parentTopic: topNome })}
+                                          className="px-2.5 py-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white text-[10px] font-black transition-all border border-blue-500/10 cursor-pointer"
+                                        >
+                                          Iniciar FSRS
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            beginDomainValidation(subTema || { nome: subName, esp, prio: topPrio, parentTopic: topNome });
+                                          }}
+                                          className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-200 text-[10px] font-black transition-all border border-white/10 flex items-center justify-center gap-1 cursor-pointer"
+                                          title="Use se você já estudou este tema. O app cria validação curta: 15+ questões e 80%+ para entrar no ciclo de revisão."
+                                        >
+                                          <BadgeCheck size={11} /> Já domino
+                                        </button>
+                                      </div>
                                     </div>
                                   );
                                 })}
@@ -438,16 +610,34 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                               </div>
                             )}
                           </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onIniciarTema(tema || { nome: topNome, esp, prio: currentPrio, importancia: currentImp, obs: `${bl.nome || "MEDCOF Bloco " + bl.b}` });
-                            }}
-                            className="w-full py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-blue-600/20 text-[12px] font-bold text-blue-400 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                          >
-                            <Play size={13} /> Iniciar Ciclo Hoje
-                          </button>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onIniciarTema(tema || { nome: topNome, esp, prio: currentPrio, importancia: currentImp, obs: `${bl.nome || "MEDCOF Bloco " + bl.b}` });
+                              }}
+                              className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-blue-600/20 text-[12px] font-bold text-blue-400 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <Play size={13} /> Iniciar Ciclo Hoje
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                beginDomainValidation(tema || { nome: topNome, esp, prio: currentPrio, importancia: currentImp, obs: `${bl.nome || "MEDCOF Bloco " + bl.b}` });
+                              }}
+                              className="flex-1 py-2 rounded-xl bg-black/25 border border-white/10 hover:bg-white/10 text-[12px] font-bold text-gray-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                              title="Use se você já estudou este tema. O app cria validação curta: 15+ questões e 80%+ para entrar no ciclo de revisão."
+                            >
+                              <BadgeCheck size={13} /> Já domino
+                            </button>
+                          </div>
+                          <p className="text-[10px] text-gray-500 leading-relaxed">
+                            Use se você já estudou este tema.
+                            {" "}
+                            <InfoTooltip texto="O app cria uma validação curta: 15+ questões e 80%+ para pular exposição inicial e entrar no ciclo de revisão." />
+                          </p>
                         </div>
                       );
                     })}
@@ -456,11 +646,49 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
               </div>
             );
           })}
+          {plat === "res" && !catalogo && activeProvider !== CALENDAR_PROVIDER_IDS.MEDCOF && cat.length === 0 && (
+            <EmptyState
+              icon={Calendar}
+              title="Nenhum cronograma ativo"
+              description="Escolha MEDCOF, importe Estrategia MED ou crie um personalizado."
+              primaryAction={{ label: "Importar calendario", onClick: () => setShowImportWizard(true) }}
+              secondaryAction={{
+                label: "Usar amostra",
+                onClick: () => saveImportedCalendarTopics(getProviderSeed(CALENDAR_PROVIDER_IDS.USER_IMPORTED)),
+              }}
+            />
+          )}
         </>
+      )}
+      {showImportWizard && (
+        <React.Suspense fallback={null}>
+          <CalendarImportWizard
+            onClose={() => setShowImportWizard(false)}
+            onSave={(topics) => {
+              saveImportedCalendarTopics(topics);
+              setCalendarProvider(CALENDAR_PROVIDER_IDS.USER_IMPORTED);
+              setShowImportWizard(false);
+            }}
+          />
+        </React.Suspense>
+      )}
+      {temaValidando && (
+        <ModalValidarDominio
+          tema={temaValidando}
+          onConfirm={({ questoes, acertos }) => {
+            validarDominio(plat, temaValidando.id, { questoes, acertos });
+            const pct = Math.round((acertos / questoes) * 100);
+            if (showToast) showToast(`Validação de domínio registrada (${pct}%).`);
+            setTemaValidando(null);
+          }}
+          onStartLater={() => {
+            iniciarValidacaoDominioPrevio(plat, temaValidando.id);
+            if (showToast) showToast("Validação marcada como pendente para este tema.");
+            setTemaValidando(null);
+          }}
+          onCancel={() => setTemaValidando(null)}
+        />
       )}
     </div>
   );
 }
-
-
-

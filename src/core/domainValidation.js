@@ -1,163 +1,210 @@
 // src/core/domainValidation.js
-// Lógica de validação de domínio prévio.
-// Totalmente puro (sem efeitos colaterais): recebe dados, devolve decisões.
+// Lógica de validação de domínio prévio (puramente funcional).
 
 import { STEPS, S_BASE, addDays, todayStr, getAreaPrior } from "./fsrs";
-import { PESO_AREA_ENAMED } from "../constants/enamedIncidencia";
 
-// Pesos de incidência por especialidade (RES). Quanto maior, mais o tema deve
-// permanecer ativo mesmo com domínio alto.
-const PESO_ESP = {
-  "Clínica Médica": 3.0,
-  "Preventiva":     2.5,
-  "Cirurgia":       2.0,
-  "GO":             2.0,
-  "Pediatria":      2.0,
-  "Outro":          1.0,
-  // Vestibular — áreas com alto peso de prova
-  "Exatas":                1.8,
-  "Ciências da Natureza":  1.6,
-  "Linguagens":            1.4,
-  "Humanas":               1.2,
-  "Redação":               2.0,
-};
+export const DOMINIO_PREVIO_MIN_QUESTOES = 15;
+export const DOMINIO_PREVIO_MIN_ACERTO = 80;
 
-/**
- * Classifica o domínio com base no % de acerto.
- * @returns {"alto"|"intermediario"|"insuficiente"}
- */
-export function classificarDominio(pctAcerto) {
-  if (pctAcerto >= 85) return "alto";
-  if (pctAcerto >= 70) return "intermediario";
-  return "insuficiente";
+export function isTemaNaoIniciado(tema = {}) {
+  const dp = tema.dominioPrevio || tema.validacaoDominio || {};
+  if (["validacao_pendente", "validado_previo", "reprovado"].includes(dp.status)) return false;
+
+  const status = String(tema.status || "").toLowerCase();
+  const hasFsrsSignal = Boolean(
+    tema.fsrs && (
+      tema.fsrs.last_review ||
+      Number(tema.fsrs.reps || 0) > 0 ||
+      Number(tema.fsrs.S || 0) > 0 ||
+      Number(tema.fsrs.D || 0) > 0
+    )
+  );
+  const hasRevSignal = STEPS.some((step) => Boolean(tema.rev?.[step.key]?.done));
+
+  const sinais = [
+    tema.iniciadoEm,
+    tema.estudadoEm,
+    tema.concluidoEm,
+    tema.lastReview,
+    tema.last_review,
+    tema.revisadoEm,
+    status && !["novo", "nao_iniciado", "não_iniciado", ""].includes(status),
+    Number(tema.revisoes || tema.reviews || tema.reps || 0) > 0,
+    Number(tema.acertos || tema.respondidas || tema.totalQuestoes || 0) > 0,
+    hasFsrsSignal,
+    hasRevSignal,
+    !tema.unstarted,
+  ];
+
+  return !sinais.some(Boolean);
 }
 
 /**
- * Dados da classificação para exibição na UI.
+ * Classificação de domínio usada na UI:
+ *  - alto: >= 90% (D14)
+ *  - intermediario: 80-89% (D7)
+ *  - insuficiente: < 80%
  */
+export function classificarDominio(pctAcerto) {
+  if (pctAcerto >= 90) return "alto";
+  if (pctAcerto >= DOMINIO_PREVIO_MIN_ACERTO) return "intermediario";
+  return "insuficiente";
+}
+
 export const DOMINIO_META = {
   alto: {
     label: "Domínio Alto",
-    desc: "Manutenção espaçada — ciclo pulado para revisão periódica.",
+    desc: "Domínio prévio validado. Próxima revisão inicial em D14.",
     color: "#10b981",
   },
   intermediario: {
     label: "Domínio Intermediário",
-    desc: "Ciclo reduzido — ênfase nas revisões de erros.",
+    desc: "Domínio prévio validado. Próxima revisão inicial em D7.",
     color: "#f59e0b",
   },
   insuficiente: {
     label: "Domínio Insuficiente",
-    desc: "Ciclo completo mantido.",
+    desc: "Tema mantido no fluxo normal de estudo.",
     color: "#f87171",
   },
 };
 
-/**
- * Calcula o intervalo inicial de manutenção ajustado por domínio e incidência.
- *
- * Domínio alto + incidência baixa  → intervalo maior (tema pode esperar)
- * Domínio alto + incidência alta   → intervalo menor (tema deve voltar cedo)
- * Domínio intermediário            → ciclo reduzido (D0+D4+D21), sem manutenção direta
- */
-function calcIntervaloManutencao(pctAcerto, esp, importancia) {
-  const pesoBruto = PESO_ESP[esp] || 1.0;
-  const pesoImportancia = importancia === "CRITICA" ? 3.0 : importancia === "ALTA" ? 2.0 : 1.0;
-  const incidencia = (pesoBruto * pesoImportancia) / (3.0 * 3.0); // normaliza 0–1
+export function calcularDominioPrevio({ acertos, total }) {
+  const a = Number(acertos);
+  const t = Number(total);
 
-  // Base: 45 dias (intervalo inicial do d21→manutencao normal).
-  // Domínio alto ajusta para cima; incidência alta puxa de volta para baixo.
-  const base = 45;
-  const bonusDominio = Math.round((pctAcerto - 85) * 0.6); // 0–9 dias extra
-  const penalIncidencia = Math.round(incidencia * 25);      // 0–25 dias a menos
-  return Math.max(14, base + bonusDominio - penalIncidencia);
+  if (!Number.isFinite(a) || !Number.isFinite(t) || t <= 0 || a < 0 || a > t) {
+    return {
+      valido: false,
+      status: "invalido",
+      percentual: 0,
+      motivo: "Informe total e acertos válidos.",
+    };
+  }
+
+  const percentual = Math.round((a / t) * 100);
+  if (t < DOMINIO_PREVIO_MIN_QUESTOES) {
+    return {
+      valido: false,
+      status: "amostra_insuficiente",
+      percentual,
+      motivo: `Resolva pelo menos ${DOMINIO_PREVIO_MIN_QUESTOES} questões para validar domínio prévio.`,
+    };
+  }
+
+  if (percentual < DOMINIO_PREVIO_MIN_ACERTO) {
+    return {
+      valido: false,
+      status: "reprovado",
+      percentual,
+      motivo: "Domínio ainda não está estável; o tema volta para o fluxo normal.",
+    };
+  }
+
+  const intervaloInicial = percentual >= 90 ? 14 : 7;
+  return {
+    valido: true,
+    status: "validado_previo",
+    percentual,
+    intervaloInicial,
+    proximaRevisao: addDays(todayStr(), intervaloInicial),
+    motivo:
+      percentual >= 90
+        ? "Domínio prévio forte: tema entra em revisão inicial D14."
+        : "Domínio prévio suficiente: tema entra em revisão inicial D7.",
+  };
+}
+
+export function criarValidacaoDominioPrevio() {
+  return {
+    status: "validacao_pendente",
+    iniciadoEm: todayStr(),
+    validadoEm: null,
+    metodo: "ja_domino",
+    questoesAlvo: DOMINIO_PREVIO_MIN_QUESTOES,
+    total: null,
+    acertos: null,
+    percentual: null,
+    intervaloInicial: null,
+    proximaRevisao: null,
+    observacao: null,
+  };
+}
+
+export function finalizarValidacaoDominioPrevio({ acertos, total }) {
+  const resultado = calcularDominioPrevio({ acertos, total });
+  return {
+    status: resultado.valido ? "validado_previo" : "reprovado",
+    iniciadoEm: todayStr(),
+    validadoEm: todayStr(),
+    metodo: "ja_domino",
+    questoesAlvo: DOMINIO_PREVIO_MIN_QUESTOES,
+    total: Number(total),
+    acertos: Number(acertos),
+    percentual: resultado.percentual,
+    intervaloInicial: resultado.intervaloInicial || null,
+    proximaRevisao: resultado.proximaRevisao || null,
+    observacao: resultado.motivo,
+  };
 }
 
 /**
- * Gera o objeto `rev` adequado para cada classificação de domínio.
- *
- * "alto"          → pula direto para manutenção espaçada
- * "intermediario" → ciclo reduzido: mantém d0(se não feito), d4, d21; remove d1/d7
- * "insuficiente"  → rev padrão sem alteração (ciclo completo)
+ * Constrói ciclo pós-validação:
+ * - insuficiente: null (mantém ciclo original)
+ * - intermediario: próxima revisão em D7
+ * - alto: próxima revisão em D14
  */
 export function buildRevComDominio(d0, esp, importancia, classificacao, pctAcerto) {
   const prior = getAreaPrior(esp);
   const hoje = todayStr();
   const baseDate = d0 >= hoje ? d0 : hoje;
 
-  if (classificacao === "insuficiente") {
-    // Mantém ciclo completo — usa buildRev normal (store chama buildRev).
-    return null;
-  }
+  if (classificacao === "insuficiente") return null;
 
-  if (classificacao === "alto") {
-    const intervalo = calcIntervaloManutencao(pctAcerto, esp, importancia);
-    // Marca todos os passos fixos como feitos (com acerto do teste de domínio)
-    // e coloca o tema direto em manutenção espaçada.
-    const acertoFrac = pctAcerto / 100;
-    const rev = {};
-    STEPS.forEach((s) => {
-      rev[s.key] = {
-        date: baseDate,
-        done: true,
-        acerto: acertoFrac,
-        questoes: null,
-        S: S_BASE[s.key],
-        D: prior.difBase,
-        motivosErro: [],
-        skippeadoPorDominio: true,
-      };
-    });
-    rev.manutencao = {
+  const intervaloInicial = classificacao === "alto" ? 14 : 7;
+  const acertoFrac = Math.max(0, Math.min(1, Number(pctAcerto || 0) / 100));
+  const rev = {};
+  STEPS.forEach((step) => {
+    rev[step.key] = {
+      date: addDays(hoje, step.offset),
       done: false,
-      date: addDays(hoje, intervalo),
-      S: prior.sMult * 45,
+      acerto: null,
+      questoes: null,
+      S: S_BASE[step.key],
       D: prior.difBase,
-      interval: intervalo,
+      motivosErro: [],
     };
-    return rev;
-  }
+  });
 
-  if (classificacao === "intermediario") {
-    // Ciclo reduzido: marca d0 e d1 como feitos; mantém d4, d7, d21 ativos.
-    // O foco fica nas revisões (d4+) e nos erros que o aluno cometeu.
-    const acertoFrac = pctAcerto / 100;
-    const rev = {};
-    STEPS.forEach((s, i) => {
-      if (s.key === "d0" || s.key === "d1") {
-        rev[s.key] = {
-          date: baseDate,
-          done: true,
-          acerto: acertoFrac,
-          questoes: null,
-          S: S_BASE[s.key],
-          D: prior.difBase,
-          motivosErro: [],
-          skippeadoPorDominio: true,
-        };
-      } else {
-        // Antecipa d4 para 2 dias (urgência), d7 e d21 mantêm offsets normais.
-        const offset = s.key === "d4" ? 2 : s.offset;
-        rev[s.key] = {
-          date: addDays(hoje, offset),
-          done: false,
-          acerto: null,
-          questoes: null,
-          S: S_BASE[s.key],
-          D: prior.difBase,
-          motivosErro: [],
-        };
-      }
-    });
-    return rev;
-  }
+  rev.d0 = {
+    ...rev.d0,
+    date: baseDate,
+    done: true,
+    acerto: acertoFrac,
+    questoes: null,
+    skippeadoPorDominio: true,
+  };
 
-  return null;
+  rev.d1 = {
+    ...rev.d1,
+    date: addDays(hoje, intervaloInicial),
+  };
+  rev.d4 = {
+    ...rev.d4,
+    date: addDays(hoje, intervaloInicial + 3),
+  };
+  rev.d7 = {
+    ...rev.d7,
+    date: addDays(hoje, intervaloInicial + 7),
+  };
+  rev.d21 = {
+    ...rev.d21,
+    date: addDays(hoje, intervaloInicial + 21),
+  };
+
+  return rev;
 }
 
-/**
- * Objeto salvo em `tema.dominio` após validação.
- */
 export function criarRegistroDominio(questoes, acertos) {
   const pct = questoes > 0 ? Math.round((acertos / questoes) * 100) : 0;
   return {

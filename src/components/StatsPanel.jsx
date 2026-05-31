@@ -1,19 +1,25 @@
 // src/components/StatsPanel.jsx
-import React, { useState, useMemo } from "react";
-import { BarChart3, ShieldAlert, Award, AlertTriangle, TrendingUp, Info, HelpCircle, Flame } from "lucide-react";
+import React, { useMemo, lazy, Suspense } from "react";
+import { BarChart3, Flame } from "lucide-react";
 import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, todayStr, addDays, fmtDate } from "../core/fsrs";
 import { calcCalibration } from "../core/calibration";
 import { getMentorPhrase } from "../core/mentor";
 import { getReadinessData } from "../core/readiness";
+import { ERROR_TYPE_LABEL, dominantErrorType, summarizeErrors } from "../core/errorTaxonomy";
+import EnamedMapa from "./EnamedMapa";
+import AdvancedSection from "./AdvancedSection";
+import LaunchChecklistPanel from "./LaunchChecklistPanel";
 
-export default function StatsPanel() {
+const EnamedProvaAnalyzer = lazy(() => import("./EnamedProvaAnalyzer"));
+const WeeklyReview = lazy(() => import("./WeeklyReview"));
+const DataSafetyPanel = lazy(() => import("./DataSafetyPanel"));
+
+export default function StatsPanel({ setView }) {
   const { plat, temaStats, userName, meta } = useStore();
   const temas = useStore((s) => s[plat]?.temas || []);
-
-  const totalSessions = useMemo(() => {
-    return temas.flatMap((t) => Object.values(t.rev)).filter((r) => r.done).length;
-  }, [temas]);
+  const simulados = useStore((s) => s[plat]?.simulados || []);
+  const weeklyReviews = useStore((s) => s.weeklyReviews || []);
 
   const personalStats = useMemo(() => {
     const startedTemas = temas.filter(t => !t.unstarted);
@@ -262,7 +268,7 @@ export default function StatsPanel() {
       delta7: current - val7,
       delta30: current - val30
     };
-  }, [meta.prontidaoHist, temas, plat, meta]);
+  }, [temas, plat, meta]);
 
   const sparklinePath = useMemo(() => {
     const hist = meta.prontidaoHist || [];
@@ -280,6 +286,42 @@ export default function StatsPanel() {
     }).join(" ");
   }, [meta.prontidaoHist]);
 
+  const errorAnalytics = useMemo(() => {
+    const fromReviews = temas.flatMap((tema) =>
+      STEPS.flatMap((step) => {
+        const review = tema.rev?.[step.key];
+        if (!review?.done) return [];
+        const structured = Array.isArray(review.erros) ? review.erros : [];
+        const fallback = Array.isArray(review.motivosErro)
+          ? review.motivosErro.map((tipoErro) => ({ tipoErro, acertou: false, confianca: review.confianca }))
+          : [];
+        return [...structured, ...fallback];
+      })
+    );
+
+    const fromSimulados = simulados.flatMap((simulado) =>
+      (simulado.questoesErradas || []).map((questao) => ({
+        tipoErro: questao.tipoErro,
+        acertou: false,
+        confianca: questao.confianca,
+        tempoExcedido: Boolean(questao.tempoExcedido),
+      }))
+    );
+
+    const errors = [...fromReviews, ...fromSimulados];
+    const summary = summarizeErrors(errors);
+    const dominant = dominantErrorType(errors);
+
+    return {
+      total: errors.length,
+      summary,
+      dominant,
+      confidenceMismatch: summary.confianca_mal_calibrada || 0,
+      reasoning: summary.raciocinio || 0,
+      time: summary.tempo || 0,
+    };
+  }, [simulados, temas]);
+
   return (
     <div className="space-y-5 animate-fade-up text-left">
       <div className="flex items-center gap-2 border-b border-white/5 pb-2">
@@ -295,11 +337,55 @@ export default function StatsPanel() {
           </div>
         ) : (
           <>
+            {plat === "res" && (
+              <>
+                <EnamedMapa
+                  onFocar={() => {
+                    if (setView) setView("crono");
+                  }}
+                />
+                <AdvancedSection title="Analise ENAMED detalhada" defaultOpen={false} storageKey="stats-enamed-advanced">
+                  <Suspense fallback={<div className="text-[11px] text-gray-500">Carregando análise ENAMED...</div>}>
+                    <EnamedProvaAnalyzer />
+                  </Suspense>
+                </AdvancedSection>
+              </>
+            )}
+
+            <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-3 shadow-lg">
+              <div>
+                <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">Padrao de Erros</h3>
+                <p className="text-[11px] text-gray-500 mt-0.5">Classificacao unificada para reduzir falsa confianca e ajustar o treino.</p>
+              </div>
+              {errorAnalytics.total === 0 ? (
+                <p className="text-[11px] text-gray-500">Sem erros suficientes para padrao dominante.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Dominante</p>
+                    <p className="text-sm font-black text-white mt-1">{ERROR_TYPE_LABEL[errorAnalytics.dominant] || errorAnalytics.dominant || "—"}</p>
+                  </div>
+                  <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Alta confianca + erro</p>
+                    <p className="text-sm font-black text-amber-300 mt-1">{errorAnalytics.confidenceMismatch}</p>
+                  </div>
+                  <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Erro por tempo</p>
+                    <p className="text-sm font-black text-blue-300 mt-1">{errorAnalytics.time}</p>
+                  </div>
+                  <div className="bg-black/30 border border-white/5 rounded-xl p-3">
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Erro de raciocinio</p>
+                    <p className="text-sm font-black text-red-300 mt-1">{errorAnalytics.reasoning}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* KPIs */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {[
                 { 
-                  label: "Prontidão", 
+                  label: "Preparo estimado",
                   value: `${readinessTrend.current}%`, 
                   color: "text-blue-400",
                   trend: readinessTrend.delta7,
@@ -323,7 +409,7 @@ export default function StatsPanel() {
                       )}
                     </div>
                   </div>
-                  {s.label === "Prontidão" && sparklinePath && (
+                  {s.label === "Preparo estimado" && sparklinePath && (
                     <div className="absolute bottom-0 left-0 right-0 h-5 opacity-40 pointer-events-none">
                       <svg viewBox="0 0 100 20" preserveAspectRatio="none" className="w-full h-full">
                         <path d={sparklinePath} fill="none" stroke="#8b5cf6" strokeWidth="1.5" />
@@ -627,7 +713,9 @@ export default function StatsPanel() {
 
             {/* Performance by Specialty */}
             <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4 shadow-lg">
-              <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">Desempenho por Especialidade</h3>
+              <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">
+                {plat === "vest" ? "Desempenho por Matéria" : "Desempenho por Especialidade"}
+              </h3>
               <div className="space-y-4">
                 {personalStats?.espStats.map(e => {
                   const espC = ESP_COLORS[e.esp] || "#94a3b8";
@@ -650,6 +738,24 @@ export default function StatsPanel() {
                 })}
               </div>
             </div>
+
+            <AdvancedSection title="Paineis avancados de lancamento" defaultOpen={false} storageKey="stats-launch-advanced">
+              <div className="space-y-4">
+                <LaunchChecklistPanel />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Revisoes executivas</span>
+                    <span className="text-[10px] text-gray-500">{weeklyReviews.length} registradas</span>
+                  </div>
+                  <Suspense fallback={<div className="text-[11px] text-gray-500">Carregando revisão semanal...</div>}>
+                    <WeeklyReview onAdjust={() => setView && setView("crono")} />
+                  </Suspense>
+                </div>
+                <Suspense fallback={<div className="text-[11px] text-gray-500">Carregando painel de segurança...</div>}>
+                  <DataSafetyPanel />
+                </Suspense>
+              </div>
+            </AdvancedSection>
           </>
         )}
       </div>

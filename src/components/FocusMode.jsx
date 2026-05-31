@@ -5,9 +5,13 @@ import { getStepDefinitions, getBrainDumpFields } from "../constants/stepDefinit
 import { ESP_COLORS, DEMO_TEMA_ID } from "../core/fsrs";
 import { useStore } from "../core/store";
 import { TourBalloon, ProgressiveTooltip } from "./Primitives";
-import { StructuredErrorsList } from "./Modals";
+import { ModalValidarDominio, StructuredErrorsList } from "./Modals";
+import SessionClosureModal from "./SessionClosureModal";
+import { isTemaNaoIniciado } from "../core/domainValidation";
 import { getMentorPhrase, getRecentPhrases, trackRecentPhrase, isExhaustionDetected } from "../core/mentor";
 import { getFaseItem, todayStr, addDays, STEPS } from "../core/fsrs";
+import { ERROR_TYPE, dominantErrorType } from "../core/errorTaxonomy";
+import { createSessionReflection } from "../core/sessionReflection";
 
 const STEP_ICONS = { pretest: FileText, leitura: BookOpen, esqueleto: Layers, braindump: Brain, questoes: PenTool, anki: Zap };
 
@@ -42,8 +46,13 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   // 1. SELECT TARGET THEME & STEP
   const intelligentQueue = useFilaInteligente(temas);
   const updateTema = useStore((s) => s.updateTema);
+  const validarDominio = useStore((s) => s.validarDominio);
+  const iniciarValidacaoDominioPrevio = useStore((s) => s.iniciarValidacaoDominioPrevio);
+  const showToast = useStore((s) => s.showToast);
   const updateGamifStreak = useStore((s) => s.updateGamifStreak);
   const temaStats = useStore((s) => s.temaStats || {});
+  const addSessionReflection = useStore((s) => s.addSessionReflection);
+  const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
 
   const doneReviews = useMemo(() => {
     return temas.flatMap((t) => STEPS.map((s) => t.rev[s.key])).filter(r => r && r.done);
@@ -126,10 +135,47 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
 
   const [showTransitionScreen, setShowTransitionScreen] = useState(false);
   const [lastCompletedItem, setLastCompletedItem] = useState(null);
+  const [showSessionClosure, setShowSessionClosure] = useState(false);
+  const [closureDraft, setClosureDraft] = useState(null);
 
   const isModoProva = useMemo(() => {
     return plat === "vest" && tema && tema.nome.toLowerCase().includes("simulado");
   }, [plat, tema]);
+
+  const inferOutcome = useCallback((markData = {}) => {
+    const score = typeof markData.acerto === "number" ? markData.acerto : null;
+    if (score == null) return "medio";
+    if (score >= 0.8) return "bom";
+    if (score < 0.6) return "ruim";
+    return "medio";
+  }, []);
+
+  const inferMainIssue = useCallback((markData = {}) => {
+    const dominant = dominantErrorType(markData.erros || []);
+    if (dominant === ERROR_TYPE.CONTENT || dominant === ERROR_TYPE.MEMORY) return "conteudo";
+    if (dominant === ERROR_TYPE.REASONING) return "raciocinio";
+    if (dominant === ERROR_TYPE.INTERPRETATION || dominant === ERROR_TYPE.DISTRACTION) return "distracao";
+    if (dominant === ERROR_TYPE.TIME) return "tempo";
+    if (String(markData.cansaco || "").toLowerCase().startsWith("alt")) return "energia";
+    return "nenhum";
+  }, []);
+
+  const inferNextAdjustment = useCallback((mainIssue, outcome) => {
+    if (mainIssue === "energia") return "descanso";
+    if (mainIssue === "raciocinio") return "caso";
+    if (mainIssue === "tempo") return "questoes";
+    if (mainIssue === "conteudo") return "revisar";
+    if (outcome === "bom") return "manter";
+    return "revisar";
+  }, []);
+
+  const persistSessionClosure = useCallback((payload = {}) => {
+    if (!addSessionReflection) return;
+    const reflection = createSessionReflection(payload);
+    addSessionReflection(reflection);
+    if (rebuildActionInboxForToday) rebuildActionInboxForToday();
+    if (showToast) showToast("Fechamento salvo e adicionado na Caixa de Acoes.");
+  }, [addSessionReflection, rebuildActionInboxForToday, showToast]);
 
   const handleStepSuccess = (temaId, stepKey, markData) => {
     const currentTemaName = tema?.nome || "Tema";
@@ -149,7 +195,27 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
       c4: markData.c4,
       c5: markData.c5
     });
-    setShowTransitionScreen(true);
+    const outcome = inferOutcome(markData);
+    const mainIssue = inferMainIssue(markData);
+    const nextAdjustment = inferNextAdjustment(mainIssue, outcome);
+    const confidenceRaw = String(markData.confianca || confianca || "media").toLowerCase();
+    const confidence = confidenceRaw.startsWith("alt") ? "alta" : confidenceRaw.startsWith("baix") ? "baixa" : "media";
+    setClosureDraft({
+      source: "focus",
+      tema: currentTemaName,
+      area: tema?.esp || "",
+      outcome,
+      mainIssue,
+      confidence,
+      nextAdjustment,
+    });
+    useStore.setState((state) => ({
+      meta: {
+        ...state.meta,
+        lastFocusSessionAt: todayStr(),
+      },
+    }));
+    setShowSessionClosure(true);
     
     resetSessionStates();
   };
@@ -160,6 +226,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const [expandedJustification, setExpandedJustification] = useState(false);
   const [showFocusBalloon, setShowFocusBalloon] = useState(true);
   const [showD0StatsForm, setShowD0StatsForm] = useState(false);
+  const [temaValidando, setTemaValidando] = useState(null);
 
   // Sprint 4: Metacognitive D1 and two-layer completion states
   const [stepStartTime, setStepStartTime] = useState(Date.now());
@@ -202,6 +269,13 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
     const siblingCount = temas.filter(t => t.parentTopic === tema.parentTopic).length;
     return siblingCount >= 3;
   }, [tema, temas]);
+  const canShowJaDomino = useMemo(() => {
+    const status = tema?.dominioPrevio?.status;
+    if (!tema) return false;
+    if (tourStep === "focus") return false;
+    if (!isTemaNaoIniciado(tema)) return false;
+    return !["validacao_pendente", "validado_previo", "reprovado"].includes(status);
+  }, [tema, tourStep]);
 
   // Derived accuracy
   const totalQuestoes = +questoes || 0;
@@ -370,16 +444,6 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
 
   const currentStepDef = stepDefs[d0StepIdx];
   const espColor = tema ? (ESP_COLORS[tema.esp] || "#8b5cf6") : "#8b5cf6";
-
-  // Error categories — vest adds "interpretacao"
-  const motivosList = [
-    { k: "lacuna", l: "Lacuna de Conteúdo" },
-    { k: "raciocinio", l: "Erro de Raciocínio" },
-    { k: "distractor", l: "Caiu em Distrator" },
-    { k: "descuido", l: "Descuido / Falta de Atenção" },
-    { k: "nao_visto", l: "Conteúdo Não Visto" },
-    ...(plat === "vest" ? [{ k: "interpretacao", l: "Erro de Interpretação" }] : [])
-  ];
 
   if (showTransitionScreen) {
     const nextItem = intelligentQueue.find(item => item.temaId !== lastCompletedItem?.id);
@@ -683,6 +747,20 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                       placeholder="Ex: Paciente 35a com quadro compatível com Apendicite, dor em fossa ilíaca direita..."
                       className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-all resize-none"
                     />
+                    {canShowJaDomino && (
+                      <div className="mt-2.5 flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setTemaValidando(tema)}
+                          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-200 hover:bg-emerald-400/15"
+                        >
+                          Já domino este tema
+                        </button>
+                        <p className="text-[10px] text-gray-500 leading-relaxed">
+                          Se esta âncora clínica já é familiar, valide com questões para pular a exposição inicial sem burlar o ciclo.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1506,6 +1584,41 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
           onNext={() => setShowFocusBalloon(false)}
         />
       )}
+      {temaValidando && (
+        <ModalValidarDominio
+          tema={temaValidando}
+          onConfirm={({ questoes, acertos }) => {
+            validarDominio(plat, temaValidando.id, { questoes, acertos });
+            showToast("Validação de domínio registrada para este tema.");
+            setTemaValidando(null);
+          }}
+          onStartLater={() => {
+            iniciarValidacaoDominioPrevio(plat, temaValidando.id);
+            showToast("Validação marcada para fazer depois.");
+            setTemaValidando(null);
+          }}
+          onCancel={() => setTemaValidando(null)}
+        />
+      )}
+      <SessionClosureModal
+        open={showSessionClosure}
+        source={closureDraft?.source || "focus"}
+        tema={closureDraft?.tema || ""}
+        area={closureDraft?.area || ""}
+        initial={closureDraft}
+        onSave={(payload) => {
+          persistSessionClosure(payload);
+          setShowSessionClosure(false);
+          setShowTransitionScreen(true);
+        }}
+        onSkip={() => {
+          setShowSessionClosure(false);
+          setShowTransitionScreen(true);
+        }}
+        onClose={() => {
+          setShowSessionClosure(false);
+        }}
+      />
     </div>
   );
 }

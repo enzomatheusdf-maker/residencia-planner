@@ -1,5 +1,5 @@
 // src/components/Primitives.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Info, X } from "lucide-react";
 import { isOverdue, isDueToday, isDueSoon, fmtDate } from "../core/fsrs";
@@ -126,25 +126,80 @@ export function Field({ label, info, children }) {
   );
 }
 
-export function InfoTooltip({ texto }) {
-  const [show, setShow] = useState(false);
+export function SmartTooltip({ content, children, preferred = "top" }) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0, placement: preferred });
+  const anchorRef = useRef(null);
+  const bubbleRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!open || !anchorRef.current || !bubbleRef.current) return;
+    const a = anchorRef.current.getBoundingClientRect();
+    const b = bubbleRef.current.getBoundingClientRect();
+    const gap = 8;
+    let top = a.top - b.height - gap;
+    let placement = "top";
+    if (top < 8) {
+      top = a.bottom + gap;
+      placement = "bottom";
+    }
+    let left = a.left + (a.width / 2) - (b.width / 2);
+    left = Math.max(8, Math.min(left, window.innerWidth - b.width - 8));
+    setPos({ top, left, placement });
+  }, [open, preferred]);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open]);
+
   return (
-    <div className="relative inline-flex items-center">
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); setShow(!show); }}
-        onBlur={() => setTimeout(() => setShow(false), 150)}
-        className="text-gray-700 hover:text-blue-400 transition-colors focus:outline-none"
+    <span ref={anchorRef} className="inline-flex items-center">
+      <span
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
       >
+        {children}
+      </span>
+      {open &&
+        createPortal(
+          <div
+            ref={bubbleRef}
+            role="tooltip"
+            className="fixed z-[700] max-w-[min(18rem,calc(100vw-1rem))] rounded-xl border border-white/15 bg-[#1a1a1e] px-3 py-2 text-[11px] leading-relaxed text-gray-200 shadow-2xl"
+            style={{ top: `${pos.top}px`, left: `${pos.left}px` }}
+          >
+            {content}
+            <span
+              className="absolute left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1a1a1e] border-white/15 rotate-45"
+              style={pos.placement === "top"
+                ? { top: "100%", marginTop: "-1px", borderRightWidth: "1px", borderBottomWidth: "1px" }
+                : { bottom: "100%", marginBottom: "-1px", borderLeftWidth: "1px", borderTopWidth: "1px" }}
+            />
+          </div>,
+          document.body
+        )}
+    </span>
+  );
+}
+
+export function InfoTooltip({ texto }) {
+  return (
+    <SmartTooltip content={texto}>
+      <button type="button" className="text-gray-700 hover:text-blue-400 transition-colors focus:outline-none">
         <Info size={13} />
       </button>
-      {show && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 bg-[#1a1a1e] border border-white/15 rounded-xl p-3 text-[11px] text-gray-300 shadow-2xl z-[60] leading-relaxed pointer-events-none">
-          {texto}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1a1a1e] border-r border-b border-white/15 rotate-45 -mt-[5px]" />
-        </div>
-      )}
-    </div>
+    </SmartTooltip>
   );
 }
 
@@ -330,7 +385,7 @@ export function ProgressiveTooltip({ tooltipId, text, children }) {
 // ─── TOUR BALLOON (WALKTHROUGH POPUPS) ──────────────────────────────────────────
 export function TourBalloon({ text, onNext, nextLabel = "Continuar →" }) {
   return createPortal(
-    <div className="fixed inset-0 z-[300] bg-black/40 backdrop-blur-[1px] flex items-start sm:items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[800] bg-black/40 backdrop-blur-[1px] flex items-start sm:items-center justify-center p-4 overflow-y-auto">
       <div className="w-full max-w-[min(24rem,calc(100vw-2rem))] bg-gradient-to-br from-[#12121e] to-[#0a0a0f] border border-blue-500/30 rounded-2xl p-5 shadow-2xl shadow-blue-900/10 animate-slide-up text-left relative overflow-hidden max-h-[85dvh] my-auto flex flex-col">
         <div className="absolute -right-8 -top-8 w-20 h-20 rounded-full bg-blue-500/5 blur-xl pointer-events-none" />
         

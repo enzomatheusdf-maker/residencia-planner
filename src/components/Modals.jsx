@@ -8,7 +8,11 @@ import { CATALOGO_RES, CATALOGO_VEST, getSubtopics } from "../constants/catalogo
 import { PROVA_STATS_RES, PROVA_STATS_VEST, PROVAS_RES, PROVAS_VEST } from "../constants/provaStats";
 import { getBrainDumpFields } from "../constants/stepDefinitions";
 import { useStore } from "../core/store";
-import { classificarDominio, DOMINIO_META } from "../core/domainValidation";
+import {
+  classificarDominio,
+  DOMINIO_META,
+  DOMINIO_PREVIO_MIN_QUESTOES,
+} from "../core/domainValidation";
 import { getReadinessData } from "../core/readiness";
 
 import {
@@ -2290,8 +2294,8 @@ export function LojaModal({ onClose }) {
 
 // ─── MODAL VALIDAR DOMÍNIO ────────────────────────────────────────────────────
 
-export function ModalValidarDominio({ tema, onConfirm, onCancel }) {
-  const [questoes, setQuestoes] = React.useState("15");
+export function ModalValidarDominio({ tema, onConfirm, onCancel, onStartLater }) {
+  const [questoes, setQuestoes] = React.useState(String(DOMINIO_PREVIO_MIN_QUESTOES));
   const [acertos, setAcertos] = React.useState("");
   const [submitted, setSubmitted] = React.useState(false);
 
@@ -2319,9 +2323,9 @@ export function ModalValidarDominio({ tema, onConfirm, onCancel }) {
             {" · "}{tema.esp}
           </p>
           <p className="text-[11px] text-gray-500 leading-relaxed">
-            Registre o resultado de um mini-teste (15–20 questões). O sistema vai
-            decidir o ciclo adequado para este tema com base no seu desempenho e
-            na incidência da matéria.
+            Use "Já domino" apenas quando você realmente já domina o conteúdo.
+            O sistema não marca domínio definitivo: ele cria uma validação curta
+            e agenda a próxima revisão em D7 (80–89%) ou D14 (90%+).
           </p>
         </div>
 
@@ -2333,7 +2337,7 @@ export function ModalValidarDominio({ tema, onConfirm, onCancel }) {
               max="50"
               value={questoes}
               onChange={(e) => setQuestoes(e.target.value)}
-              placeholder="15"
+              placeholder={String(DOMINIO_PREVIO_MIN_QUESTOES)}
             />
           </Field>
           <Field label="Acertos">
@@ -2366,8 +2370,22 @@ export function ModalValidarDominio({ tema, onConfirm, onCancel }) {
             )}
           </div>
         )}
+        {qtd > 0 && qtd < DOMINIO_PREVIO_MIN_QUESTOES && (
+          <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3">
+            <p className="text-[10px] text-amber-300 font-semibold">
+              Amostra insuficiente: use pelo menos {DOMINIO_PREVIO_MIN_QUESTOES} questões para validação confiável.
+            </p>
+          </div>
+        )}
 
-        <div className="flex gap-2 pt-1">
+        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => onStartLater && onStartLater()}
+            className="flex-1 py-2.5 rounded-xl bg-blue-600/15 hover:bg-blue-600/25 text-blue-300 text-xs font-bold transition-all border border-blue-500/30 cursor-pointer"
+          >
+            Validar depois
+          </button>
           <button
             type="button"
             onClick={onCancel}
@@ -2381,7 +2399,7 @@ export function ModalValidarDominio({ tema, onConfirm, onCancel }) {
             disabled={!canConfirm || submitted}
             className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white text-xs font-black transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
           >
-            {submitted ? "Aplicando..." : "Confirmar validação"}
+            {submitted ? "Aplicando..." : "Salvar resultado"}
           </button>
         </div>
       </div>

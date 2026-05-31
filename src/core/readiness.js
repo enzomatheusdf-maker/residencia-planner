@@ -1,13 +1,8 @@
-import { STEPS } from "./fsrs";
+import { STEPS, todayStr, addDays } from "./fsrs";
 import { PROVA_STATS_RES, PROVA_STATS_VEST, PROVAS_RES, PROVAS_VEST } from "../constants/provaStats";
 import { saldoRitmo, scoreProntidao } from "./volume";
 import { calcTrueRetention, calcTrend } from "../hooks/useMetrics";
-
-// Combined stats lookup
-const PROVA_STATS = {
-  ...PROVA_STATS_RES,
-  ...PROVA_STATS_VEST
-};
+import { getEnamedIntel, calcPreparoEnamed } from "./enamedIntel";
 
 export function pickTargetProva(provasAlvo, plat) {
   const list = plat === "res" ? PROVAS_RES : PROVAS_VEST;
@@ -27,8 +22,25 @@ export function matchesArea(studentEsp, examAreaName) {
   return false;
 }
 
-export function getReadinessData({ temas, simulados, meta, plat }) {
+function calcRaciocinioScore(casosProgresso) {
+  const vistos = Object.values(casosProgresso || {}).filter((p) => p?.vistos > 0);
+  const scores = vistos.map((p) => {
+    const parts = [
+      typeof p.fase2Acerto === "number" ? { value: p.fase2Acerto, weight: 0.6 } : null,
+      typeof p.sctAcerto === "number" ? { value: p.sctAcerto, weight: 0.4 } : null,
+    ].filter(Boolean);
+    if (!parts.length) return null;
+    const weightSum = parts.reduce((sum, part) => sum + part.weight, 0);
+    return parts.reduce((sum, part) => sum + part.value * part.weight, 0) / weightSum;
+  }).filter((score) => score != null);
+
+  if (!scores.length) return null;
+  return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+}
+
+export function getReadinessData({ temas, simulados, meta, plat, casosProgresso = {} }) {
   const startedTemas = temas.filter(t => !t.unstarted);
+  const today = todayStr();
   
   // 1. Calculate Coverage (Cobertura) percentage of target topics in grade
   const totalTopics = temas.length;
@@ -63,13 +75,28 @@ export function getReadinessData({ temas, simulados, meta, plat }) {
     }
   }
 
+  let adesaoAnkiNorm = null;
+  const adesaoDatas = meta?.ankiAdesao?.datas || [];
+  if (adesaoDatas.length > 0) {
+    let hits = 0;
+    for (let i = 0; i < 7; i++) {
+      const date = addDays(today, -i);
+      if (adesaoDatas.includes(date)) hits++;
+    }
+    adesaoAnkiNorm = Math.round((hits / 7) * 100);
+  }
+
   // 5. Calculate unified score
   const score = scoreProntidao({
     trueRetention: trueRetention,
     acertoSimulado: acertoSimulado,
     cobertura: cobertura,
-    saldoRitmoNorm: saldoRitmoNorm
+    saldoRitmoNorm: saldoRitmoNorm,
+    adesaoAnkiNorm: adesaoAnkiNorm
   });
+  const raciocinioScore = meta?.modulos?.raciocinioClinico
+    ? calcRaciocinioScore(casosProgresso)
+    : null;
 
   // 6. Confidence range (e.g. +/- 6 points, bounded by 0-100)
   const rangeMin = score !== null ? Math.max(0, score - 6) : null;
@@ -77,7 +104,10 @@ export function getReadinessData({ temas, simulados, meta, plat }) {
 
   // 7. Map Target Provas weights to student performance
   const targetProva = pickTargetProva(meta.provasAlvo, plat);
-  const examData = PROVA_STATS[targetProva];
+  // Resolve directly from source exports to avoid module-scope TDZ during HMR/circular partial init.
+  const examData = PROVA_STATS_RES[targetProva] || PROVA_STATS_VEST[targetProva] || null;
+  const enamedIntel = plat === "res" ? getEnamedIntel(temas) : null;
+  const preparoEnamed = plat === "res" ? calcPreparoEnamed(temas) : null;
 
   const areaRetention = {};
   const areaIncidence = {};
@@ -177,6 +207,8 @@ export function getReadinessData({ temas, simulados, meta, plat }) {
     acertoSimulado,
     tendenciaSim,
     saldoRitmoNorm,
+    adesaoAnkiNorm,
+    raciocinioScore,
     targetProva,
     examData,
     areaRetention,
@@ -184,6 +216,8 @@ export function getReadinessData({ temas, simulados, meta, plat }) {
     areaCobertura,
     areaHotTopics,
     priorityList,
+    enamedIntel,
+    preparoEnamed,
     totalErrors,
     errorCounts,
     dominantError,

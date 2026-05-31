@@ -1,7 +1,7 @@
 // src/App.js
 // Main entry point for MedRev - Clean & Modular Architecture
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { AlertCircle, Eye, EyeOff, Settings } from "lucide-react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
+import { Eye, EyeOff, Settings } from "lucide-react";
 
 // Camada Core & State
 import { useStore } from "./core/store";
@@ -9,6 +9,9 @@ import { STEPS, isOverdue, todayStr, normalizeTema, getWorkloadProjection } from
 import { xpForReview } from "./core/gamif";
 import { ACHIEVEMENTS } from "./core/achievements";
 import { getReadinessData } from "./core/readiness";
+import { exportMedrevBackup } from "./core/backup";
+import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } from "./core/onboarding";
+import { featureEnabled } from "./core/platformFeatures";
 
 // Camada de Hooks/Estatísticas
 import { useFilaInteligente } from "./hooks/useMetrics";
@@ -36,12 +39,13 @@ import AnkiAudit from "./components/AnkiAudit";
 import AcademiaMetodo from "./components/AcademiaMetodo";
 import FocusMode from "./components/FocusMode";
 import AuthModal from "./components/AuthModal";
+import OnboardingWizard from "./components/OnboardingWizard";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Modais e Primitivos
 import {
   HelpModal,
   CycleCompleteModal,
-  OnboardingModal,
   TemaModal,
   AjustesModal,
   GlobalSearchModal,
@@ -59,6 +63,8 @@ import {
   playTick,
   CheckmarkOverlay
 } from "./components/Primitives";
+
+const RaciocinioClinico = lazy(() => import("./components/RaciocinioClinico"));
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
     case "diamante": return "CRITICA";
@@ -69,40 +75,13 @@ function prioToImportancia(prio) {
   }
 }
 
-/* ERROR BOUNDARY ─────────────────────────────────────────────────────────────── */
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { error: null };
-  }
-  static getDerivedStateFromError(error) {
-    return { error };
-  }
-  render() {
-    if (this.state.error) {
-      return (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <AlertCircle size={40} className="text-red-400" />
-          <p className="text-[13px] text-red-400 font-semibold">
-            Instabilidade detectada na renderização.
-          </p>
-          <Btn onClick={() => this.setState({ error: null })} variant="ghost">
-            Reiniciar Módulo
-          </Btn>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
 /* APP ROOT MAIN ENTRY ────────────────────────────────────────────────────────── */
 export default function App() {
   const {
     plat,
     setPlat,
+    setCalendarProvider,
     meta,
-    setMeta,
     pushUndo,
     undo,
     markStep,
@@ -112,6 +91,7 @@ export default function App() {
     userName,
     setUserName,
     onboardingDone,
+    completeOnboarding,
     resetOnboarding,
     focusMode,
     toggleFocusMode,
@@ -151,6 +131,28 @@ export default function App() {
   const confirmDialog = useStore((s) => s.confirmDialog);
   const closeConfirm = useStore((s) => s.closeConfirm);
   const trackedReturnRef = useRef(false);
+  const onboardingMeta = useMemo(() => getOnboardingDefaults(meta || {}), [meta]);
+  const onboardingCompleted = onboardingDone || isOnboardingComplete({ onboarding: onboardingMeta });
+  const shouldShowOnboarding = !onboardingCompleted && !tourStep;
+
+  const exportBackupNow = useCallback(() => {
+    try {
+      const backup = exportMedrevBackup(useStore.getState());
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `medrev_backup_${todayStr()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      if (showToastStore) showToastStore("Backup exportado.");
+    } catch (error) {
+      if (showToastStore) showToastStore("Falha ao exportar backup.");
+      console.error("Falha ao exportar backup no fallback:", error);
+    }
+  }, [showToastStore]);
 
   useEffect(() => {
     if (!usuarioLogado || trackedReturnRef.current) return;
@@ -184,6 +186,13 @@ export default function App() {
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    if (view === "raciocinio" && meta.modulos?.raciocinioClinico !== true) {
+      setView("dash");
+    }
+  }, [meta.modulos?.raciocinioClinico, view]);
+
   useEffect(() => {
     if (!usuarioLogado) return;
     const hoje = todayStr();
@@ -260,7 +269,17 @@ export default function App() {
               };
             };
 
-            const resolvedOnboardingDone = currentState.onboardingDone || (dados.onboardingDone ?? false);
+            const mergedRemoteMeta = {
+              ...currentState.meta,
+              ...(dados.meta || {}),
+              modulos: { ...(currentState.meta?.modulos || {}), ...(dados.meta?.modulos || {}) },
+              ankiAdesao: { ...(currentState.meta?.ankiAdesao || {}), ...(dados.meta?.ankiAdesao || {}) },
+            };
+            const resolvedOnboarding = applyOnboardingChoice(
+              mergedRemoteMeta,
+              (dados.onboardingDone || currentState.onboardingDone) ? { completed: true } : {}
+            );
+            const resolvedOnboardingDone = currentState.onboardingDone || (dados.onboardingDone ?? false) || resolvedOnboarding.completed === true;
 
             const firebaseVest = dados.vest || {};
             const resolvedVest = (firebaseVest.temas?.length > 0)
@@ -273,7 +292,10 @@ export default function App() {
               gamif: dados.gamif ? { ...currentState.gamif, ...dados.gamif } : currentState.gamif,
               userName: dados.userName || user.displayName || user.email?.split("@")[0] || "Estudante",
               userEmail: user.email || "",
-              meta: dados.meta || { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0 },
+              meta: {
+                ...mergedRemoteMeta,
+                onboarding: resolvedOnboarding,
+              },
               res: normalizePlatTemas(dados.res, currentState.res),
               vest: normalizePlatTemas(resolvedVest, currentState.vest),
               onboardingDone: resolvedOnboardingDone,
@@ -333,7 +355,7 @@ export default function App() {
       clearTimeout(timeoutId);
       unsubscribe();
     };
-  }, [setUserName, setPlat, setMeta, showToastStore]);
+  }, [setUserName, setPlat, showToastStore]);
 
   // ─── SINCRONIZAR DADOS COM FIREBASE (AO MUDAR ESTADO) ──────────────────────
   useEffect(() => {
@@ -741,6 +763,20 @@ export default function App() {
     useStore.setState({ focusMode: true });
   };
 
+  const handleOnboardingFinish = useCallback(
+    (choice = {}) => {
+      completeOnboarding(choice);
+      if (choice.calendarProvider) setCalendarProvider(choice.calendarProvider);
+      useStore.setState({
+        mentorMode: choice.mentorMode !== false,
+        modoSimples: choice.mentorMode !== false,
+      });
+      setTourStep(null);
+      setView("dash");
+    },
+    [completeOnboarding, setCalendarProvider, setTourStep]
+  );
+
   // ─── CARREGANDO AUTH ───────────────────────────────────────────────────────
   if (carregandoAuth) {
     return (
@@ -774,15 +810,10 @@ export default function App() {
   if (focusMode) {
     return (
       <div className="flex h-screen bg-[#07070f] text-white font-sans antialiased overflow-hidden">
-        {!onboardingDone && !tourStep && (
-          <OnboardingModal
-            onComplete={(nome, foco, metaConfig) => {
-              setUserName(nome);
-              setPlat(foco);
-              if (metaConfig) setMeta({ ...meta, ...metaConfig });
-              setTourStep("crono");
-              setView("crono");
-            }}
+        {shouldShowOnboarding && (
+          <OnboardingWizard
+            onComplete={handleOnboardingFinish}
+            onSkip={handleOnboardingFinish}
           />
         )}
         <FocusMode
@@ -807,15 +838,10 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-[#07070f] text-white font-sans antialiased overflow-hidden">
-      {!onboardingDone && !tourStep && (
-        <OnboardingModal
-          onComplete={(nome, foco, metaConfig) => {
-            setUserName(nome);
-            setPlat(foco);
-            if (metaConfig) setMeta({ ...meta, ...metaConfig });
-            setTourStep("crono");
-            setView("crono");
-          }}
+      {shouldShowOnboarding && (
+        <OnboardingWizard
+          onComplete={handleOnboardingFinish}
+          onSkip={handleOnboardingFinish}
         />
       )}
       <Sidebar
@@ -941,7 +967,7 @@ export default function App() {
 
 
           {view === "dash" && (
-            <ErrorBoundary>
+            <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
               <Dashboard
                 onStudy={handleStudyTrigger}
                 onDelete={(id) => {
@@ -985,7 +1011,7 @@ export default function App() {
             />
           )}
           {view === "crono" && plat === "vest" && (
-            <ErrorBoundary>
+            <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
               <CronogramaVestHub
                 onStep={handleStudyTrigger}
                 onEdit={(t) => setTemaEdit(t)}
@@ -1011,18 +1037,25 @@ export default function App() {
           )}
           {view === "banco" && <BancoDados />}
           {view === "stats" && (
-            <ErrorBoundary>
-              <StatsPanel />
+            <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
+              <StatsPanel setView={setView} />
             </ErrorBoundary>
           )}
           {view === "sims" && (
-            <ErrorBoundary>
+            <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
               <Simulados onStudy={handleStudyTrigger} setView={setView} />
             </ErrorBoundary>
           )}
           {view === "anki" && <AnkiAudit />}
+          {view === "raciocinio" && featureEnabled(plat, "raciocinioClinico") && meta.modulos?.raciocinioClinico === true && (
+            <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
+              <Suspense fallback={<div className="p-4 text-xs text-gray-500">Carregando módulo...</div>}>
+                <RaciocinioClinico onStudy={handleStudyTrigger} setView={setView} />
+              </Suspense>
+            </ErrorBoundary>
+          )}
           {view === "academia" && (
-            <ErrorBoundary>
+            <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
               <AcademiaMetodo />
             </ErrorBoundary>
           )}

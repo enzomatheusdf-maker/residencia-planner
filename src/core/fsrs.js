@@ -1,6 +1,8 @@
 // src/core/fsrs.js
 // FSRS-Lite core rules, date math, and database constants
 
+import { MACRO_PESO_ENAMED } from "../constants/enamedIncidencia";
+
 export const todayStr = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -86,6 +88,47 @@ export const DESIRED_RETENTION = 0.90;
 
 export const S_BASE = { d0: 1, d1: 1, d4: 4, d7: 7, d21: 21 };
 
+export const AREA_PRIORS = {
+  "Clínica Médica": { difBase: 0.55, sMult: 1.00 },
+  "Cirurgia": { difBase: 0.55, sMult: 1.00 },
+  "GO": { difBase: 0.55, sMult: 1.00 },
+  "Pediatria": { difBase: 0.50, sMult: 1.05 },
+  "Preventiva": { difBase: 0.45, sMult: 1.10 },
+  "Outro": { difBase: 0.50, sMult: 1.00 },
+};
+
+const MOJIBAKE_MARKER_CODES = new Set([0xc2, 0xc3, 0xe2]);
+
+function repairMojibake(value) {
+  const text = String(value ?? "");
+  const hasMarker = Array.from(text).some((char) => MOJIBAKE_MARKER_CODES.has(char.charCodeAt(0)));
+  if (!hasMarker || typeof TextDecoder === "undefined") return text;
+
+  try {
+    const bytes = Uint8Array.from(Array.from(text).map((char) => char.charCodeAt(0) & 0xff));
+    const decoded = new TextDecoder("utf-8").decode(bytes);
+    return decoded || text;
+  } catch {
+    return text;
+  }
+}
+
+function normalizeArea(value) {
+  return repairMojibake(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getCanonicalArea(esp) {
+  const normalized = normalizeArea(esp);
+  return Object.keys(AREA_PRIORS).find((area) => normalizeArea(area) === normalized) || "Outro";
+}
+
+export const getAreaPrior = (esp) => AREA_PRIORS[getCanonicalArea(esp)] || AREA_PRIORS["Outro"];
+
 export const DEMO_TEMA_ID = (plat) => plat === "vest" ? "demo-funcoes" : "demo-apendicite";
 
 export function getRetrievability(tema, stepKey) {
@@ -107,19 +150,34 @@ export function toRating(acerto) {
   return "easy";
 }
 
-export function updateStability(S_prev, acerto) {
-  const deltas = { again: -0.8, hard: 0.05, good: 0.3, easy: 0.7 };
-  return Math.max(0.5, S_prev * Math.exp(deltas[toRating(acerto)]));
+export function updateDifficulty(D_prev, acerto) {
+  const delta = { again: +0.15, hard: +0.05, good: -0.02, easy: -0.08 }[toRating(acerto)];
+  return Math.min(1, Math.max(0, (D_prev ?? 0.5) + delta));
 }
 
-export function nextInterval(S, baseOffset, desiredRetention = 0.90, maxInterval = 180) {
-  const raw = (S / FSRS_FACTOR) * (desiredRetention ** (1 / FSRS_DECAY) - 1);
-  const floor = Math.max(1, Math.round(baseOffset * 0.5));
-  let val = Math.round(Math.max(raw, floor));
+export function updateStability(S_prev, acerto, D = 0.5, sMult = 1.0) {
+  const base = { again: -0.8, hard: 0.05, good: 0.3, easy: 0.7 }[toRating(acerto)];
+  const ganho = base * (1.1 - 0.4 * D) * sMult;
+  return Math.max(0.5, S_prev * Math.exp(ganho));
+}
+
+export function nextInterval(S, baseOffset, desiredRetention = 0.90, maxInterval = 180, D = 0.5) {
+  if (baseOffset <= 1) return Math.max(1, baseOffset);
+  const difficultyFactor = 1.05 - 0.1 * D;
+  const raw = (S / FSRS_FACTOR) * (desiredRetention ** (1 / FSRS_DECAY) - 1) * difficultyFactor;
+  const lo = Math.round(baseOffset * 0.85);
+  const hi = Math.round(baseOffset * 1.15);
+  let val = Math.round(Math.min(Math.max(raw, lo), hi));
   if (maxInterval && val > maxInterval) {
     val = maxInterval;
   }
   return val;
+}
+
+export function getRetencaoArea(esp, baseRet = 0.90) {
+  const w = MACRO_PESO_ENAMED[getCanonicalArea(esp)] ?? 1.0;
+  const bump = (w - 1.0) * 0.10;
+  return Math.min(0.92, Math.max(0.85, baseRet + bump));
 }
 
 // ─── STEPS DEFINITION ────────────────────────────────────────────────────────
@@ -131,20 +189,26 @@ export const STEPS = [
   { key: "d21", label: "D21", offset: 21, desc: "Interleaved", checkbox: false },
 ];
 
-export function buildRev(d0) {
+export function buildRev(d0, esp = "Outro") {
   const r = {};
+  const prior = getAreaPrior(esp);
   STEPS.forEach((s) => {
-    r[s.key] = { date: addDays(d0, s.offset), done: false, acerto: null, questoes: null, S: S_BASE[s.key], motivosErro: [] };
+    r[s.key] = { date: addDays(d0, s.offset), done: false, acerto: null, questoes: null, S: S_BASE[s.key], D: prior.difBase, motivosErro: [] };
   });
   return r;
 }
 
-export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, maxInterval = 180) {
+export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, maxInterval = 180, esp = "Outro") {
   const rating = toRating(acerto);
+  const prior = getAreaPrior(esp);
   const prevS = doneKey === "manutencao" 
     ? (rev.manutencao?.S ?? 45) 
     : (rev[doneKey]?.S ?? S_BASE[doneKey]);
-  const S_new = updateStability(prevS, acerto);
+  const prevD = doneKey === "manutencao"
+    ? (rev.manutencao?.D ?? prior.difBase)
+    : (rev[doneKey]?.D ?? prior.difBase);
+  const D_new = updateDifficulty(prevD, acerto);
+  const S_new = updateStability(prevS, acerto, D_new, prior.sMult);
 
   if (rating === "again") {
     if (doneKey === "manutencao") {
@@ -153,6 +217,7 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
         manutencao: {
           ...rev.manutencao,
           S: S_new,
+          D: D_new,
           date: addDays(todayStr(), 1),
         }
       };
@@ -162,6 +227,7 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
       [doneKey]: {
         ...rev[doneKey],
         S: S_new,
+        D: D_new,
         done: false,
         date: addDays(todayStr(), 1),
         acerto: null,
@@ -172,7 +238,7 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
 
   if (doneKey === "manutencao") {
     const prevInterval = rev.manutencao?.interval || 45;
-    const nextInt = nextInterval(S_new, prevInterval * 2, desiredRetention, maxInterval);
+    const nextInt = nextInterval(S_new, prevInterval * 2, desiredRetention, maxInterval, D_new);
     const baseDate = rev.manutencao.date >= todayStr() ? rev.manutencao.date : todayStr();
     return {
       ...rev,
@@ -180,21 +246,23 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
         done: false,
         date: addDays(baseDate, nextInt),
         S: S_new,
+        D: D_new,
         interval: prevInterval * 2
       }
     };
   }
 
   if (doneKey === "d21") {
-    const nextInt = nextInterval(S_new, 45, desiredRetention, maxInterval);
+    const nextInt = nextInterval(S_new, 45, desiredRetention, maxInterval, D_new);
     const baseDate = rev.d21.date >= todayStr() ? rev.d21.date : todayStr();
     return {
       ...rev,
-      d21: { ...rev.d21, S: S_new },
+      d21: { ...rev.d21, S: S_new, D: D_new },
       manutencao: {
         done: false,
         date: addDays(baseDate, nextInt),
         S: S_new,
+        D: D_new,
         interval: 45
       }
     };
@@ -203,11 +271,11 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
   const doneIdx = STEPS.findIndex((s) => s.key === doneKey);
   const nextStep = STEPS[doneIdx + 1];
   if (!nextStep) return rev;
-  const interval = nextInterval(S_new, nextStep.offset, desiredRetention, maxInterval);
+  const interval = nextInterval(S_new, nextStep.offset, desiredRetention, maxInterval, D_new);
   const baseDate = rev[doneKey].date >= todayStr() ? rev[doneKey].date : todayStr();
   return {
     ...rev,
-    [doneKey]: { ...rev[doneKey], S: S_new },
+    [doneKey]: { ...rev[doneKey], S: S_new, D: D_new },
     [nextStep.key]: { ...rev[nextStep.key], date: addDays(baseDate, interval) },
   };
 }
@@ -215,6 +283,7 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
 export function normalizeTema(t) {
   if (!t) return t;
   const rev = { ...t.rev };
+  const prior = getAreaPrior(t.esp);
   STEPS.forEach((s) => {
     if (!rev[s.key]) {
       rev[s.key] = {
@@ -223,10 +292,22 @@ export function normalizeTema(t) {
         acerto: null,
         questoes: null,
         S: S_BASE[s.key],
+        D: prior.difBase,
         motivosErro: [],
+      };
+    } else if (rev[s.key].D == null) {
+      rev[s.key] = {
+        ...rev[s.key],
+        D: prior.difBase,
       };
     }
   });
+  if (rev.manutencao && rev.manutencao.D == null) {
+    rev.manutencao = {
+      ...rev.manutencao,
+      D: prior.difBase,
+    };
+  }
   return { ...t, rev };
 }
 

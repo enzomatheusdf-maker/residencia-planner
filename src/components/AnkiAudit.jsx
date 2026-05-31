@@ -1,29 +1,35 @@
 // src/components/AnkiAudit.jsx
-import React, { useState, useMemo } from "react";
-import { Zap, Plus, AlertTriangle, CheckCircle, HelpCircle } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Zap, Plus, AlertTriangle, CheckCircle } from "lucide-react";
 import { useStore } from "../core/store";
-import { todayStr, fmtFull, diffDays, fmtDate, fmtRelativo } from "../core/fsrs";
+import { todayStr, fmtFull, diffDays, fmtDate, fmtRelativo, addDays } from "../core/fsrs";
 import { Btn, Input, Field, Modal, InfoTooltip } from "./Primitives";
 
 export default function AnkiAudit() {
-  const { plat, addAnki } = useStore();
+  const { plat, addAnki, marcarAnkiHoje } = useStore();
   const ankiLog = useStore((s) => s[plat]?.ankiLog || []);
   const temas = useStore((s) => s[plat]?.temas || []);
   const simulados = useStore((s) => s[plat]?.simulados || []);
+  const adesaoDatas = useStore((s) => s.meta?.ankiAdesao?.datas || []);
 
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("logs");
+  const [activeTab, setActiveTab] = useState("errors");
   const [f, setF] = useState({ data: todayStr(), revisados: "", again: "", novos: "" });
 
-  const avgAgain = ankiLog.length
-    ? Math.round(ankiLog.reduce((a, l) => a + (l.revisados ? l.again / l.revisados * 100 : 0), 0) / ankiLog.length)
-    : null;
+  const hoje = todayStr();
+  const ankiFeitoHoje = adesaoDatas.includes(hoje);
 
-  // 1. Collect all card-generating errors (virouCard === true) from study reviews and simulados
+  const adesaoAnki7d = useMemo(() => {
+    let hits = 0;
+    for (let i = 0; i < 7; i++) {
+      if (adesaoDatas.includes(addDays(hoje, -i))) hits++;
+    }
+    return Math.round((hits / 7) * 100);
+  }, [adesaoDatas, hoje]);
+
   const cardsFromErrors = useMemo(() => {
     const list = [];
 
-    // Study errors
     temas.forEach((t) => {
       Object.entries(t.rev || {}).forEach(([stepKey, stepData]) => {
         const stepErros = stepData?.erros || [];
@@ -35,14 +41,13 @@ export default function AnkiAudit() {
               subtopico: e.subtopico || t.nome,
               anotacao: e.anotacao || "Fato clínico/conteúdo memorizado",
               tipoErro: e.tipoErro,
-              data: stepData.date || todayStr()
+              data: stepData.date || hoje,
             });
           }
         });
       });
     });
 
-    // Simulado errors
     simulados.forEach((s) => {
       const erradas = s.questoesErradas || [];
       erradas.forEach((e) => {
@@ -53,110 +58,112 @@ export default function AnkiAudit() {
             subtopico: e.esp || "Geral",
             anotacao: `Questão ${e.num}: ${e.desc || "Mapeamento de erro"}`,
             tipoErro: e.tipoErro,
-            data: s.data
+            data: s.data,
           });
         }
       });
     });
 
-    // Sort by date (descending)
     return list.sort((a, b) => new Date(b.data) - new Date(a.data));
-  }, [temas, simulados]);
+  }, [temas, simulados, hoje]);
 
-  // 2. Health of the Deck: overload warning (criação excessiva de cards)
   const newCardsThisWeek = useMemo(() => {
-    const today = todayStr();
     let count = 0;
 
-    // From log entries in the last 7 days
     ankiLog.forEach((l) => {
-      if (l.data && diffDays(l.data, today) <= 7) {
-        count += (l.novos || 0);
+      if (l.data && diffDays(l.data, hoje) <= 7) {
+        count += l.novos || 0;
       }
     });
 
-    // From errors that generated cards in the last 7 days
     cardsFromErrors.forEach((c) => {
-      if (c.data && diffDays(c.data, today) <= 7) {
+      if (c.data && diffDays(c.data, hoje) <= 7) {
         count++;
       }
     });
 
     return count;
-  }, [ankiLog, cardsFromErrors]);
+  }, [ankiLog, cardsFromErrors, hoje]);
 
   const isOverloaded = newCardsThisWeek > 50;
 
-  // 3. Atomicity Metric (Quality Score)
   const atomicityStats = useMemo(() => {
-    if (cardsFromErrors.length === 0) {
+    const eligibleCards = cardsFromErrors.filter((c) => (c.anotacao || "").trim().length >= 8);
+    if (eligibleCards.length === 0) {
       return { score: 100, nonAtomicCount: 0 };
     }
 
     let nonAtomicCount = 0;
-    cardsFromErrors.forEach((c) => {
+    eligibleCards.forEach((c) => {
       const text = c.anotacao || "";
-      // Check if it looks like a list (> 3 commas, bullet points, numbers)
       const hasBulletPoints = /[-*•]/.test(text);
       const hasNumberedList = /\d\.\s/.test(text);
       const commaCount = (text.match(/[,;]/g) || []).length;
       const isList = hasBulletPoints || hasNumberedList || commaCount >= 3;
 
-      if (isList) {
-        nonAtomicCount++;
-      }
+      if (isList) nonAtomicCount++;
     });
 
-    const score = Math.round(((cardsFromErrors.length - nonAtomicCount) / cardsFromErrors.length) * 100);
+    const score = Math.round(((eligibleCards.length - nonAtomicCount) / eligibleCards.length) * 100);
     return { score, nonAtomicCount };
   }, [cardsFromErrors]);
 
   return (
     <div className="flex flex-col gap-4 animate-fade-up text-left">
-      {/* HEADER */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Zap size={20} className="text-gray-400" />
           <h2 className="text-[15px] font-bold text-gray-100">Anki Audit</h2>
-          <InfoTooltip texto='Mapeia o índice de retenção do Anki, a atomicidade dos cards criados e a carga semanal para evitar sobrecarga cognitiva.' />
+          <InfoTooltip texto="Prioriza cards gerados por erros reais, estima a atomicidade do deck e acompanha a adesão recente ao Anki." />
         </div>
         <Btn onClick={() => setOpen(true)} className="gap-2"><Plus size={16} /> Registrar Sessão</Btn>
       </div>
 
-      {/* OVERLOAD ALERT */}
+      <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-[10.5px] uppercase tracking-wider font-semibold text-gray-500">Adesão diária</p>
+          <p className="text-[12px] text-gray-300">
+            Marque quando revisar seus cards. Esse check entra com peso leve no Score de Prontidão.
+          </p>
+        </div>
+        <Btn onClick={marcarAnkiHoje} disabled={ankiFeitoHoje} className="gap-2 sm:shrink-0">
+          <CheckCircle size={16} />
+          {ankiFeitoHoje ? "Revisão de hoje registrada" : "Revisei meus cards hoje"}
+        </Btn>
+      </div>
+
       {isOverloaded && (
         <div className="bg-amber-500/10 border border-amber-500/20 text-amber-200 p-4 rounded-2xl flex items-start gap-3 animate-fade-up">
           <AlertTriangle className="text-amber-400 shrink-0 mt-0.5" size={18} />
           <div className="space-y-1">
             <h4 className="text-xs font-black uppercase tracking-wider">Alerta de Sobrecarga do Deck (Over-load)</h4>
             <p className="text-[11.5px] leading-relaxed text-gray-300">
-              Você adicionou <strong className="text-white">{newCardsThisWeek} cards</strong> nos últimos 7 dias. Criar cards em excesso (grind) gera ansiedade e inviabiliza revisões futuras. Consolide e simplifique seus decks antes de adicionar novos fatos!
+              Você adicionou <strong className="text-white">{newCardsThisWeek} cards</strong> nos últimos 7 dias. Criar cards em excesso gera ansiedade e inviabiliza revisões futuras.
             </p>
           </div>
         </div>
       )}
 
-      {/* KPIS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           {
             l: "Novos na Semana",
             v: newCardsThisWeek,
             c: isOverloaded ? "text-amber-400 font-black" : "text-blue-400",
-            tooltip: "Total de novos flashcards criados via sessões ou erros nos últimos 7 dias. Meta: ≤ 50 cards."
+            tooltip: "Total de novos flashcards criados via sessões ou erros nos últimos 7 dias. Meta: até 50 cards.",
           },
           {
             l: "Qualidade do Deck",
             v: `${atomicityStats.score}%`,
             c: atomicityStats.score >= 80 ? "text-emerald-400" : atomicityStats.score >= 60 ? "text-yellow-400" : "text-red-400",
-            tooltip: "Proporção de cards curtos e atômicos (sem listas ou enumerações complexas). Ideal: ≥ 80%."
+            tooltip: "Estimativa de atomicidade. Considera apenas cards com anotação de pelo menos 8 caracteres e marca listas complexas.",
           },
           {
-            l: "Média de Erros",
-            v: avgAgain != null ? `${avgAgain}%` : "—",
-            c: avgAgain != null && avgAgain < 15 ? "text-emerald-400" : "text-yellow-400",
-            tooltip: "Sua taxa histórica de 'Again' registrada no Anki. Ideal: manter abaixo de 15%."
-          }
+            l: "Adesão ao Anki (7d)",
+            v: `${adesaoAnki7d}%`,
+            c: adesaoAnki7d >= 85 ? "text-emerald-400" : adesaoAnki7d >= 50 ? "text-yellow-400" : "text-red-400",
+            tooltip: "Percentual de dias com revisão marcada nos últimos 7 dias. Esse sinal pesa pouco, mas entra na prontidão.",
+          },
         ].map((kpi) => (
           <div key={kpi.l} className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col justify-between">
             <div className="flex items-center justify-between text-gray-500 mb-2">
@@ -168,7 +175,6 @@ export default function AnkiAudit() {
         ))}
       </div>
 
-      {/* TABS SWITCHER */}
       <div className="flex gap-1.5 bg-white/5 p-1 rounded-xl border border-white/5 w-fit">
         <button
           type="button"
@@ -177,7 +183,7 @@ export default function AnkiAudit() {
             activeTab === "logs" ? "bg-blue-600 text-white" : "text-gray-500 hover:text-gray-300 bg-transparent"
           }`}
         >
-          Histórico de Sessões
+          Auditoria avançada (opcional)
         </button>
         <button
           type="button"
@@ -190,9 +196,11 @@ export default function AnkiAudit() {
         </button>
       </div>
 
-      {/* TAB CONTENT: LOGS */}
       {activeTab === "logs" && (
         <div className="flex flex-col gap-2">
+          <div className="bg-black/20 rounded-2xl border border-white/5 p-4 text-[12px] text-gray-400">
+            O log manual continua disponível para quem já usa, mas ficou como trilha secundária. O foco principal agora são cards gerados por erros reais.
+          </div>
           {ankiLog.length === 0 && (
             <div className="text-center py-16 text-gray-600 text-[13px] italic bg-black/20 rounded-2xl border border-white/5">
               Nenhuma auditoria de Anki gravada.
@@ -211,7 +219,7 @@ export default function AnkiAudit() {
                   {[
                     ["Revisados", l.revisados, "text-blue-400"],
                     ["Novos", l.novos || 0, "text-blue-400"],
-                    ["Again (Erros)", `${pct}%`, col]
+                    ["Again (Erros)", `${pct}%`, col],
                   ].map(([lbl, val, c]) => (
                     <div key={lbl} className="text-center">
                       <p className="text-[10px] text-gray-600 mb-0.5">{lbl}</p>
@@ -225,7 +233,6 @@ export default function AnkiAudit() {
         </div>
       )}
 
-      {/* TAB CONTENT: CARDS FROM ERRORS */}
       {activeTab === "errors" && (
         <div className="flex flex-col gap-2">
           {cardsFromErrors.length === 0 && (
@@ -238,7 +245,8 @@ export default function AnkiAudit() {
             const hasBulletPoints = /[-*•]/.test(text);
             const hasNumberedList = /\d\.\s/.test(text);
             const commaCount = (text.match(/[,;]/g) || []).length;
-            const isComplex = hasBulletPoints || hasNumberedList || commaCount >= 3;
+            const hasMinText = text.trim().length >= 8;
+            const isComplex = hasMinText && (hasBulletPoints || hasNumberedList || commaCount >= 3);
 
             return (
               <div
@@ -262,6 +270,10 @@ export default function AnkiAudit() {
                     <span className="text-[9.5px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded flex items-center gap-1">
                       <AlertTriangle size={10} /> Lista complexa
                     </span>
+                  ) : !hasMinText ? (
+                    <span className="text-[9.5px] font-black uppercase tracking-wider bg-white/5 text-gray-400 border border-white/10 px-2 py-0.5 rounded flex items-center gap-1">
+                      <CheckCircle size={10} /> Texto curto demais
+                    </span>
                   ) : (
                     <span className="text-[9.5px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded flex items-center gap-1">
                       <CheckCircle size={10} /> Atômico
@@ -274,15 +286,14 @@ export default function AnkiAudit() {
         </div>
       )}
 
-      {/* REGISTRATION MODAL */}
       {open && (
         <Modal onClose={() => setOpen(false)}>
           <h2 className="text-[15px] font-bold text-gray-100 mb-2">Auditar Estatísticas Anki</h2>
           <Field label="Data" info="A data referente aos registros de revisão do Anki."><Input type="date" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} /></Field>
           <div className="grid grid-cols-3 gap-2">
-            <Field label="Revisados" info="Número total de cards revisados (estudados) neste dia."><Input type="number" value={f.revisados} onChange={(e) => setF({ ...f, revisados: +e.target.value })} /></Field>
-            <Field label='"Again"' info="Número de cards que você errou (marcou 'Again' ou 'De novo') neste dia."><Input type="number" value={f.again} onChange={(e) => setF({ ...f, again: +e.target.value })} /></Field>
-            <Field label="Novos" info="Número de novos cards que você inseriu na sua rotina de estudos neste dia."><Input type="number" value={f.novos} onChange={(e) => setF({ ...f, novos: +e.target.value })} /></Field>
+            <Field label="Revisados" info="Número total de cards revisados neste dia."><Input type="number" value={f.revisados} onChange={(e) => setF({ ...f, revisados: +e.target.value })} /></Field>
+            <Field label='"Again"' info="Número de cards errados neste dia."><Input type="number" value={f.again} onChange={(e) => setF({ ...f, again: +e.target.value })} /></Field>
+            <Field label="Novos" info="Número de novos cards inseridos neste dia."><Input type="number" value={f.novos} onChange={(e) => setF({ ...f, novos: +e.target.value })} /></Field>
           </div>
           {f.revisados > 0 && (
             <p className="text-center text-xl font-black text-blue-400 tabular-nums my-2">
@@ -290,7 +301,8 @@ export default function AnkiAudit() {
             </p>
           )}
           <div className="flex gap-2 mt-4">
-            <Btn className="flex-1"
+            <Btn
+              className="flex-1"
               onClick={() => {
                 if (f.revisados) {
                   addAnki(plat, f);
@@ -298,7 +310,10 @@ export default function AnkiAudit() {
                   setF({ data: todayStr(), revisados: "", again: "", novos: "" });
                 }
               }}
-              disabled={!f.revisados}>Gravar Histórico</Btn>
+              disabled={!f.revisados}
+            >
+              Gravar Histórico
+            </Btn>
             <Btn variant="ghost" className="flex-1" onClick={() => setOpen(false)}>Cancelar</Btn>
           </div>
         </Modal>

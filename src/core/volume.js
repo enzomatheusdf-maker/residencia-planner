@@ -55,12 +55,13 @@ export function metaPorArea(metaDia, acertoPorArea, pesoArea = {}) {
 }
 
 // Score único de prontidão 0–100 (funde sinais que o app já tem; ignora null e reescala pesos)
-export function scoreProntidao({ trueRetention, acertoSimulado, cobertura, saldoRitmoNorm }) {
+export function scoreProntidao({ trueRetention, acertoSimulado, cobertura, saldoRitmoNorm, adesaoAnkiNorm }) {
   const parts = [
-    { v: trueRetention, w: 0.35 },
+    { v: trueRetention, w: 0.33 },
     { v: acertoSimulado, w: 0.30 },
     { v: cobertura, w: 0.20 },
-    { v: saldoRitmoNorm, w: 0.15 },
+    { v: saldoRitmoNorm, w: 0.12 },
+    { v: adesaoAnkiNorm, w: 0.05 },
   ].filter(p => p.v != null);
   if (!parts.length) return null;
   const wsum = parts.reduce((sum, p) => sum + p.w, 0);

@@ -70,8 +70,8 @@ describe("Metrics Calculation Test Suite", () => {
     ];
     // Case 1: acertoMedia defaults to 0.5 (which is < 0.6) -> should apply Preventive bonus (0.10)
     const queue = calcFilaInteligente(mockTemas, "res");
-    // score = (1 - 0.5) * 2.0 * 1.0 * 1.12 + 0.10 = 1.22
-    expect(queue[0].score).toBe(1.22);
+    // score = (1 - 0.5) * 2.0 * 1.0 * 1.10 + 0.10 = 1.20
+    expect(queue[0].score).toBe(1.20);
   });
 
   test("calcStreaks calculates active study consistency streaks", () => {

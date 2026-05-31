@@ -5,9 +5,10 @@ import { useStore } from "../core/store";
 import { STEPS, todayStr } from "../core/fsrs";
 import { calcStreaks } from "../hooks/useMetrics";
 import { MoreHorizontal, X } from "lucide-react";
+import { featureEnabled } from "../core/platformFeatures";
 
 export default function BottomNav({ view, setView }) {
-  const { plat } = useStore();
+  const { plat, meta } = useStore();
   const temas = useStore((s) => s[plat]?.temas || []);
   const [moreOpen, setMoreOpen] = React.useState(false);
 
@@ -20,14 +21,29 @@ export default function BottomNav({ view, setView }) {
   }, [temas]);
 
   const filteredNav = useMemo(() => {
-    if (plat === "vest") {
-      return NAV.filter((n) => n.k !== "anki");
-    }
-    return NAV;
-  }, [plat]);
-  const primaryKeys = ["dash", "crono", "academia", "sims"];
+    return NAV.filter((n) => {
+      if (n.requiresModule && meta.modulos?.[n.requiresModule] !== true) {
+        return false;
+      }
+      if (plat === "vest" && n.k === "anki") {
+        return false;
+      }
+      if (n.k === "raciocinio" && !featureEnabled(plat, "raciocinioClinico")) {
+        return false;
+      }
+      return true;
+    });
+  }, [meta.modulos, plat]);
+  const primaryKeys = ["dash", "crono", "sims", "stats"];
   const primaryNav = filteredNav.filter((n) => primaryKeys.includes(n.k));
   const moreNav = filteredNav.filter((n) => !primaryKeys.includes(n.k));
+  const mobileLabel = (key, fallback) => {
+    if (key === "dash") return "Hoje";
+    if (key === "crono") return "Crono";
+    if (key === "sims") return "Estudar";
+    if (key === "stats") return "Stats";
+    return fallback.split(" ")[0];
+  };
 
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 bg-[#07070f]/95 backdrop-blur-md border-t border-white/5 z-40 flex items-stretch justify-around pt-2" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}>
@@ -38,7 +54,7 @@ export default function BottomNav({ view, setView }) {
         return (
           <button aria-label={n.label} key={n.k} onClick={() => setView(n.k)} className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1 px-3 py-1 transition-colors relative ${isActive ? "text-indigo-400" : "text-gray-600"}`}>
             <Icon size={21} />
-            <span className="text-[9px] font-semibold">{n.label.split(" ")[0]}</span>
+            <span className="text-[9px] font-semibold">{mobileLabel(n.k, n.label)}</span>
             {showStreakWarning && (
               <span className="absolute top-1 right-2 flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
@@ -74,7 +90,7 @@ export default function BottomNav({ view, setView }) {
                     className={`min-h-[44px] rounded-xl border ${view === n.k ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : "border-white/10 bg-white/5 text-gray-300"} flex flex-col items-center justify-center gap-1`}
                   >
                     <Icon size={18} />
-                    <span className="text-[10px] font-semibold">{n.label.split(" ")[0]}</span>
+                    <span className="text-[10px] font-semibold">{mobileLabel(n.k, n.label)}</span>
                   </button>
                 );
               })}
@@ -85,5 +101,3 @@ export default function BottomNav({ view, setView }) {
     </nav>
   );
 }
-
-

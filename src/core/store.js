@@ -5,7 +5,18 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { buildRev, recalcAfterMark, STEPS, S_BASE, todayStr, addDays, normalizeTema, diffDays, getAreaPrior, getRetencaoArea } from "./fsrs";
 import { computeStreakOnStudy, recoverStreak } from "./gamif";
-import { criarRegistroDominio, buildRevComDominio } from "./domainValidation";
+import { buildActionInbox, createAction, sortActions } from "./actionInbox";
+import { createSessionReflection, reflectionToAction } from "./sessionReflection";
+import { adjustActionForPeakMode, getPeakModePolicy, getPeakPhase } from "./peakMode";
+import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } from "./onboarding";
+import {
+  criarRegistroDominio,
+  buildRevComDominio,
+  calcularDominioPrevio,
+  criarValidacaoDominioPrevio,
+  finalizarValidacaoDominioPrevio,
+  isTemaNaoIniciado,
+} from "./domainValidation";
 
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
@@ -18,6 +29,7 @@ function prioToImportancia(prio) {
 }
 
 const initialPlat = () => ({ temas: [], simulados: [], ankiLog: [], cronogramas: [], casosProgresso: {} });
+const initialActionInboxState = () => ({ dismissed: {}, accepted: {}, done: {} });
 
 const initialVestibularPlat = () => {
   const temasData = [
@@ -80,15 +92,135 @@ const timestampMiddleware = (config) => (set, get, api) => {
   return config(newSet, get, api);
 };
 
+function getQueueSnapshot(temas = [], today = todayStr()) {
+  let pending = 0;
+  let overdue = 0;
+  for (const tema of temas) {
+    if (!tema || tema.unstarted) continue;
+    for (const step of STEPS) {
+      const rev = tema.rev?.[step.key];
+      if (!rev || rev.done || !rev.date) continue;
+      if (rev.date < today) overdue += 1;
+      if (rev.date === today) pending += 1;
+    }
+  }
+  return { pending, overdue };
+}
+
+function buildActionCandidatesFromState(state, today) {
+  const platKey = state.plat;
+  const temas = state[platKey]?.temas || [];
+  const casos = state[platKey]?.casosProgresso || {};
+  const latestEnamed = (state.enamedAnalises || []).slice(-1)[0];
+  const { pending, overdue } = getQueueSnapshot(temas, today);
+  const started = temas.filter((tema) => !tema.unstarted).length;
+  const coverage = temas.length > 0 ? Math.round((started / temas.length) * 100) : 0;
+  const phase = getPeakPhase({ examDate: state.meta?.dataProva, today });
+  const policy = getPeakModePolicy(phase);
+
+  const candidates = [];
+
+  if (overdue > 0) {
+    candidates.push({
+      type: "review",
+      title: "Resolver revisoes vencidas",
+      reason: "Atrasos na fila reduzem retencao e previsibilidade do plano.",
+      priority: 100,
+      source: "mentor",
+      dueDate: today,
+      target: { tema: "fila_vencida" },
+    });
+  }
+
+  if (pending > 0) {
+    candidates.push({
+      type: "review",
+      title: "Fechar revisoes de hoje",
+      reason: "Fechar a fila diaria protege ritmo e reduz ansiedade acumulada.",
+      priority: 90,
+      source: "mentor",
+      dueDate: today,
+      target: { tema: "fila_do_dia" },
+    });
+  }
+
+  if (latestEnamed?.resumo?.areaCritica) {
+    candidates.push({
+      type: "exam_analysis",
+      title: `Atacar lacuna em ${latestEnamed.resumo.areaCritica}`,
+      reason: "Maior gargalo recente detectado na analise ENAMED.",
+      priority: 84,
+      source: "enamed",
+      dueDate: today,
+      target: { area: latestEnamed.resumo.areaCritica },
+    });
+  }
+
+  const pendingDomainValidation = temas.find((tema) => tema?.dominioPrevio?.status === "validacao_pendente");
+  if (pendingDomainValidation) {
+    candidates.push({
+      type: "domain_validation",
+      title: `Validar dominio de ${pendingDomainValidation.nome}`,
+      reason: "Tema marcado como 'Ja domino' ainda sem validacao objetiva.",
+      priority: 76,
+      source: "manual",
+      dueDate: today,
+      target: { tema: pendingDomainValidation.nome, temaId: pendingDomainValidation.id },
+    });
+  }
+
+  const dueClinicalCase = Object.entries(casos).find(([, progresso]) => progresso?.proximaData && progresso.proximaData <= today);
+  if (dueClinicalCase) {
+    const [casoId] = dueClinicalCase;
+    candidates.push({
+      type: "clinical_case",
+      title: "Treinar caso clinico pendente",
+      reason: "Reencontro de raciocinio clinico ja venceu o prazo sugerido.",
+      priority: 72,
+      source: "raciocinio",
+      dueDate: today,
+      target: { casoId },
+    });
+  }
+
+  if (pending === 0 && overdue === 0 && coverage < 90) {
+    candidates.push({
+      type: "new_topic",
+      title: "Abrir tema novo de alta incidencia",
+      reason: "Fila limpa. Melhor uso do tempo e ampliar cobertura em tema estrategico.",
+      priority: 62,
+      source: "mentor",
+      dueDate: today,
+      target: { area: latestEnamed?.resumo?.areaCritica || "" },
+    });
+  }
+
+  const adjusted = candidates.map((candidate) => adjustActionForPeakMode(candidate, policy));
+
+  return {
+    pending,
+    overdue,
+    coverage,
+    phase,
+    policy,
+    candidates: adjusted,
+  };
+}
+
 export const useStore = create(
   persist(
     timestampMiddleware(
       (set, get) => ({
         plat: "res",
         cronogramaSel: { res: "res-medcof-2026", vest: "vest-base" },
+      calendarProvider: {
+        activeId: "medcof",
+        importedTopics: [],
+        customTopics: [],
+      },
       userName: "Estudante",
       userEmail: "",
-      meta: { dataProva: "2026-10-25", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false, ankiAdesao: { datas: [] }, modulos: { raciocinioClinico: false } },
+      meta: { dataProva: "2026-09-13", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false, lastFocusSessionAt: null, lastReflectionAt: null, peakModePhase: "base", ankiAdesao: { datas: [] }, modulos: { raciocinioClinico: false }, onboarding: getOnboardingDefaults() },
       res: initialPlat(),
       vest: initialVestibularPlat(),
       undoStack: [],
@@ -114,13 +246,40 @@ export const useStore = create(
       // ==================================================
       focusMode: false,
       modoSimples: true,
+      mentorMode: true,
       modoProva: false,
+      enamedAnalises: [],
+      actionInbox: [],
+      actionInboxState: initialActionInboxState(),
+      sessionReflections: [],
+      weeklyReviews: [],
       brainDumpD1Data: {},
       temaStats: {},
       vistos: [],
       tourStep: null,
       setPlat: (p) => set({ plat: p }),
       setCronogramaSel: (platKey, id) => set((s) => ({ cronogramaSel: { ...s.cronogramaSel, [platKey]: id } })),
+      setCalendarProvider: (providerId) =>
+        set((s) => ({
+          calendarProvider: {
+            ...(s.calendarProvider || { activeId: "medcof", importedTopics: [], customTopics: [] }),
+            activeId: providerId,
+          },
+        })),
+      saveImportedCalendarTopics: (topics = []) =>
+        set((s) => ({
+          calendarProvider: {
+            ...(s.calendarProvider || { activeId: "medcof", importedTopics: [], customTopics: [] }),
+            importedTopics: Array.isArray(topics) ? topics : [],
+          },
+        })),
+      saveCustomCalendarTopics: (topics = []) =>
+        set((s) => ({
+          calendarProvider: {
+            ...(s.calendarProvider || { activeId: "medcof", importedTopics: [], customTopics: [] }),
+            customTopics: Array.isArray(topics) ? topics : [],
+          },
+        })),
       setUserName: (name) => set({ userName: name }),
       setUserEmail: (email) => set({ userEmail: email }),
       setMeta: (meta) => set({ meta }),
@@ -134,10 +293,141 @@ export const useStore = create(
         },
       })),
       setModoProva: (modoProva) => set({ modoProva }),
-      setOnboardingDone: () => set({ onboardingDone: true }),
-      resetOnboarding: () => set({ onboardingDone: false }),
+      setOnboardingDone: () =>
+        set((state) => ({
+          onboardingDone: true,
+          meta: {
+            ...state.meta,
+            onboarding: applyOnboardingChoice(state.meta, { completed: true }),
+          },
+        })),
+      completeOnboarding: (choice = {}) =>
+        set((state) => {
+          const onboarding = applyOnboardingChoice(state.meta, { ...choice, completed: true });
+          return {
+            onboardingDone: true,
+            mentorMode: onboarding.mentorMode === true,
+            meta: {
+              ...state.meta,
+              modulos: {
+                ...(state.meta?.modulos || {}),
+                raciocinioClinico: onboarding.modules?.raciocinioClinico === true,
+              },
+              onboarding,
+            },
+          };
+        }),
+      resetOnboarding: () =>
+        set((state) => ({
+          onboardingDone: false,
+          meta: {
+            ...state.meta,
+            onboarding: getOnboardingDefaults({}),
+          },
+        })),
       toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
       toggleModoSimples: () => set((state) => ({ modoSimples: !state.modoSimples })),
+      toggleMentorMode: () => set((state) => ({ mentorMode: !state.mentorMode })),
+      registrarAnaliseEnamed: (analise) =>
+        set((s) => ({
+          enamedAnalises: [...(s.enamedAnalises || []), { ...analise, id: Date.now() }],
+        })),
+      upsertAction: (actionInput) =>
+        set((s) => {
+          const normalized = createAction(actionInput);
+          const filtered = (s.actionInbox || []).filter((action) => action.id !== normalized.id);
+          return { actionInbox: sortActions([...filtered, normalized]) };
+        }),
+      markActionDone: (actionId) =>
+        set((s) => ({
+          actionInbox: (s.actionInbox || []).filter((action) => action.id !== actionId),
+          actionInboxState: {
+            ...(s.actionInboxState || initialActionInboxState()),
+            done: {
+              ...((s.actionInboxState || initialActionInboxState()).done || {}),
+              [actionId]: todayStr(),
+            },
+          },
+        })),
+      dismissAction: (actionId) =>
+        set((s) => ({
+          actionInbox: (s.actionInbox || []).filter((action) => action.id !== actionId),
+          actionInboxState: {
+            ...(s.actionInboxState || initialActionInboxState()),
+            dismissed: {
+              ...((s.actionInboxState || initialActionInboxState()).dismissed || {}),
+              [actionId]: todayStr(),
+            },
+          },
+        })),
+      acceptAction: (actionId) =>
+        set((s) => ({
+          actionInbox: (s.actionInbox || []).map((action) => (action.id === actionId ? { ...action, status: "accepted" } : action)),
+          actionInboxState: {
+            ...(s.actionInboxState || initialActionInboxState()),
+            accepted: {
+              ...((s.actionInboxState || initialActionInboxState()).accepted || {}),
+              [actionId]: todayStr(),
+            },
+          },
+        })),
+      addSessionReflection: (input) =>
+        set((s) => {
+          const normalized = createSessionReflection(input);
+          const nextReflections = [...(s.sessionReflections || []), normalized].slice(-400);
+          const generatedAction = createAction(reflectionToAction(normalized));
+          const nextInbox = buildActionInbox({
+            actions: [...(s.actionInbox || []), generatedAction],
+            actionInboxState: s.actionInboxState || initialActionInboxState(),
+          });
+
+          return {
+            sessionReflections: nextReflections,
+            actionInbox: nextInbox,
+            meta: {
+              ...s.meta,
+              lastReflectionAt: normalized.date,
+            },
+          };
+        }),
+      saveWeeklyReview: (reviewInput = {}) =>
+        set((s) => {
+          const normalized = {
+            ...reviewInput,
+            id: reviewInput.id || `wr_${todayStr()}_${Date.now()}`,
+            date: reviewInput.date || todayStr(),
+          };
+          const weeklyReviews = [...(s.weeklyReviews || []).filter((item) => item.id !== normalized.id), normalized].slice(-52);
+          return { weeklyReviews };
+        }),
+      rebuildActionInboxForToday: () =>
+        set((s) => {
+          const today = todayStr();
+          const snapshot = buildActionCandidatesFromState(s, today);
+          const reflectionActions = (s.sessionReflections || [])
+            .filter((reflection) => reflection?.date && reflection.date >= addDays(today, -7))
+            .map((reflection) => reflectionToAction(reflection));
+          const shouldRest = (s.sessionReflections || [])
+            .filter((reflection) => reflection?.date && reflection.date >= addDays(today, -3))
+            .some((reflection) => reflection.mainIssue === "energia" || reflection.outcome === "ruim");
+
+          const nextInbox = buildActionInbox({
+            today,
+            actions: snapshot.candidates,
+            reflectionActions,
+            actionInboxState: s.actionInboxState || initialActionInboxState(),
+            enamed: (s.enamedAnalises || []).slice(-1)[0] || null,
+            shouldRest,
+          });
+
+          return {
+            actionInbox: nextInbox,
+            meta: {
+              ...s.meta,
+              peakModePhase: snapshot.phase,
+            },
+          };
+        }),
       adicionarVisto: (id) => set((state) => {
         if (state.vistos?.includes(id)) return {};
         return { vistos: [...(state.vistos || []), id] };
@@ -170,7 +460,6 @@ export const useStore = create(
       addXp: (amount, source = "outros") => set((s) => {
         const currentGamif = s.gamif || { xp: 0, level: 1, streakCurrent: 0, streakBest: 0, freezesOwned: 1, freezesUsedDates: [], recoveryOwned: 0, badges: [], graceUsedThisWeek: false, xpAudit: { acertos: 0, constancia: 0, outros: 0 } };
         const newXp = (currentGamif.xp || 0) + amount;
-        const oldLevel = currentGamif.level || 1;
         const newLevel = Math.floor(Math.sqrt(newXp / 50)) + 1;
         
         const xpAudit = currentGamif.xpAudit ? { ...currentGamif.xpAudit } : { acertos: 0, constancia: 0, outros: 0 };
@@ -489,22 +778,76 @@ export const useStore = create(
       deleteTema: (platKey, id) =>
         set((s) => ({ [platKey]: { ...s[platKey], temas: s[platKey].temas.filter((t) => t.id !== id) } })),
 
-      validarDominio: (platKey, temaId, { questoes, acertos }) =>
+      iniciarValidacaoDominioPrevio: (platKey, temaId) =>
         set((s) => ({
           [platKey]: {
             ...s[platKey],
             temas: s[platKey].temas.map((t) => {
               if (t.id !== temaId) return t;
-              const registro = criarRegistroDominio(questoes, acertos);
-              const novoRev = buildRevComDominio(t.d0, t.esp, t.importancia, registro.classificacao, registro.pctAcerto);
+              if (!isTemaNaoIniciado(t)) return t;
               return {
                 ...t,
-                dominio: registro,
-                rev: novoRev ?? t.rev,
+                dominioPrevio: criarValidacaoDominioPrevio(),
               };
             }),
           },
         })),
+
+      finalizarValidacaoDominioPrevio: (platKey, temaId, { questoes, acertos }) =>
+        set((s) => ({
+          [platKey]: {
+            ...s[platKey],
+            temas: s[platKey].temas.map((t) => {
+              if (t.id !== temaId) return t;
+              const resultado = calcularDominioPrevio({ total: questoes, acertos });
+              const registro = criarRegistroDominio(questoes, acertos);
+              const novoRev = buildRevComDominio(
+                t.d0,
+                t.esp,
+                t.importancia,
+                registro.classificacao,
+                registro.pctAcerto
+              );
+              return {
+                ...t,
+                dominio: registro,
+                dominioPrevio: finalizarValidacaoDominioPrevio({ total: questoes, acertos }),
+                rev: resultado.valido ? (novoRev ?? t.rev) : t.rev,
+              };
+            }),
+          },
+        })),
+
+      cancelarValidacaoDominioPrevio: (platKey, temaId) =>
+        set((s) => ({
+          [platKey]: {
+            ...s[platKey],
+            temas: s[platKey].temas.map((t) => {
+              if (t.id !== temaId) return t;
+              const dp = t.dominioPrevio || {};
+              if (dp.status !== "validacao_pendente") return t;
+              return {
+                ...t,
+                dominioPrevio: {
+                  status: "nao_avaliado",
+                  iniciadoEm: null,
+                  validadoEm: null,
+                  metodo: "ja_domino",
+                  questoesAlvo: dp.questoesAlvo || 15,
+                  total: null,
+                  acertos: null,
+                  percentual: null,
+                  intervaloInicial: null,
+                  proximaRevisao: null,
+                  observacao: null,
+                },
+              };
+            }),
+          },
+        })),
+
+      validarDominio: (platKey, temaId, { questoes, acertos }) =>
+        get().finalizarValidacaoDominioPrevio(platKey, temaId, { questoes, acertos }),
 
       markStep: (platKey, temaId, stepKey, { acerto, previsao, questoes, motivosErro, erros, tempoMin, ansiedade, cansaco, confianca, dificuldade, foco, c1, c2, c3, c4, c5, modoReduzido, descansoPrescrito }) =>
         set((s) => ({
@@ -801,6 +1144,9 @@ export const useStore = create(
           };
         }),
 
+      registrarCasoClinico: (platKey, casoId, payload = {}) =>
+        get().registrarCaso(platKey, casoId, payload),
+
       addCronograma: (platKey, crono) =>
         set((s) => ({
           [platKey]: {
@@ -845,12 +1191,24 @@ export const useStore = create(
         set({
           plat: "res",
           cronogramaSel: { res: "res-medcof-2026", vest: "vest-base" },
+          calendarProvider: {
+            activeId: "medcof",
+            importedTopics: [],
+            customTopics: [],
+          },
           userName: "Estudante",
           userEmail: "",
-          meta: { dataProva: "2026-10-25", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false, ankiAdesao: { datas: [] }, modulos: { raciocinioClinico: false } },
+          meta: { dataProva: "2026-09-13", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false, lastFocusSessionAt: null, lastReflectionAt: null, peakModePhase: "base", ankiAdesao: { datas: [] }, modulos: { raciocinioClinico: false }, onboarding: getOnboardingDefaults() },
           onboardingDone: false,
           focusMode: false,
           modoSimples: true,
+          mentorMode: true,
+          modoProva: false,
+          enamedAnalises: [],
+          actionInbox: [],
+          actionInboxState: initialActionInboxState(),
+          sessionReflections: [],
+          weeklyReviews: [],
           brainDumpD1Data: {},
           temaStats: {},
           vistos: [],
@@ -880,6 +1238,7 @@ export const useStore = create(
       partialize: (s) => ({
         plat: s.plat,
         cronogramaSel: s.cronogramaSel,
+        calendarProvider: s.calendarProvider,
         meta: s.meta,
         res: s.res,
         vest: s.vest,
@@ -888,7 +1247,12 @@ export const useStore = create(
         onboardingDone: s.onboardingDone,
         focusMode: s.focusMode,
         modoSimples: s.modoSimples,
+        mentorMode: s.mentorMode,
         modoProva: s.modoProva,
+        enamedAnalises: s.enamedAnalises,
+        actionInboxState: s.actionInboxState,
+        sessionReflections: s.sessionReflections,
+        weeklyReviews: s.weeklyReviews,
         brainDumpD1Data: s.brainDumpD1Data,
         temaStats: s.temaStats,
         vistos: s.vistos,
@@ -901,6 +1265,10 @@ export const useStore = create(
         const resolvedVest = (persistedVest.temas?.length > 0)
           ? { ...initial.vest, ...persistedVest }
           : { ...initial.vest, ...persistedVest, temas: initial.vest?.temas || [] };
+        const migratedMeta = { ...(persisted.meta || {}) };
+        if (migratedMeta.dataProva === "2026-10-25") {
+          migratedMeta.dataProva = "2026-09-13";
+        }
 
         const normalizePlatTemas = (platObj) => {
           if (!platObj || !Array.isArray(platObj.temas)) return platObj;
@@ -917,23 +1285,40 @@ export const useStore = create(
           ...initial,
           ...persisted,
           cronogramaSel: persisted.cronogramaSel ? { ...initial.cronogramaSel, ...persisted.cronogramaSel } : initial.cronogramaSel,
+          calendarProvider: persisted.calendarProvider
+            ? {
+              ...initial.calendarProvider,
+              ...persisted.calendarProvider,
+              importedTopics: persisted.calendarProvider.importedTopics || [],
+              customTopics: persisted.calendarProvider.customTopics || [],
+            }
+            : initial.calendarProvider,
           meta: persisted.meta ? {
             ...initial.meta,
-            ...persisted.meta,
-            modulos: { ...initial.meta.modulos, ...(persisted.meta.modulos || {}) },
-            ankiAdesao: { ...initial.meta.ankiAdesao, ...(persisted.meta.ankiAdesao || {}) },
+            ...migratedMeta,
+            modulos: { ...initial.meta.modulos, ...(migratedMeta.modulos || {}) },
+            ankiAdesao: { ...initial.meta.ankiAdesao, ...(migratedMeta.ankiAdesao || {}) },
+            onboarding: applyOnboardingChoice(
+              { ...initial.meta, ...migratedMeta, onboarding: getOnboardingDefaults(migratedMeta) },
+              persisted.onboardingDone ? { completed: true } : {}
+            ),
           } : initial.meta,
           res: mergedRes,
           vest: mergedVest,
           userEmail: persisted.userEmail ?? initial.userEmail,
           focusMode: persisted.focusMode ?? initial.focusMode,
           modoSimples: persisted.modoSimples ?? initial.modoSimples,
+          mentorMode: persisted.mentorMode ?? initial.mentorMode,
           modoProva: persisted.modoProva ?? initial.modoProva,
+          enamedAnalises: persisted.enamedAnalises ?? initial.enamedAnalises,
+          actionInboxState: persisted.actionInboxState ?? initial.actionInboxState,
+          sessionReflections: persisted.sessionReflections ?? initial.sessionReflections,
+          weeklyReviews: persisted.weeklyReviews ?? initial.weeklyReviews,
           brainDumpD1Data: persisted.brainDumpD1Data ?? initial.brainDumpD1Data,
           temaStats: persisted.temaStats ?? initial.temaStats,
           vistos: persisted.vistos ?? initial.vistos,
           sprint: persisted.sprint ?? initial.sprint,
-          onboardingDone: persisted.onboardingDone ?? initial.onboardingDone,
+          onboardingDone: persisted.onboardingDone ?? isOnboardingComplete(persisted.meta || {}) ?? initial.onboardingDone,
           updatedAt: persisted.updatedAt ?? initial.updatedAt,
           gamif: persisted.gamif ? { ...initial.gamif, ...persisted.gamif } : initial.gamif,
         };
@@ -941,6 +1326,3 @@ export const useStore = create(
     }
   )
 );
-
-
-

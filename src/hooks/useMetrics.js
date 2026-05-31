@@ -3,7 +3,7 @@
 
 import { useMemo } from "react";
 import { STEPS, IMPORTANCIA, todayStr, diffDays, addDays } from "../core/fsrs";
-import { getAreaWeight, PESO_AREA_ENAMED, BONUS_RETORNO_RAPIDO } from "../core/provasStats";
+import { getAreaWeight, findHotnessSubarea, BONUS_RETORNO_RAPIDO } from "../core/provasStats";
 import { useStore } from "../core/store";
 
 // ─── VESTIBULAR WEIGHTS & SCORE ──────────────────────────────────────────────
@@ -114,9 +114,14 @@ export function calcFilaInteligente(temas, plat, meta) {
         score = score * weight;
       } else {
         const urgencia = overdue ? 1.5 : 1.0;
-        const pesoArea = PESO_AREA_ENAMED[t.esp] ?? 1.0;
+        const pesoArea = getAreaWeight(plat, t.esp, meta);
         const bonus = acertoMedia < 0.6 ? (BONUS_RETORNO_RAPIDO[t.esp] ?? 0) : 0;
         score = (1 - acertoMedia) * pesoImp * urgencia * pesoArea + bonus;
+
+        const hotness = findHotnessSubarea(t.esp, t.subarea || t.nome);
+        if (hotness) {
+          score *= (0.85 + 0.3 * hotness.normalizado);
+        }
       }
       
       items.push({

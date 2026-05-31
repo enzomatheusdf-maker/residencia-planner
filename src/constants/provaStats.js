@@ -5,13 +5,17 @@ export const PROVA_STATS_RES = {
   "ENAMED": {
     banca: "INEP (aplicação) / FGV-ENARE (classificação acesso direto)",
     bancaHistorico: "Exame nacional unificado criado em 2025 (Portarias MEC/INEP 330, 359, 413/2025). Substitui a etapa teórica do ENARE para acesso direto e a antiga prova de concluintes.",
-    ano: "2026 (2ª edição; prova em out)",
-    fonte: "INEP/MEC (Port. 330/359/413/2025), ENARE/FGV, Agência Brasil, Estratégia MED/Medway - out/2025-mai/2026",
-    perfil: { fase: "Fase única objetiva: 100 questões (4 alternativas, 1 correta), distribuição equitativa entre as 5 grandes áreas (~20 cada). Foco em SUS e DCNs.", questoes: 100,
-      areas: ["Clínica Médica","Cirurgia Geral","GO","Pediatria","Preventiva"],
-      vagasTotais: null, concorrenciaGeral: "Nota usada pelo ENARE (acesso direto), validade 3 anos. >96 mil inscritos em 2025; >7 mil vagas ENARE." },
-    estilo: "Competências por DCNs, ênfase em SUS/APS/MFC; Saúde Coletiva e Saúde Mental transversais. Pesos iguais entre as 5 áreas; classificação no ENARE pela nota bruta.",
-    mudancas: "2025: 1ª edição (19/out). 2026: integrada ao ENADE; nota válida por até 3 anos para ENARE acesso direto.",
+    ano: "2026 (2ª edição; prova em 13/09/2026)",
+    fonte: "INEP/MEC; Edital INEP nº 71/2026; Portarias MEC/INEP 330, 359, 413 e 478/2025; ENARE/HU Brasil; atualizado em 29/05/2026",
+    perfil: {
+      fase: "Fase única objetiva: 100 questões. Macroplanejamento do app em 5 áreas RES; MFC/Saúde Coletiva entram em Preventiva e Saúde Mental é transversal.",
+      questoes: 100,
+      areas: ["Clínica Médica", "Cirurgia", "GO", "Pediatria", "Preventiva"],
+      vagasTotais: null,
+      concorrenciaGeral: "Nota pode ser usada no ENARE acesso direto; escala de proficiência por TRI; maior nota válida dentro da janela regulamentar."
+    },
+    estilo: "Competências por DCNs, situações-problema e integração clínico-epidemiológica. Para planejamento do app, usar macroáreas RES e tratar Preventiva como eixo APS/MFC/SUS/Saúde Coletiva.",
+    mudancas: "2025: 1ª edição. 2026: prova em 13/09; participação obrigatória de concluintes habilitados e estudantes do 4º ano inscritos pela instituição; graduados podem realizar voluntariamente para ENARE; classificação considera escala de proficiência por TRI; validade de três anos, exceto 4º ano.",
     notasCorte: {
       "Clínica Médica": null, "Cirurgia Geral": null, "GO": null, "Pediatria": null, "Preventiva": null,
       "_obs": { valor: null, escala: 100, ano: "2026", obs: "ENAMED não tem corte único nacional; o corte varia por programa/instituição no ENARE." },
