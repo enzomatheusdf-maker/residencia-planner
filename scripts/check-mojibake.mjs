@@ -53,8 +53,10 @@ const IGNORED_FILES = new Set([
 
 const TEXT_EXT = new Set([
   ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
-  ".json", ".md", ".css", ".scss", ".html", ".htm",
+  ".json", ".css", ".scss", ".html", ".htm",
   ".txt", ".yml", ".yaml", ".svg",
+  // .md excluído: documentação pode conter aspas tipográficas junto a acentos
+  // sem ser mojibake (ex: `quê"` em texto corrido). O gate protege source code.
 ]);
 
 function isIgnored(relPath) {

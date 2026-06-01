@@ -1,6 +1,4 @@
 // src/core/mastery.js
-import { STEPS } from "./fsrs";
-import { calcTrend } from "../hooks/useMetrics";
 
 /**
  * Classifies a topic into one of three mastery levels.

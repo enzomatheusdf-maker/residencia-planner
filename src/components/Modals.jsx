@@ -152,7 +152,7 @@ export function HelpModal({ onClose }) {
 
 // ==================================================
 export function CycleCompleteModal({ tema, onClose }) {
-  const { plat, meta } = useStore();
+  const { plat } = useStore();
   const userName = useStore((s) => s.userName || "Estudante");
   const temas = useStore((s) => s[plat]?.temas || []);
 

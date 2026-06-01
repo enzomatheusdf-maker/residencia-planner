@@ -1,6 +1,6 @@
 // src/components/CronogramaVest.jsx
 import React, { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown, Check, BookOpen, Trash2, Plus, Zap, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Check, BookOpen, Trash2, Plus, Zap } from "lucide-react";
 import { useStore } from "../core/store";
 import { todayStr, fmtDate, STEPS } from "../core/fsrs";
 import { getEstadoDominio } from "../core/mastery";
@@ -162,81 +162,89 @@ export function gerarCronogramaInteligente(titulo, dataInicio, numSemanas, horas
   let topicIndex = 0;
   const blocksTemplate = getTemplatesForHours(horasDisponiveis);
 
+  const nextQueuedTopic = () => {
+    if (!topicsQueue.length) return null;
+    const topic = topicsQueue[topicIndex % topicsQueue.length];
+    topicIndex++;
+    return topic;
+  };
+
+  const buildDia = (dia, di, base) => {
+    const d = new Date(base);
+    d.setDate(d.getDate() + di);
+    const data = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
+    const isoDate = d.toISOString().slice(0, 10);
+
+    const blocos = blocksTemplate.map(b => {
+      let conteudo = "";
+      let tNome = null;
+      let tEsp = null;
+      let finalTipo = b.tipo;
+
+      if (b.tipo === "foco") {
+        const t = nextQueuedTopic();
+        if (t) {
+          tNome = t.nome;
+          tEsp = t.esp;
+
+          const existingTema = temas.find(x => x.nome === t.nome);
+          const currentStats = existingTema ? (temaStats[existingTema.id] || []) : [];
+          const dominio = getEstadoDominio(existingTema, currentStats);
+
+          const areaTemas = temas.filter(x => x.esp === t.esp);
+          const countConsolidandoOuDomino = areaTemas.filter(x => {
+            const st = getEstadoDominio(x, temaStats[x.id] || []);
+            return st === "consolidando" || st === "dominado";
+          }).length;
+          const isAreaConsolidando = areaTemas.length > 0 && (countConsolidandoOuDomino / areaTemas.length) >= 0.6;
+
+          if (dominio === "dominado") {
+            const simuladosNames = ["Simulado UFG 2023", "Simulado UFG 2022", "Simulado UFG 2021"];
+            const simNome = simuladosNames[topicIndex % 3];
+            conteudo = `Simulado / Prova Antiga: ${simNome} (Área: ${t.esp})`;
+            tNome = simNome;
+            tEsp = t.esp;
+            finalTipo = "simulado";
+          } else if (isAreaConsolidando || dominio === "consolidando") {
+            conteudo = `Bateria de Questões Focadas: ${t.esp} - ${t.nome}`;
+          } else {
+            conteudo = `${t.esp} - ${t.nome} (Estudo + Questões)`;
+          }
+        } else {
+          const simuladosNames = ["Simulado UFG 2023", "Simulado UFG 2022", "Simulado UFG 2021"];
+          const simNome = simuladosNames[topicIndex % 3];
+          conteudo = `Simulado UFG / Prova Antiga: ${simNome}`;
+          tNome = simNome;
+          tEsp = "Geral";
+          finalTipo = "simulado";
+          topicIndex++;
+        }
+      } else if (b.tipo === "revisao") {
+        conteudo = "Revisar fila inteligente do FSRS + Anki";
+      } else if (b.tipo === "questoes") {
+        conteudo = "Resolver 15-20 questões do simulado anterior";
+      } else {
+        conteudo = "Pausa recomendada";
+      }
+
+      return {
+        horario: b.horario,
+        nome: b.nome,
+        conteudo,
+        temaNome: tNome,
+        temaEsp: tEsp,
+        concluido: false,
+        tipo: finalTipo
+      };
+    });
+
+    return { dia, data, isoDate, blocos };
+  };
+
   for (let i = 0; i < numSemanas; i++) {
     const base = new Date(dataInicio + "T12:00:00");
     base.setDate(base.getDate() + i * 7);
-    const diasArr = DIAS_SEMANA.map((dia, di) => {
-      const d = new Date(base);
-      d.setDate(d.getDate() + di);
-      const data = `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
-      const isoDate = d.toISOString().slice(0, 10);
-      
-      const blocos = blocksTemplate.map(b => {
-        let conteudo = "";
-        let tNome = null;
-        let tEsp = null;
-        let finalTipo = b.tipo;
-        
-        if (b.tipo === "foco") {
-          if (topicsQueue.length > 0) {
-            const t = topicsQueue[topicIndex % topicsQueue.length];
-            topicIndex++;
-            tNome = t.nome;
-            tEsp = t.esp;
-
-            const existingTema = temas.find(x => x.nome === t.nome);
-            const currentStats = existingTema ? (temaStats[existingTema.id] || []) : [];
-            const dominio = getEstadoDominio(existingTema, currentStats);
-
-            const areaTemas = temas.filter(x => x.esp === t.esp);
-            const countConsolidandoOuDomino = areaTemas.filter(x => {
-              const st = getEstadoDominio(x, temaStats[x.id] || []);
-              return st === "consolidando" || st === "dominado";
-            }).length;
-            const isAreaConsolidando = areaTemas.length > 0 && (countConsolidandoOuDomino / areaTemas.length) >= 0.6;
-
-            if (dominio === "dominado") {
-              const simuladosNames = ["Simulado UFG 2023", "Simulado UFG 2022", "Simulado UFG 2021"];
-              const simNome = simuladosNames[topicIndex % 3];
-              conteudo = `Simulado / Prova Antiga: ${simNome} (Área: ${t.esp})`;
-              tNome = simNome;
-              tEsp = t.esp;
-              finalTipo = "simulado";
-            } else if (isAreaConsolidando || dominio === "consolidando") {
-              conteudo = `Bateria de Questões Focadas: ${t.esp} - ${t.nome}`;
-            } else {
-              conteudo = `${t.esp} - ${t.nome} (Estudo + Questões)`;
-            }
-          } else {
-            const simuladosNames = ["Simulado UFG 2023", "Simulado UFG 2022", "Simulado UFG 2021"];
-            const simNome = simuladosNames[topicIndex % 3];
-            conteudo = `Simulado UFG / Prova Antiga: ${simNome}`;
-            tNome = simNome;
-            tEsp = "Geral";
-            finalTipo = "simulado";
-            topicIndex++;
-          }
-        } else if (b.tipo === "revisao") {
-          conteudo = "Revisar fila inteligente do FSRS + Anki";
-        } else if (b.tipo === "questoes") {
-          conteudo = "Resolver 15-20 questões do simulado anterior";
-        } else {
-          conteudo = "Pausa recomendada";
-        }
-        
-        return {
-          horario: b.horario,
-          nome: b.nome,
-          conteudo,
-          temaNome: tNome,
-          temaEsp: tEsp,
-          concluido: false,
-          tipo: finalTipo
-        };
-      });
-
-      return { dia, data, isoDate, blocos };
-    });
+    const diasArr = DIAS_SEMANA.map((dia, di) => buildDia(dia, di, base));
     
     semanas.push({
       id: Date.now() + Math.random() + i,
@@ -409,7 +417,7 @@ export default function CronogramaVest({ onStudy, onEdit, onIniciarTema }) {
         setCronoAtivo(null);
       }
     }
-  }, [cronogramas]);
+  }, [modo, cronoAtivo, cronogramas]);
 
   const calcSemanaHoje = (crono) => {
     if (!crono?.semanas?.length) return 0;

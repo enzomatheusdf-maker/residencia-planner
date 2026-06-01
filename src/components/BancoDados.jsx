@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { FileText } from "lucide-react";
 import { useStore } from "../core/store";
-import { STEPS, ESP_COLORS, IMPORTANCIA, isOverdue, isDueToday, fmtDate, fmtRelativo } from "../core/fsrs";
+import { STEPS, ESP_COLORS, IMPORTANCIA, isOverdue, isDueToday, fmtRelativo } from "../core/fsrs";
 import { Btn, Input } from "./Primitives";
 
 export default function BancoDados() {

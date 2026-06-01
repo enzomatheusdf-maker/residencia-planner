@@ -1,6 +1,6 @@
 // src/components/Simulados.jsx
 import React, { useState, useMemo } from "react";
-import { Target, Plus, X, Trash2, ShieldAlert, Award, BarChart3, Info, Brain, Flame, BookOpen, Calendar, HelpCircle, Activity } from "lucide-react";
+import { Target, Plus, X, Trash2, ShieldAlert, Award, BarChart3, Info, Brain, BookOpen, Activity } from "lucide-react";
 import { useStore } from "../core/store";
 import { todayStr, fmtDate, fmtFull, ESPS_RES, ESPS_VEST, STEPS } from "../core/fsrs";
 import { calcMetricasElite, migrarSim } from "../hooks/useMetrics";
