@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { CalendarCheck2, ChevronDown, ChevronUp } from "lucide-react";
+import { CalendarCheck2, ChevronDown, ChevronUp, X } from "lucide-react";
 import { addDays, STEPS, todayStr } from "../core/fsrs";
 import { buildWeeklyReview } from "../core/sessionReflection";
 import { useStore } from "../core/store";
@@ -11,7 +11,7 @@ function countRecentDoneSteps(temas = [], days = 7) {
     .filter((review) => review?.done && review?.date && review.date >= cutoff).length;
 }
 
-export default function WeeklyReview({ onAdjust }) {
+export default function WeeklyReview({ onAdjust, onAction }) {
   const plat = useStore((s) => s.plat);
   const temas = useStore((s) => s[plat]?.temas || []);
   const casosProgresso = useStore((s) => s[plat]?.casosProgresso || {});
@@ -20,9 +20,11 @@ export default function WeeklyReview({ onAdjust }) {
   const sessionReflections = useStore((s) => s.sessionReflections || []);
   const weeklyReviews = useStore((s) => s.weeklyReviews || []);
   const saveWeeklyReview = useStore((s) => s.saveWeeklyReview);
+  const showToast = useStore((s) => s.showToast);
 
   const shouldOpenByDefault = useMemo(() => new Date().getDay() === 0, []);
   const [expanded, setExpanded] = useState(shouldOpenByDefault);
+  const [showAdjustModal, setShowAdjustModal] = useState(false);
 
   const review = useMemo(() => {
     const cutoff = addDays(todayStr(), -6);
@@ -45,6 +47,20 @@ export default function WeeklyReview({ onAdjust }) {
 
   const lastReviewDate = weeklyReviews.slice(-1)[0]?.date;
   const alreadyReviewedThisWeek = Boolean(lastReviewDate && lastReviewDate >= addDays(todayStr(), -6));
+  const suggestedArea = review.blocked.areaFraca || review.plan.priorities[0]?.split(":")[0] || null;
+
+  const handleAccept = () => {
+    if (saveWeeklyReview) saveWeeklyReview({ ...review, status: "accepted" });
+    if (showToast) showToast("Plano semanal aceito.");
+    setExpanded(false);
+  };
+
+  const triggerAction = (action) => {
+    if (!action) return;
+    if (onAction) onAction(action);
+    if (onAdjust) onAdjust(action);
+    setShowAdjustModal(false);
+  };
 
   return (
     <section className="bg-[var(--surface-1)] border border-white/5 rounded-2xl overflow-hidden">
@@ -100,7 +116,7 @@ export default function WeeklyReview({ onAdjust }) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               type="button"
-              onClick={() => saveWeeklyReview && saveWeeklyReview({ ...review, status: "accepted" })}
+              onClick={handleAccept}
               className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold border-none cursor-pointer"
             >
               Aceitar plano
@@ -109,7 +125,7 @@ export default function WeeklyReview({ onAdjust }) {
               type="button"
               onClick={() => {
                 if (saveWeeklyReview) saveWeeklyReview({ ...review, status: "manual_adjust" });
-                if (onAdjust) onAdjust();
+                setShowAdjustModal(true);
               }}
               className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 text-[11px] font-bold border border-white/10 cursor-pointer"
             >
@@ -125,7 +141,59 @@ export default function WeeklyReview({ onAdjust }) {
           </div>
         </div>
       )}
+
+      {showAdjustModal && (
+        <div className="fixed inset-0 z-[410] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 md:pl-60" onClick={() => setShowAdjustModal(false)}>
+          <div
+            className="w-full max-w-lg bg-[var(--surface-2)] border border-white/10 rounded-2xl p-4 space-y-3"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h4 className="text-[12px] font-black uppercase tracking-wider text-gray-100">Ajustes da próxima semana</h4>
+              <button
+                type="button"
+                onClick={() => setShowAdjustModal(false)}
+                className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-gray-200 flex items-center justify-center border border-white/10 cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400">
+              Escolha o que quer ajustar agora. Isso sincroniza o plano do Mentor com o Dashboard.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => triggerAction({ type: "focar", esp: suggestedArea || "prioridades da semana", label: "Focar área fraca" })}
+                className="px-3 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 text-blue-300 border border-blue-500/25 text-[11px] font-bold text-left cursor-pointer"
+              >
+                Focar área fraca
+              </button>
+              <button
+                type="button"
+                onClick={() => triggerAction({ type: "setView", view: "crono", label: "Selecionar temas da semana" })}
+                className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 text-[11px] font-bold text-left cursor-pointer"
+              >
+                Selecionar temas da semana
+              </button>
+              <button
+                type="button"
+                onClick={() => triggerAction({ type: "import_calendar", label: "Importar cronograma" })}
+                className="px-3 py-2.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/25 text-[11px] font-bold text-left cursor-pointer"
+              >
+                Importar cronograma
+              </button>
+              <button
+                type="button"
+                onClick={() => triggerAction({ type: "ja_domino", label: "Marcar já domino" })}
+                className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 text-[11px] font-bold text-left cursor-pointer"
+              >
+                Usar "Já domino"
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
-

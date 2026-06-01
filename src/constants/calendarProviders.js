@@ -13,7 +13,7 @@ export const CALENDAR_PROVIDERS = [
   },
   {
     id: CALENDAR_PROVIDER_IDS.USER_IMPORTED,
-    label: "Estratégia MED (importado)",
+    label: "Importado",
     kind: "user_import",
     description: "Cronograma externo importado por texto/JSON do próprio usuário.",
   },

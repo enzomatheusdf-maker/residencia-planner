@@ -15,15 +15,15 @@ import {
   calcularDominioPrevio,
   isTemaNaoIniciado,
 } from "../core/domainValidation";
-import { Check } from "lucide-react";
 import RetrievabilitySpark from "./RetrievabilitySpark";
 import DicaContextual from "./DicaContextual";
 import TrilhaJornada from "./TrilhaJornada";
 import useCountUp from "../hooks/useCountUp";
 import { trackEvent } from "../services/firebase";
-import { CALENDAR_PROVIDERS } from "../constants/calendarProviders";
+import { CALENDAR_PROVIDERS, CALENDAR_PROVIDER_IDS } from "../constants/calendarProviders";
 import { getPeakModePolicy, getPeakPhase } from "../core/peakMode";
-import { CATALOGO_ESTRATEGIA_MED, parseCatalogEntry } from "../constants/catalogos";
+import { parseCatalogEntry } from "../constants/catalogos";
+import { resolveCatalogo, getCronogramaById } from "../constants/cronogramas";
 import ActionInbox from "./ActionInbox";
 import WeeklyReview from "./WeeklyReview";
 import EmptyState from "./EmptyState";
@@ -282,139 +282,280 @@ function WelcomePopup({ userName, pending, streakCurrent, totalSessions, onClose
   );
 }
 
-function MiniCronogramaWidget({ plat, setView, onStudy, overdue = [], today_ = [] }) {
+function MiniCronogramaWidget({
+  plat,
+  setView,
+  onStudy,
+  onMarkMastery,
+  overdue = [],
+  today_ = [],
+  temas = [],
+  calendarProvider,
+  cronogramaSel,
+  temasPerWeek,
+  estrategiaStartDate,
+  onAdjustWeeklyTopics,
+}) {
   const cronogramas = useStore((s) => s[plat]?.cronogramas || []);
   const activeCrono = useMemo(() => cronogramas[0] || null, [cronogramas]);
-  const toggleBloco = useStore((s) => s.toggleBloco);
-  const temas = useStore((s) => s[plat]?.temas || []);
 
   const dueTodayItems = useMemo(() => {
     return [...overdue, ...today_];
   }, [overdue, today_]);
 
-  const hoje = todayStr();
-  let currentSemana = activeCrono?.semanas[0];
-  let semanaIdx = 0;
-  if (activeCrono) {
-    for (let i = 0; i < activeCrono.semanas.length; i++) {
-      const s = activeCrono.semanas[i];
-      const d0 = s.dias[0]?.isoDate || "";
-      const d6 = s.dias[6]?.isoDate || "";
-      if (d0 && d6 && hoje >= d0 && hoje <= d6) {
-        currentSemana = s;
-        semanaIdx = i;
-        break;
-      }
-    }
-  }
+  const activeProvider = calendarProvider?.activeId || CALENDAR_PROVIDER_IDS.MEDCOF;
+  const importedTopics = calendarProvider?.importedTopics;
+  const customTopics = calendarProvider?.customTopics;
+  const selectedPlanId = cronogramaSel?.[plat] || "res-medcof-2026";
+  const semanaBaseDate = estrategiaStartDate || todayStr();
+  const diffDays = Math.max(0, Math.floor((new Date(todayStr()) - new Date(semanaBaseDate)) / (1000 * 60 * 60 * 24)));
+  const semanaAtual = Math.floor(diffDays / 7) + 1;
 
-  const diaHoje = currentSemana?.dias.find(d => d.isoDate === hoje);
-  const total = activeCrono ? activeCrono.semanas.reduce((a, s) => a + s.dias.reduce((b, d) => b + d.blocos.length, 0), 0) : 0;
-  const feitos = activeCrono ? activeCrono.semanas.reduce((a, s) => a + s.dias.reduce((b, d) => b + d.blocos.filter(b2 => b2.concluido).length, 0), 0) : 0;
-  const pct = total > 0 ? Math.round(feitos / total * 100) : 0;
+  const weekPlan = useMemo(() => {
+    if (plat !== "res") return { label: "Semana atual", topics: [] };
+
+    if (activeProvider === CALENDAR_PROVIDER_IDS.MEDCOF) {
+      const medcofCatalog = resolveCatalogo("res", selectedPlanId) || [];
+      const idx = Math.min(Math.max(semanaAtual - 1, 0), Math.max(medcofCatalog.length - 1, 0));
+      const bloco = medcofCatalog[idx];
+      const topics = (bloco?.t || []).slice(0, temasPerWeek || 6).map((entry) => {
+        const parsed = parseCatalogEntry(entry);
+        return { nome: parsed.nome, esp: parsed.esp };
+      });
+      return {
+        label: bloco?.nome || `MEDCOF · Semana ${semanaAtual}`,
+        topics,
+      };
+    }
+
+    const sourceTopicsRaw = activeProvider === CALENDAR_PROVIDER_IDS.CUSTOM ? customTopics : importedTopics;
+    const sourceTopics = Array.isArray(sourceTopicsRaw) ? sourceTopicsRaw : [];
+    if (!sourceTopics.length) return { label: "Sem tópicos importados", topics: [] };
+    const weekMap = sourceTopics.reduce((acc, topic) => {
+      const weekLabel = topic?.semana || "Sem semana definida";
+      if (!acc[weekLabel]) acc[weekLabel] = [];
+      acc[weekLabel].push(topic);
+      return acc;
+    }, {});
+    const weekKeys = Object.keys(weekMap);
+    if (!weekKeys.length) return { label: "Sem semana definida", topics: [] };
+    const weekKey = weekKeys[Math.min(semanaAtual - 1, weekKeys.length - 1)];
+    const topics = (weekMap[weekKey] || [])
+      .sort((a, b) => (a?.ordem || 0) - (b?.ordem || 0))
+      .slice(0, temasPerWeek || 6)
+      .map((topic) => ({
+        nome: topic.temaOriginal || topic.tema || "Tema importado",
+        esp: topic.areaCanonica || topic.areaOriginal || topic.area || "Geral",
+      }));
+
+    return {
+      label: weekKey,
+      topics,
+    };
+  }, [plat, activeProvider, selectedPlanId, semanaAtual, temasPerWeek, importedTopics, customTopics]);
+
+  const strategyName = useMemo(() => {
+    if (activeProvider === CALENDAR_PROVIDER_IDS.USER_IMPORTED) return "Estratégia MED";
+    if (activeProvider === CALENDAR_PROVIDER_IDS.CUSTOM) return "Custom";
+    const plan = getCronogramaById(selectedPlanId);
+    return plan?.nome || "MEDCOF 2026";
+  }, [activeProvider, selectedPlanId]);
 
   return (
-    <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-3 shadow-md relative overflow-hidden text-left">
-      <div className="absolute -right-8 -top-8 w-20 h-20 rounded-full bg-blue-600/5 blur-2xl pointer-events-none" />
-      
-      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+    <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-3 shadow-lg relative overflow-hidden text-left">
+      <div className="absolute -right-12 -top-12 w-36 h-36 rounded-full bg-blue-600/5 blur-3xl pointer-events-none" />
+      <div className="absolute left-0 -bottom-8 w-28 h-28 rounded-full bg-indigo-600/4 blur-2xl pointer-events-none" />
+
+      {/* Header */}
+      <div className="flex items-center justify-between pb-2 border-b border-white/5">
         <div className="flex items-center gap-2">
-          <Calendar size={14} className="text-blue-400" />
-          <span className="text-[10.5px] font-black uppercase text-gray-300 tracking-wider">
-            Quadro de Revisão & Cronograma
+          <div className="w-6 h-6 rounded-lg bg-blue-500/15 flex items-center justify-center shrink-0">
+            <Calendar size={12} className="text-blue-400" />
+          </div>
+          <span className="text-[10.5px] font-black uppercase text-gray-200 tracking-wider">
+            Revisão & Cronograma
           </span>
         </div>
-        {activeCrono && (
-          <button
-            onClick={() => setView && setView("crono")}
-            className="text-[9.5px] font-bold text-blue-400 hover:text-blue-300 transition-colors border-none p-0 bg-transparent cursor-pointer"
-          >
-            Ver Completo
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <span className="text-[8.5px] font-bold text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full uppercase tracking-wide">
+            {strategyName}
+          </span>
+          {activeCrono && (
+            <button
+              onClick={() => setView && setView("crono")}
+              className="text-[9px] font-bold text-blue-400 hover:text-blue-300 transition-colors border-none p-0 bg-transparent cursor-pointer"
+            >
+              Ver tudo →
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Column 1: FSRS Due Today */}
-        <div className="bg-gradient-to-br from-blue-600/10 via-[var(--surface-1)] to-sky-500/5 border border-blue-500/20 rounded-xl p-3 space-y-2 flex flex-col justify-between min-h-[145px]">
-          <div className="space-y-1">
-            <span className="text-[9.5px] text-gray-500 font-bold uppercase tracking-wider block">
-              Revisões FSRS de Hoje ({dueTodayItems.length})
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+        {/* ── Column 1: FSRS de Hoje ── */}
+        <div className="flex flex-col gap-2 rounded-xl border border-blue-500/15 bg-gradient-to-b from-blue-950/30 to-transparent p-3 min-h-[150px]">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-wider text-blue-300/70">
+              FSRS de Hoje
             </span>
-            <div className="flex flex-col gap-1.5 max-h-28 overflow-y-auto pr-1">
-              {dueTodayItems.length === 0 ? (
-                <p className="text-[10.5px] text-gray-500 italic py-4 text-center">Fila zerada! Parabéns. 🎉</p>
-              ) : (
-                dueTodayItems.map((item, idx) => {
-                  const temaObj = temas.find(t => t.id === item.temaId);
-                  return (
-                    <div key={idx} className="flex items-center justify-between p-1.5 bg-black/20 rounded-lg text-[10.5px]">
-                      <div className="min-w-0 flex-1 pr-2 flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="font-semibold text-gray-200 truncate" title={item.temaNome}>{item.temaNome}</p>
-                          <p className="text-[9px] text-gray-500 mt-0.5 uppercase">{item.esp} · {item.step.label}</p>
-                        </div>
-                        {temaObj && <RetrievabilitySpark tema={temaObj} />}
+            <span className={`text-[9px] font-bold tabular-nums px-1.5 py-0.5 rounded-full ${
+              dueTodayItems.length === 0
+                ? "bg-emerald-500/15 text-emerald-400"
+                : "bg-blue-500/20 text-blue-300"
+            }`}>
+              {dueTodayItems.length === 0 ? "✓ zerada" : `${dueTodayItems.length} pendentes`}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-1 max-h-[148px] overflow-y-auto pr-0.5">
+            {dueTodayItems.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center py-5 gap-1">
+                <div className="w-7 h-7 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                  <span className="text-sm">✓</span>
+                </div>
+                <p className="text-[10px] text-emerald-400 font-semibold">Fila zerada!</p>
+                <p className="text-[9px] text-gray-600">Parabéns pela consistência.</p>
+              </div>
+            ) : (
+              dueTodayItems.map((item, idx) => {
+                const temaObj = temas.find(t => t.id === item.temaId);
+                const espColor = ESP_COLORS[item.esp] || "#94a3b8";
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2 px-2 py-1.5 bg-black/25 rounded-lg border border-white/[0.04] hover:border-white/10 transition-colors"
+                  >
+                    <div
+                      className="w-0.5 h-7 rounded-full shrink-0"
+                      style={{ backgroundColor: espColor + "cc" }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-semibold text-gray-100 truncate leading-tight" title={item.temaNome}>
+                        {item.temaNome}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[8.5px] uppercase font-bold tracking-wide" style={{ color: espColor + "bb" }}>
+                          {item.esp}
+                        </span>
+                        <span className="text-[8px] text-gray-600">·</span>
+                        <span className="text-[8.5px] text-blue-400/70 font-mono">{item.step.label}</span>
                       </div>
-                      <button
-                        onClick={() => onStudy && onStudy(item.temaId, item.step.key)}
-                        className="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-[9.5px] font-bold transition-all shrink-0 cursor-pointer border-none"
-                      >
-                        Focar
-                      </button>
                     </div>
-                  );
-                })
-              )}
-            </div>
+                    {temaObj && <RetrievabilitySpark tema={temaObj} />}
+                    <button
+                      onClick={() => onStudy && onStudy(item.temaId, item.step.key)}
+                      className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-lg text-[9px] font-bold transition-all shrink-0 cursor-pointer border-none shadow-sm shadow-blue-900/40"
+                    >
+                      Focar
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
-        {/* Column 2: Weekly Schedule Blocks */}
-        <div className="bg-white/[0.01] border border-white/5 rounded-xl p-3 space-y-2 flex flex-col justify-between min-h-[145px]">
-          {activeCrono ? (
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[9.5px] text-gray-500 font-bold uppercase tracking-wider">
-                  Blocos de Hoje ({diaHoje ? diaHoje.dia : "Sem aulas"})
-                </span>
-                <span className="text-[9px] text-blue-400 font-bold uppercase">Semana {currentSemana?.numero || 1} ({pct}%)</span>
-              </div>
-              
-              {diaHoje && diaHoje.blocos.length > 0 ? (
-                <div className="flex flex-col gap-1.5 max-h-28 overflow-y-auto pr-1">
-                  {diaHoje.blocos.map((bloco, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-1.5 bg-black/20 rounded-lg text-[10.5px]">
-                      <div className="min-w-0 flex-1 pr-2">
-                        <p className={`font-semibold truncate ${bloco.concluido ? "line-through text-gray-600" : "text-gray-200"}`}>{bloco.nome}</p>
-                        <p className="text-[9px] text-gray-500 font-mono mt-0.5">{bloco.horario}</p>
-                      </div>
+        {/* ── Column 2: Cronograma da Semana ── */}
+        <div className="flex flex-col gap-2 rounded-xl border border-white/8 bg-white/[0.015] p-3 min-h-[150px]">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-black uppercase tracking-wider text-gray-400">
+              Cronograma
+            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[8.5px] font-bold text-blue-400/80 bg-blue-500/10 px-1.5 py-0.5 rounded-full">
+                Sem. {semanaAtual}
+              </span>
+            </div>
+          </div>
+
+          {weekPlan.label && (
+            <p className="text-[9.5px] text-gray-500 italic leading-tight truncate" title={weekPlan.label}>
+              {weekPlan.label}
+            </p>
+          )}
+
+          {weekPlan.topics.length > 0 ? (
+            <div className="flex flex-col gap-1 max-h-[148px] overflow-y-auto pr-0.5">
+              {weekPlan.topics.map((item, idx) => {
+                const temaExistente = temas.find((tema) => tema.nome === item.nome);
+                const nextStep = temaExistente ? STEPS.find((step) => !temaExistente.rev?.[step.key]?.done) : null;
+                const canFocus = Boolean(temaExistente && nextStep);
+                const espColor = ESP_COLORS[item.esp] || "#94a3b8";
+                return (
+                  <div
+                    key={`${item.nome}-${idx}`}
+                    className="flex items-center gap-2 px-2 py-1.5 bg-black/20 rounded-lg border border-white/[0.04] hover:border-white/10 transition-colors"
+                  >
+                    <div
+                      className="w-0.5 h-7 rounded-full shrink-0"
+                      style={{ backgroundColor: espColor + "aa" }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-semibold text-gray-100 truncate leading-tight" title={item.nome}>
+                        {item.nome}
+                      </p>
+                      <span className="text-[8.5px] uppercase font-bold tracking-wide" style={{ color: espColor + "99" }}>
+                        {item.esp}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
                       <button
-                        onClick={() => toggleBloco(plat, activeCrono.id, semanaIdx, currentSemana.dias.indexOf(diaHoje), idx)}
-                        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 border-none cursor-pointer ${bloco.concluido ? "bg-emerald-500 border-emerald-500" : "border-white/20"}`}
+                        type="button"
+                        onClick={() => {
+                          if (canFocus && onStudy) {
+                            onStudy(temaExistente.id, nextStep.key);
+                          } else if (setView) {
+                            setView("crono");
+                          }
+                        }}
+                        className="px-2 py-1 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-lg text-[9px] font-bold border-none cursor-pointer transition-all shadow-sm shadow-blue-900/40"
                       >
-                        {bloco.concluido && <Check size={10} className="text-white" strokeWidth={3} />}
+                        Focar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onMarkMastery && onMarkMastery(item)}
+                        className="px-2 py-1 bg-white/[0.04] hover:bg-white/10 text-gray-400 hover:text-gray-200 rounded-lg text-[9px] font-bold border border-white/10 cursor-pointer transition-all"
+                      >
+                        Já domino
                       </button>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[10.5px] text-gray-500 italic py-4 text-center">Nenhum bloco de cronograma hoje.</p>
-              )}
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center p-3 gap-2">
-              <Calendar size={16} className="text-gray-600" />
-              <p className="text-[9.5px] text-gray-500">Nenhum cronograma semanal configurado.</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-center gap-2 py-4">
+              <p className="text-[10px] text-gray-600">Sem tópicos para esta semana.</p>
               <button
+                type="button"
                 onClick={() => setView && setView("crono")}
-                className="text-[9px] bg-blue-600/20 text-blue-400 border border-blue-500/25 px-2 py-1 rounded-xl font-bold border-none cursor-pointer"
+                className="text-[9px] bg-blue-600/15 text-blue-300 border border-blue-500/20 px-2.5 py-1.5 rounded-lg font-bold cursor-pointer hover:bg-blue-600/25 transition-all"
               >
-                Criar Cronograma
+                Configurar calendário
               </button>
             </div>
           )}
+
+          <div className="pt-1.5 border-t border-white/5 flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => onAdjustWeeklyTopics && onAdjustWeeklyTopics(-1)}
+              className="flex-1 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] text-gray-500 hover:text-gray-300 text-[9px] font-bold border border-white/8 cursor-pointer transition-all"
+            >
+              − temas/sem
+            </button>
+            <button
+              type="button"
+              onClick={() => onAdjustWeeklyTopics && onAdjustWeeklyTopics(1)}
+              className="flex-1 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] text-gray-500 hover:text-gray-300 text-[9px] font-bold border border-white/8 cursor-pointer transition-all"
+            >
+              + temas/sem
+            </button>
+          </div>
         </div>
+
       </div>
     </div>
   );
@@ -547,91 +688,6 @@ function MetacognitiveChart({ doneReviews }) {
   );
 }
 
-/* --- ESTRATÉGIA WEEK WIDGET --- */
-function EstrategiaWeekWidget({ cronogramaSel, plat, temas, temasPerWeek, estrategiaStartDate, setView }) {
-  const selId = cronogramaSel?.[plat];
-  if (plat !== "res" || selId !== "res-estrategia-2026") return null;
-
-  const hoje = todayStr();
-  const startDate = estrategiaStartDate || hoje;
-  const diffMs = new Date(hoje) - new Date(startDate);
-  const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-  const semanaAtual = Math.floor(diffDays / 7) + 1;
-  const semanaIdx = Math.min(semanaAtual - 1, CATALOGO_ESTRATEGIA_MED.length - 1);
-  const blocoAtual = CATALOGO_ESTRATEGIA_MED[semanaIdx];
-  const limit = temasPerWeek ?? 6;
-  const topicosHoje = blocoAtual ? blocoAtual.t.slice(0, limit) : [];
-
-  return (
-    <div className="bg-[var(--surface-1)] border border-blue-500/15 rounded-2xl p-4 flex flex-col gap-3 shadow-md relative overflow-hidden">
-      <div className="absolute -right-8 -top-8 w-24 h-24 rounded-full bg-blue-600/8 blur-2xl pointer-events-none" />
-      <div className="flex items-center justify-between border-b border-white/5 pb-2.5">
-        <div className="flex items-center gap-2">
-          <Calendar size={14} className="text-blue-400" />
-          <span className="text-[10.5px] font-black uppercase text-gray-300 tracking-wider">
-            Estratégia MED · Semana {semanaAtual}
-          </span>
-          <span className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-bold">
-            {topicosHoje.length}/{blocoAtual?.t?.length || 0} tópicos
-          </span>
-        </div>
-        <button
-          onClick={() => setView && setView("crono")}
-          className="text-[9.5px] font-bold text-blue-400 hover:text-blue-300 transition-colors bg-transparent border-none cursor-pointer p-0"
-        >
-          Ver completo
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {topicosHoje.map((entry, idx) => {
-          const { nome, esp } = parseCatalogEntry(entry);
-          const espColor = ESP_COLORS[esp] || "#94a3b8";
-          const temaSt = temas.find(t => t.nome === nome);
-          const started = temaSt && !temaSt.unstarted;
-          const allDone = started && STEPS.every(s => temaSt.rev[s.key]?.done);
-
-          return (
-            <div
-              key={idx}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl border transition-all ${
-                allDone
-                  ? "border-emerald-500/20 bg-emerald-500/5 opacity-60"
-                  : started
-                  ? "border-blue-500/20 bg-blue-500/5"
-                  : "border-white/5 bg-white/[0.02] hover:border-white/10"
-              }`}
-              style={{ borderLeft: `3px solid ${espColor}` }}
-            >
-              <div className="min-w-0 flex-1">
-                <p className={`text-[10.5px] font-semibold leading-tight truncate ${allDone ? "line-through text-gray-500" : "text-gray-200"}`}>
-                  {nome}
-                </p>
-                <p className="text-[9px] text-gray-500 uppercase tracking-wider mt-0.5">{esp}</p>
-              </div>
-              <div className="flex items-center gap-1 shrink-0">
-                {allDone ? (
-                  <span className="text-[8px] bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded font-bold">✓ Fixado</span>
-                ) : started ? (
-                  <span className="text-[8px] bg-blue-500/15 text-blue-400 px-1.5 py-0.5 rounded font-bold">Em curso</span>
-                ) : (
-                  <span className="text-[8px] bg-white/5 text-gray-500 px-1.5 py-0.5 rounded font-bold">Pendente</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {!estrategiaStartDate && (
-        <p className="text-[9.5px] text-amber-400/80 bg-amber-500/5 border border-amber-500/15 rounded-lg px-3 py-2">
-          Defina a data de início do cronograma em <strong>Cronograma → Plano Ativo</strong> para calcular a semana correta.
-        </p>
-      )}
-    </div>
-  );
-}
-
 const SESSION_KEY = "medrev_welcome_shown";
 
 function DashboardKpiCard({ label, value, tone = "text-white", children, action, tooltip, className = "", delayMs = 0, icon, accentColor }) {
@@ -711,6 +767,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const openConfirm = useStore((s) => s.openConfirm);
   const validarDominio  = useStore((s) => s.validarDominio);
   const iniciarValidacaoDominioPrevio = useStore((s) => s.iniciarValidacaoDominioPrevio);
+  const addTema = useStore((s) => s.addTema);
   const gamif           = useStore((s) => s.gamif);
   const temas           = useStore((s) => s[plat]?.temas || []);
   const temaStats       = useStore((s) => s.temaStats || {});
@@ -725,8 +782,40 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     return found?.label || "MEDCOF";
   }, [calendarProvider.activeId]);
 
+  const handleMarkMastery = (item) => {
+    if (!item?.nome) return;
+    const existing = temas.find((tema) => tema.nome === item.nome);
+    if (existing) {
+      setTemaValidando(existing);
+      return;
+    }
+    const novoTema = {
+      id: Date.now(),
+      nome: item.nome,
+      esp: item.esp || "Outro",
+      prio: "Alta",
+      importancia: "ALTA",
+      obs: "Criado pelo Dashboard para validacao de dominio previo.",
+      unstarted: true,
+      d0: todayStr(),
+    };
+    addTema(plat, novoTema);
+    setTemaValidando(novoTema);
+  };
+
+  const handleAdjustWeeklyTopics = (delta) => {
+    const current = Number(meta?.temasPerWeek ?? 6);
+    const next = Math.min(12, Math.max(1, current + delta));
+    useStore.setState({ meta: { ...meta, temasPerWeek: next } });
+    (showToast || showToastGlobal)(`Temas por semana ajustado para ${next}.`);
+  };
+
   const handleInsightAction = (action) => {
     if (action.type === "focar") {
+      if (action.esp && plat === "res") {
+        const nextSprint = { esps: [action.esp], ativa: true, semana: `foco-${todayStr()}` };
+        useStore.getState().setSprint(nextSprint);
+      }
       setView && setView("crono");
       (showToast || showToastGlobal)(`Priorizando ${action.esp}`);
     } else if (action.type === "agendar") {
@@ -742,6 +831,12 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       }
     } else if (action.type === "setView") {
       setView(action.view);
+    } else if (action.type === "import_calendar") {
+      setView && setView("crono");
+      (showToast || showToastGlobal)("Abra o bloco azul de calendário e use 'Importar cronograma'.");
+    } else if (action.type === "ja_domino") {
+      setView && setView("crono");
+      (showToast || showToastGlobal)("No calendário da semana, use o botão 'Ja domino' no tema desejado.");
     } else if (action.type === "aliviar") {
       const currentCap = meta.maxRevisoesDia || 30;
       const newCap = Math.max(5, Math.round(currentCap / 2));
@@ -1364,9 +1459,18 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                   <Edit2 size={14} />
                 </button>
                 {plat === "res" && (
-                  <span className="text-[9px] uppercase tracking-wider font-bold text-blue-300 border border-blue-500/30 bg-blue-500/10 rounded-lg px-2 py-1">
-                    Provider: {providerAtivoLabel}
-                  </span>
+                  <>
+                    <span className="text-[9px] uppercase tracking-wider font-bold text-blue-300 border border-blue-500/30 bg-blue-500/10 rounded-lg px-2 py-1">
+                      Provider: {providerAtivoLabel}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleInsightAction({ type: "import_calendar" })}
+                      className="text-[9px] uppercase tracking-wider font-bold text-emerald-300 border border-emerald-500/30 bg-emerald-500/10 rounded-lg px-2 py-1 hover:bg-emerald-500/20 cursor-pointer"
+                    >
+                      Importar
+                    </button>
+                  </>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2.5">
@@ -1638,24 +1742,25 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       </section>
 
-      <EstrategiaWeekWidget
-        cronogramaSel={cronogramaSel}
-        plat={plat}
-        temas={temasFiltrados}
-        temasPerWeek={meta?.temasPerWeek}
-        estrategiaStartDate={meta?.estrategiaStartDate}
-        setView={setView}
-      />
-
       <MiniCronogramaWidget
         plat={plat}
         setView={setView}
         onStudy={onStudy}
+        onMarkMastery={handleMarkMastery}
         overdue={overdue}
         today_={today_}
+        temas={temasFiltrados}
+        calendarProvider={calendarProvider}
+        cronogramaSel={cronogramaSel}
+        temasPerWeek={meta?.temasPerWeek}
+        estrategiaStartDate={meta?.estrategiaStartDate}
+        onAdjustWeeklyTopics={handleAdjustWeeklyTopics}
       />
 
-      <WeeklyReview onAdjust={() => setView && setView("crono")} />
+      <WeeklyReview
+        onAdjust={() => setView && setView("crono")}
+        onAction={(action) => handleInsightAction(action)}
+      />
 
       {/* ALERTAS CRÍTICOS DO MENTOR */}
       {criticalAlerts.map((alert, idx) => {

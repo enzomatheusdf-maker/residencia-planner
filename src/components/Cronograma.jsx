@@ -290,37 +290,6 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
 
                 {showPlanPanel && (
                   <div className="space-y-3 mt-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {planos.map((p) => {
-                        const isSel = p.id === selId;
-                        return (
-                          <div
-                            key={p.id}
-                            onClick={() => setCronogramaSel(plat, p.id)}
-                            className={`cursor-pointer rounded-2xl p-4 border transition-all text-left flex flex-col justify-between ${
-                              isSel
-                                ? "border-blue-500 bg-blue-500/5 shadow-md shadow-indigo-950/20"
-                                : "border-white/5 bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.02]"
-                            }`}
-                          >
-                            <div>
-                              <div className="flex items-center justify-between gap-2 mb-1">
-                                <h5 className="font-bold text-sm text-gray-100">{p.nome}</h5>
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/5 text-gray-400 font-mono">
-                                  {p.blocos} blocos
-                                </span>
-                              </div>
-                              <p className="text-xs text-gray-500 leading-normal mb-3">{p.descricao}</p>
-                            </div>
-                            <div className="flex justify-between items-center text-[10px] text-gray-600 font-medium">
-                              <span>Fonte: {p.fonte} ({p.ano})</span>
-                              {isSel && <span className="text-blue-400 font-bold flex items-center gap-1">Ativo <span className="w-1.5 h-1.5 rounded-full bg-blue-400" /></span>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
                     {/* Configuração: temas por semana */}
                     <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 flex flex-col gap-3">
                       <div className="flex items-center justify-between gap-2">
@@ -371,16 +340,12 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                             }
                           }}
                           onOpenImport={() => setShowImportWizard(true)}
+                          planos={planos}
+                          selectedPlanId={selId}
+                          onPlanChange={(id) => setCronogramaSel(plat, id)}
                         />
 
                         <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setShowImportWizard(true)}
-                            className="px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 text-blue-300 border border-blue-500/20 text-[11px] font-bold"
-                          >
-                            Importar cronograma
-                          </button>
                           <button
                             type="button"
                             onClick={() => setShowMappingPanel((v) => !v)}
@@ -440,9 +405,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
           </div>
 
           {cat.map((bl) => {
-            const temasPerWeek = meta?.temasPerWeek ?? 6;
-            const blTopics = bl.t.slice(0, temasPerWeek);
-            const blTemas = blTopics.filter((entry) => {
+            const blTemas = bl.t.filter((entry) => {
               const { nome, subs, prio: topPrio } = parseCatalogEntry(entry);
               const nameMatches = !q || nome.toLowerCase().includes(q.toLowerCase());
               const subMatches = !q || subs.some(s => s.toLowerCase().includes(q.toLowerCase()));
