@@ -2,25 +2,27 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Target, Zap,
-  ChevronRight, Info, Settings, LogOut, Flame, Stethoscope, GraduationCap
+  ChevronRight, Info, Settings, LogOut, Flame, Stethoscope, GraduationCap, MoreHorizontal
 } from "lucide-react";
 import { useStore } from "../core/store";
 import { diffDays, todayStr, STEPS } from "../core/fsrs";
 import { levelForXp, xpToNextLevel } from "../core/gamif";
 import { featureEnabled } from "../core/platformFeatures";
+import { NAV_VIEW, getMoreNavItems, getPrimaryNavItems, normalizeView } from "../core/navigationModel";
 import { MedRevLogo } from "./Primitives";
 import { calcStreaks } from "../hooks/useMetrics";
 
-export const NAV = [
-  { k: "dash",  icon: LayoutDashboard, label: "Dashboard"     },
-  { k: "crono", icon: Calendar,        label: "Cronograma"     },
-  { k: "academia", icon: GraduationCap, label: "Academia"      },
-  { k: "banco", icon: BarChart3,       label: "Banco de Dados" },
-  { k: "stats", icon: FileText,        label: "Estatísticas"   },
-  { k: "sims",  icon: Target,          label: "Simulados"      },
-  { k: "anki",  icon: Zap,             label: "Anki Audit"     },
-  { k: "raciocinio", icon: Stethoscope, label: "Raciocínio", requiresModule: "raciocinioClinico" }
-];
+const ICON_BY_VIEW = {
+  [NAV_VIEW.TODAY]: LayoutDashboard,
+  [NAV_VIEW.PLAN]: Calendar,
+  [NAV_VIEW.STUDY]: Target,
+  [NAV_VIEW.STATS]: FileText,
+  [NAV_VIEW.DATABASE]: BarChart3,
+  [NAV_VIEW.MORE]: MoreHorizontal,
+  [NAV_VIEW.CLINICAL_REASONING]: Stethoscope,
+  [NAV_VIEW.ANKI]: Zap,
+  [NAV_VIEW.ACADEMY]: GraduationCap,
+};
 
 export default function Sidebar({ view, setView, setAjustes, overdueCount, setHelpModal, usuarioLogado, syncStatus, onLogout }) {
   const { plat, setPlat, meta, focusMode } = useStore();
@@ -55,14 +57,14 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
   const levelPct = Math.min(100, Math.max(0, ((xp - prevLevelMinXp) / Math.max(1, nextLevelMinXp - prevLevelMinXp)) * 100));
   const displayName = userName || usuarioLogado?.displayName || usuarioLogado?.email?.split("@")[0] || "Estudante";
   const initials = (userName || usuarioLogado?.displayName || usuarioLogado?.email || "US").substring(0, 2).toUpperCase();
-  const filteredNav = useMemo(() => {
-    return NAV.filter((item) => {
-      if (item.k === "raciocinio" && !featureEnabled(plat, "raciocinioClinico")) {
-        return false;
-      }
-      return !item.requiresModule || meta.modulos?.[item.requiresModule] === true;
-    });
-  }, [meta.modulos, plat]);
+  const navFeatures = useMemo(() => ({
+    modulos: meta.modulos,
+    raciocinioClinico: featureEnabled(plat, "raciocinioClinico") && meta.modulos?.raciocinioClinico === true,
+  }), [meta.modulos, plat]);
+  const primaryNav = useMemo(() => getPrimaryNavItems(plat, navFeatures), [plat, navFeatures]);
+  const moreNav = useMemo(() => getMoreNavItems(plat, navFeatures), [plat, navFeatures]);
+  const normalizedView = normalizeView(view);
+  const moreViews = useMemo(() => new Set(moreNav.map((item) => item.view)), [moreNav]);
 
   return (
     <aside className={`hidden md:flex flex-col bg-[#07070f] border-r border-white/5 shrink-0 transition-all duration-200 ${collapsed ? "w-[60px]" : "w-60"}`}>
@@ -89,12 +91,14 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
 
       {/* Nav items */}
       <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">
-        {filteredNav.map((n) => {
-          const Icon = n.icon;
-          const isActive = view === n.k;
-          const showStreakWarning = n.k === "dash" && streakEmRisco;
+        {primaryNav.map((n) => {
+          const Icon = ICON_BY_VIEW[n.view] || LayoutDashboard;
+          const isActive = n.view === NAV_VIEW.MORE
+            ? normalizedView === NAV_VIEW.MORE || moreViews.has(normalizedView)
+            : normalizedView === n.view;
+          const showStreakWarning = n.view === NAV_VIEW.TODAY && streakEmRisco;
           return (
-            <button key={n.k} onClick={() => setView(n.k)}
+            <button key={n.view} onClick={() => setView(n.view)}
               className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-all text-left group ${isActive ? "bg-gradient-to-r from-blue-600/20 to-sky-500/10 text-white border border-blue-500/20" : "text-gray-500 hover:text-gray-300 hover:bg-white/5 border border-transparent"}`}>
               <Icon size={18} className={`shrink-0 transition-colors ${isActive ? "text-indigo-400" : "group-hover:text-gray-300"}`} />
               {!collapsed && <span className="text-[12.5px] font-medium truncate flex-1">{n.label}</span>}
@@ -103,6 +107,9 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
                 </span>
+              )}
+              {!collapsed && n.view === NAV_VIEW.MORE && (
+                <span className="text-[9px] font-black text-gray-500 tabular-nums">{moreNav.length}</span>
               )}
               {!collapsed && isActive && !showStreakWarning && <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />}
             </button>

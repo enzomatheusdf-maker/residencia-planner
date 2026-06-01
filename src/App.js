@@ -14,6 +14,7 @@ import { buildAuthSession, getInitialAuthSession, assertActiveUserScope } from "
 import { getAnonymousStorageKey, getOrCreateAnonymousSessionId, getUserScopedStorageKey } from "./core/userScope";
 import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } from "./core/onboarding";
 import { featureEnabled } from "./core/platformFeatures";
+import { NAV_VIEW, getMoreNavItems } from "./core/navigationModel";
 
 // Camada de Hooks/Estatísticas
 import { useFilaInteligente } from "./hooks/useMetrics";
@@ -68,6 +69,35 @@ import {
 } from "./components/Primitives";
 
 const RaciocinioClinico = lazy(() => import("./components/RaciocinioClinico"));
+
+function MoreToolsHub({ items, onOpen }) {
+  return (
+    <section className="max-w-5xl mx-auto space-y-4">
+      <div className="space-y-1">
+        <p className="text-[11px] font-black uppercase tracking-wider text-blue-300">Ferramentas</p>
+        <h1 className="text-2xl font-black text-white tracking-tight">Mais</h1>
+        <p className="text-[12px] text-gray-400">Acesso rapido aos recursos avancados sem poluir a jornada diaria.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {items.map((item) => (
+          <article key={item.view} className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+            <h2 className="text-sm font-black text-white">{item.label}</h2>
+            <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{item.description}</p>
+            <button
+              type="button"
+              onClick={() => onOpen(item.view)}
+              className="mt-3 px-3 py-2 rounded-xl border border-blue-500/25 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-[11px] font-bold transition-colors cursor-pointer"
+            >
+              Abrir
+            </button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
     case "diamante": return "CRITICA";
@@ -154,6 +184,30 @@ export default function App() {
     setAjustesContext({ initialTab: nextTab });
     setAjustes(true);
   }, []);
+  const navFeatures = useMemo(() => ({
+    modulos: meta.modulos,
+    raciocinioClinico: featureEnabled(plat, "raciocinioClinico") && meta.modulos?.raciocinioClinico === true,
+  }), [meta.modulos, plat]);
+  const moreNavItems = useMemo(() => getMoreNavItems(plat, navFeatures), [plat, navFeatures]);
+  const openFromMore = useCallback((targetView) => {
+    if (targetView === NAV_VIEW.GUIDE) {
+      setHelpModal(true);
+      return;
+    }
+    if (targetView === NAV_VIEW.SETTINGS) {
+      openAjustes({ initialTab: "ajustes" });
+      return;
+    }
+    if (
+      targetView === NAV_VIEW.DATA_SAFETY
+      || targetView === NAV_VIEW.WEEKLY_REVIEW
+      || targetView === NAV_VIEW.LAUNCH_CHECKLIST
+    ) {
+      setView(NAV_VIEW.STATS);
+      return;
+    }
+    setView(targetView);
+  }, [openAjustes]);
 
   const exportBackupNow = useCallback(() => {
     try {
@@ -1036,6 +1090,9 @@ export default function App() {
               />
             </ErrorBoundary>
           )}
+          {view === "more" && (
+            <MoreToolsHub items={moreNavItems} onOpen={openFromMore} />
+          )}
           {view === "crono" && plat === "res" && (
             <Cronograma
               onStep={handleStudyTrigger}
@@ -1111,7 +1168,12 @@ export default function App() {
         </main>
       </div>
 
-      <BottomNav view={view} setView={setView} />
+      <BottomNav
+        view={view}
+        setView={setView}
+        onOpenAjustes={() => openAjustes({ initialTab: "ajustes" })}
+        onOpenHelp={() => setHelpModal(true)}
+      />
 
       {/* Renderização de Modais */}
       {temaEdit !== null && (

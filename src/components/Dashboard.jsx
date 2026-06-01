@@ -1230,6 +1230,11 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       return;
     }
     const view = action.ctaView || target.view || "dash";
+    if (!target.temaId && view === "focus" && !topFilaItem) {
+      console.warn("[Mentor] Action without executable target in Dashboard");
+      if (setView) setView("crono");
+      return;
+    }
     if (view === "focus") {
       if (topFilaItem && onStudy) {
         onStudy(topFilaItem.temaId, topFilaItem.stepKey);
@@ -1416,6 +1421,22 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const showMilestoneCelebration = useMemo(() => {
     return streakCurrent > 0 && (streakCurrent === 7 || streakCurrent === 30 || streakCurrent === 100);
   }, [streakCurrent]);
+  const nextTwoActions = useMemo(() => {
+    return (Array.isArray(mentorTodayPlan) ? mentorTodayPlan : [])
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((item) => (typeof item === "string" ? { title: item } : item));
+  }, [mentorTodayPlan]);
+  const todayLoadSignals = useMemo(() => {
+    const scheduler = mentorContext?.scheduler || {};
+    return {
+      dueTodayCount: Number(scheduler.dueTodayCount ?? pending ?? 0),
+      todayMinutes: Number(scheduler.todayMinutes ?? 0),
+      overloadLevelToday: scheduler.overloadLevelToday || "ok",
+      relearningCount: Number(scheduler.relearningCount ?? 0),
+    };
+  }, [mentorContext, pending]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   useEffect(() => {
     if (streakCurrent >= 100 && !meta?.streakMaxAvisado) {
       (showToast || showToastGlobal)("Streak consolidado: agora priorize retenção real, não o número.");
@@ -1609,6 +1630,47 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       </section>
 
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <article className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4">
+          <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Proximas 2 acoes</p>
+          {nextTwoActions.length > 0 ? (
+            <div className="mt-2 space-y-2">
+              {nextTwoActions.map((item, idx) => (
+                <div key={idx} className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
+                  <p className="text-[11px] font-bold text-white">{item.title || "Acao sugerida"}</p>
+                  {item.subtitle && <p className="text-[10px] text-gray-500 mt-0.5">{item.subtitle}</p>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-gray-500 mt-2">Sem acoes pendentes no plano de hoje.</p>
+          )}
+        </article>
+        <article className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4">
+          <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Carga de hoje</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
+              <p className="text-[9px] text-gray-500 uppercase tracking-wider">Revisoes</p>
+              <p className="text-sm font-black text-white">{todayLoadSignals.dueTodayCount}</p>
+            </div>
+            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
+              <p className="text-[9px] text-gray-500 uppercase tracking-wider">Minutos</p>
+              <p className="text-sm font-black text-white">{todayLoadSignals.todayMinutes}</p>
+            </div>
+            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
+              <p className="text-[9px] text-gray-500 uppercase tracking-wider">Relearning</p>
+              <p className="text-sm font-black text-white">{todayLoadSignals.relearningCount}</p>
+            </div>
+            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
+              <p className="text-[9px] text-gray-500 uppercase tracking-wider">Overload</p>
+              <p className={`text-sm font-black ${todayLoadSignals.overloadLevelToday === "high" ? "text-red-400" : todayLoadSignals.overloadLevelToday === "moderate" ? "text-amber-300" : "text-emerald-300"}`}>
+                {todayLoadSignals.overloadLevelToday}
+              </p>
+            </div>
+          </div>
+        </article>
+      </section>
+
       <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} />
 
       {/* Alertas compactos inline */}
@@ -1633,6 +1695,19 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       )}
 
+      <section className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-3">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced((prev) => !prev)}
+          className="w-full text-left flex items-center justify-between px-2 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider text-gray-300 hover:text-white cursor-pointer border-none bg-transparent"
+        >
+          <span>Avancado</span>
+          <span className="text-[10px] text-gray-500">{showAdvanced ? "ocultar" : "mostrar"}</span>
+        </button>
+      </section>
+
+      {showAdvanced && (
+        <>
       {/* KPIs — 4 métricas primárias */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 select-none">
         <DashboardKpiCard
@@ -1809,6 +1884,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         onAdjust={() => setView && setView("crono")}
         onAction={(action) => handleInsightAction(action)}
       />
+        </>
+      )}
 
       {/* ALERTAS CRÍTICOS DO MENTOR */}
       {criticalAlerts.map((alert, idx) => {
