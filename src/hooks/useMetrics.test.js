@@ -99,29 +99,68 @@ describe("Metrics Calculation Test Suite", () => {
         id: 1,
         esp: "Pediatria",
         rev: {
-          d0: { done: true, acerto: 0.9 }, // Skip (not D21)
-          d21: { done: true, acerto: 0.8 } // Include
+          reviewHistory: [
+            { stepKey: "d21", reviewedAt: "2026-06-01", acerto: 0.8, questoes: 20, official: true },
+            { stepKey: "manutencao", phaseAfter: "maintenance", reviewedAt: "2026-06-10", acerto: 0.9, questoes: 10, official: true },
+          ],
+          d0: { done: true, acerto: 0.9 },
+          d21: { done: true, acerto: 0.8 }
         }
       },
       {
         id: 2,
         esp: "Clinica",
         rev: {
-          d21: { done: true, acerto: 0.6 } // Include
+          reviewHistory: [
+            { stepKey: "d21", reviewedAt: "2026-06-01", acerto: 0.6, questoes: 30, official: true },
+          ],
+          d21: { done: true, acerto: 0.6 }
         }
       },
       {
         id: 3,
         esp: "GO",
         rev: {
-          d21: { done: false, acerto: null } // Skip (not done)
+          reviewHistory: [
+            { stepKey: "d7", reviewedAt: "2026-06-01", acerto: 1.0, questoes: 50, official: true },
+          ],
+          d21: { done: false, acerto: null }
         }
       }
     ];
 
     const trueRetention = calcTrueRetention(mockTemas);
-    // Average of 80% and 60% is 70%
-    expect(trueRetention).toBe(70);
+    // Weighted: (0.8*20 + 0.9*10 + 0.6*30) / (20+10+30) = 0.716...
+    expect(trueRetention).toBe(72);
+  });
+
+  test("calcTrueRetention returns null when no long-retention evidence exists", () => {
+    const mockTemas = [
+      {
+        id: 1,
+        esp: "GO",
+        rev: {
+          reviewHistory: [{ stepKey: "d7", reviewedAt: "2026-06-01", acerto: 0.9, official: true }],
+          d7: { done: true, acerto: 0.9 },
+        },
+      },
+    ];
+    expect(calcTrueRetention(mockTemas)).toBeNull();
+  });
+
+  test("calcTrueRetention ignores unofficial review events", () => {
+    const mockTemas = [
+      {
+        id: 1,
+        esp: "GO",
+        rev: {
+          reviewHistory: [
+            { stepKey: "d21", reviewedAt: "2026-06-01", acerto: 1, questoes: 100, official: false },
+          ],
+        },
+      },
+    ];
+    expect(calcTrueRetention(mockTemas)).toBeNull();
   });
 
   test("calcBleedingScore scores the lowest areas with sufficient question counts", () => {

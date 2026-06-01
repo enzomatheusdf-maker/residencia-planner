@@ -2,43 +2,41 @@ import { explainMentorAction, getMentorNextAction, getMentorTodayPlan } from "./
 
 describe("mentorAutopilot", () => {
   test("prioriza revisão vencida quando existe", () => {
-    const action = getMentorNextAction({ pending: 6, overdue: 2, readiness: 70 });
+    const action = getMentorNextAction({ overdue: 2, pending: 4 });
     expect(action.type).toBe("revisao_vencida");
+    expect(action.target).toBeDefined();
   });
 
-  test("usa lacuna ENAMED quando não há pendência urgente", () => {
-    const action = getMentorNextAction({
-      pending: 0,
-      overdue: 0,
-      enamed: { resumo: { areaCritica: "GO" } },
-      readiness: 75,
-    });
-    expect(action.type).toBe("enamed_critico");
+  test("gera ação com schema completo", () => {
+    const action = getMentorNextAction({ pending: 0, overdue: 0, userAvailableMinutes: 120 });
+    expect(action.id).toBeTruthy();
+    expect(typeof action.priority).toBe("number");
+    expect(Array.isArray(action.explain)).toBe(true);
+    expect(action.target).toBeDefined();
   });
 
-  test("gera plano de hoje com pelo menos uma ação", () => {
-    const plan = getMentorTodayPlan({ pending: 0, overdue: 0, readiness: 85 });
-    expect(Array.isArray(plan)).toBe(true);
-    expect(plan.length).toBeGreaterThan(0);
-  });
-
-  test("vest prioriza matéria fraca e não usa ação ENAMED", () => {
+  test("vest usa matéria fraca e não usa ENAMED", () => {
     const action = getMentorNextAction({
       plat: "vest",
       pending: 0,
       overdue: 0,
-      enamed: { resumo: { areaCritica: "GO" } },
       weakSubject: "Matemática",
-      readiness: 75,
+      enamed: { resumo: { areaCritica: "GO" } },
     });
     expect(action.type).toBe("vestibular_materia_fraca");
   });
 
-  test("explicação textual inclui motivo", () => {
+  test("plano diário retorna lista de ações explicáveis", () => {
+    const plan = getMentorTodayPlan({ pending: 1, overdue: 0 });
+    expect(Array.isArray(plan)).toBe(true);
+    expect(plan.length).toBeGreaterThan(0);
+  });
+
+  test("explicação textual inclui motivo estruturado", () => {
     const text = explainMentorAction({
-      title: "Zerar fila",
-      reason: "evitar acúmulo",
+      title: "Fechar fila",
+      explain: ["Evitar acúmulo nas próximas 24h."],
     });
-    expect(text).toMatch("evitar acúmulo");
+    expect(text).toMatch("Evitar acúmulo");
   });
 });

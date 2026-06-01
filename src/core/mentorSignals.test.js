@@ -1,0 +1,70 @@
+import { addDays, todayStr } from "./fsrs";
+import { buildMentorContext, collectMentorSchedulerSignals } from "./mentorSignals";
+
+describe("mentorSignals", () => {
+  test("collectMentorSchedulerSignals expõe workload por minutos", () => {
+    const today = todayStr();
+    const temas = [
+      {
+        id: 1,
+        nome: "Tema A",
+        esp: "GO",
+        rev: {
+          phase: "review",
+          reviewHistory: [],
+          d1: { done: false, date: today, phase: "learning" },
+          d7: { done: false, date: addDays(today, -1), phase: "review" },
+        },
+      },
+    ];
+    const signals = collectMentorSchedulerSignals(temas, { today, projectionDays: 7 });
+    expect(signals.workloadProjection[today]).toBeDefined();
+    expect(signals.todayCount).toBeGreaterThan(0);
+    expect(signals.todayMinutes).toBeGreaterThan(0);
+    expect(signals.overdueCount).toBeGreaterThan(0);
+  });
+
+  test("collectMentorSchedulerSignals conta relearning e warnings", () => {
+    const today = todayStr();
+    const temas = [
+      {
+        id: 2,
+        nome: "Tema B",
+        esp: "Clínica Médica",
+        rev: {
+          phase: "relearning",
+          relearning: { fromStep: "d21", targetStep: "d7", startedAt: today },
+          meta: { schedulerWarning: "missing_rating" },
+          reviewHistory: [{ stepKey: "d21", reviewedAt: today, acerto: 0.7, official: true }],
+          d21: { done: true, date: today, reviewedAt: null, acerto: null },
+        },
+      },
+    ];
+    const signals = collectMentorSchedulerSignals(temas, { today });
+    expect(signals.relearningCount).toBe(1);
+    expect(signals.missingRatingWarnings).toBeGreaterThan(0);
+    expect(signals.missingReviewedAtCount).toBeGreaterThan(0);
+  });
+
+  test("buildMentorContext agrega provider e sinais de plataforma", () => {
+    const today = todayStr();
+    const state = {
+      plat: "vest",
+      meta: { tempoDisponivel: 2, areaPuxouBaixo: "Matemática" },
+      calendarProvider: { activeId: "vest-base" },
+      vest: {
+        temas: [],
+        simulados: [{ id: 1, porArea: [] }],
+        casosProgresso: {},
+      },
+      enamedAnalises: [],
+      actionInbox: [],
+      sessionReflections: [],
+    };
+    const context = buildMentorContext(state, "vest", { today });
+    expect(context.plat).toBe("vest");
+    expect(context.calendarProvider.activeId).toBe("vest-base");
+    expect(context.userAvailableMinutes).toBe(120);
+    expect(context.weakSubject).toBe("Matemática");
+  });
+});

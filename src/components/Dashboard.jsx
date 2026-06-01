@@ -1,11 +1,12 @@
 // src/components/Dashboard.jsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Flame, Calendar, AlertTriangle, X, Zap, BookOpen, Layers, Share2, Unlock, Lightbulb, GraduationCap } from "lucide-react";
 import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection } from "../core/fsrs";
 import { calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
 import { getMentorDiagnosis, getMentorVoice, getMentorPhrase, getRecentPhrases, trackRecentPhrase, isExhaustionDetected } from "../core/mentor";
+import { buildMentorContext, getMentorNextAction, getMentorTodayPlan } from "../core/mentorAutopilot";
 import { getReadinessData } from "../core/readiness";
 import { getUserState } from "../core/userState";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip, InfoTooltip } from "./Primitives";
@@ -31,9 +32,10 @@ import EmptyState from "./EmptyState";
 /* --- CARGA FUTURA WIDGET --- */
 function CargaFuturaWidget({ temas, maxRevisoesDia }) {
   const proj = getWorkloadProjection(temas, 14);
-  const dates = Object.keys(proj);
-  const maxCount = Math.max(...Object.values(proj), maxRevisoesDia, 1);
-  const diasSobrecarga = Object.values(proj).filter((count) => count > maxRevisoesDia).length;
+  const dayEntries = Object.values(proj);
+  const dates = dayEntries.map((entry) => entry.date);
+  const maxCount = Math.max(...dayEntries.map((entry) => entry?.count || 0), maxRevisoesDia, 1);
+  const diasSobrecarga = dayEntries.filter((entry) => (entry?.count || 0) > maxRevisoesDia).length;
   
   return (
     <div className="medrev-card medrev-card-hover p-5 select-none animate-fade-in">
@@ -47,7 +49,9 @@ function CargaFuturaWidget({ temas, maxRevisoesDia }) {
       
       <div className="flex items-end justify-between h-24 gap-1.5 pt-4">
         {dates.map((date) => {
-          const count = proj[date];
+          const entry = proj[date] || { count: 0, estimatedMinutes: 0 };
+          const count = entry.count || 0;
+          const minutes = entry.estimatedMinutes || 0;
           const pct = (count / maxCount) * 100;
           const exceeds = count > maxRevisoesDia;
           const today = date === todayStr();
@@ -56,7 +60,7 @@ function CargaFuturaWidget({ temas, maxRevisoesDia }) {
             <div key={date} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
               <div className="relative w-full flex justify-center">
                 <span className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black border border-white/10 text-[9px] text-gray-300 rounded px-1.5 py-0.5 whitespace-nowrap z-50 pointer-events-none font-mono">
-                  {count} revs
+                  {count} revs · {minutes} min
                 </span>
               </div>
               <div 
@@ -781,6 +785,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     const found = CALENDAR_PROVIDERS.find((p) => p.id === calendarProvider.activeId);
     return found?.label || "MEDCOF";
   }, [calendarProvider.activeId]);
+  const openSetupAjustes = useCallback(() => {
+    if (onOpenAjustes) {
+      onOpenAjustes({ initialTab: "ajustes" });
+      return;
+    }
+    if (setView) setView("crono");
+  }, [onOpenAjustes, setView]);
 
   const handleMarkMastery = (item) => {
     if (!item?.nome) return;
@@ -795,7 +806,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       esp: item.esp || "Outro",
       prio: "Alta",
       importancia: "ALTA",
-      obs: "Criado pelo Dashboard para validacao de dominio previo.",
+      obs: "Criado pelo Dashboard para validação de domínio prévio.",
       unstarted: true,
       d0: todayStr(),
     };
@@ -821,7 +832,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     } else if (action.type === "agendar") {
       const updatedMeta = { ...meta, notif: { ...(meta?.notif || {}), hora: action.time, enabled: true } };
       useStore.setState({ meta: updatedMeta });
-      onOpenAjustes && onOpenAjustes();
+      openSetupAjustes();
       (showToast || showToastGlobal)(`Lembrete agendado para as ${action.time}.`);
     } else if (action.type === "study") {
       if (action.temaId && action.stepKey && onStudy) {
@@ -855,6 +866,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const [showWelcome, setShowWelcome] = useState(false);
   const [showWeeklyDiag, setShowWeeklyDiag] = useState(false);
   const [showCompleto, setShowCompleto] = useState(!modoSimples);
+  const [showSetupFlow, setShowSetupFlow] = useState(false);
   const [temaValidando, setTemaValidando] = useState(null);
 
   const hour = new Date().getHours();
@@ -1018,7 +1030,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   }, [diag]);
   const hasExhaustionNow = useMemo(() => isExhaustionDetected(temaStats, done), [temaStats, done]);
   const totalSessions = useMemo(() => {
-    return temas.flatMap((t) => Object.values(t.rev)).filter((r) => r.done).length;
+    return temas
+      .flatMap((t) => [
+        ...STEPS.map((s) => t.rev?.[s.key]),
+        t.rev?.manutencao,
+      ])
+      .filter((r) => r?.done === true)
+      .length;
   }, [temas]);
 
   const doneDays = useMemo(() => new Set(done.map((r) => r.date)), [done]);
@@ -1169,67 +1187,59 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     });
   }, [readinessData, trueRet, totalSessions, temasFiltrados, totalRevisoesFeitas]);
 
+  const mentorContext = useMemo(() => {
+    const state = useStore.getState();
+    return buildMentorContext(state, plat, {
+      readinessData,
+      lowEnergy: hasExhaustionNow,
+      exhaustionDetected: hasExhaustionNow,
+    });
+  }, [plat, readinessData, hasExhaustionNow]);
+
+  const mentorNextAction = useMemo(() => getMentorNextAction(mentorContext), [mentorContext]);
+  const mentorTodayPlan = useMemo(() => getMentorTodayPlan(mentorContext), [mentorContext]);
+
   const comandoDoDia = useMemo(() => {
-    if (hasExhaustionNow) {
-      return {
-        eyebrow: "Comando do dia",
-        title: "Proteja o sistema antes de acelerar",
-        subtitle: "Seu padrão recente sugere fadiga. Faça revisão leve hoje e ajuste a carga.",
-        primaryLabel: pending > 0 ? "Fazer revisão leve" : "Abrir cronograma",
-        secondaryLabel: "Ver estatísticas",
-        tone: "amber",
-      };
-    }
-
-    if (overdue.length > 0 && topFilaItem) {
-      return {
-        eyebrow: "Comando do dia",
-        title: `Recuperar revisão vencida: ${topFilaItem.temaNome}`,
-        subtitle: naReserva > 0
-          ? `${pending} revisões na fila de hoje e ${naReserva} na reserva. Comece pela revisão mais crítica.`
-          : `${pending} revisões na fila de hoje. Comece pela revisão mais crítica.`,
-        primaryLabel: "Iniciar revisão crítica",
-        secondaryLabel: "Ver estatísticas",
-        tone: "red",
-      };
-    }
-
-    if (topFilaItem?.isOptimal) {
-      return {
-        eyebrow: "Comando do dia",
-        title: `Janela ideal: ${topFilaItem.temaNome}`,
-        subtitle: "Este item está no ponto ótimo de recuperação. Melhor custo-benefício cognitivo agora.",
-        primaryLabel: "Iniciar no ponto ideal",
-        secondaryLabel: "Ver estatísticas",
-        tone: "blue",
-      };
-    }
-
-    if (pending > 0 && topFilaItem) {
-      return {
-        eyebrow: "Comando do dia",
-        title: `Comece por: ${topFilaItem.temaNome}`,
-        subtitle: naReserva > 0
-          ? `${pending} revisões programadas hoje e ${naReserva} fora do teto diário.`
-          : "A fila já está ordenada por urgência, peso e custo cognitivo.",
-        primaryLabel: "Iniciar foco",
-        secondaryLabel: "Ver estatísticas",
-        tone: "blue",
-      };
-    }
-
-    const gargalo = readinessData?.priorityList?.[0];
+    const action = mentorNextAction || {};
+    const tone = action.safety === "critical"
+      ? "red"
+      : action.safety === "caution"
+      ? "amber"
+      : action.type === "new_topic" || action.type === "rest" || action.type === "anki_check"
+      ? "emerald"
+      : "blue";
+    const subtitle = action.subtitle
+      || action.reason
+      || mentorTodayPlan.slice(1).join(" ");
     return {
       eyebrow: "Comando do dia",
-      title: gargalo?.area ? `Fila zerada. Avance em ${gargalo.area}.` : "Fila zerada. Avance sem pressa.",
-      subtitle: gargalo?.area
-        ? "Sem revisões pendentes. Use o tempo para iniciar tema de alta incidência ou baixa cobertura."
-        : "Sua curva está protegida hoje. Você pode iniciar tema novo ou descansar sem culpa.",
-      primaryLabel: gargalo?.area ? "Escolher tema prioritário" : "Abrir cronograma",
+      title: action.title || "Manter consistência leve",
+      subtitle: subtitle || "Sem urgência crítica detectada. Siga o plano com ritmo sustentável.",
+      primaryLabel: action.cta || "Executar ação",
       secondaryLabel: "Ver estatísticas",
-      tone: "emerald",
+      tone,
+      action,
     };
-  }, [hasExhaustionNow, overdue.length, topFilaItem, pending, naReserva, readinessData?.priorityList]);
+  }, [mentorNextAction, mentorTodayPlan]);
+
+  const runMentorPrimaryAction = useCallback(() => {
+    const action = mentorNextAction || {};
+    const target = action.target || {};
+    if (target.temaId && target.stepKey && onStudy) {
+      onStudy(target.temaId, target.stepKey);
+      return;
+    }
+    const view = action.ctaView || target.view || "dash";
+    if (view === "focus") {
+      if (topFilaItem && onStudy) {
+        onStudy(topFilaItem.temaId, topFilaItem.stepKey);
+      } else if (setView) {
+        setView("dash");
+      }
+      return;
+    }
+    if (setView) setView(view);
+  }, [mentorNextAction, onStudy, setView, topFilaItem]);
 
   const days = Array.from({ length: 35 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - 34 + i);
@@ -1429,10 +1439,51 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         <EmptyState
           icon={GraduationCap}
           title="Comece em 2 minutos"
-          description={"1. Escolha um calendario.\n2. Deixe o Mentor montar a primeira acao.\n3. Faca uma sessao curta."}
-          primaryAction={{ label: "Configurar agora", onClick: () => setView && setView("crono") }}
+          description={"1. Escolha um calendário.\n2. Deixe o Mentor montar a primeira ação.\n3. Faça uma sessão curta."}
+          primaryAction={{
+            label: "Configurar agora",
+            onClick: () => setShowSetupFlow(true),
+          }}
           className="my-4 whitespace-pre-line"
         />
+
+        {showSetupFlow && (
+          <Modal onClose={() => setShowSetupFlow(false)}>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <h2 className="text-[15px] font-black text-white">Configuração inicial</h2>
+                <p className="text-[12px] text-gray-400 leading-relaxed">
+                  Escolha como quer começar: ajustar preferências do plano ou abrir o cronograma.
+                </p>
+              </div>
+
+              <div className="grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSetupFlow(false);
+                    openSetupAjustes();
+                  }}
+                  className="w-full text-left rounded-xl border border-blue-500/25 bg-blue-500/10 px-3 py-2.5 hover:bg-blue-500/20 transition-colors cursor-pointer"
+                >
+                  <p className="text-[12px] font-bold text-blue-300">Abrir Ajustes</p>
+                  <p className="text-[10px] text-blue-200/80 mt-0.5">Defina prova, metas e configurações do Mentor.</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSetupFlow(false);
+                    if (setView) setView("crono");
+                  }}
+                  className="w-full text-left rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <p className="text-[12px] font-bold text-gray-200">Abrir Cronograma</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">Escolha um bloco e inicie seu primeiro tema.</p>
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
       </div>
     );
   }
@@ -1526,10 +1577,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <button
                 type="button"
-                onClick={() => {
-                  if (pending > 0 && topFilaItem) onStudy(topFilaItem.temaId, topFilaItem.stepKey);
-                  else setView && setView("crono");
-                }}
+                onClick={runMentorPrimaryAction}
                 className={`medrev-cta-primary min-h-[44px] rounded-xl px-5 py-3 text-sm font-extrabold shadow-lg border-none cursor-pointer ${
                   comandoDoDia.tone === "red"
                     ? "bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-red-950/25 hover:from-red-500 hover:to-orange-400"
@@ -1549,7 +1597,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               >
                 {comandoDoDia.secondaryLabel}
               </button>
-              {topFilaItem?.isOptimal && (
+              {topFilaItem?.isOptimal && comandoDoDia.action?.type === "fila_do_dia" && (
                 <span className="text-[11px] font-bold text-amber-300">
                   Ponto exato de esquecimento detectado
                 </span>
@@ -1733,7 +1781,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 <Brain size={11} className="text-gray-500" /> Casos clínicos
               </p>
               <p className="text-[11px] text-gray-400 leading-relaxed">Ative o treino por casos para complementar questões com raciocínio.</p>
-              <button type="button" onClick={onOpenAjustes}
+              <button type="button" onClick={openSetupAjustes}
                 className="self-start px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 text-[10px] font-bold cursor-pointer transition-colors">
                 Ativar em ajustes →
               </button>
@@ -1862,7 +1910,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           </div>
           <button
             type="button"
-            onClick={onOpenAjustes}
+            onClick={openSetupAjustes}
             className="px-4 py-2 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white font-extrabold text-[11px] rounded-xl shadow-md active:scale-95 transition-all border-none cursor-pointer"
           >
             Configurar Estratégia
@@ -1891,7 +1939,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       {(() => {
         const proj = getWorkloadProjection(temas, 14);
         const cap_ = meta.maxRevisoesDia || 30;
-        const diasSobrecarga = Object.values(proj).filter(n => n > cap_).length;
+        const diasSobrecarga = Object.values(proj).filter((day) => (day?.count || 0) > cap_).length;
         const retAtual = meta?.retencaoFSRS || 0.90;
         if (diasSobrecarga >= 3 && retAtual >= 0.90) {
           return (
@@ -1904,7 +1952,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               </div>
               <button
                 type="button"
-                onClick={onOpenAjustes}
+                onClick={openSetupAjustes}
                 className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-[11px] border border-amber-500/25 cursor-pointer shrink-0"
               >
                 Ajustar retenção

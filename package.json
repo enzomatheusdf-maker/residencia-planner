@@ -25,6 +25,7 @@
     "build": "node scripts/check-mojibake.mjs && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "audit": "node scripts/audit.mjs",
     "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "eslintConfig": {

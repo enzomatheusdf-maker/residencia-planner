@@ -1,13 +1,23 @@
 export const MEDREV_BACKUP_VERSION = "reviewflow-v6-backup";
+export const MEDREV_BACKUP_SCHEMA = "medrev-backup-v1";
 
 function isObject(value) {
   return value && typeof value === "object" && !Array.isArray(value);
 }
 
-export function exportMedrevBackup(state = {}) {
+function normalizeUid(uid) {
+  return String(uid || "").trim();
+}
+
+export function exportMedrevBackup(state = {}, options = {}) {
+  const ownerUid = normalizeUid(options.ownerUid);
+  const appVersion = String(options.appVersion || "unknown");
   return {
+    schema: MEDREV_BACKUP_SCHEMA,
     version: MEDREV_BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
+    ownerUid: ownerUid || null,
+    appVersion,
     plat: state.plat ?? "res",
     userName: state.userName ?? "Estudante",
     userEmail: state.userEmail ?? "",
@@ -47,6 +57,20 @@ export function validateMedrevBackup(backup) {
     warnings.push("Versao de backup diferente da esperada.");
   }
 
+  if (!backup.schema || typeof backup.schema !== "string") {
+    warnings.push("Campo 'schema' ausente; backup legado detectado.");
+  } else if (backup.schema !== MEDREV_BACKUP_SCHEMA) {
+    warnings.push("Schema de backup diferente da versao atual.");
+  }
+
+  if (backup.ownerUid != null && typeof backup.ownerUid !== "string") {
+    errors.push("Campo 'ownerUid' invalido.");
+  }
+
+  if (!backup.ownerUid) {
+    warnings.push("Backup sem ownerUid; validar origem antes de importar.");
+  }
+
   if (!isObject(backup.meta)) errors.push("Campo 'meta' invalido.");
   if (!isObject(backup.res)) errors.push("Campo 'res' invalido.");
   if (!isObject(backup.vest)) errors.push("Campo 'vest' invalido.");
@@ -58,6 +82,7 @@ export function validateMedrevBackup(backup) {
 
   const summary = {
     userName: backup.userName || "Estudante",
+    ownerUid: backup.ownerUid || null,
     temas: resTemas + vestTemas,
     sessionReflections: reflections,
     weeklyReviews,
@@ -74,9 +99,22 @@ export function validateMedrevBackup(backup) {
 
 export function importMedrevBackup(backup, options = {}) {
   const preserveLocalMeta = Boolean(options.preserveLocalMeta);
+  const currentUid = normalizeUid(options.currentUid);
+  const backupOwnerUid = normalizeUid(backup?.ownerUid);
+  const allowCrossUserImport = Boolean(options.allowCrossUserImport);
   const validated = validateMedrevBackup(backup);
   if (!validated.valid) {
     return { ok: false, errors: validated.errors, patch: null };
+  }
+
+  if (backupOwnerUid && currentUid && backupOwnerUid !== currentUid && !allowCrossUserImport) {
+    return {
+      ok: false,
+      errors: [
+        `Este backup pertence ao uid ${backupOwnerUid}. Voce esta logado como ${currentUid}.`,
+      ],
+      patch: null,
+    };
   }
 
   const patch = {
@@ -102,6 +140,7 @@ export function importMedrevBackup(backup, options = {}) {
     calendarProvider: backup.calendarProvider ?? { activeId: "medcof", importedTopics: [], customTopics: [] },
     cronogramaSel: backup.cronogramaSel ?? { res: "res-medcof-2026", vest: "vest-base" },
     sprint: backup.sprint ?? { esps: [], ativa: false, semana: "" },
+    ownerUid: backupOwnerUid || currentUid || null,
   };
 
   if (preserveLocalMeta && isObject(options.currentMeta)) {
@@ -110,4 +149,3 @@ export function importMedrevBackup(backup, options = {}) {
 
   return { ok: true, errors: [], patch };
 }
-

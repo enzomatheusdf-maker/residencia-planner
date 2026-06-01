@@ -1,7 +1,7 @@
 // src/core/domainValidation.js
 // Lógica de validação de domínio prévio (puramente funcional).
 
-import { STEPS, S_BASE, addDays, todayStr, getAreaPrior } from "./fsrs";
+import { STEPS, S_BASE, addDays, todayStr, getAreaPrior, inferPhaseFromStep } from "./fsrs";
 
 export const DOMINIO_PREVIO_MIN_QUESTOES = 15;
 export const DOMINIO_PREVIO_MIN_ACERTO = 80;
@@ -165,20 +165,26 @@ export function buildRevComDominio(d0, esp, importancia, classificacao, pctAcert
   const acertoFrac = Math.max(0, Math.min(1, Number(pctAcerto || 0) / 100));
   const rev = {};
   STEPS.forEach((step) => {
+    const stepDate = addDays(hoje, step.offset);
     rev[step.key] = {
-      date: addDays(hoje, step.offset),
+      date: stepDate,
+      scheduledAt: stepDate,
+      reviewedAt: null,
       done: false,
       acerto: null,
       questoes: null,
       S: S_BASE[step.key],
       D: prior.difBase,
       motivosErro: [],
+      phase: inferPhaseFromStep(step.key),
     };
   });
 
   rev.d0 = {
     ...rev.d0,
     date: baseDate,
+    scheduledAt: baseDate,
+    reviewedAt: baseDate,
     done: true,
     acerto: acertoFrac,
     questoes: null,
@@ -188,19 +194,26 @@ export function buildRevComDominio(d0, esp, importancia, classificacao, pctAcert
   rev.d1 = {
     ...rev.d1,
     date: addDays(hoje, intervaloInicial),
+    scheduledAt: addDays(hoje, intervaloInicial),
   };
   rev.d4 = {
     ...rev.d4,
     date: addDays(hoje, intervaloInicial + 3),
+    scheduledAt: addDays(hoje, intervaloInicial + 3),
   };
   rev.d7 = {
     ...rev.d7,
     date: addDays(hoje, intervaloInicial + 7),
+    scheduledAt: addDays(hoje, intervaloInicial + 7),
   };
   rev.d21 = {
     ...rev.d21,
     date: addDays(hoje, intervaloInicial + 21),
+    scheduledAt: addDays(hoje, intervaloInicial + 21),
   };
+  rev.reviewHistory = [];
+  rev.phase = "learning";
+  rev.relearning = null;
 
   return rev;
 }

@@ -328,22 +328,83 @@ export function calcBleedingScore(temas) {
 }
 
 export function calcTrueRetention(temas) {
-  const vals = [];
+  const detailed = calcTrueRetentionDetailed(temas);
+  return detailed?.pct ?? null;
+}
+
+function shouldCountLongRetentionEvent(event = {}, now = todayStr()) {
+  if (!event || event.acerto == null) return false;
+  if (event.official === false) return false;
+  if (event.stepKey === "d21") return true;
+  if (event.phase === "maintenance" || event.phaseAfter === "maintenance") return true;
+  if (Number(event.intervalBefore) >= 15) return true;
+  if (event.scheduledAt && event.reviewedAt) {
+    return Math.max(0, diffDays(event.scheduledAt, event.reviewedAt)) >= 15;
+  }
+  if (event.reviewedAt && event.previousReviewedAt) {
+    return Math.max(0, diffDays(event.previousReviewedAt, event.reviewedAt)) >= 15;
+  }
+  return false;
+}
+
+export function calcTrueRetentionDetailed(temas = []) {
+  let weightedHits = 0;
+  let weightedTotal = 0;
+  let n = 0;
+  let totalQuestoes = 0;
+  const now = todayStr();
+
   for (let i = 0; i < temas.length; i++) {
     const t = temas[i];
-    if (t.unstarted) continue;
-    for (let j = 0; j < STEPS.length; j++) {
-      const s = STEPS[j];
-      if (s.offset > 15) {
-        const r = t.rev[s.key];
-        if (r && r.done && r.acerto != null) {
-          vals.push(r.acerto);
-        }
+    if (!t || t.unstarted) continue;
+    const history = Array.isArray(t.rev?.reviewHistory) ? t.rev.reviewHistory : [];
+
+    for (let j = 0; j < history.length; j++) {
+      const event = history[j];
+      if (!shouldCountLongRetentionEvent(event, now)) continue;
+      const acerto = Number(event.acerto);
+      if (Number.isNaN(acerto)) continue;
+      const questoes = Number(event.questoes);
+      const weight = Number.isFinite(questoes) && questoes > 0 ? questoes : 1;
+      weightedHits += acerto * weight;
+      weightedTotal += weight;
+      totalQuestoes += Number.isFinite(questoes) && questoes > 0 ? questoes : 0;
+      n += 1;
+    }
+
+    if (!history.length) {
+      const d21 = t.rev?.d21;
+      if (d21?.done && d21.acerto != null) {
+        const questoes = Number(d21.questoes);
+        const weight = Number.isFinite(questoes) && questoes > 0 ? questoes : 1;
+        weightedHits += Number(d21.acerto) * weight;
+        weightedTotal += weight;
+        totalQuestoes += Number.isFinite(questoes) && questoes > 0 ? questoes : 0;
+        n += 1;
       }
     }
   }
-  if (!vals.length) return null;
-  return Math.round((vals.reduce((a, b) => a + b) / vals.length) * 100);
+
+  if (weightedTotal <= 0 || n <= 0) {
+    return {
+      value: null,
+      pct: null,
+      n: 0,
+      totalQuestoes: 0,
+      source: "d21+maintenance",
+      collecting: true,
+    };
+  }
+
+  const value = weightedHits / weightedTotal;
+  return {
+    value,
+    pct: Math.round(value * 100),
+    n,
+    totalQuestoes,
+    source: "d21+maintenance",
+    collecting: false,
+  };
 }
 
 // ─── CUSTOM REACT HOOK WRAPPERS ──────────────────────────────────────────────

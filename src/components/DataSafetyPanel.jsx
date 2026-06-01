@@ -1,9 +1,14 @@
-import React, { useState } from "react";
-import { Download, HardDrive, ShieldCheck, Upload } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Download, HardDrive, ShieldCheck, Upload, Database, RefreshCcw } from "lucide-react";
 import { exportMedrevBackup, importMedrevBackup, validateMedrevBackup } from "../core/backup";
+import {
+  backupLegacyGlobalStore,
+  detectLegacyGlobalStore,
+  migrateLegacyStoreToUserScope,
+} from "../core/userDataMigration";
+import { getAnonymousStorageKey, getOrCreateAnonymousSessionId, getUserScopedStorageKey } from "../core/userScope";
+import { auth } from "../services/firebase";
 import { useStore } from "../core/store";
-
-const STORE_KEY = "reviewflow-v6";
 
 function formatBytes(bytes = 0) {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
@@ -13,8 +18,8 @@ function formatBytes(bytes = 0) {
   return `${(kb / 1024).toFixed(2)} MB`;
 }
 
-function readPersistedPayload() {
-  const raw = localStorage.getItem(STORE_KEY);
+function readPersistedPayload(storageKey) {
+  const raw = localStorage.getItem(storageKey);
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw);
@@ -31,13 +36,21 @@ export default function DataSafetyPanel() {
   const [importCandidate, setImportCandidate] = useState(null);
   const [importValidation, setImportValidation] = useState(null);
 
-  const storageBytes = (() => {
-    const raw = localStorage.getItem(STORE_KEY);
+  const currentUid = auth.currentUser?.uid || null;
+  const storageKey = currentUid
+    ? getUserScopedStorageKey(currentUid)
+    : getAnonymousStorageKey(getOrCreateAnonymousSessionId());
+  const legacyStore = detectLegacyGlobalStore();
+  const storageBytes = useMemo(() => {
+    const raw = localStorage.getItem(storageKey);
     return raw ? new Blob([raw]).size : 0;
-  })();
+  }, [storageKey]);
 
   const handleExport = () => {
-    const backup = exportMedrevBackup(useStore.getState());
+    const backup = exportMedrevBackup(useStore.getState(), {
+      ownerUid: currentUid,
+      appVersion: process.env.REACT_APP_VERSION || process.env.npm_package_version || "unknown",
+    });
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -51,12 +64,12 @@ export default function DataSafetyPanel() {
   };
 
   const handleValidateLocal = () => {
-    const payload = readPersistedPayload();
+    const payload = readPersistedPayload(storageKey);
     if (!payload) {
-      setValidation({ valid: false, errors: ["Nao foi encontrado backup local."], warnings: [], summary: null });
+      setValidation({ valid: false, errors: ["Nao foi encontrado backup local neste escopo."], warnings: [], summary: null });
       return;
     }
-    const localBackup = exportMedrevBackup(payload);
+    const localBackup = exportMedrevBackup(payload, { ownerUid: currentUid });
     setValidation(validateMedrevBackup(localBackup));
   };
 
@@ -82,20 +95,54 @@ export default function DataSafetyPanel() {
     if (!importCandidate || !importValidation?.valid) return;
     openConfirm({
       title: "Importar backup",
-      message: "Deseja importar este backup? Os dados atuais serao sobrescritos.",
+      message: "Deseja importar este backup? Os dados atuais deste usuario serao sobrescritos.",
       confirmLabel: "Importar",
       danger: true,
       onConfirm: () => {
         const currentState = useStore.getState();
-        const imported = importMedrevBackup(importCandidate, { currentMeta: currentState.meta });
+        const imported = importMedrevBackup(importCandidate, {
+          currentMeta: currentState.meta,
+          currentUid,
+          preserveLocalMeta: false,
+        });
         if (!imported.ok) {
-          if (showToast) showToast("Falha ao importar backup.");
+          if (showToast) showToast(imported.errors?.[0] || "Falha ao importar backup.");
           return;
         }
-        useStore.setState(imported.patch);
+        useStore.setState({ ...imported.patch, updatedAt: Date.now() });
         const rebuild = useStore.getState().rebuildActionInboxForToday;
         if (rebuild) rebuild();
         if (showToast) showToast("Backup importado com sucesso.");
+      },
+    });
+  };
+
+  const handleLegacyMigration = () => {
+    if (!currentUid) {
+      if (showToast) showToast("Faça login para migrar dados legados para um uid.");
+      return;
+    }
+    if (!legacyStore.found) {
+      if (showToast) showToast("Nenhuma chave global legada encontrada.");
+      return;
+    }
+
+    const previewBackup = backupLegacyGlobalStore();
+    const backupSize = previewBackup.ok ? new Blob([previewBackup.backup.payload]).size : 0;
+    const targetKey = getUserScopedStorageKey(currentUid);
+
+    openConfirm({
+      title: "Migrar dados legados",
+      message: `Foi detectada a chave global '${legacyStore.key}'. Migrar para '${targetKey}'?`,
+      confirmLabel: "Migrar",
+      danger: true,
+      onConfirm: () => {
+        const result = migrateLegacyStoreToUserScope(currentUid, { confirm: true });
+        if (!result.ok) {
+          if (showToast) showToast(`Falha na migracao: ${result.error}`);
+          return;
+        }
+        if (showToast) showToast(`Migracao concluida (${formatBytes(backupSize)}).`);
       },
     });
   };
@@ -111,6 +158,12 @@ export default function DataSafetyPanel() {
       <div className="flex items-center gap-2">
         <ShieldCheck size={16} className="text-blue-400" />
         <h3 className="text-xs font-black uppercase tracking-wider text-gray-200">Seguranca dos dados</h3>
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-[10px] text-gray-300">
+        <p><span className="text-gray-500">UID atual:</span> {currentUid || "nao autenticado"}</p>
+        <p className="break-all mt-1"><span className="text-gray-500">Escopo local:</span> {storageKey}</p>
+        <p className="mt-1"><span className="text-gray-500">Store legada global:</span> {legacyStore.found ? legacyStore.key : "nao detectada"}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -134,11 +187,14 @@ export default function DataSafetyPanel() {
           </p>
           {importValidation.summary && (
             <p className="text-[10px] text-gray-300 mt-1">
-              Usuario: {importValidation.summary.userName} · Temas: {importValidation.summary.temas} · Reflexoes: {importValidation.summary.sessionReflections}
+              Usuario: {importValidation.summary.userName} · Owner UID: {importValidation.summary.ownerUid || "ausente"} · Temas: {importValidation.summary.temas}
             </p>
           )}
           {importValidation.errors?.length > 0 && (
             <p className="text-[10px] text-red-200 mt-1">{importValidation.errors.join(" | ")}</p>
+          )}
+          {importValidation.warnings?.length > 0 && (
+            <p className="text-[10px] text-yellow-200 mt-1">{importValidation.warnings.join(" | ")}</p>
           )}
           {importValidation.valid && (
             <button
@@ -152,23 +208,30 @@ export default function DataSafetyPanel() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
         <button
           type="button"
           onClick={handleValidateLocal}
           className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 text-[11px] font-bold border border-white/10 cursor-pointer"
         >
-          Validar integridade local
+          Validar local
         </button>
         <div className="px-3 py-2 rounded-xl bg-black/20 border border-white/5 text-[11px] text-gray-300 font-bold inline-flex items-center justify-center gap-1.5">
           <HardDrive size={12} /> {formatBytes(storageBytes)}
         </div>
         <button
           type="button"
-          onClick={clearTemporaryCaches}
-          className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-[11px] font-bold border border-white/10 cursor-pointer"
+          onClick={handleLegacyMigration}
+          className="px-3 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 text-[11px] font-bold border border-amber-500/40 cursor-pointer inline-flex items-center justify-center gap-1.5"
         >
-          Limpar caches temporarios
+          <RefreshCcw size={12} /> Migrar legado
+        </button>
+        <button
+          type="button"
+          onClick={clearTemporaryCaches}
+          className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-[11px] font-bold border border-white/10 cursor-pointer inline-flex items-center justify-center gap-1.5"
+        >
+          <Database size={12} /> Limpar caches
         </button>
       </div>
 

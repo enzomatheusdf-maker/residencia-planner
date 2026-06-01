@@ -20,6 +20,7 @@ export default function StatsPanel({ setView }) {
   const temas = useStore((s) => s[plat]?.temas || []);
   const simulados = useStore((s) => s[plat]?.simulados || []);
   const weeklyReviews = useStore((s) => s.weeklyReviews || []);
+  const enamedAnalises = useStore((s) => s.enamedAnalises || []);
 
   const personalStats = useMemo(() => {
     const startedTemas = temas.filter(t => !t.unstarted);
@@ -344,11 +345,13 @@ export default function StatsPanel({ setView }) {
                     if (setView) setView("crono");
                   }}
                 />
-                <AdvancedSection title="Analise ENAMED detalhada" defaultOpen={false} storageKey="stats-enamed-advanced">
-                  <Suspense fallback={<div className="text-[11px] text-gray-500">Carregando análise ENAMED...</div>}>
-                    <EnamedProvaAnalyzer />
-                  </Suspense>
-                </AdvancedSection>
+                {enamedAnalises.length > 0 && (
+                  <AdvancedSection title="Analise ENAMED detalhada" defaultOpen={false} storageKey="stats-enamed-advanced">
+                    <Suspense fallback={<div className="text-[11px] text-gray-500">Carregando análise ENAMED...</div>}>
+                      <EnamedProvaAnalyzer />
+                    </Suspense>
+                  </AdvancedSection>
+                )}
               </>
             )}
 

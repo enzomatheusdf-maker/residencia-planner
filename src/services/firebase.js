@@ -15,8 +15,11 @@ import {
   sendPasswordResetEmail,
   deleteUser
 } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, setDoc, getDoc, deleteDoc } from "firebase/firestore";
 import { getAnalytics, isSupported, logEvent } from "firebase/analytics";
+import { assertUid } from "../core/userScope";
+import { assertActiveUserScope } from "../core/authSession";
+import { userStateDoc } from "./userDataPaths";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -54,6 +57,15 @@ export async function trackEvent(name, params = {}) {
   }
 }
 
+function assertWriteScope(uid) {
+  const normalizedUid = assertUid(uid);
+  const currentUid = auth.currentUser?.uid || null;
+  if (currentUid) {
+    assertActiveUserScope(normalizedUid, currentUid);
+  }
+  return normalizedUid;
+}
+
 // ─── AUTHENTICATION OPERATIONS ───────────────────────────────────────────────
 
 export const criarConta = async (email, senha, nome, manterConectado = true) => {
@@ -66,7 +78,7 @@ export const criarConta = async (email, senha, nome, manterConectado = true) => 
     await updateProfile(user, { displayName: nome });
     
     // Create initial user document in Firestore with baseline structures
-    await setDoc(doc(db, "usuarios", user.uid), {
+    await setDoc(userStateDoc(db, user.uid), {
       uid: user.uid,
       email: email,
       nome: nome,
@@ -120,7 +132,6 @@ export const fazerLogin = async (email, senha, manterConectado = true) => {
 export const fazerLogout = async () => {
   try {
     await signOut(auth);
-    localStorage.removeItem("reviewflow-v6");
     return { sucesso: true };
   } catch (erro) {
     console.error("Erro ao fazer logout:", erro);
@@ -136,7 +147,8 @@ export const monitorarAuth = (callback) => {
 
 export const salvarDadosUsuario = async (uid, dados) => {
   try {
-    await setDoc(doc(db, "usuarios", uid), dados, { merge: true });
+    const scopedUid = assertWriteScope(uid);
+    await setDoc(userStateDoc(db, scopedUid), dados, { merge: true });
     return { sucesso: true };
   } catch (erro) {
     console.error("Erro ao salvar dados:", erro);
@@ -146,7 +158,8 @@ export const salvarDadosUsuario = async (uid, dados) => {
 
 export const carregarDadosUsuario = async (uid) => {
   try {
-    const docSnap = await getDoc(doc(db, "usuarios", uid));
+    const scopedUid = assertUid(uid);
+    const docSnap = await getDoc(userStateDoc(db, scopedUid));
     if (docSnap.exists()) {
       return { sucesso: true, dados: docSnap.data() };
     } else {
@@ -160,10 +173,11 @@ export const carregarDadosUsuario = async (uid) => {
 
 export const sincronizarComFirebase = async (uid, estadoZustand) => {
   try {
+    const scopedUid = assertWriteScope(uid);
     await setDoc(
-      doc(db, "usuarios", uid),
+      userStateDoc(db, scopedUid),
       {
-        uid: uid,
+        uid: scopedUid,
         ...estadoZustand,
       },
       { merge: true }
@@ -187,11 +201,11 @@ export const resetarSenha = async (email) => {
 
 export const excluirUsuarioEDados = async (uid) => {
   try {
+    const scopedUid = assertWriteScope(uid);
     const user = auth.currentUser;
     if (!user) throw new Error("Nenhum usuário autenticado encontrado.");
-    await deleteDoc(doc(db, "usuarios", uid));
+    await deleteDoc(userStateDoc(db, scopedUid));
     await deleteUser(user);
-    localStorage.removeItem("reviewflow-v6");
     return { sucesso: true };
   } catch (erro) {
     console.error("Erro ao excluir conta:", erro);

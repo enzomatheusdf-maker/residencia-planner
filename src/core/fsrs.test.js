@@ -11,7 +11,10 @@ import {
   getWorkloadProjection,
   getAreaPrior,
   getRetencaoArea,
-  updateDifficulty
+  updateDifficulty,
+  toRating,
+  applyRelearningRecoveryBonus,
+  appendReviewHistory
 } from "./fsrs";
 
 describe("FSRS Core Logic Test Suite", () => {
@@ -61,6 +64,12 @@ describe("FSRS Core Logic Test Suite", () => {
   test("updateDifficulty raises D on errors and lowers D on easy answers", () => {
     expect(updateDifficulty(0.5, 0.4)).toBeCloseTo(0.65);
     expect(updateDifficulty(0.5, 1.0)).toBeCloseTo(0.42);
+  });
+
+  test("toRating returns null for null/undefined/NaN", () => {
+    expect(toRating(null)).toBeNull();
+    expect(toRating(undefined)).toBeNull();
+    expect(toRating("abc")).toBeNull();
   });
 
   test("recalcAfterMark with rating again reschedules same step for tomorrow", () => {
@@ -167,9 +176,10 @@ describe("FSRS Core Logic Test Suite", () => {
     ];
 
     const proj = getWorkloadProjection(mockTemas, 3);
-    expect(proj[today]).toBe(1); // Only active non-done scheduled for today or earlier
-    expect(proj[addDays(today, 1)]).toBe(0);
-    expect(proj[addDays(today, 2)]).toBe(1);
+    expect(proj[today].count).toBe(1); // Only active non-done scheduled for today or earlier
+    expect(proj[addDays(today, 1)].count).toBe(0);
+    expect(proj[addDays(today, 2)].count).toBe(1);
+    expect(proj[today].estimatedMinutes).toBeGreaterThan(0);
   });
 
   test("recalcAfterMark with D1 dynamic acertos recalcs correctly", () => {
@@ -189,5 +199,176 @@ describe("FSRS Core Logic Test Suite", () => {
     expect(rev2.d1.date).toBe(addDays(today, 1));
     expect(rev2.d1.S).toBeLessThan(1.0);
     expect(rev2.d1.D).toBeGreaterThan(0.5);
+  });
+
+  test("D7 with again common repeats D7 tomorrow", () => {
+    const today = todayStr();
+    const initialRev = buildRev(today, "GO");
+    const marked = {
+      ...initialRev,
+      d7: {
+        ...initialRev.d7,
+        done: true,
+        reviewedAt: today,
+        scheduledAt: addDays(today, -1),
+        acerto: 0.4,
+      },
+    };
+
+    const updated = recalcAfterMark(marked, "d7", 0.4);
+    expect(updated.d7.done).toBe(false);
+    expect(updated.d7.date).toBe(addDays(today, 1));
+    expect(updated.phase).toBe("learning");
+  });
+
+  test("D7 with again severe downgrades to D4 and enters relearning", () => {
+    const today = todayStr();
+    const initialRev = buildRev(today, "GO");
+    const marked = {
+      ...initialRev,
+      d7: {
+        ...initialRev.d7,
+        done: true,
+        reviewedAt: today,
+        scheduledAt: addDays(today, -2),
+        acerto: 0.2,
+      },
+    };
+
+    const updated = recalcAfterMark(marked, "d7", 0.2);
+    expect(updated.phase).toBe("relearning");
+    expect(updated.relearning?.fromStep).toBe("d7");
+    expect(updated.d7.done).toBe(false);
+    expect(updated.d4.done).toBe(false);
+    expect(updated.d4.date).toBe(addDays(today, 1));
+  });
+
+  test("D21 with again severe enters relearning and targets D7", () => {
+    const today = todayStr();
+    const initialRev = buildRev(addDays(today, -21), "GO");
+    const marked = {
+      ...initialRev,
+      d21: {
+        ...initialRev.d21,
+        done: true,
+        reviewedAt: today,
+        scheduledAt: addDays(today, -3),
+        acerto: 0.2,
+      },
+      manutencao: {
+        done: false,
+        date: addDays(today, 40),
+        scheduledAt: addDays(today, 40),
+        S: 30,
+        D: 0.5,
+      },
+    };
+
+    const updated = recalcAfterMark(marked, "d21", 0.2);
+    expect(updated.phase).toBe("relearning");
+    expect(updated.d21.done).toBe(false);
+    expect(updated.d7.done).toBe(false);
+    expect(updated.d7.date).toBe(addDays(today, 1));
+  });
+
+  test("missing rating does not leave step completed", () => {
+    const today = todayStr();
+    const initialRev = buildRev(today, "GO");
+    const marked = {
+      ...initialRev,
+      d1: {
+        ...initialRev.d1,
+        done: true,
+        scheduledAt: today,
+        reviewedAt: today,
+      },
+    };
+    const updated = recalcAfterMark(marked, "d1", null);
+    expect(updated.d1.done).toBe(false);
+    expect(updated.d1.reviewedAt).toBeNull();
+    expect(updated.meta?.schedulerWarning).toBe("missing_rating");
+  });
+
+  test("maintenance with again severe returns to D7 relearning", () => {
+    const today = todayStr();
+    const initialRev = buildRev(addDays(today, -60), "GO");
+    const marked = {
+      ...initialRev,
+      manutencao: {
+        done: true,
+        date: addDays(today, -1),
+        scheduledAt: addDays(today, -3),
+        reviewedAt: today,
+        acerto: 0.2,
+        S: 40,
+        D: 0.5,
+        interval: 45,
+      },
+    };
+
+    const updated = recalcAfterMark(marked, "manutencao", 0.2);
+    expect(updated.phase).toBe("relearning");
+    expect(updated.d7.date).toBe(addDays(today, 1));
+  });
+
+  test("applyRelearningRecoveryBonus is small and bounded", () => {
+    expect(applyRelearningRecoveryBonus(10, "easy", { wasRelearning: true })).toBeCloseTo(11.2);
+    expect(applyRelearningRecoveryBonus(10, "good", { wasRelearning: true })).toBeCloseTo(10.5);
+    expect(applyRelearningRecoveryBonus(10, "hard", { wasRelearning: true })).toBeCloseTo(10);
+  });
+
+  test("maintenance saves real next interval", () => {
+    const today = todayStr();
+    const initialRev = buildRev(addDays(today, -30), "GO");
+    const marked = {
+      ...initialRev,
+      manutencao: {
+        done: true,
+        date: today,
+        scheduledAt: today,
+        reviewedAt: today,
+        acerto: 0.9,
+        S: 45,
+        D: 0.5,
+        interval: 45,
+      },
+    };
+
+    const updated = recalcAfterMark(marked, "manutencao", 0.9);
+    expect(updated.manutencao.interval).toBeDefined();
+    expect(updated.manutencao.targetInterval).toBe(90);
+    expect(updated.manutencao.date).toBe(addDays(today, updated.manutencao.interval));
+  });
+
+  test("reviewHistory receives events and is limited", () => {
+    const today = todayStr();
+    const rev = buildRev(today, "GO");
+    const withHistory = {
+      ...rev,
+      reviewHistory: Array.from({ length: 100 }, (_, idx) => ({
+        id: `h_${idx}`,
+        stepKey: "d1",
+        reviewedAt: today,
+      })),
+      d1: {
+        ...rev.d1,
+        done: true,
+        reviewedAt: today,
+        scheduledAt: today,
+      },
+    };
+
+    const updated = recalcAfterMark(withHistory, "d1", 0.9);
+    expect(updated.reviewHistory.length).toBe(100);
+    expect(updated.reviewHistory[99].stepKey).toBe("d1");
+    expect(updated.reviewHistory[99].reviewedAt).toBe(today);
+  });
+
+  test("appendReviewHistory enforces limit", () => {
+    const rev = { reviewHistory: Array.from({ length: 3 }, (_, idx) => ({ id: `x_${idx}` })) };
+    const out = appendReviewHistory(rev, { id: "x_3", stepKey: "d1" }, 3);
+    expect(out.length).toBe(3);
+    expect(out[0].id).toBe("x_1");
+    expect(out[2].id).toBe("x_3");
   });
 });

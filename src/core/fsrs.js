@@ -16,30 +16,121 @@ export function addDays(dateStr, n) {
 
 export const diffDays = (a, b) => Math.round((new Date(b) - new Date(a)) / 86_400_000);
 
+export const STEP_ESTIMATED_MINUTES = {
+  d0: 45,
+  d1: 12,
+  d4: 25,
+  d7: 30,
+  d21: 35,
+  manutencao: 25,
+  relearning: 20,
+};
+
+const WORKLOAD_LEVEL_BY_MINUTES = (minutes) => {
+  if (minutes > 120) return "high";
+  if (minutes > 60) return "moderate";
+  return "ok";
+};
+
+const STEP_SEQUENCE = ["d0", "d1", "d4", "d7", "d21"];
+const STEP_INDEX = STEP_SEQUENCE.reduce((acc, key, idx) => ({ ...acc, [key]: idx }), {});
+const STEP_MIN_GAP = {
+  d0: 1,
+  d1: 3,
+  d4: 3,
+  d7: 14,
+  d21: 45,
+};
+
+function normalizeAcerto(acerto) {
+  if (acerto == null) return null;
+  const num = Number(acerto);
+  if (Number.isNaN(num)) return null;
+  if (num > 1) return Math.max(0, Math.min(1, num / 100));
+  return Math.max(0, Math.min(1, num));
+}
+
+function ensureStepMetadata(step = {}, fallbackDate, fallbackPhase) {
+  const date = step.date || fallbackDate;
+  const scheduledAt = step.scheduledAt || date || fallbackDate;
+  const reviewedAt = step.reviewedAt || (step.done ? (date || fallbackDate) : null);
+  return {
+    ...step,
+    date,
+    scheduledAt,
+    reviewedAt,
+    phase: step.phase || fallbackPhase,
+  };
+}
+
+function clearOperationalStepState(step = {}, extra = {}) {
+  return {
+    ...step,
+    done: false,
+    reviewedAt: null,
+    completedAt: null,
+    acerto: null,
+    questoes: null,
+    ...extra,
+  };
+}
+
+function getEstimatedMinutesForStep(stepKey, step = {}) {
+  if (step?.phase === "relearning") return STEP_ESTIMATED_MINUTES.relearning;
+  if (stepKey === "manutencao") return STEP_ESTIMATED_MINUTES.manutencao;
+  return STEP_ESTIMATED_MINUTES[stepKey] || STEP_ESTIMATED_MINUTES.d4;
+}
+
 export function getWorkloadProjection(temas, numDays = 14) {
   const projection = {};
   const today = todayStr();
   
-  // Initialize projection keys for the next N days
   for (let i = 0; i < numDays; i++) {
     const dateStr = addDays(today, i);
-    projection[dateStr] = 0;
+    projection[dateStr] = {
+      date: dateStr,
+      count: 0,
+      estimatedMinutes: 0,
+      items: [],
+      overload: false,
+      overloadLevel: "ok",
+    };
   }
   
-  // Count pending reviews scheduled on each date
   temas.forEach(t => {
     if (t.unstarted) return;
     Object.keys(t.rev).forEach(stepKey => {
+      if (stepKey === "reviewHistory" || stepKey === "meta" || stepKey === "phase" || stepKey === "relearning") return;
       const r = t.rev[stepKey];
       if (r && !r.done && r.date) {
-        // If it is overdue, it counts towards today's workload
+        const minutes = getEstimatedMinutesForStep(stepKey, r);
+        const payload = {
+          temaId: t.id,
+          temaNome: t.nome,
+          stepKey,
+          phase: r.phase || inferPhaseFromStep(stepKey, stepKey === "manutencao"),
+          scheduledAt: r.scheduledAt || r.date,
+          date: r.date,
+          estimatedMinutes: minutes,
+          overdue: r.date < today,
+        };
         if (r.date < today) {
-          projection[today]++;
+          projection[today].count += 1;
+          projection[today].estimatedMinutes += minutes;
+          projection[today].items.push(payload);
         } else if (projection.hasOwnProperty(r.date)) {
-          projection[r.date]++;
+          projection[r.date].count += 1;
+          projection[r.date].estimatedMinutes += minutes;
+          projection[r.date].items.push(payload);
         }
       }
     });
+  });
+
+  Object.keys(projection).forEach((date) => {
+    const level = WORKLOAD_LEVEL_BY_MINUTES(projection[date].estimatedMinutes);
+    projection[date].overloadLevel = level;
+    projection[date].overload = level !== "ok";
   });
   
   return projection;
@@ -68,7 +159,7 @@ export function fmtRelativo(dateStr) {
 }
 
 export const fmtMonth = (d) => {
-  const [, m, y] = d.split("-");
+  const [y, m] = d.split("-");
   const M = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
   return `${M[+m - 1]} ${y}`;
 };
@@ -131,32 +222,184 @@ export const getAreaPrior = (esp) => AREA_PRIORS[getCanonicalArea(esp)] || AREA_
 
 export const DEMO_TEMA_ID = (plat) => plat === "vest" ? "demo-funcoes" : "demo-apendicite";
 
+export function getLastOfficialReview(history = []) {
+  for (let i = history.length - 1; i >= 0; i--) {
+    const item = history[i];
+    if (item && item.official !== false) return item;
+  }
+  return null;
+}
+
+export function getLastReviewForStep(history = [], stepKey) {
+  for (let i = history.length - 1; i >= 0; i--) {
+    const item = history[i];
+    if (!item || item.official === false) continue;
+    if (item.stepKey === stepKey) return item;
+  }
+  return null;
+}
+
+export function appendReviewHistory(rev = {}, event, limit = 100) {
+  const history = Array.isArray(rev.reviewHistory) ? rev.reviewHistory : [];
+  const normalized = {
+    id: event?.id || `rev_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    official: true,
+    source: "fsrs-lite",
+    ...event,
+  };
+  return [...history, normalized].slice(-limit);
+}
+
+export function inferPhaseFromStep(stepKey, manutencao = false) {
+  if (manutencao || stepKey === "manutencao") return "maintenance";
+  if (stepKey === "d21") return "review";
+  if (["d0", "d1", "d4", "d7"].includes(stepKey)) return "learning";
+  return "learning";
+}
+
+export function getAgainSeverity(acerto) {
+  const normalized = normalizeAcerto(acerto);
+  if (normalized == null) return null;
+  return normalized < 0.30 ? "severe" : "common";
+}
+
+export function resolveAgainPolicy(stepKey, acerto, context = {}) {
+  const severity = getAgainSeverity(acerto) || "common";
+  const severe = severity === "severe";
+  if (stepKey === "manutencao" || context?.isMaintenance) {
+    return severe
+      ? { targetStep: "d7", delayDays: 1, phaseAfter: "relearning", severity, shouldPushFuture: true }
+      : { targetStep: "manutencao", delayDays: 5, phaseAfter: "maintenance", severity, shouldPushFuture: false };
+  }
+  if (stepKey === "d21") {
+    return severe
+      ? { targetStep: "d7", delayDays: 1, phaseAfter: "relearning", severity, shouldPushFuture: true }
+      : { targetStep: "d21", delayDays: 2, phaseAfter: "review", severity, shouldPushFuture: false };
+  }
+  if (stepKey === "d7") {
+    return severe
+      ? { targetStep: "d4", delayDays: 1, phaseAfter: "relearning", severity, shouldPushFuture: true }
+      : { targetStep: "d7", delayDays: 1, phaseAfter: "learning", severity, shouldPushFuture: false };
+  }
+  if (stepKey === "d4") {
+    return severe
+      ? { targetStep: "d1", delayDays: 1, phaseAfter: "learning", severity, shouldPushFuture: true }
+      : { targetStep: "d4", delayDays: 1, phaseAfter: "learning", severity, shouldPushFuture: false };
+  }
+  if (stepKey === "d1") {
+    return severe
+      ? { targetStep: "d0", delayDays: 1, phaseAfter: "learning", severity, shouldPushFuture: true }
+      : { targetStep: "d1", delayDays: 1, phaseAfter: "learning", severity, shouldPushFuture: false };
+  }
+  return { targetStep: "d0", delayDays: 1, phaseAfter: "learning", severity, shouldPushFuture: false };
+}
+
+export function pushFutureStepsAfterDowngrade(rev, targetStep, targetDate, options = {}) {
+  const nextRev = { ...rev };
+  const baseIdx = STEP_INDEX[targetStep];
+  if (baseIdx == null) return nextRev;
+
+  let prevKey = targetStep;
+  let prevDate = targetDate;
+  for (let i = baseIdx + 1; i < STEP_SEQUENCE.length; i++) {
+    const key = STEP_SEQUENCE[i];
+    const step = nextRev[key];
+    if (!step || step.done) {
+      prevKey = key;
+      prevDate = step?.date || prevDate;
+      continue;
+    }
+    const minGap = STEP_MIN_GAP[prevKey] || 1;
+    const minDate = addDays(prevDate, minGap);
+    const finalDate = step.date && step.date > minDate ? step.date : minDate;
+    nextRev[key] = {
+      ...step,
+      date: finalDate,
+      scheduledAt: finalDate,
+      phase: step.phase || inferPhaseFromStep(key),
+    };
+    prevKey = key;
+    prevDate = finalDate;
+  }
+
+  if (options?.pushMaintenance && nextRev.manutencao && !nextRev.manutencao.done) {
+    const minDate = addDays(prevDate, STEP_MIN_GAP.d21);
+    const finalDate = nextRev.manutencao.date && nextRev.manutencao.date > minDate
+      ? nextRev.manutencao.date
+      : minDate;
+    nextRev.manutencao = {
+      ...nextRev.manutencao,
+      date: finalDate,
+      scheduledAt: finalDate,
+      phase: "maintenance",
+    };
+  }
+
+  return nextRev;
+}
+
+export function applyRelearningRecoveryBonus(S, rating, context = {}) {
+  if (!context?.wasRelearning) return S;
+  if (rating === "easy") return S * 1.12;
+  if (rating === "good") return S * 1.05;
+  return S;
+}
+
+export function getLastReviewedAt(tema, stepKey) {
+  const history = tema?.rev?.reviewHistory || tema?.reviewHistory || [];
+  const byStep = stepKey ? getLastReviewForStep(history, stepKey) : getLastOfficialReview(history);
+  if (byStep?.reviewedAt) return byStep.reviewedAt;
+
+  const rev = tema?.rev || {};
+  if (stepKey && rev[stepKey]) {
+    if (rev[stepKey]?.reviewedAt) return rev[stepKey].reviewedAt;
+    if (rev[stepKey]?.done && rev[stepKey]?.date) return rev[stepKey].date;
+  }
+
+  if (!stepKey) {
+    for (let i = STEP_SEQUENCE.length - 1; i >= 0; i--) {
+      const key = STEP_SEQUENCE[i];
+      const step = rev[key];
+      if (!step || !step.done) continue;
+      if (step.reviewedAt) return step.reviewedAt;
+      if (step.date) return step.date;
+    }
+  }
+
+  return tema?.createdAt || tema?.d0 || todayStr();
+}
+
 export function getRetrievability(tema, stepKey) {
   if (stepKey === "d0") return 1.0;
   const stepIdx = STEPS.findIndex((s) => s.key === stepKey);
   if (stepIdx <= 0) return 1.0;
   const prevKey = STEPS[stepIdx - 1].key;
-  const lastDate = tema.rev[prevKey]?.date || tema.d0 || todayStr();
+  const lastDate = getLastReviewedAt(tema, prevKey);
   const t = Math.max(0, diffDays(lastDate, todayStr()));
   const S = tema.rev[stepKey]?.S || S_BASE[stepKey] || 1;
   return (1 + FSRS_FACTOR * t / S) ** FSRS_DECAY;
 }
 
 export function toRating(acerto) {
-  if (acerto == null) return "good";
-  if (acerto < 0.55) return "again";
-  if (acerto < 0.75) return "hard";
-  if (acerto < 0.90) return "good";
+  const normalized = normalizeAcerto(acerto);
+  if (normalized == null) return null;
+  if (normalized < 0.55) return "again";
+  if (normalized < 0.75) return "hard";
+  if (normalized < 0.90) return "good";
   return "easy";
 }
 
 export function updateDifficulty(D_prev, acerto) {
-  const delta = { again: +0.15, hard: +0.05, good: -0.02, easy: -0.08 }[toRating(acerto)];
+  const rating = toRating(acerto);
+  const delta = { again: +0.15, hard: +0.05, good: -0.02, easy: -0.08 }[rating];
+  if (delta == null) return D_prev ?? 0.5;
   return Math.min(1, Math.max(0, (D_prev ?? 0.5) + delta));
 }
 
 export function updateStability(S_prev, acerto, D = 0.5, sMult = 1.0) {
-  const base = { again: -0.8, hard: 0.05, good: 0.3, easy: 0.7 }[toRating(acerto)];
+  const rating = toRating(acerto);
+  const base = { again: -0.8, hard: 0.05, good: 0.3, easy: 0.7 }[rating];
+  if (base == null) return S_prev;
   const ganho = base * (1.1 - 0.4 * D) * sMult;
   return Math.max(0.5, S_prev * Math.exp(ganho));
 }
@@ -193,115 +436,313 @@ export function buildRev(d0, esp = "Outro") {
   const r = {};
   const prior = getAreaPrior(esp);
   STEPS.forEach((s) => {
-    r[s.key] = { date: addDays(d0, s.offset), done: false, acerto: null, questoes: null, S: S_BASE[s.key], D: prior.difBase, motivosErro: [] };
+    const stepDate = addDays(d0, s.offset);
+    r[s.key] = {
+      date: stepDate,
+      scheduledAt: stepDate,
+      reviewedAt: null,
+      done: false,
+      acerto: null,
+      questoes: null,
+      S: S_BASE[s.key],
+      D: prior.difBase,
+      motivosErro: [],
+      phase: inferPhaseFromStep(s.key),
+    };
   });
+  r.reviewHistory = [];
+  r.phase = "learning";
+  r.relearning = null;
   return r;
 }
 
 export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, maxInterval = 180, esp = "Outro") {
   const rating = toRating(acerto);
+  const eventStep = doneKey === "manutencao" ? rev?.manutencao : rev?.[doneKey];
+  if (!eventStep) return rev;
   const prior = getAreaPrior(esp);
+  const now = todayStr();
+  const phaseBefore = rev.phase || inferPhaseFromStep(doneKey, doneKey === "manutencao");
+  const wasRelearning = phaseBefore === "relearning" || rev?.relearning?.startedAt;
   const prevS = doneKey === "manutencao" 
     ? (rev.manutencao?.S ?? 45) 
     : (rev[doneKey]?.S ?? S_BASE[doneKey]);
   const prevD = doneKey === "manutencao"
     ? (rev.manutencao?.D ?? prior.difBase)
     : (rev[doneKey]?.D ?? prior.difBase);
-  const D_new = updateDifficulty(prevD, acerto);
-  const S_new = updateStability(prevS, acerto, D_new, prior.sMult);
-
-  if (rating === "again") {
-    if (doneKey === "manutencao") {
-      return {
-        ...rev,
-        manutencao: {
-          ...rev.manutencao,
-          S: S_new,
-          D: D_new,
-          date: addDays(todayStr(), 1),
-        }
-      };
-    }
+  if (rating == null) {
+    const currentStep = doneKey === "manutencao" ? rev.manutencao : rev[doneKey];
     return {
       ...rev,
-      [doneKey]: {
-        ...rev[doneKey],
-        S: S_new,
-        D: D_new,
-        done: false,
-        date: addDays(todayStr(), 1),
-        acerto: null,
-        questoes: null,
+      [doneKey]: clearOperationalStepState(currentStep || {}, {
+        phase: currentStep?.phase || inferPhaseFromStep(doneKey, doneKey === "manutencao"),
+      }),
+      phase: rev.phase || inferPhaseFromStep(doneKey, doneKey === "manutencao"),
+      meta: {
+        ...(rev.meta || {}),
+        schedulerWarning: "missing_rating",
       },
     };
+  }
+
+  const D_new = updateDifficulty(prevD, acerto);
+  const computedS = updateStability(prevS, acerto, D_new, prior.sMult);
+  const S_new = applyRelearningRecoveryBonus(computedS, rating, { wasRelearning });
+  const scheduledAt = eventStep.scheduledAt || eventStep.date || now;
+  const reviewedAt = eventStep.reviewedAt || now;
+  const atrasoDias = Math.max(0, diffDays(scheduledAt, reviewedAt));
+  const severity = rating === "again" ? getAgainSeverity(acerto) : null;
+  const historyBase = {
+    stepKey: doneKey,
+    phaseBefore,
+    scheduledAt,
+    reviewedAt,
+    atrasoDias,
+    acerto: normalizeAcerto(acerto),
+    questoes: eventStep.questoes ?? null,
+    rating,
+    severity,
+    S_before: prevS,
+    S_after: S_new,
+    D_before: prevD,
+    D_after: D_new,
+    intervalBefore: eventStep.interval ?? null,
+    official: true,
+    source: "fsrs-lite",
+  };
+
+  if (rating === "again") {
+    const policy = resolveAgainPolicy(doneKey, acerto, { isMaintenance: doneKey === "manutencao" });
+    const targetDate = addDays(now, policy.delayDays);
+    const targetPhase = policy.phaseAfter || inferPhaseFromStep(policy.targetStep, policy.targetStep === "manutencao");
+
+    let nextRev = {
+      ...rev,
+      phase: targetPhase,
+      relearning: policy.phaseAfter === "relearning"
+        ? {
+          fromStep: doneKey,
+          targetStep: policy.targetStep,
+          startedAt: now,
+          reason: "again_severe",
+        }
+        : rev.relearning || null,
+      meta: {
+        ...(rev.meta || {}),
+        schedulerWarning: null,
+      },
+    };
+
+    const failedMeta = {
+      lastFailedAt: now,
+      lastFailedAcerto: normalizeAcerto(acerto),
+      lastFailedRating: "again",
+    };
+    nextRev[doneKey] = clearOperationalStepState(nextRev[doneKey] || {}, failedMeta);
+
+    if (policy.targetStep !== doneKey) {
+      const targetIndex = STEP_INDEX[policy.targetStep];
+      if (targetIndex != null) {
+        for (let idx = targetIndex; idx < STEP_SEQUENCE.length; idx++) {
+          const key = STEP_SEQUENCE[idx];
+          if (!nextRev[key]) continue;
+          nextRev[key] = clearOperationalStepState(nextRev[key], {
+            phase: key === policy.targetStep ? targetPhase : inferPhaseFromStep(key),
+          });
+        }
+        if (nextRev.manutencao && (nextRev.manutencao.date || now) >= now) {
+          nextRev.manutencao = clearOperationalStepState(nextRev.manutencao, { phase: "maintenance" });
+        }
+      }
+    }
+
+    if (policy.targetStep === "manutencao") {
+      nextRev.manutencao = {
+        ...clearOperationalStepState(nextRev.manutencao || rev.manutencao || {}),
+        date: targetDate,
+        scheduledAt: targetDate,
+        S: S_new,
+        D: D_new,
+        phase: "maintenance",
+      };
+    } else {
+      const current = nextRev[policy.targetStep] || {};
+      nextRev[policy.targetStep] = {
+        ...clearOperationalStepState(current),
+        date: targetDate,
+        scheduledAt: targetDate,
+        S: policy.targetStep === doneKey ? S_new : (current.S ?? S_BASE[policy.targetStep] ?? prevS),
+        D: policy.targetStep === doneKey ? D_new : (current.D ?? prior.difBase),
+        phase: targetPhase,
+      };
+      if (policy.shouldPushFuture) {
+        nextRev = pushFutureStepsAfterDowngrade(nextRev, policy.targetStep, targetDate, { pushMaintenance: true });
+      }
+    }
+
+    const historyEvent = {
+      ...historyBase,
+      phaseAfter: targetPhase,
+      intervalAfter: policy.delayDays,
+    };
+    nextRev.reviewHistory = appendReviewHistory(nextRev, historyEvent, 100);
+    return nextRev;
   }
 
   if (doneKey === "manutencao") {
     const prevInterval = rev.manutencao?.interval || 45;
     const nextInt = nextInterval(S_new, prevInterval * 2, desiredRetention, maxInterval, D_new);
-    const baseDate = rev.manutencao.date >= todayStr() ? rev.manutencao.date : todayStr();
-    return {
+    const baseDate = rev.manutencao.date >= now ? rev.manutencao.date : now;
+    const nextDate = addDays(baseDate, nextInt);
+    const nextRev = {
       ...rev,
+      phase: "maintenance",
+      relearning: (wasRelearning && (rating === "good" || rating === "easy")) ? null : rev.relearning,
       manutencao: {
         done: false,
-        date: addDays(baseDate, nextInt),
+        date: nextDate,
+        scheduledAt: nextDate,
+        reviewedAt: null,
+        acerto: null,
+        questoes: null,
         S: S_new,
         D: D_new,
-        interval: prevInterval * 2
-      }
+        interval: nextInt,
+        targetInterval: prevInterval * 2,
+        phase: "maintenance",
+      },
+      meta: {
+        ...(rev.meta || {}),
+        schedulerWarning: null,
+      },
     };
+    nextRev.reviewHistory = appendReviewHistory(nextRev, {
+      ...historyBase,
+      phaseAfter: "maintenance",
+      intervalAfter: nextInt,
+      intervalBefore: prevInterval,
+    }, 100);
+    return nextRev;
   }
 
   if (doneKey === "d21") {
     const nextInt = nextInterval(S_new, 45, desiredRetention, maxInterval, D_new);
-    const baseDate = rev.d21.date >= todayStr() ? rev.d21.date : todayStr();
-    return {
+    const baseDate = rev.d21.date >= now ? rev.d21.date : now;
+    const nextDate = addDays(baseDate, nextInt);
+    const nextRev = {
       ...rev,
-      d21: { ...rev.d21, S: S_new, D: D_new },
+      phase: (wasRelearning && (rating === "good" || rating === "easy")) ? "maintenance" : "review",
+      relearning: (wasRelearning && (rating === "good" || rating === "easy")) ? null : rev.relearning,
+      d21: { ...rev.d21, S: S_new, D: D_new, phase: "review" },
       manutencao: {
         done: false,
-        date: addDays(baseDate, nextInt),
+        date: nextDate,
+        scheduledAt: nextDate,
+        reviewedAt: null,
+        acerto: null,
+        questoes: null,
         S: S_new,
         D: D_new,
-        interval: 45
-      }
+        interval: nextInt,
+        targetInterval: 45,
+        phase: "maintenance",
+      },
+      meta: {
+        ...(rev.meta || {}),
+        schedulerWarning: null,
+      },
     };
+    nextRev.reviewHistory = appendReviewHistory(nextRev, {
+      ...historyBase,
+      phaseAfter: nextRev.phase,
+      intervalAfter: nextInt,
+      intervalBefore: 45,
+    }, 100);
+    return nextRev;
   }
 
   const doneIdx = STEPS.findIndex((s) => s.key === doneKey);
   const nextStep = STEPS[doneIdx + 1];
   if (!nextStep) return rev;
   const interval = nextInterval(S_new, nextStep.offset, desiredRetention, maxInterval, D_new);
-  const baseDate = rev[doneKey].date >= todayStr() ? rev[doneKey].date : todayStr();
-  return {
+  const baseDate = rev[doneKey].date >= now ? rev[doneKey].date : now;
+  const nextDate = addDays(baseDate, interval);
+  const phaseAfter = (wasRelearning && (rating === "good" || rating === "easy"))
+    ? inferPhaseFromStep(nextStep.key)
+    : (rev.phase || inferPhaseFromStep(nextStep.key));
+  const nextRev = {
     ...rev,
-    [doneKey]: { ...rev[doneKey], S: S_new, D: D_new },
-    [nextStep.key]: { ...rev[nextStep.key], date: addDays(baseDate, interval) },
+    phase: phaseAfter,
+    relearning: (wasRelearning && (rating === "good" || rating === "easy")) ? null : rev.relearning,
+    [doneKey]: { ...rev[doneKey], S: S_new, D: D_new, phase: inferPhaseFromStep(doneKey) },
+    [nextStep.key]: { ...rev[nextStep.key], date: nextDate, scheduledAt: nextDate, phase: inferPhaseFromStep(nextStep.key) },
+    meta: {
+      ...(rev.meta || {}),
+      schedulerWarning: null,
+    },
   };
+  nextRev.reviewHistory = appendReviewHistory(nextRev, {
+    ...historyBase,
+    phaseAfter,
+    intervalAfter: interval,
+  }, 100);
+  return nextRev;
 }
 
 export function normalizeTema(t) {
   if (!t) return t;
   const rev = { ...t.rev };
   const prior = getAreaPrior(t.esp);
+  const defaultD0 = t.d0 || todayStr();
   STEPS.forEach((s) => {
     if (!rev[s.key]) {
       rev[s.key] = {
         date: t.d0 ? addDays(t.d0, s.offset) : todayStr(),
+        scheduledAt: t.d0 ? addDays(t.d0, s.offset) : todayStr(),
+        reviewedAt: null,
         done: false,
         acerto: null,
         questoes: null,
         S: S_BASE[s.key],
         D: prior.difBase,
         motivosErro: [],
+        phase: inferPhaseFromStep(s.key),
       };
-    } else if (rev[s.key].D == null) {
-      rev[s.key] = {
-        ...rev[s.key],
-        D: prior.difBase,
-      };
+    } else {
+      rev[s.key] = ensureStepMetadata(
+        rev[s.key],
+        t.d0 ? addDays(t.d0, s.offset) : todayStr(),
+        inferPhaseFromStep(s.key)
+      );
+      if (rev[s.key].D == null) {
+        rev[s.key].D = prior.difBase;
+      }
     }
   });
+  if (rev.manutencao) {
+    rev.manutencao = ensureStepMetadata(
+      rev.manutencao,
+      addDays(defaultD0, 45),
+      "maintenance"
+    );
+    if (rev.manutencao.D == null) {
+      rev.manutencao.D = prior.difBase;
+    }
+  }
+  if (!Array.isArray(rev.reviewHistory)) {
+    rev.reviewHistory = [];
+  }
+  rev.reviewHistory = rev.reviewHistory.map((event) => ({
+    official: true,
+    source: "fsrs-lite",
+    ...event,
+  })).slice(-100);
+  if (!rev.phase) {
+    rev.phase = "learning";
+  }
+  if (!Object.prototype.hasOwnProperty.call(rev, "relearning")) {
+    rev.relearning = null;
+  }
   if (rev.manutencao && rev.manutencao.D == null) {
     rev.manutencao = {
       ...rev.manutencao,

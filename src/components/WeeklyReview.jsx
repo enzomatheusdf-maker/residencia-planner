@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { CalendarCheck2, ChevronDown, ChevronUp, X } from "lucide-react";
 import { addDays, STEPS, todayStr } from "../core/fsrs";
 import { buildWeeklyReview } from "../core/sessionReflection";
@@ -142,8 +143,8 @@ export default function WeeklyReview({ onAdjust, onAction }) {
         </div>
       )}
 
-      {showAdjustModal && (
-        <div className="fixed inset-0 z-[410] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 md:pl-60" onClick={() => setShowAdjustModal(false)}>
+      {showAdjustModal && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[410] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAdjustModal(false)}>
           <div
             className="w-full max-w-lg bg-[var(--surface-2)] border border-white/10 rounded-2xl p-4 space-y-3"
             onClick={(event) => event.stopPropagation()}
@@ -192,7 +193,8 @@ export default function WeeklyReview({ onAdjust, onAction }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );

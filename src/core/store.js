@@ -9,6 +9,7 @@ import { buildActionInbox, createAction, sortActions } from "./actionInbox";
 import { createSessionReflection, reflectionToAction } from "./sessionReflection";
 import { adjustActionForPeakMode, getPeakModePolicy, getPeakPhase } from "./peakMode";
 import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } from "./onboarding";
+import { getAnonymousStorageKey, getOrCreateAnonymousSessionId } from "./userScope";
 import {
   criarRegistroDominio,
   buildRevComDominio,
@@ -30,6 +31,7 @@ function prioToImportancia(prio) {
 
 const initialPlat = () => ({ temas: [], simulados: [], ankiLog: [], cronogramas: [], casosProgresso: {} });
 const initialActionInboxState = () => ({ dismissed: {}, accepted: {}, done: {} });
+const DEFAULT_PERSIST_SCOPE_KEY = getAnonymousStorageKey(getOrCreateAnonymousSessionId());
 
 const initialVestibularPlat = () => {
   const temasData = [
@@ -850,42 +852,49 @@ export const useStore = create(
         get().finalizarValidacaoDominioPrevio(platKey, temaId, { questoes, acertos }),
 
       markStep: (platKey, temaId, stepKey, { acerto, previsao, questoes, motivosErro, erros, tempoMin, ansiedade, cansaco, confianca, dificuldade, foco, c1, c2, c3, c4, c5, modoReduzido, descansoPrescrito }) =>
-        set((s) => ({
-          [platKey]: {
-            ...s[platKey],
-            temas: s[platKey].temas.map((t) => {
-              if (t.id !== temaId) return t;
-              const revMarked = {
-                ...t.rev,
-                [stepKey]: {
-                  ...t.rev[stepKey],
-                  done: true,
-                  acerto,
-                  previsao,
-                  questoes,
-                  motivosErro: motivosErro || [],
-                  erros: erros || [],
-                  tempoMin: tempoMin ?? t.rev[stepKey].tempoMin,
-                  ansiedade: ansiedade ?? t.rev[stepKey].ansiedade,
-                  cansaco: cansaco ?? t.rev[stepKey].cansaco,
-                  confianca: confianca ?? t.rev[stepKey].confianca,
-                  dificuldade: dificuldade ?? t.rev[stepKey].dificuldade,
-                  foco: foco ?? t.rev[stepKey].foco,
-                  c1: c1 ?? t.rev[stepKey].c1,
-                  c2: c2 ?? t.rev[stepKey].c2,
-                  c3: c3 ?? t.rev[stepKey].c3,
-                  c4: c4 ?? t.rev[stepKey].c4,
-                  c5: c5 ?? t.rev[stepKey].c5,
-                  modoReduzido: modoReduzido ?? t.rev[stepKey].modoReduzido,
-                  descansoPrescrito: descansoPrescrito ?? t.rev[stepKey].descansoPrescrito,
-                },
-              };
-              const desiredRetention = getRetencaoArea(t.esp, s.meta?.retencaoFSRS ?? 0.90);
-              const maxInterval = s.meta?.intervaloMaxDias ?? 180;
-              return { ...t, rev: recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, t.esp) };
-            }),
-          },
-        })),
+        set((s) => {
+          const reviewedAt = todayStr();
+          return {
+            [platKey]: {
+              ...s[platKey],
+              temas: s[platKey].temas.map((t) => {
+                if (t.id !== temaId) return t;
+                const currentStep = t.rev?.[stepKey] || {};
+                const revMarked = {
+                  ...t.rev,
+                  [stepKey]: {
+                    ...currentStep,
+                    done: true,
+                    acerto,
+                    previsao,
+                    questoes,
+                    reviewedAt,
+                    completedAt: reviewedAt,
+                    scheduledAt: currentStep.scheduledAt || currentStep.date || reviewedAt,
+                    motivosErro: motivosErro || [],
+                    erros: erros || [],
+                    tempoMin: tempoMin ?? currentStep.tempoMin,
+                    ansiedade: ansiedade ?? currentStep.ansiedade,
+                    cansaco: cansaco ?? currentStep.cansaco,
+                    confianca: confianca ?? currentStep.confianca,
+                    dificuldade: dificuldade ?? currentStep.dificuldade,
+                    foco: foco ?? currentStep.foco,
+                    c1: c1 ?? currentStep.c1,
+                    c2: c2 ?? currentStep.c2,
+                    c3: c3 ?? currentStep.c3,
+                    c4: c4 ?? currentStep.c4,
+                    c5: c5 ?? currentStep.c5,
+                    modoReduzido: modoReduzido ?? currentStep.modoReduzido,
+                    descansoPrescrito: descansoPrescrito ?? currentStep.descansoPrescrito,
+                  },
+                };
+                const desiredRetention = getRetencaoArea(t.esp, s.meta?.retencaoFSRS ?? 0.90);
+                const maxInterval = s.meta?.intervaloMaxDias ?? 180;
+                return { ...t, rev: recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, t.esp) };
+              }),
+            },
+          };
+        }),
 
       importTemas: (platKey, items, d0) =>
         set((s) => ({
@@ -1196,10 +1205,14 @@ export const useStore = create(
             importedTopics: [],
             customTopics: [],
           },
+          res: initialPlat(),
+          vest: initialVestibularPlat(),
+          undoStack: [],
           userName: "Estudante",
           userEmail: "",
           meta: { dataProva: "2026-09-13", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false, lastFocusSessionAt: null, lastReflectionAt: null, peakModePhase: "base", ankiAdesao: { datas: [] }, modulos: { raciocinioClinico: false }, onboarding: getOnboardingDefaults(), temasPerWeek: 6, estrategiaStartDate: null },
           onboardingDone: false,
+          sprint: { esps: [], ativa: false, semana: "" },
           focusMode: false,
           modoSimples: true,
           mentorMode: true,
@@ -1215,6 +1228,7 @@ export const useStore = create(
           toast: null,
           confirmDialog: null,
           tourStep: null,
+          updatedAt: Date.now(),
           gamif: {
             xp: 0,
             level: 1,
@@ -1233,7 +1247,7 @@ export const useStore = create(
       })
     ),
     {
-      name: "reviewflow-v6",
+      name: DEFAULT_PERSIST_SCOPE_KEY,
       storage: createJSONStorage(() => localStorage),
       partialize: (s) => ({
         plat: s.plat,

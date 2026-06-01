@@ -8,11 +8,14 @@ import { CATALOGO_RES, CATALOGO_VEST, getSubtopics } from "../constants/catalogo
 import { PROVA_STATS_RES, PROVA_STATS_VEST, PROVAS_RES, PROVAS_VEST } from "../constants/provaStats";
 import { getBrainDumpFields } from "../constants/stepDefinitions";
 import { useStore } from "../core/store";
+import { exportMedrevBackup, importMedrevBackup, validateMedrevBackup } from "../core/backup";
 import {
   classificarDominio,
   DOMINIO_META,
   DOMINIO_PREVIO_MIN_QUESTOES,
 } from "../core/domainValidation";
+import { getAnonymousStorageKey, getOrCreateAnonymousSessionId, getUserScopedStorageKey } from "../core/userScope";
+import { detectLegacyGlobalStore, migrateLegacyStoreToUserScope } from "../core/userDataMigration";
 import { getReadinessData } from "../core/readiness";
 
 import {
@@ -1229,7 +1232,14 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
 }
 
 // ==================================================
-export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
+export function AjustesModal({
+  onClose,
+  overdueCount,
+  onResetOnboarding,
+  initialTab = "perfil",
+  authScope = null,
+  syncStatus = "saved",
+}) {
   const { meta, setMeta, plat, setPlat, optimize, sprint, setSprint, userName, setUserName, userEmail, setUserEmail, gamif, toggleModulo } = useStore();
   const showToast = useStore((s) => s.showToast);
   const openConfirm = useStore((s) => s.openConfirm);
@@ -1259,10 +1269,22 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
       esps: sprintRedAreas
     });
   };
-  const [activeTab, setActiveTab] = useState("perfil");
+  const [activeTab, setActiveTab] = useState(initialTab || "perfil");
+  useEffect(() => {
+    setActiveTab(initialTab || "perfil");
+  }, [initialTab]);
   const [customPauseDays, setCustomPauseDays] = useState("10");
+  const [importFeedback, setImportFeedback] = useState(null);
   const daysLeft = meta.dataProva ? diffDays(todayStr(), meta.dataProva) : null;
   const urgency  = daysLeft == null ? "" : daysLeft <= 30 ? "text-red-400" : daysLeft <= 90 ? "text-yellow-400" : "text-blue-400";
+  const currentUid = authScope?.uid || auth.currentUser?.uid || null;
+  const scopeKey = authScope?.scopeKey || (
+    currentUid
+      ? getUserScopedStorageKey(currentUid)
+      : getAnonymousStorageKey(getOrCreateAnonymousSessionId())
+  );
+  const legacyStore = detectLegacyGlobalStore();
+  const isolationStatus = currentUid && scopeKey.includes(`:user:${currentUid}:`) ? "isolado" : "risco detectado";
 
   const xpAudit = gamif?.xpAudit || { acertos: 0, constancia: 0, outros: 0 };
   const totalAuditXp = (xpAudit.acertos || 0) + (xpAudit.constancia || 0) + (xpAudit.outros || 0);
@@ -1289,22 +1311,11 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
 
   const handleExportBackup = () => {
     const state = useStore.getState();
-    const backupData = {
-      plat: state.plat,
-      userName: state.userName,
-      meta: state.meta,
-      res: state.res,
-      vest: state.vest,
-      onboardingDone: state.onboardingDone,
-      focusMode: state.focusMode,
-      modoSimples: state.modoSimples,
-      brainDumpD1Data: state.brainDumpD1Data,
-      temaStats: state.temaStats,
-      vistos: state.vistos || [],
-      updatedAt: state.updatedAt || Date.now(),
-      version: "reviewflow-v6-backup"
-    };
-    
+    const backupData = exportMedrevBackup(state, {
+      ownerUid: currentUid,
+      appVersion: process.env.REACT_APP_VERSION || process.env.npm_package_version || "unknown",
+    });
+
     const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
       JSON.stringify(backupData, null, 2)
     )}`;
@@ -1324,30 +1335,28 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
     reader.onload = (e) => {
       try {
         const backup = JSON.parse(e.target.result);
-        if (backup.version !== "reviewflow-v6-backup") {
-          showToast("Arquivo de backup inválido.");
+        const validated = validateMedrevBackup(backup);
+        if (!validated.valid) {
+          showToast(`Arquivo de backup invalido: ${validated.errors.join(" | ")}`);
           return;
         }
+        setImportFeedback(validated);
         openConfirm({
           title: "Importar backup",
-          message: "Deseja importar este backup? Seus dados atuais serão sobrescritos.",
+          message: "Deseja importar este backup? Seus dados atuais deste usuario serao sobrescritos.",
           confirmLabel: "Importar",
           danger: true,
           onConfirm: () => {
-            useStore.setState({
-              plat: backup.plat ?? "res",
-              userName: backup.userName ?? "Estudante",
-              meta: backup.meta ?? { dataProva: "2026-10-25", acerto: 85, metaDiaria: 0 },
-              res: backup.res ?? { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
-              vest: backup.vest ?? { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
-              onboardingDone: backup.onboardingDone ?? false,
-              focusMode: backup.focusMode ?? false,
-              modoSimples: backup.modoSimples ?? true,
-              brainDumpD1Data: backup.brainDumpD1Data ?? {},
-              temaStats: backup.temaStats ?? {},
-              vistos: backup.vistos ?? [],
-              updatedAt: Date.now(),
+            const imported = importMedrevBackup(backup, {
+              currentUid,
+              currentMeta: useStore.getState().meta,
+              preserveLocalMeta: false,
             });
+            if (!imported.ok) {
+              showToast(imported.errors?.[0] || "Falha ao importar backup.");
+              return;
+            }
+            useStore.setState({ ...imported.patch, updatedAt: Date.now() });
             showToast("Backup importado com sucesso!");
             onClose();
           }
@@ -1357,6 +1366,32 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleMigrateLegacy = () => {
+    if (!currentUid) {
+      showToast("Faca login para migrar dados legados.");
+      return;
+    }
+    if (!legacyStore.found) {
+      showToast("Nao ha store legada global para migracao.");
+      return;
+    }
+
+    openConfirm({
+      title: "Migrar dados legados",
+      message: `Foi detectada a chave '${legacyStore.key}'. Migrar para o escopo atual deste uid?`,
+      confirmLabel: "Migrar",
+      danger: true,
+      onConfirm: () => {
+        const migration = migrateLegacyStoreToUserScope(currentUid, { confirm: true });
+        if (!migration.ok) {
+          showToast(`Falha na migracao: ${migration.error}`);
+          return;
+        }
+        showToast("Migracao legada concluida.");
+      },
+    });
   };
 
   const handleExcluirConta = async () => {
@@ -1571,7 +1606,10 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                   <button
                     type="button"
                     onClick={() => {
-                      const avgWorkload = Math.round(Object.values(getWorkloadProjection(temas, 14)).reduce((a,b)=>a+b, 0) / 14) || 10;
+                      const avgWorkload = Math.round(
+                        Object.values(getWorkloadProjection(temas, 14))
+                          .reduce((sum, day) => sum + (day?.count || 0), 0) / 14
+                      ) || 10;
                       saveMeta({ metaDiaria: avgWorkload });
                       showToast(`Meta diária calibrada em ${avgWorkload} revisões/dia.`);
                     }}
@@ -1946,7 +1984,14 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
               <p className="text-[11.5px] text-gray-500 leading-relaxed">
                 Exporte seu progresso estruturado ou restaure a partir de um backup JSON.
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-[10px] text-gray-300 space-y-1">
+                <p><span className="text-gray-500">Usuario atual:</span> {userEmail || "sem email"} / {currentUid || "nao autenticado"}</p>
+                <p className="break-all"><span className="text-gray-500">Escopo local:</span> {scopeKey}</p>
+                <p><span className="text-gray-500">Ultima hidratacao:</span> {authScope?.lastHydratedAt ? new Date(authScope.lastHydratedAt).toLocaleString() : "pendente"}</p>
+                <p><span className="text-gray-500">Ultimo sync:</span> {authScope?.lastSyncAt ? new Date(authScope.lastSyncAt).toLocaleString() : "sem sync"}</p>
+                <p><span className="text-gray-500">Status:</span> {isolationStatus} · sync {syncStatus}</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={handleExportBackup}
@@ -1963,7 +2008,17 @@ export function AjustesModal({ onClose, overdueCount, onResetOnboarding }) {
                     className="hidden"
                   />
                 </label>
+                <button
+                  type="button"
+                  onClick={handleMigrateLegacy}
+                  className="px-3 py-2 bg-amber-600/15 hover:bg-amber-600/25 text-amber-300 border border-amber-500/30 rounded-xl text-[11px] font-bold transition-all"
+                >
+                  Migrar legado
+                </button>
               </div>
+              {importFeedback?.warnings?.length > 0 && (
+                <p className="text-[10px] text-yellow-300">{importFeedback.warnings.join(" | ")}</p>
+              )}
             </div>
 
             <div className="bg-white/5 rounded-2xl p-4 space-y-3">

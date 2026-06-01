@@ -10,6 +10,8 @@ import { xpForReview } from "./core/gamif";
 import { ACHIEVEMENTS } from "./core/achievements";
 import { getReadinessData } from "./core/readiness";
 import { exportMedrevBackup } from "./core/backup";
+import { buildAuthSession, getInitialAuthSession, assertActiveUserScope } from "./core/authSession";
+import { getAnonymousStorageKey, getOrCreateAnonymousSessionId, getUserScopedStorageKey } from "./core/userScope";
 import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } from "./core/onboarding";
 import { featureEnabled } from "./core/platformFeatures";
 
@@ -19,6 +21,7 @@ import { getMentorPhrase, getRecentPhrases, trackRecentPhrase } from "./core/men
 
 // Camada de Serviços
 import {
+  auth,
   monitorarAuth,
   sincronizarComFirebase,
   carregarDadosUsuario,
@@ -111,12 +114,16 @@ export default function App() {
   // ─── AUTENTICAÇÃO FIREBASE ────────────────────────────────────────────────
   const [usuarioLogado, setUsuarioLogado] = useState(null);
   const [carregandoAuth, setCarregandoAuth] = useState(true);
+  const [authSession, setAuthSession] = useState(getInitialAuthSession());
+  const authTransitionRef = useRef(0);
+  const defaultAnonymousScopeRef = useRef(getAnonymousStorageKey(getOrCreateAnonymousSessionId()));
 
   const [view, setView] = useState("login");
   const [helpModal, setHelpModal] = useState(false);
 
   const [temaEdit, setTemaEdit] = useState(null);
   const [ajustes, setAjustes] = useState(false);
+  const [ajustesContext, setAjustesContext] = useState({ initialTab: "perfil" });
   const [editName, setEditName] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showCheckmark, setShowCheckmark] = useState(false);
@@ -134,10 +141,26 @@ export default function App() {
   const onboardingMeta = useMemo(() => getOnboardingDefaults(meta || {}), [meta]);
   const onboardingCompleted = onboardingDone || isOnboardingComplete({ onboarding: onboardingMeta });
   const shouldShowOnboarding = !onboardingCompleted && !tourStep;
+  const openAjustes = useCallback((payload = true) => {
+    if (payload === false) {
+      setAjustes(false);
+      return;
+    }
+    const validTabs = ["perfil", "ajustes", "dados", "conta"];
+    const nextTab =
+      payload && typeof payload === "object" && validTabs.includes(payload.initialTab)
+        ? payload.initialTab
+        : "perfil";
+    setAjustesContext({ initialTab: nextTab });
+    setAjustes(true);
+  }, []);
 
   const exportBackupNow = useCallback(() => {
     try {
-      const backup = exportMedrevBackup(useStore.getState());
+      const backup = exportMedrevBackup(useStore.getState(), {
+        ownerUid: authSession.uid,
+        appVersion: process.env.REACT_APP_VERSION || process.env.npm_package_version || "unknown",
+      });
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -152,7 +175,34 @@ export default function App() {
       if (showToastStore) showToastStore("Falha ao exportar backup.");
       console.error("Falha ao exportar backup no fallback:", error);
     }
-  }, [showToastStore]);
+  }, [authSession.uid, showToastStore]);
+
+  const buildStateToSync = useCallback((state, uidOverride = null) => ({
+    plat: state.plat,
+    cronogramaSel: state.cronogramaSel,
+    calendarProvider: state.calendarProvider,
+    gamif: state.gamif,
+    meta: state.meta,
+    res: state.res,
+    vest: state.vest,
+    userName: state.userName,
+    userEmail: state.userEmail,
+    onboardingDone: state.onboardingDone,
+    focusMode: state.focusMode,
+    modoSimples: state.modoSimples,
+    mentorMode: state.mentorMode,
+    modoProva: state.modoProva,
+    enamedAnalises: state.enamedAnalises,
+    actionInboxState: state.actionInboxState,
+    sessionReflections: state.sessionReflections,
+    weeklyReviews: state.weeklyReviews,
+    brainDumpD1Data: state.brainDumpD1Data,
+    temaStats: state.temaStats,
+    vistos: state.vistos || [],
+    sprint: state.sprint,
+    ownerUid: uidOverride || authSession.uid || null,
+    updatedAt: state.updatedAt || Date.now(),
+  }), [authSession.uid]);
 
   useEffect(() => {
     if (!usuarioLogado || trackedReturnRef.current) return;
@@ -235,28 +285,50 @@ export default function App() {
 
     const unsubscribe = monitorarAuth(async (user) => {
       if (!isMounted) return;
+      const transitionId = ++authTransitionRef.current;
+      setCarregandoAuth(true);
+      setSyncStatus(navigator.onLine ? "saving" : "offline");
+
+      const uid = user?.uid || null;
+      const scopeKey = uid
+        ? getUserScopedStorageKey(uid)
+        : defaultAnonymousScopeRef.current;
+
+      setAuthSession(buildAuthSession({ user, hydrated: false, scopeKey }));
+
+      resetStore();
+
+      if (useStore.persist?.setOptions) {
+        useStore.persist.setOptions({ name: scopeKey });
+      }
+      if (useStore.persist?.rehydrate) {
+        await useStore.persist.rehydrate();
+      }
+
+      if (!isMounted || transitionId !== authTransitionRef.current) return;
+
+      const hydratedLocalState = useStore.getState();
+      const localTime = hydratedLocalState.updatedAt || 0;
 
       if (user) {
         setUsuarioLogado(user);
-        
-        // Instant updates to Zustand state:
+
         useStore.setState({
           userName: user.displayName || user.email?.split("@")[0] || "Estudante",
-          userEmail: user.email || ""
+          userEmail: user.email || "",
         });
 
-        // Carregar dados completos do Firebase
         const resultado = await carregarDadosUsuario(user.uid);
-        if (resultado.sucesso) {
-          const dados = resultado.dados;
-          const currentState = useStore.getState();
+        if (!isMounted || transitionId !== authTransitionRef.current) return;
 
+        if (resultado.sucesso) {
+          const dados = resultado.dados || {};
+          const currentState = useStore.getState();
           const remoteTime = dados.updatedAt || 0;
-          const localTime = currentState.updatedAt || 0;
 
           if (remoteTime > localTime) {
             if (Math.abs(remoteTime - localTime) > 24 * 60 * 60 * 1000) {
-              showToastStore("Dados da nuvem mais recentes — atualizando.");
+              showToastStore("Dados da nuvem mais recentes - atualizando.");
             }
 
             const normalizePlatTemas = (platObj, initialPlatObj) => {
@@ -265,7 +337,7 @@ export default function App() {
               return {
                 ...initialPlatObj,
                 ...platObj,
-                temas: temasList.map(t => normalizeTema(t))
+                temas: temasList.map((t) => normalizeTema(t)),
               };
             };
 
@@ -279,7 +351,10 @@ export default function App() {
               mergedRemoteMeta,
               (dados.onboardingDone || currentState.onboardingDone) ? { completed: true } : {}
             );
-            const resolvedOnboardingDone = currentState.onboardingDone || (dados.onboardingDone ?? false) || resolvedOnboarding.completed === true;
+            const resolvedOnboardingDone =
+              currentState.onboardingDone ||
+              (dados.onboardingDone ?? false) ||
+              resolvedOnboarding.completed === true;
 
             const firebaseVest = dados.vest || {};
             const resolvedVest = (firebaseVest.temas?.length > 0)
@@ -289,6 +364,7 @@ export default function App() {
             useStore.setState({
               plat: dados.plat || "res",
               cronogramaSel: dados.cronogramaSel || currentState.cronogramaSel,
+              calendarProvider: dados.calendarProvider || currentState.calendarProvider,
               gamif: dados.gamif ? { ...currentState.gamif, ...dados.gamif } : currentState.gamif,
               userName: dados.userName || user.displayName || user.email?.split("@")[0] || "Estudante",
               userEmail: user.email || "",
@@ -301,46 +377,49 @@ export default function App() {
               onboardingDone: resolvedOnboardingDone,
               focusMode: dados.focusMode ?? false,
               modoSimples: dados.modoSimples ?? true,
+              mentorMode: dados.mentorMode ?? true,
+              modoProva: dados.modoProva ?? false,
+              enamedAnalises: dados.enamedAnalises || [],
+              actionInboxState: dados.actionInboxState || currentState.actionInboxState,
+              sessionReflections: dados.sessionReflections || [],
+              weeklyReviews: dados.weeklyReviews || [],
               brainDumpD1Data: dados.brainDumpD1Data || {},
               temaStats: dados.temaStats || {},
               vistos: dados.vistos || [],
               sprint: dados.sprint || currentState.sprint || { esps: [], ativa: false, semana: "" },
+              ownerUid: uid,
               updatedAt: remoteTime,
             });
           } else {
-            const stateToSave = {
-              plat: currentState.plat,
-              cronogramaSel: currentState.cronogramaSel,
-              gamif: currentState.gamif,
-              meta: currentState.meta,
-              res: currentState.res,
-              vest: currentState.vest,
-              userName: currentState.userName,
-              onboardingDone: currentState.onboardingDone,
-              focusMode: currentState.focusMode,
-              modoSimples: currentState.modoSimples,
-              brainDumpD1Data: currentState.brainDumpD1Data,
-              temaStats: currentState.temaStats,
-              vistos: currentState.vistos || [],
-              sprint: currentState.sprint,
-              updatedAt: localTime || Date.now(),
-            };
-            sincronizarComFirebase(user.uid, stateToSave)
-              .catch((err) => console.error("Erro ao sincronizar dados locais mais recentes:", err));
+            const stateToSave = buildStateToSync(currentState, uid);
+            await sincronizarComFirebase(uid, stateToSave).catch((err) => {
+              console.error("Erro ao sincronizar dados locais mais recentes:", err);
+            });
           }
-          setView("dash");
         } else {
-          setView("dash");
+          const stateToSave = buildStateToSync(useStore.getState(), uid);
+          await sincronizarComFirebase(uid, stateToSave).catch((err) => {
+            console.error("Erro ao inicializar dados na nuvem:", err);
+          });
         }
+
+        setView("dash");
       } else {
         setUsuarioLogado(null);
         setView("login");
       }
 
-      if (isMounted) {
-        setCarregandoAuth(false);
-        clearTimeout(timeoutId);
-      }
+      if (!isMounted || transitionId !== authTransitionRef.current) return;
+
+      setAuthSession((prev) => ({
+        ...prev,
+        status: user ? "authenticated" : "signed_out",
+        hydrated: true,
+        lastHydratedAt: Date.now(),
+      }));
+      setCarregandoAuth(false);
+      setSyncStatus(navigator.onLine ? "saved" : "offline");
+      clearTimeout(timeoutId);
     });
 
     // Timeout de segurança: se Firebase não responder em 5s, mostra AuthModal
@@ -355,11 +434,12 @@ export default function App() {
       clearTimeout(timeoutId);
       unsubscribe();
     };
-  }, [setUserName, setPlat, showToastStore]);
+  }, [buildStateToSync, resetStore, showToastStore]);
 
   // ─── SINCRONIZAR DADOS COM FIREBASE (AO MUDAR ESTADO) ──────────────────────
   useEffect(() => {
-    if (!usuarioLogado) return;
+    if (!usuarioLogado || !authSession.hydrated || !authSession.uid) return;
+    const activeUid = authSession.uid;
 
     let timeoutId;
     let lastSavedJSON = "";
@@ -368,23 +448,17 @@ export default function App() {
       setSyncStatus((current) => (current === "offline" ? "offline" : "saving"));
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        const stateToSave = {
-          plat: state.plat,
-          cronogramaSel: state.cronogramaSel,
-          gamif: state.gamif,
-          meta: state.meta,
-          res: state.res,
-          vest: state.vest,
-          userName: state.userName,
-          onboardingDone: state.onboardingDone,
-          focusMode: state.focusMode,
-          modoSimples: state.modoSimples,
-          brainDumpD1Data: state.brainDumpD1Data,
-          temaStats: state.temaStats,
-          vistos: state.vistos || [],
-          sprint: state.sprint,
-          updatedAt: state.updatedAt || Date.now(),
-        };
+        let currentUid;
+        try {
+          currentUid = auth.currentUser?.uid || null;
+          assertActiveUserScope(activeUid, currentUid);
+        } catch (scopeError) {
+          console.error("Bloqueio de sync por escopo divergente:", scopeError);
+          setSyncStatus("offline");
+          return;
+        }
+
+        const stateToSave = buildStateToSync(state, activeUid);
 
         const { updatedAt, ...dataToCompare } = stateToSave;
         const currentJSON = JSON.stringify(dataToCompare);
@@ -395,10 +469,15 @@ export default function App() {
 
         lastSavedJSON = currentJSON;
         setSyncStatus("saving");
-        sincronizarComFirebase(usuarioLogado.uid, stateToSave)
+        sincronizarComFirebase(activeUid, stateToSave)
           .then((res) => {
             if (res.sucesso) {
               setSyncStatus("saved");
+              setAuthSession((prev) => (
+                prev.uid === activeUid
+                  ? { ...prev, lastSyncAt: Date.now() }
+                  : prev
+              ));
             } else {
               setSyncStatus("offline");
             }
@@ -414,32 +493,25 @@ export default function App() {
       unsubscribe();
       clearTimeout(timeoutId);
     };
-  }, [usuarioLogado]);
+  }, [authSession.hydrated, authSession.uid, buildStateToSync, usuarioLogado]);
 
   // ─── GARANTIR FLUSH ANTES DE SAIR DA PÁGINA ───────────────────────────────
   useEffect(() => {
-    if (!usuarioLogado) return;
+    if (!usuarioLogado || !authSession.hydrated || !authSession.uid) return;
+    const activeUid = authSession.uid;
 
     const handleFlush = () => {
+      try {
+        const currentUid = auth.currentUser?.uid || null;
+        assertActiveUserScope(activeUid, currentUid);
+      } catch (scopeError) {
+        console.error("Flush bloqueado por escopo divergente:", scopeError);
+        return;
+      }
+
       const state = useStore.getState();
-      const stateToSave = {
-        plat: state.plat,
-        cronogramaSel: state.cronogramaSel,
-        gamif: state.gamif,
-        meta: state.meta,
-        res: state.res,
-        vest: state.vest,
-        userName: state.userName,
-        onboardingDone: state.onboardingDone,
-        focusMode: state.focusMode,
-        modoSimples: state.modoSimples,
-        brainDumpD1Data: state.brainDumpD1Data,
-        temaStats: state.temaStats,
-        vistos: state.vistos || [],
-        sprint: state.sprint,
-        updatedAt: state.updatedAt || Date.now(),
-      };
-      sincronizarComFirebase(usuarioLogado.uid, stateToSave)
+      const stateToSave = buildStateToSync(state, activeUid);
+      sincronizarComFirebase(activeUid, stateToSave)
         .catch((err) => console.error("Erro no flush beforeunload:", err));
     };
 
@@ -447,7 +519,7 @@ export default function App() {
     return () => {
       window.removeEventListener("beforeunload", handleFlush);
     };
-  }, [usuarioLogado]);
+  }, [authSession.hydrated, authSession.uid, buildStateToSync, usuarioLogado]);
 
 
 
@@ -476,7 +548,7 @@ export default function App() {
     const temasList = state[plat]?.temas || [];
     const maxRevisoesDia = state.meta?.maxRevisoesDia || 30;
     const proj = getWorkloadProjection(temasList, 7);
-    const exceeds = Object.values(proj).some((count) => count > maxRevisoesDia);
+    const exceeds = Object.values(proj).some((day) => (day?.count || 0) > maxRevisoesDia);
     if (exceeds) {
       showToast("Atenção: próxima semana já está carregada de revisões.");
     }
@@ -785,7 +857,7 @@ export default function App() {
           <div className="animate-pulse">
             <MedRevLogo size="lg" showTagline />
           </div>
-          <p className="text-[11px] text-gray-500 uppercase tracking-widest font-bold font-mono">Carregando perfil...</p>
+          <p className="text-[11px] text-gray-500 uppercase tracking-widest font-bold font-mono">Carregando seus dados...</p>
         </div>
       </div>
     );
@@ -795,13 +867,9 @@ export default function App() {
   if (!usuarioLogado) {
     return (
       <AuthModal
-        onSuccess={(user) => {
-          setUsuarioLogado(user);
-          useStore.setState({
-            userName: user.displayName || user.email?.split("@")[0] || "Estudante",
-            userEmail: user.email || ""
-          });
-          setView("dash");
+        onSuccess={() => {
+          setCarregandoAuth(true);
+          setSyncStatus("saving");
         }}
       />
     );
@@ -847,35 +915,20 @@ export default function App() {
       <Sidebar
         view={view}
         setView={setView}
-        setAjustes={setAjustes}
+        setAjustes={openAjustes}
         overdueCount={overdueCount}
         setHelpModal={setHelpModal}
         usuarioLogado={usuarioLogado}
         syncStatus={syncStatus}
         onOpenLoja={() => setLojaOpen(true)}
         onLogout={async () => {
-          const state = useStore.getState();
-          const stateToSave = {
-            plat: state.plat,
-            cronogramaSel: state.cronogramaSel,
-            gamif: state.gamif,
-            userName: state.userName,
-            meta: state.meta,
-            res: state.res,
-            vest: state.vest,
-            onboardingDone: state.onboardingDone,
-            focusMode: state.focusMode,
-            modoSimples: state.modoSimples,
-            brainDumpD1Data: state.brainDumpD1Data,
-            temaStats: state.temaStats,
-            vistos: state.vistos || [],
-            sprint: state.sprint,
-            updatedAt: state.updatedAt || Date.now(),
-          };
-          await sincronizarComFirebase(usuarioLogado.uid, stateToSave);
+          const activeUid = authSession.uid || usuarioLogado?.uid || null;
+          if (activeUid) {
+            const state = useStore.getState();
+            const stateToSave = buildStateToSync(state, activeUid);
+            await sincronizarComFirebase(activeUid, stateToSave);
+          }
           await fazerLogout();
-          resetStore();
-          setUsuarioLogado(null);
         }}
       />
 
@@ -928,7 +981,7 @@ export default function App() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setAjustes(true)}
+                  onClick={() => openAjustes({ initialTab: "ajustes" })}
                   className="md:hidden p-1.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white flex items-center justify-center"
                   title="Ajustes"
                 >
@@ -954,13 +1007,9 @@ export default function App() {
         <main className="flex-1 overflow-y-auto px-4 py-5 md:px-7 md:py-6 pb-28 md:pb-6">
           {view === "login" && (
             <AuthModal
-              onSuccess={(user) => {
-                setUsuarioLogado(user);
-                useStore.setState({
-                  userName: user.displayName || user.email?.split("@")[0] || "Estudante",
-                  userEmail: user.email || ""
-                });
-                setView("dash");
+              onSuccess={() => {
+                setCarregandoAuth(true);
+                setSyncStatus("saving");
               }}
             />
           )}
@@ -983,7 +1032,7 @@ export default function App() {
                 totalFilaHoje={totalFilaHoje}
                 setView={setView}
                 showToast={showToast}
-                onOpenAjustes={() => setAjustes(true)}
+                onOpenAjustes={openAjustes}
               />
             </ErrorBoundary>
           )}
@@ -1083,6 +1132,9 @@ export default function App() {
           onClose={() => setAjustes(false)}
           overdueCount={overdueCount}
           onResetOnboarding={resetOnboarding}
+          initialTab={ajustesContext.initialTab}
+          authScope={authSession}
+          syncStatus={syncStatus}
         />
       )}
       {lojaOpen && (
