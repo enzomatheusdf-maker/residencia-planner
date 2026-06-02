@@ -18,7 +18,7 @@ function getDominioHorizonDays(dominioStatus, today) {
   if (toDate) {
     return Math.max(1, diffDays(fromDate, toDate));
   }
-  return dominioStatus?.firstReviewStep === "d14" ? 14 : 7;
+  return dominioStatus?.firstReviewStep === "d21" ? 21 : 7;
 }
 
 function normalizeAcerto(acerto) {
@@ -37,14 +37,8 @@ function isOperationalReview(review) {
     && !review.skippeadoPorDominio;
 }
 
-const REVIEW_STEPS = [
-  { key: "d0", label: "D0" },
-  { key: "d1", label: "D1" },
-  { key: "d4", label: "D4" },
-  { key: "d7", label: "D7" },
-  { key: "d14", label: "D14" },
-  { key: "d21", label: "D21" },
-];
+// Fonte única: deriva de STEPS (core) p/ nunca divergir do motor (anti-drift).
+const REVIEW_STEPS = STEPS.map((s) => ({ key: s.key, label: s.label }));
 
 function getNextReviewStep(tema) {
   if (!tema?.rev) return null;
@@ -60,12 +54,17 @@ function getNextReviewStep(tema) {
   return null;
 }
 
+// Amostra a curva em no máx. ~40 pontos: intervalos de manutenção longos (até 180d)
+// não geram um path gigante nem distorcem o desenho de 60px.
+const CURVE_MAX_POINTS = 40;
 function buildRetentionCurve({ startDate, currentS, initialRetention, horizonDays }) {
   if (!startDate || initialRetention == null) return [];
   const today = todayStr();
-  const pointCount = Math.max(2, horizonDays + 1);
+  const span = Math.max(0, horizonDays);
+  const pointCount = span === 0 ? 2 : Math.max(2, Math.min(CURVE_MAX_POINTS, span + 1));
   return Array.from({ length: pointCount }, (_, i) => {
-    const dayOffset = horizonDays === 0 ? 0 : i;
+    const frac = pointCount <= 1 ? 0 : i / (pointCount - 1);
+    const dayOffset = Math.round(frac * span);
     const targetDate = addDays(today, dayOffset);
     const t = Math.max(0, diffDays(startDate, targetDate));
     const modeled = (1 + FSRS_FACTOR * t / currentS) ** FSRS_DECAY;

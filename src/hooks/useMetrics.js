@@ -83,7 +83,7 @@ export function calcFilaInteligente(temas, plat, meta) {
     let sumAcertos = 0;
     let doneStepsCount = 0;
     
-    const stepKeys = Array.from(new Set([...STEPS.map((step) => step.key), "d14"]));
+    const stepKeys = STEPS.map((step) => step.key);
     for (let j = 0; j < stepKeys.length; j++) {
       const stepKey = stepKeys[j];
       const r = rev[stepKey];

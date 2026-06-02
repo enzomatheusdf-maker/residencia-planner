@@ -7,9 +7,9 @@ export const CALENDAR_PROVIDER_IDS = {
 export const CALENDAR_PROVIDERS = [
   {
     id: CALENDAR_PROVIDER_IDS.MEDCOF,
-    label: "MEDCOF",
+    label: "Cronogramas prontos",
     kind: "official",
-    description: "Plano-base MEDCOF já integrado ao catálogo de Residência.",
+    description: "Cronogramas prontos já integrados ao catálogo de Residência.",
   },
   {
     id: CALENDAR_PROVIDER_IDS.USER_IMPORTED,

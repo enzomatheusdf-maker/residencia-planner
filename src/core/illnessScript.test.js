@@ -6,6 +6,7 @@ import {
   analisarProblemRepresentation,
   casosDeHoje,
   calcRaciocinioScore,
+  clinicalCaseMatch,
   coberturaRaciocinioPorArea,
   ratingDeNota,
   scoreCaso,
@@ -144,5 +145,23 @@ describe("illnessScript engine", () => {
     expect(cobertura.Cirurgia.pctCobertura).toBe(50); // 1 de 2 visitado
     expect(cobertura.GO.pctCobertura).toBe(100);
     expect(cobertura.GO.notaMedia).toBe(60);
+  });
+});
+
+describe("clinicalCaseMatch (contrato tema↔caso)", () => {
+  const casos = [
+    { id: "apendicite-classica", area: "Cirurgia", tema: "Apendicite Aguda" },
+    { id: "pre-eclampsia-grave", area: "GO", tema: "Pré-eclâmpsia" },
+  ];
+
+  test("casa pelo nome do tema (ignorando acentos/caixa)", () => {
+    expect(clinicalCaseMatch({ nome: "Apendicite Aguda", esp: "Cirurgia" }, casos)?.id).toBe("apendicite-classica");
+    expect(clinicalCaseMatch({ nome: "pre-eclampsia", esp: "GO" }, casos)?.id).toBe("pre-eclampsia-grave");
+  });
+
+  test("retorna null sem caso casado (fallback seguro)", () => {
+    expect(clinicalCaseMatch({ nome: "Tema Inexistente", esp: "Clínica Médica" }, casos)).toBeNull();
+    expect(clinicalCaseMatch({ nome: "Apendicite Aguda" }, [])).toBeNull();
+    expect(clinicalCaseMatch(null, casos)).toBeNull();
   });
 });

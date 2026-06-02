@@ -9,7 +9,6 @@ function getStepEntries(rev = {}) {
   for (const step of STEPS) {
     if (rev?.[step.key]) entries.push([step.key, rev[step.key]]);
   }
-  if (rev?.d14) entries.push(["d14", rev.d14]);
   if (rev?.manutencao) entries.push(["manutencao", rev.manutencao]);
   return entries;
 }

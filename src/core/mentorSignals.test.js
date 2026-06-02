@@ -46,7 +46,7 @@ describe("mentorSignals", () => {
     expect(signals.missingReviewedAtCount).toBeGreaterThan(0);
   });
 
-  test("mentor signal labels validated previous domain as D14 and not D1", () => {
+  test("mentor signal labels validated previous domain as D21 and not D1", () => {
     const today = todayStr();
     const temas = [
       {
@@ -59,8 +59,8 @@ describe("mentorSignals", () => {
           validado: true,
           acerto: 0.92,
           questoes: 15,
-          intervaloInicial: 14,
-          primeiraRevisao: "d14",
+          intervaloInicial: 21,
+          primeiraRevisao: "d21",
           primeiraRevisaoDate: today,
         },
         rev: {
@@ -69,15 +69,15 @@ describe("mentorSignals", () => {
           d1: { done: true, skipped: true, skipReason: "dominio_previo", date: today, reviewedAt: today, acerto: 0.92 },
           d4: { done: true, skipped: true, skipReason: "dominio_previo", date: today, reviewedAt: today, acerto: 0.92 },
           d7: { done: true, skipped: true, skipReason: "dominio_previo", date: today, reviewedAt: today, acerto: 0.92 },
-          d14: { done: false, date: today, source: "dominio_previo" },
+          d21: { done: false, date: today, source: "dominio_previo" },
         },
       },
     ];
 
     const signals = collectMentorSchedulerSignals(temas, { today });
     expect(signals.dueTodayCount).toBe(1);
-    expect(signals.nextDueItem.stepKey).toBe("d14");
-    expect(signals.nextDueItem.label).toBe("D14");
+    expect(signals.nextDueItem.stepKey).toBe("d21");
+    expect(signals.nextDueItem.label).toBe("D21");
     expect(signals.nextDueItem.label).not.toBe("D1");
   });
 

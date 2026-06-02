@@ -6,12 +6,11 @@ import { STEPS, S_BASE, addDays, todayStr, getAreaPrior, inferPhaseFromStep } fr
 export const DOMINIO_PREVIO_MIN_QUESTOES = 15;
 export const DOMINIO_PREVIO_MIN_ACERTO = 80;
 
-const REVIEW_DISPLAY_ORDER = ["d0", "d1", "d4", "d7", "d14", "d21", "manutencao"];
+const REVIEW_DISPLAY_ORDER = ["d0", "d1", "d4", "d7", "d21", "manutencao"];
 
 function getStepLabel(stepKey) {
   const step = STEPS.find((item) => item.key === stepKey);
   if (step?.label) return step.label;
-  if (stepKey === "d14") return "D14";
   if (stepKey === "manutencao") return "Manutenção";
   return String(stepKey || "").toUpperCase();
 }
@@ -55,7 +54,7 @@ export function isTemaNaoIniciado(tema = {}) {
 
 /**
  * Classificação de domínio usada na UI:
- *  - alto: >= 90% (D14)
+ *  - alto: >= 90% (D21)
  *  - intermediario: 80-89% (D7)
  *  - insuficiente: < 80%
  */
@@ -68,7 +67,7 @@ export function classificarDominio(pctAcerto) {
 export const DOMINIO_META = {
   alto: {
     label: "Domínio Alto",
-    desc: "Domínio prévio validado. Próxima revisão inicial em D14.",
+    desc: "Domínio prévio validado. Próxima revisão inicial em D21.",
     color: "#10b981",
   },
   intermediario: {
@@ -115,7 +114,7 @@ export function calcularDominioPrevio({ acertos, total }) {
     };
   }
 
-  const intervaloInicial = percentual >= 90 ? 14 : 7;
+  const intervaloInicial = percentual >= 90 ? 21 : 7;
   return {
     valido: true,
     status: "validado_previo",
@@ -124,7 +123,7 @@ export function calcularDominioPrevio({ acertos, total }) {
     proximaRevisao: addDays(todayStr(), intervaloInicial),
     motivo:
       percentual >= 90
-        ? "Validado com alta seguranca. Proxima revisao em D14."
+        ? "Validado com alta seguranca. Proxima revisao em D21."
         : "Validado. Proxima revisao em D7.",
   };
 }
@@ -147,7 +146,7 @@ export function criarValidacaoDominioPrevio() {
 
 export function finalizarValidacaoDominioPrevio({ acertos, total }) {
   const resultado = calcularDominioPrevio({ acertos, total });
-  const primeiraRevisao = resultado.intervaloInicial >= 14 ? "d14" : resultado.intervaloInicial === 7 ? "d7" : null;
+  const primeiraRevisao = resultado.intervaloInicial >= 21 ? "d21" : resultado.intervaloInicial === 7 ? "d7" : null;
   return {
     status: resultado.valido ? "validado_previo" : "reprovado",
     iniciadoEm: todayStr(),
@@ -170,7 +169,7 @@ export function finalizarValidacaoDominioPrevio({ acertos, total }) {
  * Constrói ciclo pós-validação:
  * - insuficiente: null (mantém ciclo original)
  * - intermediario: próxima revisão em D7
- * - alto: próxima revisão em D14
+ * - alto: próxima revisão em D21
  */
 export function buildRevComDominio(d0, esp, importancia, classificacao, pctAcerto) {
   const prior = getAreaPrior(esp);
@@ -179,7 +178,7 @@ export function buildRevComDominio(d0, esp, importancia, classificacao, pctAcert
 
   if (classificacao === "insuficiente") return null;
 
-  const intervaloInicial = classificacao === "alto" ? 14 : 7;
+  const intervaloInicial = classificacao === "alto" ? 21 : 7;
   const acertoFrac = Math.max(0, Math.min(1, Number(pctAcerto || 0) / 100));
   const rev = {};
   STEPS.forEach((step) => {
@@ -230,11 +229,13 @@ export function buildRevComDominio(d0, esp, importancia, classificacao, pctAcert
     acerto: acertoFrac,
     source: "dominio_previo",
   };
+  // Alto (≥90%): pula até D7 inclusive; primeira revisão ativa é D21.
+  // Intermediário (80-89%): D7 fica ativo como primeira revisão.
   rev.d7 = {
     ...rev.d7,
     date: addDays(hoje, 7),
     scheduledAt: addDays(hoje, 7),
-    ...(intervaloInicial >= 14 ? {
+    ...(intervaloInicial >= 21 ? {
       done: true,
       skipped: true,
       skipReason: "dominio_previo",
@@ -249,26 +250,12 @@ export function buildRevComDominio(d0, esp, importancia, classificacao, pctAcert
       source: "dominio_previo",
     }),
   };
-  if (intervaloInicial >= 14) {
-    rev.d14 = {
-      date: addDays(hoje, 14),
-      scheduledAt: addDays(hoje, 14),
-      reviewedAt: null,
-      done: false,
-      skipped: false,
-      acerto: null,
-      questoes: null,
-      S: 14,
-      D: prior.difBase,
-      motivosErro: [],
-      phase: "review",
-      source: "dominio_previo",
-    };
-  }
   rev.d21 = {
     ...rev.d21,
     date: addDays(hoje, 21),
     scheduledAt: addDays(hoje, 21),
+    done: false,
+    source: "dominio_previo",
   };
   rev.reviewHistory = [];
   rev.phase = "learning";
@@ -318,12 +305,12 @@ export function applyDominioPrevioToTema(tema, resultado, options = {}) {
   const hoje = todayStr();
   const acertoFrac = Math.max(0, Math.min(1, Number(total > 0 ? acertosNormalizados / total : 0)));
   const intervalo = validacao.intervaloInicial || 7;
-  const primeiraRevisao = intervalo >= 14 ? "d14" : "d7";
+  const primeiraRevisao = intervalo >= 21 ? "d21" : "d7";
   const reviewEvent = {
     stepKey: "d0",
     reviewedAt: hoje,
     source: "dominio_previo",
-    rating: intervalo >= 14 ? "easy" : "good",
+    rating: intervalo >= 21 ? "easy" : "good",
     acerto: acertoFrac,
     questoes: total,
     official: true,
@@ -373,8 +360,11 @@ export function getDominioPrevioStatus(tema = {}) {
   const isValidated = dp.validado === true || dp.status === "validado_previo";
   if (!isValidated) return { isValidated: false };
 
-  const firstReviewStep = dp.primeiraRevisao || (Number(dp.intervaloInicial || 0) >= 14 ? "d14" : "d7");
-  const firstReviewLabel = dp.primeiraRevisaoLabel || getStepLabel(firstReviewStep);
+  const rawFirstReview = dp.primeiraRevisao || (Number(dp.intervaloInicial || 0) >= 14 ? "d21" : "d7");
+  // Compat: dominioPrevio antigo podia ter "d14"; o passo foi removido → reaponta p/ D21.
+  const firstReviewStep = rawFirstReview === "d14" ? "d21" : rawFirstReview;
+  const storedLabel = dp.primeiraRevisaoLabel === "D14" ? null : dp.primeiraRevisaoLabel;
+  const firstReviewLabel = storedLabel || getStepLabel(firstReviewStep);
   const firstReviewDate = dp.primeiraRevisaoDate || dp.proximaRevisao || tema?.rev?.[firstReviewStep]?.date || null;
   const acerto = Number.isFinite(Number(dp.acerto))
     ? Number(dp.acerto)

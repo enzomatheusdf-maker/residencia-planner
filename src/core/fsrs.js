@@ -21,7 +21,6 @@ export const STEP_ESTIMATED_MINUTES = {
   d1: 12,
   d4: 25,
   d7: 30,
-  d14: 30,
   d21: 35,
   manutencao: 25,
   relearning: 20,
@@ -33,14 +32,13 @@ const WORKLOAD_LEVEL_BY_MINUTES = (minutes) => {
   return "ok";
 };
 
-const STEP_SEQUENCE = ["d0", "d1", "d4", "d7", "d14", "d21"];
+const STEP_SEQUENCE = ["d0", "d1", "d4", "d7", "d21"];
 const STEP_INDEX = STEP_SEQUENCE.reduce((acc, key, idx) => ({ ...acc, [key]: idx }), {});
 const STEP_MIN_GAP = {
   d0: 1,
   d1: 3,
   d4: 3,
   d7: 14,
-  d14: 7,
   d21: 45,
 };
 
@@ -179,7 +177,7 @@ export const FSRS_DECAY = -0.5;
 export const FSRS_FACTOR = 0.9 ** (1 / FSRS_DECAY) - 1;
 export const DESIRED_RETENTION = 0.90;
 
-export const S_BASE = { d0: 1, d1: 1, d4: 4, d7: 7, d14: 14, d21: 21 };
+export const S_BASE = { d0: 1, d1: 1, d4: 4, d7: 7, d21: 21 };
 
 export const AREA_PRIORS = {
   "Clínica Médica": { difBase: 0.55, sMult: 1.00 },
@@ -254,7 +252,7 @@ export function appendReviewHistory(rev = {}, event, limit = 100) {
 
 export function inferPhaseFromStep(stepKey, manutencao = false) {
   if (manutencao || stepKey === "manutencao") return "maintenance";
-  if (stepKey === "d14" || stepKey === "d21") return "review";
+  if (stepKey === "d21") return "review";
   if (["d0", "d1", "d4", "d7"].includes(stepKey)) return "learning";
   return "learning";
 }
@@ -277,11 +275,6 @@ export function resolveAgainPolicy(stepKey, acerto, context = {}) {
     return severe
       ? { targetStep: "d7", delayDays: 1, phaseAfter: "relearning", severity, shouldPushFuture: true }
       : { targetStep: "d21", delayDays: 2, phaseAfter: "review", severity, shouldPushFuture: false };
-  }
-  if (stepKey === "d14") {
-    return severe
-      ? { targetStep: "d7", delayDays: 1, phaseAfter: "relearning", severity, shouldPushFuture: true }
-      : { targetStep: "d14", delayDays: 2, phaseAfter: "review", severity, shouldPushFuture: false };
   }
   if (stepKey === "d7") {
     return severe
@@ -378,6 +371,12 @@ export function getLastReviewedAt(tema, stepKey) {
 
 export function getRetrievability(tema, stepKey) {
   if (stepKey === "d0") return 1.0;
+  if (stepKey === "manutencao") {
+    const lastDate = tema?.rev?.manutencao?.reviewedAt || getLastReviewedAt(tema, "d21");
+    const t = Math.max(0, diffDays(lastDate, todayStr()));
+    const S = tema?.rev?.manutencao?.S || 45;
+    return (1 + FSRS_FACTOR * t / S) ** FSRS_DECAY;
+  }
   const stepIdx = STEPS.findIndex((s) => s.key === stepKey);
   if (stepIdx <= 0) return 1.0;
   const prevKey = STEPS[stepIdx - 1].key;
@@ -421,6 +420,26 @@ export function nextInterval(S, baseOffset, desiredRetention = 0.90, maxInterval
   if (maxInterval && val > maxInterval) {
     val = maxInterval;
   }
+  return val;
+}
+
+// Intervalo FSRS "puro" a partir do S, SEM a banda ±15% dos offsets fixos.
+// Em retention 0.90 o resultado tende a ≈ S (intervalo ≈ estabilidade), que é o
+// comportamento canônico do FSRS. Usado pela fase de manutenção (A2).
+export function fsrsRawInterval(S, desiredRetention = 0.90, D = 0.5) {
+  const difficultyFactor = 1.05 - 0.1 * D;
+  const raw = (S / FSRS_FACTOR) * (desiredRetention ** (1 / FSRS_DECAY) - 1) * difficultyFactor;
+  return Math.max(1, Math.round(raw));
+}
+
+// Intervalo da fase de manutenção: cresce livremente pelo S real (via fsrsRawInterval),
+// limitado por um piso (não encurta após um acerto) e pelo teto global.
+// Por isso "easy" (S maior) rende intervalo bem maior que "hard" (S quase parado).
+export function maintenanceInterval(S, desiredRetention = 0.90, D = 0.5, prevInterval = 0, maxInterval = 180) {
+  const raw = fsrsRawInterval(S, desiredRetention, D);
+  const floor = Math.max(15, Math.round(prevInterval) || 0);
+  let val = Math.max(floor, raw);
+  if (maxInterval && val > maxInterval) val = maxInterval;
   return val;
 }
 
@@ -570,6 +589,8 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
         scheduledAt: targetDate,
         S: S_new,
         D: D_new,
+        // A2: preserva o campo interval (relapso comum da manutenção) p/ não resetar p/ 45.
+        interval: policy.delayDays,
         phase: "maintenance",
       };
     } else {
@@ -597,8 +618,9 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
   }
 
   if (doneKey === "manutencao") {
-    const prevInterval = rev.manutencao?.interval || 45;
-    const nextInt = nextInterval(S_new, prevInterval * 2, desiredRetention, maxInterval, D_new);
+    const prevInterval = rev.manutencao?.interval || 0;
+    // A2: intervalo cresce pelo S real (sem banda ±15%), com piso (não encurta) e teto.
+    const nextInt = maintenanceInterval(S_new, desiredRetention, D_new, prevInterval, maxInterval);
     const baseDate = rev.manutencao.date >= now ? rev.manutencao.date : now;
     const nextDate = addDays(baseDate, nextInt);
     const nextRev = {
@@ -615,7 +637,6 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
         S: S_new,
         D: D_new,
         interval: nextInt,
-        targetInterval: prevInterval * 2,
         phase: "maintenance",
       },
       meta: {
@@ -627,13 +648,14 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
       ...historyBase,
       phaseAfter: "maintenance",
       intervalAfter: nextInt,
-      intervalBefore: prevInterval,
+      intervalBefore: prevInterval || null,
     }, 100);
     return nextRev;
   }
 
   if (doneKey === "d21") {
-    const nextInt = nextInterval(S_new, 45, desiredRetention, maxInterval, D_new);
+    // A2: primeira manutenção também pelo S real (sem âncora fixa de 45).
+    const nextInt = maintenanceInterval(S_new, desiredRetention, D_new, 0, maxInterval);
     const baseDate = rev.d21.date >= now ? rev.d21.date : now;
     const nextDate = addDays(baseDate, nextInt);
     const nextRev = {
@@ -651,7 +673,6 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
         S: S_new,
         D: D_new,
         interval: nextInt,
-        targetInterval: 45,
         phase: "maintenance",
       },
       meta: {
@@ -663,43 +684,7 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
       ...historyBase,
       phaseAfter: nextRev.phase,
       intervalAfter: nextInt,
-      intervalBefore: 45,
-    }, 100);
-    return nextRev;
-  }
-
-  if (doneKey === "d14") {
-    const interval = nextInterval(S_new, 7, desiredRetention, maxInterval, D_new);
-    const baseDate = rev.d14.date >= now ? rev.d14.date : now;
-    const nextDate = addDays(baseDate, interval);
-    const phaseAfter = (wasRelearning && (rating === "good" || rating === "easy"))
-      ? "review"
-      : (rev.phase || "review");
-    const nextRev = {
-      ...rev,
-      phase: phaseAfter,
-      relearning: (wasRelearning && (rating === "good" || rating === "easy")) ? null : rev.relearning,
-      d14: { ...rev.d14, S: S_new, D: D_new, phase: "review" },
-      d21: {
-        ...(rev.d21 || {}),
-        done: false,
-        date: nextDate,
-        scheduledAt: nextDate,
-        reviewedAt: null,
-        acerto: null,
-        questoes: null,
-        phase: "review",
-      },
-      meta: {
-        ...(rev.meta || {}),
-        schedulerWarning: null,
-      },
-    };
-    nextRev.reviewHistory = appendReviewHistory(nextRev, {
-      ...historyBase,
-      phaseAfter,
-      intervalAfter: interval,
-      intervalBefore: 7,
+      intervalBefore: null,
     }, 100);
     return nextRev;
   }
@@ -762,6 +747,26 @@ export function normalizeTema(t) {
       }
     }
   });
+  // Migração: o passo D14 foi removido. Funde qualquer rev.d14 persistido em d21
+  // (sem deixar revisão vencida/duplicada órfã) e descarta a chave d14.
+  if (rev.d14) {
+    const legacy = rev.d14;
+    const isSkipped = legacy.skipped === true || legacy.skipReason === "dominio_previo";
+    if (!legacy.done && !isSkipped) {
+      const target = rev.d21 || {};
+      if (!target.done) {
+        const movedDate = legacy.date || target.date;
+        rev.d21 = {
+          ...target,
+          date: movedDate,
+          scheduledAt: legacy.scheduledAt || movedDate,
+          done: false,
+          phase: "review",
+        };
+      }
+    }
+    delete rev.d14;
+  }
   if (rev.manutencao) {
     rev.manutencao = ensureStepMetadata(
       rev.manutencao,
@@ -792,7 +797,17 @@ export function normalizeTema(t) {
       D: prior.difBase,
     };
   }
-  return { ...t, rev };
+  // Migração: dominioPrevio de temas "alto" antigos apontava p/ D14 → reaponta p/ D21.
+  let dominioPrevio = t.dominioPrevio;
+  if (dominioPrevio && (dominioPrevio.primeiraRevisao === "d14" || dominioPrevio.primeiraRevisaoLabel === "D14")) {
+    dominioPrevio = {
+      ...dominioPrevio,
+      primeiraRevisao: "d21",
+      primeiraRevisaoLabel: "D21",
+      intervaloInicial: Number(dominioPrevio.intervaloInicial) >= 14 ? 21 : dominioPrevio.intervaloInicial,
+    };
+  }
+  return { ...t, rev, ...(dominioPrevio !== t.dominioPrevio ? { dominioPrevio } : {}) };
 }
 
 export function getFaseItem(tema, stepKey) {

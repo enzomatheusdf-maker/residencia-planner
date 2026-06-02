@@ -367,6 +367,27 @@ export function agendarReencontro(prev = {}, nota) {
   };
 }
 
+/**
+ * Elo tema↔caso clínico (P2.6). Stub heurístico: casa pelo nome do tema e, em
+ * segundo nível, por inclusão dentro da mesma área. Retorna o caso ou null.
+ *
+ * NOTA: função-contrato — Enzo vai refiná-la (aliases, sinonímia, subarea) numa
+ * próxima atualização. Enquanto retornar null, o fluxo "Já domino" cai no skip
+ * simples (fallback seguro), sem semear re-encontros.
+ */
+export function clinicalCaseMatch(tema, casos = []) {
+  if (!tema || !Array.isArray(casos) || !casos.length) return null;
+  const temaNome = normalize(tema?.nome ?? tema?.tema ?? "");
+  const temaArea = normalize(tema?.esp ?? tema?.area ?? "");
+  if (!temaNome) return null;
+  const byTema = casos.find((c) => normalize(c?.tema) === temaNome);
+  if (byTema) return byTema;
+  const byArea = casos.find(
+    (c) => temaArea && normalize(c?.area) === temaArea && normalize(c?.tema).includes(temaNome)
+  );
+  return byArea || null;
+}
+
 function areaPriority(area, areasPrioritarias = []) {
   const normArea = normalize(area);
   const idx = areasPrioritarias.map(normalize).findIndex((a) => a === normArea || normArea.includes(a) || a.includes(normArea));

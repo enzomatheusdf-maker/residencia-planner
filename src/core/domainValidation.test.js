@@ -32,11 +32,11 @@ describe("dominio previo", () => {
     expect(r.proximaRevisao).toBeTruthy();
   });
 
-  test("90 percent or more schedules first review at D14", () => {
+  test("90 percent or more schedules first review at D21", () => {
     const r = calcularDominioPrevio({ acertos: 18, total: 20 });
     expect(r.valido).toBe(true);
     expect(r.status).toBe("validado_previo");
-    expect(r.intervaloInicial).toBe(14);
+    expect(r.intervaloInicial).toBe(21);
     expect(r.proximaRevisao).toBeTruthy();
   });
 
@@ -78,7 +78,7 @@ describe("dominio previo", () => {
     const updated = applyDominioPrevioToTema(tema, { questoes: 15, acertos: 14 });
     expect(updated.dominioPrevio?.validado).toBe(true);
     expect(updated.dominioPrevio?.source).toBe("ja_domino");
-    expect(updated.dominioPrevio?.primeiraRevisao).toBe("d14");
+    expect(updated.dominioPrevio?.primeiraRevisao).toBe("d21");
   });
 
   test("validated topic receives reviewHistory event", () => {
@@ -153,7 +153,7 @@ describe("dominio previo", () => {
     expect(updated.rev.d7.done).toBe(false);
   });
 
-  test("90 percent or more schedules D14 and never D1", () => {
+  test("90 percent or more schedules D21 and never D1", () => {
     const tema = {
       id: 7,
       nome: "Tema 7",
@@ -166,15 +166,17 @@ describe("dominio previo", () => {
     const updated = applyDominioPrevioToTema(tema, { questoes: 20, acertos: 19 });
     const next = getNextReviewForTema(updated);
 
-    expect(getDominioPrevioStatus(updated).firstReviewLabel).toBe("D14");
-    expect(next.label).toBe("D14");
-    expect(next.stepKey).toBe("d14");
-    expect(getReviewDisplayLabel(updated, next.stepKey)).toBe("D14");
+    expect(getDominioPrevioStatus(updated).firstReviewLabel).toBe("D21");
+    expect(next.label).toBe("D21");
+    expect(next.stepKey).toBe("d21");
+    expect(getReviewDisplayLabel(updated, next.stepKey)).toBe("D21");
     expect(getReviewDisplayLabel(updated, next.stepKey)).not.toBe("D1");
     expect(updated.rev.d1.skipped).toBe(true);
     expect(updated.rev.d4.skipped).toBe(true);
     expect(updated.rev.d7.skipped).toBe(true);
-    expect(updated.rev.d14.done).toBe(false);
+    expect(updated.rev.d21.done).toBe(false);
+    // D14 não existe mais no ciclo "alto".
+    expect(updated.rev.d14).toBeUndefined();
   });
 
   test("validated topic display accuracy uses dominioPrevio acerto", () => {
@@ -203,20 +205,21 @@ describe("dominio previo", () => {
         validado: true,
         acerto: 0.92,
         questoes: 15,
-        intervaloInicial: 14,
-        primeiraRevisao: "d14",
-        proximaRevisao: addDays(todayStr(), 14),
+        intervaloInicial: 21,
+        primeiraRevisao: "d21",
+        proximaRevisao: addDays(todayStr(), 21),
       },
       rev: {
         ...buildRev(todayStr(), "Clínica Médica"),
         d0: { done: true, date: todayStr(), acerto: 0.92 },
-        d1: { done: false, date: addDays(todayStr(), 14) },
+        d21: { done: true, date: todayStr() },
+        d1: { done: false, date: addDays(todayStr(), 21) },
       },
     };
     const next = getNextReviewForTema(legacy);
     expect(next.stepKey).toBe("d1");
-    expect(next.label).toBe("D14");
-    expect(getReviewDisplayLabel(legacy, "d1")).toBe("D14");
+    expect(next.label).toBe("D21");
+    expect(getReviewDisplayLabel(legacy, "d1")).toBe("D21");
   });
 
   test("skipped steps are ignored by queue", () => {
@@ -230,17 +233,17 @@ describe("dominio previo", () => {
       rev: buildRev(todayStr(), "Clínica Médica"),
     };
     const updated = applyDominioPrevioToTema(tema, { questoes: 20, acertos: 18 });
-    const dueD14 = {
+    const dueD21 = {
       ...updated,
       rev: {
         ...updated.rev,
-        d14: { ...updated.rev.d14, date: todayStr(), scheduledAt: todayStr() },
+        d21: { ...updated.rev.d21, date: todayStr(), scheduledAt: todayStr() },
       },
     };
-    const queue = calcFilaInteligente([dueD14], "res", {});
+    const queue = calcFilaInteligente([dueD21], "res", {});
     expect(queue).toHaveLength(1);
-    expect(queue[0].stepKey).toBe("d14");
-    expect(queue[0].step.label).toBe("D14");
+    expect(queue[0].stepKey).toBe("d21");
+    expect(queue[0].step.label).toBe("D21");
     expect(queue.some((item) => item.stepKey === "d1")).toBe(false);
   });
 });

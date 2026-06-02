@@ -15,6 +15,8 @@ import {
   criarValidacaoDominioPrevio,
   isTemaNaoIniciado,
 } from "./domainValidation";
+import { agendarReencontro, clinicalCaseMatch } from "./illnessScript";
+import { CASOS_CLINICOS } from "../constants/casosClinicos";
 
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
@@ -794,14 +796,48 @@ export const useStore = create(
 
       finalizarValidacaoDominioPrevio: (platKey, temaId, { questoes, acertos }) => {
         set((s) => {
+          let validatedTema = null;
           const temasAtualizados = s[platKey].temas.map((t) => {
             if (t.id !== temaId) return t;
-            return applyDominioPrevioToTema(t, { questoes, acertos });
+            validatedTema = applyDominioPrevioToTema(t, { questoes, acertos });
+            return validatedTema;
           });
+
+          // Parte E — "Já domino" com raciocínio clínico intercalado.
+          // Se o módulo está ligado e há um caso casado ao tema, semeia um
+          // re-encontro clínico em casosProgresso (que já alimenta o action
+          // inbox "clinical_case"). Fallback seguro: sem módulo OU sem caso
+          // casado, nada é semeado e o comportamento é o skip simples atual.
+          let casosProgresso = s[platKey].casosProgresso || {};
+          if (validatedTema?.status === "validado_previo" && s.meta?.modulos?.raciocinioClinico) {
+            const caso = clinicalCaseMatch(validatedTema, CASOS_CLINICOS);
+            if (caso?.id && !casosProgresso[caso.id]) {
+              const pct = Number.isFinite(Number(validatedTema.dominioPrevio?.percentual))
+                ? Number(validatedTema.dominioPrevio.percentual)
+                : (Number(questoes) > 0 ? Math.round((Number(acertos) / Number(questoes)) * 100) : 0);
+              const seed = agendarReencontro({}, pct);
+              casosProgresso = {
+                ...casosProgresso,
+                [caso.id]: {
+                  casoId: caso.id,
+                  temaId: validatedTema.id,
+                  temaNome: validatedTema.nome,
+                  origem: "ja_domino",
+                  S: seed.S,
+                  intervalo: seed.intervalo,
+                  proximaData: seed.proximaData,
+                  vistos: 0,
+                  criadoEm: todayStr(),
+                },
+              };
+            }
+          }
+
           return {
             [platKey]: {
               ...s[platKey],
               temas: temasAtualizados,
+              casosProgresso,
             },
           };
         });

@@ -200,20 +200,22 @@ describe("FSRS Core Logic Test Suite", () => {
     expect(proj[today].items[0].stepKey).toBe("d7");
   });
 
-  test("recalcAfterMark completes D14 and schedules D21", () => {
+  test("recalcAfterMark advances D7 and reschedules D21 (D14 removed)", () => {
     const today = todayStr();
-    const initialRev = {
-      ...buildRev(today, "Clínica Médica"),
-      d14: { done: true, date: today, scheduledAt: today, reviewedAt: today, S: 14, D: 0.55, acerto: 0.9 },
-      d21: { done: false, date: addDays(today, 21), scheduledAt: addDays(today, 21), S: 21, D: 0.55 },
+    const initialRev = buildRev(today, "Clínica Médica");
+    const marked = {
+      ...initialRev,
+      d7: { ...initialRev.d7, done: true, date: today, scheduledAt: today, reviewedAt: today, acerto: 0.9 },
     };
 
-    const updated = recalcAfterMark(initialRev, "d14", 0.9, 0.90, 180, "Clínica Médica");
+    const updated = recalcAfterMark(marked, "d7", 0.9, 0.90, 180, "Clínica Médica");
 
-    expect(updated.d14.S).toBeGreaterThan(0);
+    expect(updated.d7.S).toBeGreaterThan(0);
     expect(updated.d21.done).toBe(false);
-    expect(updated.d21.date).not.toBe(addDays(today, 21));
-    expect(updated.reviewHistory.at(-1).stepKey).toBe("d14");
+    expect(updated.d21.date > today).toBe(true);
+    expect(updated.reviewHistory.at(-1).stepKey).toBe("d7");
+    // O passo D14 não existe mais no ciclo construído por buildRev.
+    expect(updated.d14).toBeUndefined();
   });
 
   test("recalcAfterMark with D1 dynamic acertos recalcs correctly", () => {
@@ -351,7 +353,7 @@ describe("FSRS Core Logic Test Suite", () => {
     expect(applyRelearningRecoveryBonus(10, "hard", { wasRelearning: true })).toBeCloseTo(10);
   });
 
-  test("maintenance saves real next interval", () => {
+  test("maintenance interval grows with stability, never shrinks on a pass, and respects the cap", () => {
     const today = todayStr();
     const initialRev = buildRev(addDays(today, -30), "GO");
     const marked = {
@@ -368,10 +370,56 @@ describe("FSRS Core Logic Test Suite", () => {
       },
     };
 
-    const updated = recalcAfterMark(marked, "manutencao", 0.9);
+    const updated = recalcAfterMark(marked, "manutencao", 0.9, 0.90, 180, "GO");
     expect(updated.manutencao.interval).toBeDefined();
-    expect(updated.manutencao.targetInterval).toBe(90);
+    expect(updated.manutencao.interval).toBeGreaterThanOrEqual(45); // piso: não encurta após acerto
+    expect(updated.manutencao.interval).toBeLessThanOrEqual(180);   // teto global
     expect(updated.manutencao.date).toBe(addDays(today, updated.manutencao.interval));
+  });
+
+  test("maintenance: easy yields a longer next interval than hard from the same state", () => {
+    const today = todayStr();
+    const base = {
+      ...buildRev(addDays(today, -60), "GO"),
+      manutencao: { done: true, date: today, scheduledAt: today, reviewedAt: today, S: 60, D: 0.5, interval: 60 },
+    };
+    const easy = recalcAfterMark(base, "manutencao", 1.0, 0.90, 180, "GO");
+    const hard = recalcAfterMark(base, "manutencao", 0.6, 0.90, 180, "GO");
+    expect(easy.manutencao.interval).toBeGreaterThan(hard.manutencao.interval);
+  });
+
+  test("maintenance multi-cycle keeps growing while capped at maxInterval", () => {
+    const today = todayStr();
+    let rev = {
+      ...buildRev(addDays(today, -120), "GO"),
+      manutencao: { done: true, date: today, scheduledAt: today, reviewedAt: today, S: 80, D: 0.4, interval: 80 },
+    };
+    const first = recalcAfterMark(rev, "manutencao", 1.0, 0.90, 180, "GO");
+    const cycle2 = {
+      ...first,
+      manutencao: { ...first.manutencao, done: true, reviewedAt: today, scheduledAt: today, date: today },
+    };
+    const second = recalcAfterMark(cycle2, "manutencao", 1.0, 0.90, 180, "GO");
+    expect(second.manutencao.interval).toBeGreaterThanOrEqual(first.manutencao.interval);
+    expect(second.manutencao.interval).toBeLessThanOrEqual(180);
+  });
+
+  test("maintenance again-common preserves the interval field (no silent reset to 45)", () => {
+    const today = todayStr();
+    const base = {
+      ...buildRev(addDays(today, -120), "GO"),
+      manutencao: { done: true, date: today, scheduledAt: today, reviewedAt: today, S: 90, D: 0.5, interval: 90 },
+    };
+    // acerto 0.5 → rating "again", severidade "common" (>= 0.30)
+    const updated = recalcAfterMark(base, "manutencao", 0.5, 0.90, 180, "GO");
+    expect(updated.phase).toBe("maintenance");
+    expect(updated.manutencao.interval).toBeDefined();
+    expect(updated.manutencao.interval).not.toBeNull();
+  });
+
+  test("nextInterval never exceeds maxInterval", () => {
+    // baseOffset alto faz a banda passar de 180 → o teto deve cortar em 180.
+    expect(nextInterval(10000, 1000, 0.90, 180, 0.3)).toBe(180);
   });
 
   test("reviewHistory receives events and is limited", () => {

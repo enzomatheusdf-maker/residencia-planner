@@ -1350,7 +1350,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
           )}
 
           {/* ─── D4 / D7 / D21 REVIEW STEPS ─── */}
-          {["d4", "d7", "d14", "d21", "manutencao"].includes(stepKey) && (
+          {["d4", "d7", "d21", "manutencao"].includes(stepKey) && (
             <div className="space-y-6 text-left">
               <div className="bg-[#141421]/60 border border-blue-500/10 p-4 rounded-xl">
                 <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wide">Mentor Científico</h4>
@@ -1358,7 +1358,6 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                   {formatTextWithPlatform(mentorPhrase) || formatTextWithPlatform(
                     stepKey === "d4" ? "Resolva questões ativas sobre o tema. O objetivo é forçar a recuperação mental de pontos-chave e mapear lacunas." :
                     stepKey === "d7" ? "Faça questões de prova e conclua a revisão do Deck do Anki correspondente. Ajuste os cards baseando-se nos erros." :
-                    stepKey === "d14" ? "Revisão de consolidação: resolva questões ativas para confirmar que o domínio prévio se manteve estável." :
                     stepKey === "d21" ? "Revisão interleaved: resolva questões misturadas sobre o tema junto com outros conteúdos. É a etapa final de fixação." :
                     "Manutenção de Longo Prazo: Resolva questões ativas e revise materiais essenciais para manter este tema consolidado."
                   )}

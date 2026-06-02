@@ -2653,8 +2653,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             const resultado = calcularDominioPrevio({ total: questoes, acertos });
             validarDominio(plat, temaValidando.id, { questoes, acertos });
             if (resultado.valido) {
-              if ((resultado.intervaloInicial || 7) >= 14) {
-                (showToast || showToastGlobal)("Tema validado com alta segurança. Próxima revisão: D14.");
+              if ((resultado.intervaloInicial || 7) >= 21) {
+                (showToast || showToastGlobal)("Tema validado com alta segurança. Próxima revisão: D21.");
               } else {
                 (showToast || showToastGlobal)("Tema validado. Próxima revisão: D7.");
               }

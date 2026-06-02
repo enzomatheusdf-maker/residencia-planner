@@ -419,7 +419,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                             ? `Estratégia MED — importado pelo usuário · ${importedTopics.length} tópicos importados · ${importedMappingStats.mapped} mapeados · ${importedMappingStats.pending} pendentes.`
                             : activeProvider === CALENDAR_PROVIDER_IDS.CUSTOM
                               ? "Custom — trilho montado manualmente."
-                              : "MEDCOF — catálogo oficial do app."}
+                              : "Cronogramas prontos — catálogo oficial do app."}
                         </p>
 
                         {showMappingPanel && importedTopics.length > 0 && (
@@ -748,8 +748,8 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
             validarDominio(plat, temaValidando.id, { questoes, acertos });
             if (showToast) {
               if (resultado.valido) {
-                if ((resultado.intervaloInicial || 7) >= 14) {
-                  showToast("Tema validado com alta segurança. Próxima revisão: D14.");
+                if ((resultado.intervaloInicial || 7) >= 21) {
+                  showToast("Tema validado com alta segurança. Próxima revisão: D21.");
                 } else {
                   showToast("Tema validado. Próxima revisão: D7.");
                 }

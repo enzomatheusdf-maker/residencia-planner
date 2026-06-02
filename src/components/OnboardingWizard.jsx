@@ -9,7 +9,7 @@ const GOAL_OPTIONS = [
 ];
 
 const CALENDAR_OPTIONS = [
-  { id: "medcof", label: "MEDCOF", hint: "Base pronta para começar agora." },
+  { id: "medcof", label: "Cronogramas prontos", hint: "Base pronta para começar agora." },
   { id: "estrategia_extensivo_user", label: "Estratégia MED", hint: "Importe seu calendário ou configure depois." },
   { id: "custom", label: "Personalizado", hint: "Monte seu plano manualmente." },
 ];

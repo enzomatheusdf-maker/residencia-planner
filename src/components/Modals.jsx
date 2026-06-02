@@ -723,8 +723,8 @@ function RedacaoInputs({ c1, setC1, c2, setC2, c3, setC3, c4, setC4, c5, setC5 }
 
 export function MarkModal({ tema, stepKey, onConfirm, onCancel }) {
   const step    = STEPS.find((s) => s.key === stepKey) || (
-    stepKey === "d14"
-      ? { key: "d14", label: "D14", desc: "Revisão de consolidação", checkbox: false }
+    stepKey === "manutencao"
+      ? { key: "manutencao", label: "Manutenção", desc: "Revisão de manutenção", checkbox: false }
       : { key: stepKey, label: String(stepKey || "").toUpperCase(), desc: "Revisão", checkbox: false }
   );
   const plat    = useStore((s) => s.plat);
@@ -2423,7 +2423,7 @@ export function ModalValidarDominio({ tema, onConfirm, onCancel, onStartLater })
           <p className="text-[11px] text-gray-500 leading-relaxed">
             Use "Já domino" apenas quando você realmente já domina o conteúdo.
             O sistema não marca domínio definitivo: ele cria uma validação curta
-            e agenda a próxima revisão em D7 (80–89%) ou D14 (90%+).
+            e agenda a próxima revisão em D7 (80–89%) ou D21 (90%+).
           </p>
         </div>
 
