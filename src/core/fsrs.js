@@ -420,11 +420,25 @@ export function updateDifficulty(D_prev, acerto, ratingOverride = null) {
   return Math.min(1, Math.max(0, (D_prev ?? 0.5) + delta));
 }
 
-export function updateStability(S_prev, acerto, D = 0.5, sMult = 1.0, ratingOverride = null) {
+export const SPACING_GAIN_K = 0.6;
+export const SPACING_EARLY_K = 0.15;
+export const SPACING_MAX = 1.5;
+
+export function spacingFactorFromTiming(atrasoDias = 0, nominalInterval = 1) {
+  const denom = Math.max(1, Number(nominalInterval) || 1);
+  const ratio = (Number(atrasoDias) || 0) / denom;
+  if (ratio >= 0) {
+    return Math.min(SPACING_MAX, 1 + SPACING_GAIN_K * Math.min(1.5, ratio));
+  }
+  return Math.max(0.8, 1 + SPACING_EARLY_K * Math.max(-1, ratio));
+}
+
+export function updateStability(S_prev, acerto, D = 0.5, sMult = 1.0, ratingOverride = null, spacing = 1.0) {
   const rating = ratingOverride || toRating(acerto);
   const base = { again: -0.8, hard: 0.05, good: 0.3, easy: 0.7 }[rating];
   if (base == null) return S_prev;
-  const ganho = base * (1.1 - 0.4 * D) * sMult;
+  const spacingApplied = rating === "again" ? 1.0 : Math.max(0.8, Number(spacing) || 1.0);
+  const ganho = base * (1.1 - 0.4 * D) * sMult * spacingApplied;
   return Math.max(0.5, S_prev * Math.exp(ganho));
 }
 
@@ -535,11 +549,16 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
   }
 
   const D_new = updateDifficulty(prevD, acerto, effectiveRating);
-  const computedS = updateStability(prevS, acerto, D_new, prior.sMult, effectiveRating);
-  const S_new = applyRelearningRecoveryBonus(computedS, effectiveRating, { wasRelearning });
   const scheduledAt = eventStep.scheduledAt || eventStep.date || now;
   const reviewedAt = eventStep.reviewedAt || now;
   const atrasoDias = Math.max(0, diffDays(scheduledAt, reviewedAt));
+  const nominalInterval =
+    doneKey === "manutencao"
+      ? (rev.manutencao?.interval || 21)
+      : (S_BASE[doneKey] || (STEPS.find((s) => s.key === doneKey)?.offset) || 1);
+  const spacing = spacingFactorFromTiming(atrasoDias, nominalInterval);
+  const computedS = updateStability(prevS, acerto, D_new, prior.sMult, effectiveRating, spacing);
+  const S_new = applyRelearningRecoveryBonus(computedS, effectiveRating, { wasRelearning });
   const severity = effectiveRating === "again" ? getAgainSeverity(acerto) : null;
   const historyBase = {
     stepKey: doneKey,

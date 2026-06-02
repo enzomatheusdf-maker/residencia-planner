@@ -16,6 +16,7 @@ import ErrorActionPrompt from "./ErrorActionPrompt";
 import ClinicalTaskPanel from "./ClinicalTaskPanel";
 import { getReviewTaskForStep } from "../core/reviewTaskPlanner";
 import { CASOS_CLINICOS } from "../constants/casosClinicos";
+import { buildReviewPreview } from "../core/reviewOutcome";
 
 const STEP_ICONS = { pretest: FileText, leitura: BookOpen, esqueleto: Layers, braindump: Brain, questoes: PenTool, anki: Zap };
 
@@ -286,6 +287,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const [questoes, setQuestoes] = useState("");
   const [acertos, setAcertos] = useState("");
   const [previsao, setPrevisao] = useState("");
+  const [clinicalSelfScore, setClinicalSelfScore] = useState(null);
   const [revelado, setRevelado] = useState(false);
   const [c1, setC1] = useState(160);
   const [c2, setC2] = useState(160);
@@ -315,6 +317,19 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const pct = totalQuestoes > 0 ? Math.round((certasQuestoes / totalQuestoes) * 100) : null;
   const hasValidQuestionResult = totalQuestoes > 0 && acertos !== "" && acertosRaw >= 0 && acertosRaw <= totalQuestoes;
   const canCompleteQuestionStep = tema?.esp === "Redação" || hasValidQuestionResult;
+  const reviewAcertoFinal = useMemo(() => {
+    if (tema?.esp === "Redação") return null;
+    const accQuestoes = pct != null ? pct / 100 : null;
+    const accClinico = clinicalSelfScore != null ? clinicalSelfScore / 100 : null;
+    if (accQuestoes != null && accClinico != null) {
+      return +(accQuestoes * 0.7 + accClinico * 0.3).toFixed(3);
+    }
+    return accQuestoes != null ? accQuestoes : accClinico;
+  }, [clinicalSelfScore, pct, tema?.esp]);
+  const schedulerPreview = useMemo(
+    () => buildReviewPreview({ tema, stepKey, acerto: reviewAcertoFinal, meta }),
+    [meta, reviewAcertoFinal, stepKey, tema]
+  );
 
   // TIMER
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -431,7 +446,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
     } else {
       const showErroBox = pct != null && pct < 75;
       handleStepSuccess(tema.id, stepKey, {
-        acerto: pct != null ? pct / 100 : null,
+        acerto: reviewAcertoFinal,
         previsao: previsao !== "" ? (+previsao) / 100 : null,
         questoes: totalQuestoes || null,
         motivosErro: showErroBox ? erros.map(e => e.tipoErro) : [],
@@ -454,6 +469,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
     setQuestoes("");
     setAcertos("");
     setPrevisao("");
+    setClinicalSelfScore(null);
     setRevelado(false);
     setErros([]);
     setInterleaved(false);
@@ -994,6 +1010,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                     acertos={acertos}
                     setAcertos={setAcertos}
                     pct={pct}
+                    schedulerPreview={schedulerPreview}
                     previsao={""}
                     setPrevisao={() => {}}
                     revelado={true}
@@ -1194,9 +1211,9 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                         foco
                       });
                     } else {
-                      const showErroBox = pct != null && pct < 75;
-                      handleStepSuccess(tema.id, "d0", {
-                        acerto: pct != null ? pct / 100 : null,
+                        const showErroBox = pct != null && pct < 75;
+                        handleStepSuccess(tema.id, "d0", {
+                        acerto: reviewAcertoFinal,
                         questoes: totalQuestoes || null,
                         motivosErro: showErroBox ? erros.map(e => e.tipoErro) : [],
                         erros: showErroBox ? erros : [],
@@ -1380,7 +1397,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
 
               {/* P4-C: Tarefa clinica multimodal (res only, gated por modulo) */}
               {clinicalTask && tema?.esp !== "Redação" && (
-                <ClinicalTaskPanel task={clinicalTask} />
+                <ClinicalTaskPanel task={clinicalTask} onSelfScore={setClinicalSelfScore} />
               )}
 
               {tema?.esp !== "Redação" && (
@@ -1411,6 +1428,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                     acertos={acertos}
                     setAcertos={setAcertos}
                     pct={pct}
+                    schedulerPreview={schedulerPreview}
                     previsao={previsao}
                     setPrevisao={setPrevisao}
                     revelado={revelado}
@@ -1648,8 +1666,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
         <ModalValidarDominio
           tema={temaValidando}
           onConfirm={({ questoes, acertos }) => {
-            validarDominio(plat, temaValidando.id, { questoes, acertos });
-            showToast("Validação de domínio registrada para este tema.");
+            const resultado = validarDominio(plat, temaValidando.id, { questoes, acertos });
+            showToast(resultado?.observacao || "Validação de domínio registrada para este tema.");
             setTemaValidando(null);
           }}
           onStartLater={() => {
@@ -1685,7 +1703,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
-function AcertoInputs({ questoes, setQuestoes, acertos, setAcertos, pct }) {
+function AcertoInputs({ questoes, setQuestoes, acertos, setAcertos, pct, schedulerPreview = null }) {
   const total = +questoes || 0;
   return (
     <div className="space-y-3">
@@ -1715,11 +1733,25 @@ function AcertoInputs({ questoes, setQuestoes, acertos, setAcertos, pct }) {
         </div>
       </div>
       {pct != null && (
-        <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-4 py-2.5">
-          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Acerto calculado</span>
-          <span className={`text-2xl font-black font-mono ${pct >= 80 ? "text-emerald-400" : pct >= 65 ? "text-blue-400" : "text-red-400"}`}>
-            {pct}%
-          </span>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between bg-black/40 border border-white/5 rounded-xl px-4 py-2.5">
+            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Acerto calculado</span>
+            <span className={`text-2xl font-black font-mono ${pct >= 80 ? "text-emerald-400" : pct >= 65 ? "text-blue-400" : "text-red-400"}`}>
+              {pct}%
+            </span>
+          </div>
+          {schedulerPreview?.message && (
+            <div className={`rounded-xl border px-4 py-3 ${
+              schedulerPreview.tone === "advance"
+                ? "bg-emerald-950/20 border-emerald-500/20 text-emerald-200"
+                : schedulerPreview.tone === "regress"
+                ? "bg-red-950/20 border-red-500/20 text-red-200"
+                : "bg-amber-950/20 border-amber-500/20 text-amber-200"
+            }`}>
+              <p className="text-[10px] font-black uppercase tracking-wider opacity-70">Proximo efeito na curva</p>
+              <p className="text-[12px] font-semibold mt-0.5">{schedulerPreview.message}</p>
+            </div>
+          )}
         </div>
       )}
     </div>

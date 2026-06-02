@@ -5,6 +5,8 @@ import { STEPS, S_BASE, addDays, todayStr, getAreaPrior, inferPhaseFromStep } fr
 
 export const DOMINIO_PREVIO_MIN_QUESTOES = 15;
 export const DOMINIO_PREVIO_MIN_ACERTO = 80;
+export const DOMINIO_PREVIO_REESTUDO_MAX_ACERTO = 40;
+export const DOMINIO_PREVIO_BRAINDUMP_MAX_ACERTO = 60;
 
 const REVIEW_DISPLAY_ORDER = ["d0", "d1", "d4", "d7", "d21", "manutencao"];
 
@@ -77,10 +79,32 @@ export const DOMINIO_META = {
   },
   insuficiente: {
     label: "Domínio Insuficiente",
-    desc: "Tema mantido no fluxo normal de estudo.",
+    desc: "Tema volta para a etapa adequada de recuperacao.",
     color: "#f87171",
   },
 };
+
+function getDominioRemediation(percentual) {
+  if (percentual < DOMINIO_PREVIO_REESTUDO_MAX_ACERTO) {
+    return {
+      proximaEtapa: "d0",
+      proximaEtapaLabel: getStepLabel("d0"),
+      motivo: "Validacao insuficiente. Retome o estudo completo pelo D0 hoje.",
+    };
+  }
+  if (percentual < DOMINIO_PREVIO_BRAINDUMP_MAX_ACERTO) {
+    return {
+      proximaEtapa: "d1",
+      proximaEtapaLabel: getStepLabel("d1"),
+      motivo: "Validacao insuficiente. Proximo passo: D1 hoje para brain dump e lacunas.",
+    };
+  }
+  return {
+    proximaEtapa: "d0",
+    proximaEtapaLabel: getStepLabel("d0"),
+    motivo: "Validacao insuficiente. Comece pelo estudo guiado para proteger sua base.",
+  };
+}
 
 export function calcularDominioPrevio({ acertos, total }) {
   const a = Number(acertos);
@@ -106,11 +130,12 @@ export function calcularDominioPrevio({ acertos, total }) {
   }
 
   if (percentual < DOMINIO_PREVIO_MIN_ACERTO) {
+    const remediation = getDominioRemediation(percentual);
     return {
       valido: false,
       status: "reprovado",
       percentual,
-      motivo: "Melhor iniciar pelo estudo guiado. Este tema ainda não está seguro para pular a exposicao inicial.",
+      ...remediation,
     };
   }
 
@@ -147,6 +172,7 @@ export function criarValidacaoDominioPrevio() {
 export function finalizarValidacaoDominioPrevio({ acertos, total }) {
   const resultado = calcularDominioPrevio({ acertos, total });
   const primeiraRevisao = resultado.intervaloInicial >= 21 ? "d21" : resultado.intervaloInicial === 7 ? "d7" : null;
+  const proximaEtapa = resultado.valido ? primeiraRevisao : (resultado.proximaEtapa || null);
   return {
     status: resultado.valido ? "validado_previo" : "reprovado",
     iniciadoEm: todayStr(),
@@ -161,6 +187,8 @@ export function finalizarValidacaoDominioPrevio({ acertos, total }) {
     primeiraRevisao,
     primeiraRevisaoLabel: primeiraRevisao ? getStepLabel(primeiraRevisao) : null,
     primeiraRevisaoDate: resultado.proximaRevisao || null,
+    proximaEtapa,
+    proximaEtapaLabel: proximaEtapa ? getStepLabel(proximaEtapa) : null,
     observacao: resultado.motivo,
   };
 }
@@ -264,6 +292,82 @@ export function buildRevComDominio(d0, esp, importancia, classificacao, pctAcert
   return rev;
 }
 
+export function buildRevComFalhaDominio(d0, esp, validacao, total, acertos) {
+  const prior = getAreaPrior(esp);
+  const hoje = todayStr();
+  const baseDate = d0 >= hoje ? d0 : hoje;
+  const targetStep = validacao?.proximaEtapa || "d0";
+  const acertoFrac = Math.max(0, Math.min(1, Number(total > 0 ? acertos / total : 0)));
+  const rev = {};
+
+  STEPS.forEach((step) => {
+    const stepDate = addDays(hoje, step.offset);
+    rev[step.key] = {
+      date: stepDate,
+      scheduledAt: stepDate,
+      reviewedAt: null,
+      done: false,
+      acerto: null,
+      questoes: null,
+      S: S_BASE[step.key],
+      D: prior.difBase,
+      motivosErro: [],
+      phase: inferPhaseFromStep(step.key),
+    };
+  });
+
+  rev.d0 = {
+    ...rev.d0,
+    date: baseDate,
+    scheduledAt: baseDate,
+    acerto: targetStep === "d1" ? acertoFrac : null,
+    questoes: targetStep === "d1" ? Number(total) : null,
+    done: targetStep === "d1",
+    reviewedAt: targetStep === "d1" ? hoje : null,
+    completedAt: targetStep === "d1" ? hoje : null,
+    source: "dominio_previo_reprovado",
+  };
+
+  if (targetStep === "d1") {
+    rev.d1 = {
+      ...rev.d1,
+      date: hoje,
+      scheduledAt: hoje,
+      done: false,
+      source: "dominio_previo_reprovado",
+    };
+  } else {
+    rev.d0 = {
+      ...rev.d0,
+      date: hoje,
+      scheduledAt: hoje,
+    };
+  }
+
+  rev.reviewHistory = [{
+    id: `dominio_fail_${Date.now()}`,
+    stepKey: "pretest",
+    reviewedAt: hoje,
+    source: "dominio_previo",
+    rating: "again",
+    acerto: acertoFrac,
+    questoes: Number(total),
+    official: true,
+    remediationStep: targetStep,
+  }];
+  rev.phase = targetStep === "d1" ? "learning" : "relearning";
+  rev.relearning = targetStep === "d0"
+    ? {
+      startedAt: hoje,
+      reason: "dominio_previo_reprovado",
+      targetStep,
+      severity: "severe",
+    }
+    : null;
+
+  return rev;
+}
+
 function normalizeAcertoInput(rawAcertos, total) {
   const totalNum = Number(total);
   const acertosNum = Number(rawAcertos);
@@ -286,11 +390,17 @@ export function applyDominioPrevioToTema(tema, resultado, options = {}) {
   const validacao = calcularDominioPrevio({ acertos: acertosNormalizados, total });
 
   if (!validacao.valido) {
+    const dominioPrevio = finalizarValidacaoDominioPrevio({ total, acertos: acertosNormalizados });
+    const canScheduleRecovery = Boolean(validacao.proximaEtapa);
+    const recoveryRev = canScheduleRecovery
+      ? buildRevComFalhaDominio(tema.d0 || todayStr(), tema.esp, validacao, total, acertosNormalizados)
+      : tema.rev;
     return {
       ...tema,
-      status: tema.status || "novo",
-      unstarted: tema.unstarted !== false,
-      dominioPrevio: finalizarValidacaoDominioPrevio({ total, acertos: acertosNormalizados }),
+      status: canScheduleRecovery ? "reprovado" : (tema.status || "novo"),
+      unstarted: canScheduleRecovery ? false : tema.unstarted !== false,
+      dominioPrevio,
+      rev: recoveryRev,
     };
   }
 

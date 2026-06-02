@@ -1,10 +1,10 @@
 // src/components/StatsPanel.jsx
 // Estatisticas reorganizadas em 7 secoes diagnosticaveis.
 // Cada secao responde: o que mede / da pra confiar / o que fazer.
-import React, { useMemo, useState, useEffect, lazy, Suspense } from "react";
+import React, { useMemo, useState, lazy, Suspense } from "react";
 import {
   BarChart3, Flame, BookOpen, AlertCircle, Trophy,
-  Brain, Activity, Settings,
+  Brain, Activity,
 } from "lucide-react";
 import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, todayStr, addDays, fmtDate } from "../core/fsrs";
@@ -21,13 +21,10 @@ import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
 import { calculateClinicalReasoningScoreDetailed } from "../core/clinicalReasoningScoring";
 import EnamedMapa from "./EnamedMapa";
 import AdvancedSection from "./AdvancedSection";
-import LaunchChecklistPanel from "./LaunchChecklistPanel";
 import MetricCard from "./MetricCard";
 import ErrorActionCenter from "./ErrorActionCenter";
 
 const EnamedProvaAnalyzer = lazy(() => import("./EnamedProvaAnalyzer"));
-const WeeklyReview = lazy(() => import("./WeeklyReview"));
-const DataSafetyPanel = lazy(() => import("./DataSafetyPanel"));
 
 // ─── Secoes ───────────────────────────────────────────────────────────────────
 
@@ -38,8 +35,6 @@ const SECTIONS = [
   { id: "provas",      label: "Provas",     icon: Trophy,        forPlat: ["res", "vest"] },
   { id: "raciocinio",  label: "Raciocinio", icon: Brain,         forPlat: ["res"] },
   { id: "atividade",   label: "Atividade",  icon: Activity,      forPlat: ["res", "vest"] },
-  // Sistema: ferramentas de manutencao/lancamento (dev). Oculta no build de producao.
-  { id: "sistema",     label: "Sistema",    icon: Settings,      forPlat: ["res", "vest"], devOnly: true },
 ];
 
 // ─── Navegacao entre secoes ──────────────────────────────────────────────────
@@ -181,7 +176,7 @@ function AccuracyChart({ data }) {
 
 // ─── StatsPanel principal ─────────────────────────────────────────────────────
 
-export default function StatsPanel({ setView, initialSection = null, sectionTrigger = 0 }) {
+export default function StatsPanel({ setView = null }) {
   const { plat, temaStats, userName, meta } = useStore();
   const temas = useStore((s) => s[plat]?.temas || []);
   const simulados = useStore((s) => s[plat]?.simulados || []);
@@ -190,15 +185,7 @@ export default function StatsPanel({ setView, initialSection = null, sectionTrig
   const casosProgresso = useStore((s) => s[plat]?.casosProgresso || {});
   const sessionReflections = useStore((s) => s.sessionReflections || []);
 
-  // Secao ativa — padrao "resumo" (ou a secao inicial solicitada via navegacao)
-  const [activeSection, setActiveSection] = useState(initialSection || "resumo");
-
-  // Permite que a navegacao externa (ex.: aba Mais) abra uma secao especifica.
-  // O sectionTrigger garante que cada solicitacao force o salto, mesmo repetida.
-  useEffect(() => {
-    if (initialSection) setActiveSection(initialSection);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sectionTrigger]);
+  const [activeSection, setActiveSection] = useState("resumo");
 
   // Filtrar secoes para plataforma atual
   const availableSections = SECTIONS.filter(
@@ -915,24 +902,6 @@ export default function StatsPanel({ setView, initialSection = null, sectionTrig
       )}
 
       {/* ── SECAO 7: SISTEMA ─────────────────────────────────────────────────── */}
-      {currentSection === "sistema" && (
-        <div className="space-y-4">
-          <p className="text-[11px] text-gray-500">Integridade de dados, backup e ferramentas de manutencao.</p>
-
-          <div className="space-y-2">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Revisao executiva semanal</p>
-            <Suspense fallback={<div className="text-[11px] text-gray-500">Carregando revisao semanal...</div>}>
-              <WeeklyReview onAdjust={() => setView && setView("crono")} />
-            </Suspense>
-          </div>
-
-          <LaunchChecklistPanel />
-
-          <Suspense fallback={<div className="text-[11px] text-gray-500">Carregando painel de seguranca...</div>}>
-            <DataSafetyPanel />
-          </Suspense>
-        </div>
-      )}
     </div>
   );
 }

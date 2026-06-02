@@ -795,11 +795,13 @@ export const useStore = create(
         })),
 
       finalizarValidacaoDominioPrevio: (platKey, temaId, { questoes, acertos }) => {
+        let result = null;
         set((s) => {
           let validatedTema = null;
           const temasAtualizados = s[platKey].temas.map((t) => {
             if (t.id !== temaId) return t;
             validatedTema = applyDominioPrevioToTema(t, { questoes, acertos });
+            result = validatedTema?.dominioPrevio || null;
             return validatedTema;
           });
 
@@ -843,6 +845,7 @@ export const useStore = create(
         });
         const rebuild = get().rebuildActionInboxForToday;
         if (typeof rebuild === "function") rebuild();
+        return result;
       },
 
       cancelarValidacaoDominioPrevio: (platKey, temaId) =>

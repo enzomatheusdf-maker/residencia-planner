@@ -13,6 +13,7 @@ import { STEPS, isOverdue, todayStr, normalizeTema, getWorkloadProjection } from
 import { xpForReview } from "./core/gamif";
 import { ACHIEVEMENTS } from "./core/achievements";
 import { getReadinessData } from "./core/readiness";
+import { describeCurrentReviewTransition } from "./core/reviewOutcome";
 import { exportMedrevBackup } from "./core/backup";
 import { buildAuthSession, getInitialAuthSession, assertActiveUserScope } from "./core/authSession";
 import { getAnonymousStorageKey, getOrCreateAnonymousSessionId, getUserScopedStorageKey } from "./core/userScope";
@@ -42,6 +43,9 @@ import Cronograma from "./components/Cronograma";
 import CronogramaVestHub from "./components/CronogramaVestHub";
 import BancoDados from "./components/BancoDados";
 import StatsPanel from "./components/StatsPanel";
+import WeeklyReview from "./components/WeeklyReview";
+import DataSafetyPanel from "./components/DataSafetyPanel";
+import LaunchChecklistPanel from "./components/LaunchChecklistPanel";
 import Simulados from "./components/Simulados";
 import AnkiAudit from "./components/AnkiAudit";
 import AcademiaMetodo from "./components/AcademiaMetodo";
@@ -136,6 +140,12 @@ function prioToImportancia(prio) {
   }
 }
 
+function getPostReviewMessage(plat, temaId, stepKey) {
+  const state = useStore.getState();
+  const updatedTema = state[plat]?.temas?.find((t) => t.id === temaId);
+  return describeCurrentReviewTransition({ tema: updatedTema, stepKey })?.message || "Etapa computada com sucesso.";
+}
+
 /* APP ROOT MAIN ENTRY ────────────────────────────────────────────────────────── */
 export default function App() {
   const {
@@ -217,9 +227,6 @@ export default function App() {
     raciocinioClinico: featureEnabled(plat, "raciocinioClinico") && meta.modulos?.raciocinioClinico === true,
   }), [meta.modulos, plat]);
   const moreNavItems = useMemo(() => getMoreNavItems(plat, navFeatures), [plat, navFeatures]);
-  // Secao alvo do StatsPanel quando aberto a partir da aba Mais (Sistema, etc.)
-  const [statsSection, setStatsSection] = useState(null);
-  const [statsSectionTrigger, setStatsSectionTrigger] = useState(0);
   const openFromMore = useCallback((targetView) => {
     if (targetView === NAV_VIEW.GUIDE) {
       setHelpModal(true);
@@ -227,17 +234,6 @@ export default function App() {
     }
     if (targetView === NAV_VIEW.SETTINGS) {
       openAjustes({ initialTab: "ajustes" });
-      return;
-    }
-    // DataSafety, WeeklyReview e LaunchChecklist vivem na secao "Sistema" do StatsPanel.
-    if (
-      targetView === NAV_VIEW.DATA_SAFETY
-      || targetView === NAV_VIEW.WEEKLY_REVIEW
-      || targetView === NAV_VIEW.LAUNCH_CHECKLIST
-    ) {
-      setStatsSection("sistema");
-      setStatsSectionTrigger((n) => n + 1);
-      setView(NAV_VIEW.STATS);
       return;
     }
     setView(targetView);
@@ -669,7 +665,7 @@ export default function App() {
           modoReduzido: markData.modoReduzido,
           descansoPrescrito: markData.descansoPrescrito
         });
-        showToast("🧠 Brain Dump consolidado e gravado no perfil!");
+        showToast(getPostReviewMessage(plat, temaId, "d1"), true);
       } else if (stepKey === "d0") {
         const d0Questoes = Number(markData.questoes);
         if (!Number.isFinite(d0Questoes) || d0Questoes <= 0) {
@@ -708,7 +704,7 @@ export default function App() {
           pico: markData.pico || "",
           ankiDeck: markData.ankiDeck || "",
         });
-        showToast("✓ Tema iniciado com sucesso!");
+        showToast(getPostReviewMessage(plat, temaId, "d0"));
       } else {
         pushUndo(plat);
         markStep(plat, temaId, stepKey, {
@@ -766,7 +762,7 @@ export default function App() {
           }, 100);
         }
 
-        showToast(`✓ Etapa computada com sucesso!`, true);
+        showToast(getPostReviewMessage(plat, temaId, stepKey), true);
       }
 
       // ─── CENTRALIZED GAMIFICATION LOGIC ─────────────────────────────────────
@@ -1183,7 +1179,22 @@ export default function App() {
           {view === "banco" && <BancoDados />}
           {view === "stats" && (
             <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
-              <StatsPanel setView={setView} initialSection={statsSection} sectionTrigger={statsSectionTrigger} />
+              <StatsPanel setView={setView} />
+            </ErrorBoundary>
+          )}
+          {view === NAV_VIEW.WEEKLY_REVIEW && (
+            <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
+              <WeeklyReview onAdjust={() => setView("crono")} />
+            </ErrorBoundary>
+          )}
+          {view === NAV_VIEW.DATA_SAFETY && (
+            <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
+              <DataSafetyPanel />
+            </ErrorBoundary>
+          )}
+          {view === NAV_VIEW.LAUNCH_CHECKLIST && (
+            <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
+              <LaunchChecklistPanel />
             </ErrorBoundary>
           )}
           {view === "sims" && (

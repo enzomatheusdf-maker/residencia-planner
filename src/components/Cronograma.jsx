@@ -9,7 +9,6 @@ import { stepState, STATE_DOT, STATE_TW, Badge, SBadge, Btn, Input, TourBalloon,
 import { CALENDAR_PROVIDER_IDS } from "../constants/calendarProviders";
 import { attachCalendarIntelligence, getProviderSeed, matchMedcofTopic } from "../core/calendarProvider";
 import {
-  calcularDominioPrevio,
   getDominioPrevioStatus,
   getNextReviewForTema,
   getReviewDisplayMeta,
@@ -744,18 +743,9 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
         <ModalValidarDominio
           tema={temaValidando}
           onConfirm={({ questoes, acertos }) => {
-            const resultado = calcularDominioPrevio({ total: questoes, acertos });
-            validarDominio(plat, temaValidando.id, { questoes, acertos });
+            const resultado = validarDominio(plat, temaValidando.id, { questoes, acertos });
             if (showToast) {
-              if (resultado.valido) {
-                if ((resultado.intervaloInicial || 7) >= 21) {
-                  showToast("Tema validado com alta segurança. Próxima revisão: D21.");
-                } else {
-                  showToast("Tema validado. Próxima revisão: D7.");
-                }
-              } else {
-                showToast("Validação insuficiente. Comece pelo estudo guiado para proteger sua base.");
-              }
+              showToast(resultado?.observacao || "Validação de domínio registrada para este tema.");
             }
             setTemaValidando(null);
           }}

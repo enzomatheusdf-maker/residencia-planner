@@ -12,7 +12,6 @@ import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip, InfoToolt
 import { ModalValidarDominio } from "./Modals";
 import {
   DOMINIO_META,
-  calcularDominioPrevio,
   isTemaNaoIniciado,
 } from "../core/domainValidation";
 import RetrievabilitySpark from "./RetrievabilitySpark";
@@ -2650,23 +2649,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         <ModalValidarDominio
           tema={temaValidando}
           onConfirm={({ questoes, acertos }) => {
-            const resultado = calcularDominioPrevio({ total: questoes, acertos });
-            validarDominio(plat, temaValidando.id, { questoes, acertos });
-            if (resultado.valido) {
-              if ((resultado.intervaloInicial || 7) >= 21) {
-                (showToast || showToastGlobal)("Tema validado com alta segurança. Próxima revisão: D21.");
-              } else {
-                (showToast || showToastGlobal)("Tema validado. Próxima revisão: D7.");
-              }
-            } else {
-              (showToast || showToastGlobal)("Validação insuficiente. Comece pelo estudo guiado para proteger sua base.");
-            }
+            const resultado = validarDominio(plat, temaValidando.id, { questoes, acertos });
+            (showToast || showToastGlobal)(resultado?.observacao || "Validação de domínio registrada para este tema.");
             if (trackEvent) {
               trackEvent("dominio_previo_avaliado", {
                 plat,
                 tema_id: temaValidando.id,
-                percentual: resultado.percentual,
-                status: resultado.status,
+                percentual: resultado?.percentual,
+                status: resultado?.status,
               });
             }
             setTemaValidando(null);

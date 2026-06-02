@@ -116,21 +116,20 @@ describe("TASK_TYPE enum", () => {
     expect(task?.taskType).toBe(TASK_TYPE.ILLNESS_RECALL);
   });
 
-  test("MINI_CASE mapeado para d7 quando caso disponivel", () => {
+  test("d7 nao gera tarefa clinica dedicada", () => {
     const task = getReviewTaskForStep({
       tema: TEMA_CIRUGIA, stepKey: "d7", casos: CASOS, progresso: PROGRESSO,
       plat: "res", modulos: { raciocinioClinico: true },
     });
-    expect(task?.taskType).toBe(TASK_TYPE.MINI_CASE);
-    expect(task?.caso).not.toBeNull();
+    expect(task).toBeNull();
   });
 
-  test("SCT mapeado para d21 quando caso disponivel", () => {
+  test("MINI_CASE mapeado para d21 quando caso disponivel", () => {
     const task = getReviewTaskForStep({
       tema: TEMA_CIRUGIA, stepKey: "d21", casos: CASOS, progresso: PROGRESSO,
       plat: "res", modulos: { raciocinioClinico: true },
     });
-    expect(task?.taskType).toBe(TASK_TYPE.SCT);
+    expect(task?.taskType).toBe(TASK_TYPE.MINI_CASE);
     expect(task?.caso).not.toBeNull();
   });
 
@@ -168,15 +167,15 @@ describe("getReviewTaskForStep", () => {
     expect(task).toBeNull();
   });
 
-  test("retorna null para SCT sem caso disponivel", () => {
+  test("d21 sem caso faz fallback para illness_recall", () => {
     const task = getReviewTaskForStep({ ...OPTS, stepKey: "d21", casos: [] });
-    expect(task).toBeNull();
-  });
-
-  test("d7 sem caso faz fallback para illness_recall", () => {
-    const task = getReviewTaskForStep({ ...OPTS, stepKey: "d7", casos: [] });
     expect(task).not.toBeNull();
     expect(task.taskType).toBe(TASK_TYPE.ILLNESS_RECALL);
+  });
+
+  test("d7 sem caso continua sem tarefa clinica", () => {
+    const task = getReviewTaskForStep({ ...OPTS, stepKey: "d7", casos: [] });
+    expect(task).toBeNull();
   });
 
   test("task retornada tem tema, description e responses", () => {
@@ -194,8 +193,13 @@ describe("getReviewTaskForStep", () => {
   });
 
   test("description de sct tem 4 campos", () => {
-    const task = getReviewTaskForStep({ ...OPTS, stepKey: "d21" });
+    const task = getReviewTaskForStep({ ...OPTS, stepKey: "manutencao" });
     expect(task.description.fields).toHaveLength(4);
+  });
+
+  test("description de mini_case tem 3 campos", () => {
+    const task = getReviewTaskForStep({ ...OPTS, stepKey: "d21" });
+    expect(task.description.fields).toHaveLength(3);
   });
 });
 

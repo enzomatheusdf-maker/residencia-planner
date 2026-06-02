@@ -2,7 +2,7 @@ import { COPY } from "./copy";
 
 // Itens marcados como devOnly so aparecem no build de desenvolvimento.
 // No build de producao (o que o usuario recebe) eles ficam ocultos.
-const IS_DEV = process.env.NODE_ENV !== "production";
+const IS_DEV = process.env.NODE_ENV === "development";
 
 const PRIMARY_ITEMS = [
   {
@@ -77,6 +77,16 @@ const MORE_ITEMS = [
     view: "weekly_review",
     label: "Weekly Review",
     description: "Revisao executiva da semana com acoes sugeridas.",
+  },
+  {
+    view: "data_safety",
+    label: "Seguranca de Dados",
+    description: "Backup, integridade e migracao dos seus dados.",
+  },
+  {
+    view: "launch_checklist",
+    label: "Checklist",
+    description: "Itens de prontidao e verificacoes do app.",
     devOnly: true,
   },
 ];

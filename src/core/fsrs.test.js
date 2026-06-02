@@ -11,7 +11,9 @@ import {
   getWorkloadProjection,
   getAreaPrior,
   getRetencaoArea,
+  spacingFactorFromTiming,
   updateDifficulty,
+  updateStability,
   toRating,
   applyRelearningRecoveryBonus,
   appendReviewHistory,
@@ -67,6 +69,25 @@ describe("FSRS Core Logic Test Suite", () => {
   test("updateDifficulty raises D on errors and lowers D on easy answers", () => {
     expect(updateDifficulty(0.5, 0.4)).toBeCloseTo(0.65);
     expect(updateDifficulty(0.5, 1.0)).toBeCloseTo(0.42);
+  });
+
+  test("spacing factor keeps on-time reviews unchanged", () => {
+    expect(spacingFactorFromTiming(0, 21)).toBeCloseTo(1, 5);
+    const legacy = updateStability(10, 0.9, 0.5, 1.0, "good", 1.0);
+    const onTime = updateStability(10, 0.9, 0.5, 1.0, "good");
+    expect(onTime).toBeCloseTo(legacy, 5);
+  });
+
+  test("spacing factor increases stability gain for delayed successful reviews", () => {
+    const onTime = updateStability(10, 0.9, 0.5, 1.0, "good", 1.0);
+    const delayed = updateStability(10, 0.9, 0.5, 1.0, "good", spacingFactorFromTiming(20, 21));
+    expect(delayed).toBeGreaterThan(onTime);
+  });
+
+  test("spacing factor does not change again behavior", () => {
+    const withSpacing = updateStability(10, 0.2, 0.5, 1.0, "again", 1.4);
+    const withoutSpacing = updateStability(10, 0.2, 0.5, 1.0, "again", 1.0);
+    expect(withSpacing).toBeCloseTo(withoutSpacing, 5);
   });
 
   test("toRating returns null for null/undefined/NaN", () => {

@@ -1,5 +1,13 @@
 import { CASOS_CLINICOS } from "./casosClinicos";
 
+const REQUIRED_AREAS = [
+  "Clínica Médica",
+  "Cirurgia",
+  "GO",
+  "Pediatria",
+  "Preventiva",
+];
+
 describe("casosClinicos schema", () => {
   test("lista possui ids unicos", () => {
     const ids = CASOS_CLINICOS.map((c) => c.id);
@@ -29,6 +37,23 @@ describe("casosClinicos schema", () => {
       expect(caso.anamnese.queixa).toBeTruthy();
       expect(Array.isArray(caso.anamnese.roteiro)).toBe(true);
       expect(Array.isArray(caso.anamnese.redFlags)).toBe(true);
+    });
+  });
+
+  test("ha cobertura minima nas 5 grandes areas", () => {
+    const covered = new Set(CASOS_CLINICOS.map((caso) => caso.area));
+    REQUIRED_AREAS.forEach((area) => {
+      expect(covered.has(area)).toBe(true);
+    });
+  });
+
+  test("ha pelo menos um caso por area com dificuldade media ou dificil", () => {
+    REQUIRED_AREAS.forEach((area) => {
+      expect(
+        CASOS_CLINICOS.some(
+          (caso) => caso.area === area && ["media", "dificil"].includes(caso.dificuldade)
+        )
+      ).toBe(true);
     });
   });
 });

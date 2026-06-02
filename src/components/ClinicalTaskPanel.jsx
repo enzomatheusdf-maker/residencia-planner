@@ -68,8 +68,9 @@ function TaskField({ field, value, onChange, color }) {
  * Props:
  *   task    object|null  resultado de getReviewTaskForStep
  *   className string
+ *   onSelfScore function|null
  */
-export default function ClinicalTaskPanel({ task, className = "" }) {
+export default function ClinicalTaskPanel({ task, className = "", onSelfScore = null }) {
   const [open, setOpen] = useState(false);
   const [responses, setResponses] = useState({});
 
@@ -165,6 +166,26 @@ export default function ClinicalTaskPanel({ task, className = "" }) {
               </p>
             </div>
           )}
+
+          <div className="border-t border-white/5 pt-3 space-y-2">
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Como foi seu recall, sem consultar?</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Falhei", value: 35, style: "border-red-500/30 text-red-300" },
+                { label: "Parcial", value: 70, style: "border-amber-500/30 text-amber-300" },
+                { label: "Solido", value: 95, style: "border-emerald-500/30 text-emerald-300" },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => onSelfScore && onSelfScore(option.value)}
+                  className={`px-2 py-2 rounded-xl border bg-black/20 text-[11px] font-bold ${option.style}`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Indicador de preenchimento */}
           <div className="flex items-center justify-between pt-2 border-t border-white/5">

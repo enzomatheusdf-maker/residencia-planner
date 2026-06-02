@@ -24,6 +24,18 @@ describe("dominio previo", () => {
     expect(r.percentual).toBeLessThan(DOMINIO_PREVIO_MIN_ACERTO);
   });
 
+  test("below 40 percent routes to D0 recovery", () => {
+    const r = calcularDominioPrevio({ acertos: 7, total: 20 });
+    expect(r.valido).toBe(false);
+    expect(r.proximaEtapa).toBe("d0");
+  });
+
+  test("40 to 59 percent routes to D1 lacuna review", () => {
+    const r = calcularDominioPrevio({ acertos: 10, total: 20 });
+    expect(r.valido).toBe(false);
+    expect(r.proximaEtapa).toBe("d1");
+  });
+
   test("80 to 89 percent schedules first review at D7", () => {
     const r = calcularDominioPrevio({ acertos: 12, total: 15 });
     expect(r.valido).toBe(true);
@@ -63,6 +75,43 @@ describe("dominio previo", () => {
     const updated = applyDominioPrevioToTema(tema, { questoes: 15, acertos: 13 });
     expect(updated.unstarted).toBe(false);
     expect(updated.status).toBe("validado_previo");
+  });
+
+  test("failed dominio below 40 reopens D0 today", () => {
+    const tema = {
+      id: 20,
+      nome: "Tema 20",
+      esp: "Clínica Médica",
+      importancia: "ALTA",
+      d0: todayStr(),
+      unstarted: true,
+      rev: buildRev(todayStr(), "Clínica Médica"),
+    };
+    const updated = applyDominioPrevioToTema(tema, { questoes: 20, acertos: 7 });
+    const next = getNextReviewForTema(updated);
+    expect(updated.unstarted).toBe(false);
+    expect(updated.status).toBe("reprovado");
+    expect(next.stepKey).toBe("d0");
+    expect(updated.rev.d0.done).toBe(false);
+  });
+
+  test("failed dominio from 40 to 59 opens D1 today", () => {
+    const tema = {
+      id: 21,
+      nome: "Tema 21",
+      esp: "Clínica Médica",
+      importancia: "ALTA",
+      d0: todayStr(),
+      unstarted: true,
+      rev: buildRev(todayStr(), "Clínica Médica"),
+    };
+    const updated = applyDominioPrevioToTema(tema, { questoes: 20, acertos: 10 });
+    const next = getNextReviewForTema(updated);
+    expect(updated.unstarted).toBe(false);
+    expect(updated.status).toBe("reprovado");
+    expect(updated.rev.d0.done).toBe(true);
+    expect(next.stepKey).toBe("d1");
+    expect(next.date).toBe(todayStr());
   });
 
   test("validated topic receives dominioPrevio metadata", () => {
