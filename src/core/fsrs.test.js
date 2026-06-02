@@ -14,7 +14,10 @@ import {
   updateDifficulty,
   toRating,
   applyRelearningRecoveryBonus,
-  appendReviewHistory
+  appendReviewHistory,
+  relapseSeedStability,
+  MATURE_LAPSE_THRESHOLD,
+  isMatureStep
 } from "./fsrs";
 
 describe("FSRS Core Logic Test Suite", () => {
@@ -279,7 +282,7 @@ describe("FSRS Core Logic Test Suite", () => {
     expect(updated.d4.date).toBe(addDays(today, 1));
   });
 
-  test("D21 with again severe enters relearning and targets D7", () => {
+  test("D21 with again severe relapses to D0 (mature lapse, full re-study)", () => {
     const today = todayStr();
     const initialRev = buildRev(addDays(today, -21), "GO");
     const marked = {
@@ -303,8 +306,8 @@ describe("FSRS Core Logic Test Suite", () => {
     const updated = recalcAfterMark(marked, "d21", 0.2);
     expect(updated.phase).toBe("relearning");
     expect(updated.d21.done).toBe(false);
-    expect(updated.d7.done).toBe(false);
-    expect(updated.d7.date).toBe(addDays(today, 1));
+    expect(updated.d0.date).toBe(addDays(today, 1));
+    expect(updated.relearning?.protocol?.clinicalCaseNext).toBe(true);
   });
 
   test("missing rating does not leave step completed", () => {
@@ -325,7 +328,7 @@ describe("FSRS Core Logic Test Suite", () => {
     expect(updated.meta?.schedulerWarning).toBe("missing_rating");
   });
 
-  test("maintenance with again severe returns to D7 relearning", () => {
+  test("maintenance with again severe relapses to D0 (full re-study)", () => {
     const today = todayStr();
     const initialRev = buildRev(addDays(today, -60), "GO");
     const marked = {
@@ -344,7 +347,8 @@ describe("FSRS Core Logic Test Suite", () => {
 
     const updated = recalcAfterMark(marked, "manutencao", 0.2);
     expect(updated.phase).toBe("relearning");
-    expect(updated.d7.date).toBe(addDays(today, 1));
+    expect(updated.d0.date).toBe(addDays(today, 1));
+    expect(updated.relearning?.targetStep).toBe("d0");
   });
 
   test("applyRelearningRecoveryBonus is small and bounded", () => {
@@ -404,17 +408,50 @@ describe("FSRS Core Logic Test Suite", () => {
     expect(second.manutencao.interval).toBeLessThanOrEqual(180);
   });
 
-  test("maintenance again-common preserves the interval field (no silent reset to 45)", () => {
+  test("maintenance again-common (<60%) relapses to D1 with seeded stability (não fica na manutenção)", () => {
     const today = todayStr();
     const base = {
       ...buildRev(addDays(today, -120), "GO"),
       manutencao: { done: true, date: today, scheduledAt: today, reviewedAt: today, S: 90, D: 0.5, interval: 90 },
     };
-    // acerto 0.5 → rating "again", severidade "common" (>= 0.30)
+    // acerto 0.5 → lapso comum (30–60%) em tema maduro → volta ao estudo base (D1), NÃO remarca +5d.
     const updated = recalcAfterMark(base, "manutencao", 0.5, 0.90, 180, "GO");
-    expect(updated.phase).toBe("maintenance");
-    expect(updated.manutencao.interval).toBeDefined();
-    expect(updated.manutencao.interval).not.toBeNull();
+    expect(updated.phase).toBe("relearning");
+    expect(updated.d1.date).toBe(addDays(today, 1));
+    expect(updated.relearning?.targetStep).toBe("d1");
+    expect(updated.relearning?.protocol?.brainDump).toBe(true);
+    // semente: herda do S maduro (90*0.45≈40.5), bem acima do S_BASE.d1 (1) → sobe mais rápido.
+    expect(updated.d1.S).toBeGreaterThan(20);
+  });
+
+  test("mature review at 58% is a lapse, not a hard pass (limiar < 60%)", () => {
+    const today = todayStr();
+    const base = {
+      ...buildRev(addDays(today, -120), "GO"),
+      manutencao: { done: true, date: today, scheduledAt: today, reviewedAt: today, S: 70, D: 0.5, interval: 70 },
+    };
+    // 0.58 → toRating "hard", mas em tema maduro é tratado como AGAIN → relearning (não cresce o intervalo).
+    const updated = recalcAfterMark(base, "manutencao", 0.58, 0.90, 180, "GO");
+    expect(updated.phase).toBe("relearning");
+    expect(updated.d1.date).toBe(addDays(today, 1));
+    const last = updated.reviewHistory[updated.reviewHistory.length - 1];
+    expect(last.matureLapse).toBe(true);
+    expect(last.rating).toBe("hard"); // rating real preservado no histórico
+  });
+
+  test("relapseSeedStability inherits part of the mature stability (common > severe > virgin)", () => {
+    expect(relapseSeedStability(90, "common")).toBeCloseTo(40.5);
+    expect(relapseSeedStability(90, "severe")).toBeCloseTo(27);
+    expect(relapseSeedStability(90, "common")).toBeGreaterThan(relapseSeedStability(90, "severe"));
+    expect(relapseSeedStability(0, "common")).toBe(1); // fallback S_BASE.d1
+  });
+
+  test("isMatureStep / MATURE_LAPSE_THRESHOLD basics", () => {
+    expect(MATURE_LAPSE_THRESHOLD).toBe(0.60);
+    expect(isMatureStep("d21")).toBe(true);
+    expect(isMatureStep("manutencao")).toBe(true);
+    expect(isMatureStep("d7")).toBe(false);
+    expect(isMatureStep("d0")).toBe(false);
   });
 
   test("nextInterval never exceeds maxInterval", () => {

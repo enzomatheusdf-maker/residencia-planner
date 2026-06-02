@@ -266,15 +266,13 @@ export function getAgainSeverity(acerto) {
 export function resolveAgainPolicy(stepKey, acerto, context = {}) {
   const severity = getAgainSeverity(acerto) || "common";
   const severe = severity === "severe";
-  if (stepKey === "manutencao" || context?.isMaintenance) {
+  // G2: lapso em tema maduro (D21/manutenção) sempre relapsa ao estudo base.
+  // severe (<30%) → D0 (reestudo completo); common (30–60%) → D1 (recall + Brain Dump + lacunas).
+  // Nunca mais "fica na manutenção remarcando +5d".
+  if (stepKey === "manutencao" || stepKey === "d21" || context?.isMaintenance) {
     return severe
-      ? { targetStep: "d7", delayDays: 1, phaseAfter: "relearning", severity, shouldPushFuture: true }
-      : { targetStep: "manutencao", delayDays: 5, phaseAfter: "maintenance", severity, shouldPushFuture: false };
-  }
-  if (stepKey === "d21") {
-    return severe
-      ? { targetStep: "d7", delayDays: 1, phaseAfter: "relearning", severity, shouldPushFuture: true }
-      : { targetStep: "d21", delayDays: 2, phaseAfter: "review", severity, shouldPushFuture: false };
+      ? { targetStep: "d0", delayDays: 1, phaseAfter: "relearning", severity, shouldPushFuture: true }
+      : { targetStep: "d1", delayDays: 1, phaseAfter: "relearning", severity, shouldPushFuture: true };
   }
   if (stepKey === "d7") {
     return severe
@@ -395,15 +393,35 @@ export function toRating(acerto) {
   return "easy";
 }
 
-export function updateDifficulty(D_prev, acerto) {
-  const rating = toRating(acerto);
+// G1: passos "maduros" (já consolidados) — uma revisão fraca aqui é um LAPSO,
+// não um "hard". Abaixo deste limiar o tema relapsa ao estudo base (D0/D1).
+export const MATURE_LAPSE_THRESHOLD = 0.60;
+
+export function isMatureStep(stepKey) {
+  return stepKey === "d21" || stepKey === "manutencao";
+}
+
+// G3: ao relapsar um tema maduro, o passo-alvo (d0/d1) herda parte da estabilidade
+// antiga em vez de resetar para S_BASE — assim a recuperação sobe mais rápido que
+// um tema virgem (Enzo: "subir mais rápido a estabilidade, sem refazer dias fixos do zero").
+export function relapseSeedStability(prevS, severity) {
+  const s = Number(prevS);
+  if (!Number.isFinite(s) || s <= 0) {
+    return severity === "severe" ? S_BASE.d0 : S_BASE.d1;
+  }
+  if (severity === "severe") return Math.max(S_BASE.d0, s * 0.30);
+  return Math.max(S_BASE.d1, s * 0.45);
+}
+
+export function updateDifficulty(D_prev, acerto, ratingOverride = null) {
+  const rating = ratingOverride || toRating(acerto);
   const delta = { again: +0.15, hard: +0.05, good: -0.02, easy: -0.08 }[rating];
   if (delta == null) return D_prev ?? 0.5;
   return Math.min(1, Math.max(0, (D_prev ?? 0.5) + delta));
 }
 
-export function updateStability(S_prev, acerto, D = 0.5, sMult = 1.0) {
-  const rating = toRating(acerto);
+export function updateStability(S_prev, acerto, D = 0.5, sMult = 1.0, ratingOverride = null) {
+  const rating = ratingOverride || toRating(acerto);
   const base = { again: -0.8, hard: 0.05, good: 0.3, easy: 0.7 }[rating];
   if (base == null) return S_prev;
   const ganho = base * (1.1 - 0.4 * D) * sMult;
@@ -484,6 +502,11 @@ export function buildRev(d0, esp = "Outro") {
 
 export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, maxInterval = 180, esp = "Outro") {
   const rating = toRating(acerto);
+  // G1: numa revisão de tema maduro, < 60% é LAPSO (again), mesmo que toRating diga "hard".
+  const acertoNorm = normalizeAcerto(acerto);
+  const forcedMatureLapse = isMatureStep(doneKey) && acertoNorm != null && acertoNorm < MATURE_LAPSE_THRESHOLD;
+  const effectiveRating = forcedMatureLapse ? "again" : rating;
+  const matureLapse = isMatureStep(doneKey) && effectiveRating === "again";
   const eventStep = doneKey === "manutencao" ? rev?.manutencao : rev?.[doneKey];
   if (!eventStep) return rev;
   const prior = getAreaPrior(esp);
@@ -511,13 +534,13 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
     };
   }
 
-  const D_new = updateDifficulty(prevD, acerto);
-  const computedS = updateStability(prevS, acerto, D_new, prior.sMult);
-  const S_new = applyRelearningRecoveryBonus(computedS, rating, { wasRelearning });
+  const D_new = updateDifficulty(prevD, acerto, effectiveRating);
+  const computedS = updateStability(prevS, acerto, D_new, prior.sMult, effectiveRating);
+  const S_new = applyRelearningRecoveryBonus(computedS, effectiveRating, { wasRelearning });
   const scheduledAt = eventStep.scheduledAt || eventStep.date || now;
   const reviewedAt = eventStep.reviewedAt || now;
   const atrasoDias = Math.max(0, diffDays(scheduledAt, reviewedAt));
-  const severity = rating === "again" ? getAgainSeverity(acerto) : null;
+  const severity = effectiveRating === "again" ? getAgainSeverity(acerto) : null;
   const historyBase = {
     stepKey: doneKey,
     phaseBefore,
@@ -527,6 +550,8 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
     acerto: normalizeAcerto(acerto),
     questoes: eventStep.questoes ?? null,
     rating,
+    effectiveRating,
+    matureLapse,
     severity,
     S_before: prevS,
     S_after: S_new,
@@ -537,7 +562,7 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
     source: "fsrs-lite",
   };
 
-  if (rating === "again") {
+  if (effectiveRating === "again") {
     const policy = resolveAgainPolicy(doneKey, acerto, { isMaintenance: doneKey === "manutencao" });
     const targetDate = addDays(now, policy.delayDays);
     const targetPhase = policy.phaseAfter || inferPhaseFromStep(policy.targetStep, policy.targetStep === "manutencao");
@@ -550,7 +575,12 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
           fromStep: doneKey,
           targetStep: policy.targetStep,
           startedAt: now,
-          reason: "again_severe",
+          reason: matureLapse ? "lapso_maduro" : "again_severe",
+          // G3/H: relapso de tema maduro pede protocolo dirigido (Brain Dump + lacunas +
+          // próxima revisão com caso clínico). A UI lê este protocolo para abrir a captura de erro.
+          ...(matureLapse
+            ? { protocol: { brainDump: true, gapStudy: true, clinicalCaseNext: true, origem: "lapso_maduro" } }
+            : {}),
         }
         : rev.relearning || null,
       meta: {
@@ -595,12 +625,19 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
       };
     } else {
       const current = nextRev[policy.targetStep] || {};
+      // G3: no relapso de tema maduro, o passo-alvo herda estabilidade derivada do S antigo
+      // (recuperação acelerada), em vez de resetar para S_BASE de tema virgem.
+      const seededS = policy.targetStep === doneKey
+        ? S_new
+        : (matureLapse
+          ? relapseSeedStability(prevS, severity)
+          : (current.S ?? S_BASE[policy.targetStep] ?? prevS));
       nextRev[policy.targetStep] = {
         ...clearOperationalStepState(current),
         date: targetDate,
         scheduledAt: targetDate,
-        S: policy.targetStep === doneKey ? S_new : (current.S ?? S_BASE[policy.targetStep] ?? prevS),
-        D: policy.targetStep === doneKey ? D_new : (current.D ?? prior.difBase),
+        S: seededS,
+        D: policy.targetStep === doneKey ? D_new : (matureLapse ? D_new : (current.D ?? prior.difBase)),
         phase: targetPhase,
       };
       if (policy.shouldPushFuture) {

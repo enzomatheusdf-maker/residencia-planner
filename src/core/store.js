@@ -879,44 +879,81 @@ export const useStore = create(
       markStep: (platKey, temaId, stepKey, { acerto, previsao, questoes, motivosErro, erros, tempoMin, ansiedade, cansaco, confianca, dificuldade, foco, c1, c2, c3, c4, c5, modoReduzido, descansoPrescrito }) =>
         set((s) => {
           const reviewedAt = todayStr();
+          let relapsedTema = null;
+          const temasAtualizados = s[platKey].temas.map((t) => {
+            if (t.id !== temaId) return t;
+            const currentStep = t.rev?.[stepKey] || {};
+            const revMarked = {
+              ...t.rev,
+              [stepKey]: {
+                ...currentStep,
+                done: true,
+                acerto,
+                previsao,
+                questoes,
+                reviewedAt,
+                completedAt: reviewedAt,
+                scheduledAt: currentStep.scheduledAt || currentStep.date || reviewedAt,
+                motivosErro: motivosErro || [],
+                erros: erros || [],
+                tempoMin: tempoMin ?? currentStep.tempoMin,
+                ansiedade: ansiedade ?? currentStep.ansiedade,
+                cansaco: cansaco ?? currentStep.cansaco,
+                confianca: confianca ?? currentStep.confianca,
+                dificuldade: dificuldade ?? currentStep.dificuldade,
+                foco: foco ?? currentStep.foco,
+                c1: c1 ?? currentStep.c1,
+                c2: c2 ?? currentStep.c2,
+                c3: c3 ?? currentStep.c3,
+                c4: c4 ?? currentStep.c4,
+                c5: c5 ?? currentStep.c5,
+                modoReduzido: modoReduzido ?? currentStep.modoReduzido,
+                descansoPrescrito: descansoPrescrito ?? currentStep.descansoPrescrito,
+              },
+            };
+            const desiredRetention = getRetencaoArea(t.esp, s.meta?.retencaoFSRS ?? 0.90);
+            const maxInterval = s.meta?.intervaloMaxDias ?? 180;
+            const updated = { ...t, rev: recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, t.esp) };
+            // G4: relapso de tema maduro com protocolo dirigido → marca p/ semear caso clínico.
+            if (updated.rev?.relearning?.protocol?.clinicalCaseNext) {
+              relapsedTema = updated;
+            }
+            return updated;
+          });
+
+          // G4: ao relapsar um tema maduro (<60%), agenda um re-encontro clínico próximo
+          // (reusa a malha casosProgresso/action-inbox). Fallback seguro: sem módulo OU
+          // sem caso casado, só o relapso FSRS + Brain Dump acontece (nada é semeado).
+          let casosProgresso = s[platKey].casosProgresso || {};
+          if (relapsedTema && s.meta?.modulos?.raciocinioClinico) {
+            const caso = clinicalCaseMatch(relapsedTema, CASOS_CLINICOS);
+            if (caso?.id && !casosProgresso[caso.id]) {
+              const pct = Number.isFinite(Number(acerto))
+                ? Math.round((Number(acerto) <= 1 ? Number(acerto) * 100 : Number(acerto)))
+                : 0;
+              const seed = agendarReencontro({}, pct);
+              casosProgresso = {
+                ...casosProgresso,
+                [caso.id]: {
+                  casoId: caso.id,
+                  temaId: relapsedTema.id,
+                  temaNome: relapsedTema.nome,
+                  origem: "lapso",
+                  S: seed.S,
+                  intervalo: seed.intervalo,
+                  proximaData: seed.proximaData,
+                  vistos: 0,
+                  criadoEm: reviewedAt,
+                },
+              };
+            }
+          }
+
           return {
             [platKey]: {
               ...s[platKey],
-              temas: s[platKey].temas.map((t) => {
-                if (t.id !== temaId) return t;
-                const currentStep = t.rev?.[stepKey] || {};
-                const revMarked = {
-                  ...t.rev,
-                  [stepKey]: {
-                    ...currentStep,
-                    done: true,
-                    acerto,
-                    previsao,
-                    questoes,
-                    reviewedAt,
-                    completedAt: reviewedAt,
-                    scheduledAt: currentStep.scheduledAt || currentStep.date || reviewedAt,
-                    motivosErro: motivosErro || [],
-                    erros: erros || [],
-                    tempoMin: tempoMin ?? currentStep.tempoMin,
-                    ansiedade: ansiedade ?? currentStep.ansiedade,
-                    cansaco: cansaco ?? currentStep.cansaco,
-                    confianca: confianca ?? currentStep.confianca,
-                    dificuldade: dificuldade ?? currentStep.dificuldade,
-                    foco: foco ?? currentStep.foco,
-                    c1: c1 ?? currentStep.c1,
-                    c2: c2 ?? currentStep.c2,
-                    c3: c3 ?? currentStep.c3,
-                    c4: c4 ?? currentStep.c4,
-                    c5: c5 ?? currentStep.c5,
-                    modoReduzido: modoReduzido ?? currentStep.modoReduzido,
-                    descansoPrescrito: descansoPrescrito ?? currentStep.descansoPrescrito,
-                  },
-                };
-                const desiredRetention = getRetencaoArea(t.esp, s.meta?.retencaoFSRS ?? 0.90);
-                const maxInterval = s.meta?.intervaloMaxDias ?? 180;
-                return { ...t, rev: recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, t.esp) };
-              }),
+              temas: temasAtualizados,
+              casosProgresso,
             },
           };
         }),

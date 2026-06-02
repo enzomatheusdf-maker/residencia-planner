@@ -132,10 +132,24 @@ export function buildWeeklyReview(context = {}) {
   const summary = summarizeReflections(reflections, 7, today);
   const actions = Array.isArray(context.actionInbox) ? context.actionInbox : [];
 
-  const priorities = actions.slice(0, 3).map((action) => action.title);
   const newTopicAction = actions.find((action) => action.type === "new_topic");
   const criticalReviewAction = actions.find((action) => action.type === "review");
   const clinicalCaseAction = actions.find((action) => action.type === "clinical_case");
+
+  // Erro recorrente real: prefere o tipo dominante calculado sobre os erros reais
+  // (temas+simulados, passado em context.dominantError), com fallback ao mainIssue das reflexões.
+  const errosRecorrentes = context.dominantError || summary.dominantIssue || null;
+
+  // Plano derivado do estado real (tema novo / revisão crítica / caso clínico),
+  // com fallback ao action inbox quando o contexto não fornecer.
+  const newTopic = context.newTopic || newTopicAction?.title || null;
+  const criticalReview = context.criticalReview || criticalReviewAction?.title || null;
+  const clinicalCase = context.clinicalCase || clinicalCaseAction?.title || null;
+
+  const basePriorities = actions.slice(0, 3).map((action) => action.title);
+  const priorities = errosRecorrentes
+    ? [`Atacar erro recorrente: ${errosRecorrentes}`, ...basePriorities].slice(0, 3)
+    : basePriorities;
 
   return {
     id: context.id || `wr_${today}`,
@@ -149,14 +163,14 @@ export function buildWeeklyReview(context = {}) {
     blocked: {
       cargaAlta: Boolean(context.highLoad),
       baixaEnergia: summary.lowEnergyCount > 0,
-      errosRecorrentes: summary.dominantIssue || null,
+      errosRecorrentes,
       areaFraca: context.weakArea || null,
     },
     plan: {
       priorities,
-      newTopic: newTopicAction?.title || null,
-      criticalReview: criticalReviewAction?.title || null,
-      clinicalCase: clinicalCaseAction?.title || null,
+      newTopic,
+      criticalReview,
+      clinicalCase,
     },
     summary,
   };

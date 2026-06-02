@@ -41,7 +41,7 @@ export default function AnkiAudit() {
               subtopico: e.subtopico || t.nome,
               anotacao: e.anotacao || "Fato clínico/conteúdo memorizado",
               tipoErro: e.tipoErro,
-              data: stepData.date || hoje,
+              data: stepData.reviewedAt || stepData.completedAt || stepData.date || hoje,
             });
           }
         });

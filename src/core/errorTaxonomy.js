@@ -128,7 +128,9 @@ export function errorSeverity(error = {}) {
 export function summarizeErrors(errors = []) {
   const out = {};
   for (const error of errors) {
-    const tipo = normalizeErrorType(error?.tipo || classifyError(error)) || "outro";
+    // Os erros persistidos usam o campo `tipoErro` (não `tipo`); priorizar o tipo
+    // explicitamente registrado pelo usuário antes de cair no classifyError heurístico.
+    const tipo = normalizeErrorType(error?.tipo || error?.tipoErro || classifyError(error)) || "outro";
     out[tipo] = (out[tipo] || 0) + 1;
   }
   return out;

@@ -764,6 +764,20 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
             </div>
           </div>
 
+          {/* ─── RELAPSO DE TEMA MADURO: protocolo dirigido (Brain Dump + lacunas + caso) ─── */}
+          {tema?.rev?.relearning?.protocol?.origem === "lapso_maduro" && (stepKey === "d0" || stepKey === "d1") && (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-1.5 text-left animate-fade-up">
+              <p className="text-[11px] font-black uppercase tracking-wider text-amber-300">
+                Reabordagem dirigida — você esqueceu este tema
+              </p>
+              <p className="text-[12px] text-amber-100/90 leading-relaxed">
+                A revisão caiu abaixo de 60%, então o tema voltou ao estudo base. Faça um <strong>Brain Dump</strong> do
+                que lembra, estude as <strong>lacunas</strong> que aparecerem e mapeie os erros abaixo. A próxima revisão
+                virá logo, com <strong>caso clínico + questões</strong> para consolidar a habilidade.
+              </p>
+            </div>
+          )}
+
           {/* ─── D0 PREPARATION SCREEN ─── */}
           {stepKey === "d0" && !startedD0 && (
             <div className="space-y-5 text-left">

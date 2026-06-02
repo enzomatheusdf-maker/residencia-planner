@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { CalendarCheck2, ChevronDown, ChevronUp, X } from "lucide-react";
 import { addDays, STEPS, todayStr } from "../core/fsrs";
 import { buildWeeklyReview } from "../core/sessionReflection";
+import { dominantErrorType, ERROR_TYPE_LABEL } from "../core/errorTaxonomy";
 import { useStore } from "../core/store";
 
 function countRecentDoneSteps(temas = [], days = 7) {
@@ -15,6 +16,7 @@ function countRecentDoneSteps(temas = [], days = 7) {
 export default function WeeklyReview({ onAdjust, onAction }) {
   const plat = useStore((s) => s.plat);
   const temas = useStore((s) => s[plat]?.temas || []);
+  const simulados = useStore((s) => s[plat]?.simulados || []);
   const casosProgresso = useStore((s) => s[plat]?.casosProgresso || {});
   const enamedAnalises = useStore((s) => s.enamedAnalises || []);
   const actionInbox = useStore((s) => s.actionInbox || []);
@@ -28,23 +30,76 @@ export default function WeeklyReview({ onAdjust, onAction }) {
   const [showAdjustModal, setShowAdjustModal] = useState(false);
 
   const review = useMemo(() => {
-    const cutoff = addDays(todayStr(), -6);
+    const today = todayStr();
+    const cutoff = addDays(today, -6);
     const recentCases = Object.values(casosProgresso).filter((item) => item?.atualizadoEm && item.atualizadoEm >= cutoff).length;
     const recentAnalises = enamedAnalises.filter((item) => item?.data ? item.data >= cutoff : false).length;
-    const sessionsCompleted = countRecentDoneSteps(temas, 7);
+
+    // Revisões FSRS concluídas nos últimos 7d — métrica distinta de "sessões"
+    // (que passa a ser o nº de reflexões/sessões de estudo registradas, via summary.total).
+    const revisoesDone = countRecentDoneSteps(temas, 7);
+
+    // Erro recorrente REAL: coleta erros das revisões (reviewedAt nos últimos 7d) + simulados (data nos últimos 7d).
+    const fromReviews = temas.flatMap((tema) =>
+      STEPS.flatMap((step) => {
+        const r = tema.rev?.[step.key];
+        if (!r?.done) return [];
+        if (r.reviewedAt && r.reviewedAt < cutoff) return [];
+        const structured = Array.isArray(r.erros) ? r.erros : [];
+        const fallback = Array.isArray(r.motivosErro) ? r.motivosErro.map((tipoErro) => ({ tipoErro })) : [];
+        return [...structured, ...fallback];
+      })
+    );
+    const fromSimulados = simulados
+      .filter((sim) => !sim.data || sim.data >= cutoff)
+      .flatMap((sim) => (sim.questoesErradas || []).map((q) => ({ tipoErro: q.tipoErro })));
+    const dominantRaw = dominantErrorType([...fromReviews, ...fromSimulados]);
+    const dominantError = dominantRaw ? (ERROR_TYPE_LABEL[dominantRaw] || dominantRaw) : null;
+
+    // Tema novo: próximo tema ainda não iniciado.
+    const newTopicTema = temas.find((t) => t.unstarted === true || t.status === "novo");
+
+    // Revisão crítica: tema com revisão pendente mais atrasada.
+    let criticalReview = null;
+    let oldestDue = null;
+    const considerDue = (nome, due) => {
+      if (due && due <= today && (!oldestDue || due < oldestDue)) {
+        oldestDue = due;
+        criticalReview = nome;
+      }
+    };
+    temas.forEach((t) => {
+      if (t.unstarted) return;
+      STEPS.forEach((step) => {
+        const r = t.rev?.[step.key];
+        if (!r || r.done || r.skipped) return;
+        considerDue(t.nome, r.date || r.scheduledAt);
+      });
+      const m = t.rev?.manutencao;
+      if (m && !m.done) considerDue(t.nome, m.date || m.scheduledAt);
+    });
+
+    // Caso clínico: re-encontro mais próximo/vencido.
+    const casosArr = Object.values(casosProgresso)
+      .filter((c) => c?.proximaData)
+      .sort((a, b) => (a.proximaData < b.proximaData ? -1 : 1));
+    const clinicalCase = casosArr[0]?.temaNome || casosArr[0]?.casoId || null;
 
     return buildWeeklyReview({
-      today: todayStr(),
+      today,
       reflections: sessionReflections,
       actionInbox,
-      sessionsCompleted,
-      revisoesDone: sessionsCompleted,
+      revisoesDone,
       clinicalCases: recentCases,
       examAnalyses: recentAnalises,
       weakArea: enamedAnalises.slice(-1)[0]?.resumo?.areaCritica || null,
       highLoad: actionInbox.some((action) => action.type === "review" && action.priority >= 95),
+      dominantError,
+      newTopic: newTopicTema?.nome || null,
+      criticalReview,
+      clinicalCase,
     });
-  }, [actionInbox, casosProgresso, enamedAnalises, sessionReflections, temas]);
+  }, [actionInbox, casosProgresso, enamedAnalises, sessionReflections, simulados, temas]);
 
   const lastReviewDate = weeklyReviews.slice(-1)[0]?.date;
   const alreadyReviewedThisWeek = Boolean(lastReviewDate && lastReviewDate >= addDays(todayStr(), -6));

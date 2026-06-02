@@ -53,5 +53,28 @@ describe("sessionReflection", () => {
     expect(review.executed.sessions).toBe(4);
     expect(review.plan.priorities.length).toBeGreaterThan(0);
   });
+
+  test("buildWeeklyReview separa sessões de revisões e usa erro/plano reais", () => {
+    const review = buildWeeklyReview({
+      today: "2026-05-31",
+      reflections: [],
+      actionInbox: [],
+      sessionsCompleted: 3,
+      revisoesDone: 17,
+      dominantError: "Raciocinio",
+      newTopic: "Choque séptico",
+      criticalReview: "Asma",
+      clinicalCase: "Apendicite Aguda",
+    });
+
+    expect(review.executed.sessions).toBe(3);
+    expect(review.executed.revisoes).toBe(17);
+    expect(review.executed.sessions).not.toBe(review.executed.revisoes);
+    expect(review.blocked.errosRecorrentes).toBe("Raciocinio");
+    expect(review.plan.newTopic).toBe("Choque séptico");
+    expect(review.plan.criticalReview).toBe("Asma");
+    expect(review.plan.clinicalCase).toBe("Apendicite Aguda");
+    expect(review.plan.priorities[0]).toMatch(/erro recorrente/i);
+  });
 });
 
