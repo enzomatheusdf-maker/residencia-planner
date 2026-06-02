@@ -186,6 +186,35 @@ export function decideMentorAction(context = {}) {
     });
   }
 
+  // Erro dominante forte com acao corretiva disponivel
+  // Prioridade 78: apos analise de simulado pendente, antes de gargalo ENAMED e caso clinico.
+  if (context.dominantErrorIsStrong && context.dominantErrorAction) {
+    const da = context.dominantErrorAction;
+    return buildAction({
+      type: da.mentorActionType || "review",
+      priority: 78,
+      title: `Acao corretiva: ${da.label}`,
+      subtitle: "Padrao de erro recorrente identificado.",
+      reason: da.definition,
+      explain: [
+        da.correctiveActions[0] || "Aplique a acao corretiva recomendada.",
+        da.correctiveActions[1] || null,
+        da.fsrsEffect || null,
+      ].filter(Boolean),
+      cta: "Ver acao corretiva",
+      ctaView: "stats",
+      estimatedMinutes: 20,
+      confidence: 0.82,
+      safety: "ok",
+      target: {
+        area: "erros",
+        errorType: context.dominantError,
+        preferredTask: da.preferredTask,
+        action: "corrective_action",
+      },
+    });
+  }
+
   if (plat === "res" && areaCritica) {
     return buildAction({
       type: "enamed_critico",

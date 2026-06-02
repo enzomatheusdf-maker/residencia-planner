@@ -17,6 +17,7 @@ import {
 import { getAnonymousStorageKey, getOrCreateAnonymousSessionId, getUserScopedStorageKey } from "../core/userScope";
 import { detectLegacyGlobalStore, migrateLegacyStoreToUserScope } from "../core/userDataMigration";
 import { getReadinessData } from "../core/readiness";
+import { getEnamedContextBadge } from "../core/enamedIntel";
 
 import {
   STEPS, IMPORTANCIA, ESPS_RES, ESPS_VEST,
@@ -40,7 +41,7 @@ const PROVA_STATS = {
 export function HelpModal({ onClose }) {
   const [tab, setTab] = useState("secoes");
   const sections = [
-    { icon: LayoutDashboard, color: "#a78bfa", title: "Dashboard", desc: "Painel central com fila cronológica, fila inteligente (score algorítmico), heatmap de consistência 35 dias, True Retention D21 e Zonas de Alerta por especialidade." },
+    { icon: LayoutDashboard, color: "#a78bfa", title: "Hoje", desc: "Painel central com fila cronológica, fila inteligente, heatmap de consistência 35 dias, retenção longa D21 e zonas de alerta por especialidade." },
     { icon: Calendar, color: "#60a5fa", title: "Cronograma", desc: "Grade MEDCOF 2026 completa (26 blocos, 23 especialidades). Inicie ciclos direto de um tema ou monte cronogramas semanais com criação manual ou importação de PDF." },
     { icon: BarChart3, color: "#34d399", title: "Banco de Dados", desc: "Tabela de todos os temas. Ordene por nome, progresso, questões ou acerto. Exporte em CSV para análise externa." },
     { icon: FileText, color: "#f472b6", title: "Estatísticas", desc: "Análise de provas-alvo (ENAMED, USP-SP, UNIFESP) com incidência por área e tópicos de risco 2026. Inclui aba 'Meu Desempenho' com seus dados pessoais." },
@@ -48,7 +49,7 @@ export function HelpModal({ onClose }) {
     { icon: Zap, color: "#fbbf24", title: "Anki Audit", desc: "Monitore a calibração do Anki. Registre sessões e acompanhe a taxa de 'Again' — ideal abaixo de 15% para retenção de longo prazo." },
   ];
   const workflow = [
-    { step: "D0", icon: BookOpen, color: "#a78bfa", label: "Estudo Inicial", desc: "Leia o conteúdo, resolva questões e registre o acerto. O FSRS-Lite calcula automaticamente a data das próximas revisões." },
+    { step: "D0", icon: BookOpen, color: "#a78bfa", label: "Estudo Inicial", desc: "Leia o conteúdo, resolva questões e registre o acerto. A curva de revisão calcula automaticamente a data das próximas revisões." },
     { step: "D1", icon: Edit2, color: "#60a5fa", label: "Brain Dump", desc: "No dia seguinte, abra o assistente e escreva tudo que lembra (5 min, material fechado). Isso consolida a memória de trabalho para longo prazo." },
     { step: "D4", icon: Target, color: "#34d399", label: "Revisão Ativa", desc: "Questões focadas no tema. Seu acerto ajusta o intervalo da próxima revisão via curva de esquecimento." },
     { step: "D7", icon: TrendingUp, color: "#fb923c", label: "Questões + Anki", desc: "Sétimo dia: questões de prova + revisão do deck Anki correspondente. Corrija os erros do simulado se houver." },
@@ -61,7 +62,7 @@ export function HelpModal({ onClose }) {
           <MedRevLogo size="md" />
           <div>
             <h2 className="text-[16px] font-bold text-white">Guia de Uso</h2>
-            <p className="text-[11px] text-gray-500">Motor FSRS-Lite · v7.1</p>
+            <p className="text-[11px] text-gray-500">Curva de revisão · v7.1</p>
           </div>
         </div>
 
@@ -117,7 +118,7 @@ export function HelpModal({ onClose }) {
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
               <span className="text-xs font-black text-blue-400 font-mono">FSRS (Free Spaced Repetition Scheduler)</span>
               <p className="text-[11px] text-gray-400 leading-relaxed">
-                Algoritmo matemático de repetição espaçada que estima o nível de estabilidade da memória baseado nas suas taxas de acertos e calcula a data ideal de revisão para garantir 90% de retenção (True Retention).
+                Algoritmo matemático de repetição espaçada que estima o nível de estabilidade da memória baseado nas suas taxas de acertos e calcula a data ideal de revisão para garantir retenção longa.
               </p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
@@ -127,7 +128,7 @@ export function HelpModal({ onClose }) {
               </p>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-              <span className="text-xs font-black text-blue-400 font-mono">True Retention D21+</span>
+              <span className="text-xs font-black text-blue-400 font-mono">Retenção longa D21+</span>
               <p className="text-[11px] text-gray-400 leading-relaxed">
                 A porcentagem real de acertos nas revisões de longo prazo (etapas D21 em diante). É a métrica mais pura do seu nível de aprendizado real. Ideal acima de 80%.
               </p>
@@ -720,7 +721,11 @@ function RedacaoInputs({ c1, setC1, c2, setC2, c3, setC3, c4, setC4, c5, setC5 }
 }
 
 export function MarkModal({ tema, stepKey, onConfirm, onCancel }) {
-  const step    = STEPS.find((s) => s.key === stepKey);
+  const step    = STEPS.find((s) => s.key === stepKey) || (
+    stepKey === "d14"
+      ? { key: "d14", label: "D14", desc: "Revisão de consolidação", checkbox: false }
+      : { key: stepKey, label: String(stepKey || "").toUpperCase(), desc: "Revisão", checkbox: false }
+  );
   const plat    = useStore((s) => s.plat);
   const [questoes, setQuestoes] = useState("");
   const [acertos, setAcertos]   = useState("");
@@ -1122,6 +1127,10 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
 
   const filteredProvas = (meta.provasAlvo || []).filter(p => (platKey === "res" ? PROVAS_RES : PROVAS_VEST).includes(p));
   const rec = getRecomendacao(f.esp, filteredProvas);
+  const enamedBadge = useMemo(
+    () => platKey === "res" ? getEnamedContextBadge(f.esp, f.nome) : null,
+    [platKey, f.esp, f.nome]
+  );
 
   useEffect(() => {
     setF((prev) => ({ ...prev, prio: rec.nivel }));
@@ -1167,6 +1176,35 @@ export function TemaModal({ initial, platKey, onSave, onCancel, onDelete }) {
             {rec.msg}
           </div>
         </div>
+        {enamedBadge && (
+          <div className="col-span-2">
+            <p className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold mb-1.5">
+              Incidência no ENAMED
+            </p>
+            <div className={`p-3 rounded-xl border flex items-start gap-2.5 ${
+              enamedBadge.nivel === "alto"
+                ? "bg-orange-500/5 border-orange-500/20"
+                : enamedBadge.nivel === "medio"
+                ? "bg-amber-500/5 border-amber-500/20"
+                : "bg-white/5 border-white/10"
+            }`}>
+              <span className="text-base shrink-0 leading-none mt-0.5">🔥</span>
+              <div>
+                <p className={`text-[11.5px] font-bold leading-snug ${
+                  enamedBadge.nivel === "alto" ? "text-orange-300"
+                  : enamedBadge.nivel === "medio" ? "text-amber-300"
+                  : "text-gray-400"
+                }`}>
+                  {enamedBadge.subarea}
+                  {enamedBadge.questoes ? ` · ~${enamedBadge.questoes} questões` : ` · ${enamedBadge.pctAbsoluto}%`}
+                </p>
+                <p className="text-[10.5px] text-gray-500 mt-0.5">
+                  {enamedBadge.pctAbsoluto}% de {enamedBadge.area} no corpus ENAMED analisado
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="col-span-2">
           <p className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold mb-1.5">Importância Prova</p>
           <div className="flex gap-1 bg-black border border-white/10 rounded-xl p-0.5">
@@ -1621,7 +1659,7 @@ export function AjustesModal({
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Meta diária de questões (0 = inativo)" info="Quantidade de questões resolvidas que você quer atingir por dia (utilizado para calcular o Saldo de Ritmo na aba de Prontidão).">
+                <Field label="Meta diária de questões (0 = inativo)" info="Quantidade de questões resolvidas que você quer atingir por dia (utilizado para calcular o Saldo de Ritmo na aba de Preparo).">
                   <Input type="number" min={0} value={meta.metaQuestoesDia || 0} onChange={(e) => saveMeta({ metaQuestoesDia: parseInt(e.target.value, 10) || 0 })} />
                 </Field>
                 <Field label="Meta total de questões (0 = inativo)" info="Quantidade total de questões resolvidas que você quer atingir ao final da preparação.">
@@ -1984,14 +2022,16 @@ export function AjustesModal({
               <p className="text-[11.5px] text-gray-500 leading-relaxed">
                 Exporte seu progresso estruturado ou restaure a partir de um backup JSON.
               </p>
-              <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-[10px] text-gray-300 space-y-1">
-                <p><span className="text-gray-500">Usuario atual:</span> {userEmail || "sem email"} / {currentUid || "nao autenticado"}</p>
-                <p className="break-all"><span className="text-gray-500">Escopo local:</span> {scopeKey}</p>
-                <p><span className="text-gray-500">Ultima hidratacao:</span> {authScope?.lastHydratedAt ? new Date(authScope.lastHydratedAt).toLocaleString() : "pendente"}</p>
-                <p><span className="text-gray-500">Ultimo sync:</span> {authScope?.lastSyncAt ? new Date(authScope.lastSyncAt).toLocaleString() : "sem sync"}</p>
-                <p><span className="text-gray-500">Status:</span> {isolationStatus} · sync {syncStatus}</p>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
+              {process.env.NODE_ENV !== "production" && (
+                <div className="rounded-xl border border-white/10 bg-black/20 p-3 text-[10px] text-gray-300 space-y-1">
+                  <p><span className="text-gray-500">Usuario atual:</span> {userEmail || "sem email"} / {currentUid || "nao autenticado"}</p>
+                  <p className="break-all"><span className="text-gray-500">Escopo local:</span> {scopeKey}</p>
+                  <p><span className="text-gray-500">Ultima hidratacao:</span> {authScope?.lastHydratedAt ? new Date(authScope.lastHydratedAt).toLocaleString() : "pendente"}</p>
+                  <p><span className="text-gray-500">Ultimo sync:</span> {authScope?.lastSyncAt ? new Date(authScope.lastSyncAt).toLocaleString() : "sem sync"}</p>
+                  <p><span className="text-gray-500">Status:</span> {isolationStatus} · sync {syncStatus}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={handleExportBackup}
@@ -2008,14 +2048,16 @@ export function AjustesModal({
                     className="hidden"
                   />
                 </label>
+              </div>
+              {process.env.NODE_ENV !== "production" && (
                 <button
                   type="button"
                   onClick={handleMigrateLegacy}
-                  className="px-3 py-2 bg-amber-600/15 hover:bg-amber-600/25 text-amber-300 border border-amber-500/30 rounded-xl text-[11px] font-bold transition-all"
+                  className="w-full px-3 py-2 bg-amber-600/15 hover:bg-amber-600/25 text-amber-300 border border-amber-500/30 rounded-xl text-[11px] font-bold transition-all"
                 >
                   Migrar legado
                 </button>
-              </div>
+              )}
               {importFeedback?.warnings?.length > 0 && (
                 <p className="text-[10px] text-yellow-300">{importFeedback.warnings.join(" | ")}</p>
               )}

@@ -1,11 +1,15 @@
 import { STEPS, todayStr, diffDays, getWorkloadProjection } from "./fsrs";
 import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
+import { dominantErrorType, summarizeErrors } from "./errorTaxonomy";
+import { getCorrectiveAction } from "./errorActionMap";
+import { getReviewDisplayLabel } from "./domainValidation";
 
 function getStepEntries(rev = {}) {
   const entries = [];
   for (const step of STEPS) {
     if (rev?.[step.key]) entries.push([step.key, rev[step.key]]);
   }
+  if (rev?.d14) entries.push(["d14", rev.d14]);
   if (rev?.manutencao) entries.push(["manutencao", rev.manutencao]);
   return entries;
 }
@@ -45,6 +49,46 @@ function collectClinicalCaseSignals(casosProgresso = {}, today = todayStr()) {
   return {
     dueCount: due.length,
     dueItems: due.slice(0, 20),
+  };
+}
+
+/**
+ * Analisa erros recentes (revisoes + simulados) e retorna o tipo dominante
+ * com sua acao corretiva quando houver amostra suficiente.
+ */
+function collectDominantErrorSignal(temas = [], simulados = [], plat = "res") {
+  const fromReviews = temas.flatMap((tema) =>
+    STEPS.flatMap((step) => {
+      const review = tema.rev?.[step.key];
+      if (!review?.done) return [];
+      const structured = Array.isArray(review.erros) ? review.erros : [];
+      const fallback = Array.isArray(review.motivosErro)
+        ? review.motivosErro.map((tipoErro) => ({ tipoErro, acertou: false }))
+        : [];
+      return [...structured, ...fallback];
+    })
+  );
+  const fromSimulados = simulados.flatMap((sim) =>
+    (sim.questoesErradas || []).map((q) => ({
+      tipoErro: q.tipoErro,
+      acertou: false,
+      tempoExcedido: Boolean(q.tempoExcedido),
+    }))
+  );
+  const allErrors = [...fromReviews, ...fromSimulados];
+  const dominant = dominantErrorType(allErrors);
+  const total = allErrors.length;
+  const summary = summarizeErrors(allErrors);
+  const dominantCount = dominant ? (summary[dominant] || 0) : 0;
+  const isStrong = total >= 5 && dominantCount >= 3;
+  const correctiveAction = isStrong ? getCorrectiveAction(dominant) : null;
+
+  return {
+    dominantError: isStrong ? dominant : null,
+    dominantErrorCount: dominantCount,
+    dominantErrorTotal: total,
+    dominantErrorAction: correctiveAction,
+    dominantErrorIsStrong: isStrong,
   };
 }
 
@@ -94,6 +138,9 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
 
     for (const [stepKey, step] of getStepEntries(rev)) {
       if (!step) continue;
+      if (step.skipped || step.skipReason === "dominio_previo" || step.skippeadoPorDominio) {
+        continue;
+      }
       if (step.done && !step.reviewedAt) {
         missingReviewedAtCount += 1;
       }
@@ -111,6 +158,7 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
           temaNome: tema.nome,
           esp: tema.esp,
           stepKey,
+          label: getReviewDisplayLabel(tema, stepKey),
           date: step.date,
           delayDays,
           phase: step.phase || null,
@@ -122,6 +170,7 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
           temaNome: tema.nome,
           esp: tema.esp,
           stepKey,
+          label: getReviewDisplayLabel(tema, stepKey),
           date: step.date,
           delayDays: 0,
           phase: step.phase || null,
@@ -180,6 +229,7 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     ? Number(meta.tempoDisponivel) * 60
     : null;
   const pendingExamAnalysis = Boolean(simulados.length > 0 && !latestEnamed);
+  const errorSignal = collectDominantErrorSignal(temas, simulados, plat);
 
   return {
     plat,
@@ -197,5 +247,8 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     userAvailableMinutes,
     lowEnergy: Boolean(extras.lowEnergy),
     exhaustionDetected: Boolean(extras.exhaustionDetected),
+    dominantError: errorSignal.dominantError,
+    dominantErrorAction: errorSignal.dominantErrorAction,
+    dominantErrorIsStrong: errorSignal.dominantErrorIsStrong,
   };
 }

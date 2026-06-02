@@ -11,11 +11,8 @@ import { adjustActionForPeakMode, getPeakModePolicy, getPeakPhase } from "./peak
 import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } from "./onboarding";
 import { getAnonymousStorageKey, getOrCreateAnonymousSessionId } from "./userScope";
 import {
-  criarRegistroDominio,
-  buildRevComDominio,
-  calcularDominioPrevio,
+  applyDominioPrevioToTema,
   criarValidacaoDominioPrevio,
-  finalizarValidacaoDominioPrevio,
   isTemaNaoIniciado,
 } from "./domainValidation";
 
@@ -222,7 +219,7 @@ export const useStore = create(
       },
       userName: "Estudante",
       userEmail: "",
-      meta: { dataProva: "2026-09-13", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false, lastFocusSessionAt: null, lastReflectionAt: null, peakModePhase: "base", ankiAdesao: { datas: [] }, modulos: { raciocinioClinico: false }, onboarding: getOnboardingDefaults(), temasPerWeek: 6, estrategiaStartDate: null },
+      meta: { dataProva: "2026-09-13", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false, lastFocusSessionAt: null, lastReflectionAt: null, peakModePhase: "base", ankiAdesao: { datas: [] }, modulos: { raciocinioClinico: false }, onboarding: getOnboardingDefaults(), vestibularStart: { completed: false, targetExam: null, examDate: null, baselineMode: null, planMode: "mentor", completedAt: null }, temasPerWeek: 6, estrategiaStartDate: null },
       res: initialPlat(),
       vest: initialVestibularPlat(),
       undoStack: [],
@@ -795,30 +792,22 @@ export const useStore = create(
           },
         })),
 
-      finalizarValidacaoDominioPrevio: (platKey, temaId, { questoes, acertos }) =>
-        set((s) => ({
-          [platKey]: {
-            ...s[platKey],
-            temas: s[platKey].temas.map((t) => {
-              if (t.id !== temaId) return t;
-              const resultado = calcularDominioPrevio({ total: questoes, acertos });
-              const registro = criarRegistroDominio(questoes, acertos);
-              const novoRev = buildRevComDominio(
-                t.d0,
-                t.esp,
-                t.importancia,
-                registro.classificacao,
-                registro.pctAcerto
-              );
-              return {
-                ...t,
-                dominio: registro,
-                dominioPrevio: finalizarValidacaoDominioPrevio({ total: questoes, acertos }),
-                rev: resultado.valido ? (novoRev ?? t.rev) : t.rev,
-              };
-            }),
-          },
-        })),
+      finalizarValidacaoDominioPrevio: (platKey, temaId, { questoes, acertos }) => {
+        set((s) => {
+          const temasAtualizados = s[platKey].temas.map((t) => {
+            if (t.id !== temaId) return t;
+            return applyDominioPrevioToTema(t, { questoes, acertos });
+          });
+          return {
+            [platKey]: {
+              ...s[platKey],
+              temas: temasAtualizados,
+            },
+          };
+        });
+        const rebuild = get().rebuildActionInboxForToday;
+        if (typeof rebuild === "function") rebuild();
+      },
 
       cancelarValidacaoDominioPrevio: (platKey, temaId) =>
         set((s) => ({
@@ -1210,7 +1199,7 @@ export const useStore = create(
           undoStack: [],
           userName: "Estudante",
           userEmail: "",
-          meta: { dataProva: "2026-09-13", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false, lastFocusSessionAt: null, lastReflectionAt: null, peakModePhase: "base", ankiAdesao: { datas: [] }, modulos: { raciocinioClinico: false }, onboarding: getOnboardingDefaults(), temasPerWeek: 6, estrategiaStartDate: null },
+          meta: { dataProva: "2026-09-13", acerto: 85, retencaoFSRS: 0.90, maxRevisoesDia: 30, tempoDisponivel: 2, intervaloMaxDias: 180, pausadoAte: null, isRetornoAcolhedor: false, lastActiveDate: null, provasAlvo: ["ENAMED"], isSegundaTentativa: false, areaPuxouBaixo: "", notasTentativaAnterior: {}, acertosAlvo: 0, totalQuestoesAlvo: 100, notaCorteAlvo: 0, streakFreezeAvailable: true, streakFreezeUsed: false, tomMentor: "gentil", estrategiaRefinada: false, metaQuestoesDia: 0, metaQuestoesTotal: 0, volumePorAreaModo: "fraqueza", mentorLog: [], ferramentas: { questoes: "MedEvo", flashcards: "Anki" }, metodoProgresso: {}, dicasVistas: [], notif: { enabled: false, hora: "08:00" }, prontidaoHist: [], ativacaoDispensada: false, trilhaDispensada: false, trilhaXpDados: {}, streakMaxAvisado: false, lastFocusSessionAt: null, lastReflectionAt: null, peakModePhase: "base", ankiAdesao: { datas: [] }, modulos: { raciocinioClinico: false }, onboarding: getOnboardingDefaults(), vestibularStart: { completed: false, targetExam: null, examDate: null, baselineMode: null, planMode: "mentor", completedAt: null }, temasPerWeek: 6, estrategiaStartDate: null },
           onboardingDone: false,
           sprint: { esps: [], ativa: false, semana: "" },
           focusMode: false,

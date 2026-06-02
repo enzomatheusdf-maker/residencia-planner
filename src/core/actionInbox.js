@@ -38,7 +38,7 @@ export function createAction(input = {}) {
   return {
     id: buildActionId({ ...input, createdAt, dueDate }),
     type: input.type || "rest",
-    title: input.title || "Acao recomendada",
+    title: input.title || "Ação recomendada",
     reason: input.reason || "Sem motivo informado.",
     priority: toNumber(input.priority, 50),
     source: input.source || "manual",

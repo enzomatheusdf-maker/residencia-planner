@@ -220,7 +220,7 @@ export function gerarCronogramaInteligente(titulo, dataInicio, numSemanas, horas
           topicIndex++;
         }
       } else if (b.tipo === "revisao") {
-        conteudo = "Revisar fila inteligente do FSRS + Anki";
+        conteudo = "Revisar fila inteligente da curva de revisão + Anki";
       } else if (b.tipo === "questoes") {
         conteudo = "Resolver 15-20 questões do simulado anterior";
       } else {
@@ -311,7 +311,7 @@ export function DiaCard({ dia, diaIdx, eHoje, semanaIdx, crono, plat, toggleBloc
             {(reviewsCount > 0 || newStudiesCount > 0) && (
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/25">
-                  📚 Carga: {reviewsCount} revisões FSRS + {newStudiesCount} novos estudos
+                  Carga: {reviewsCount} revisões da curva + {newStudiesCount} novos estudos
                 </span>
               </div>
             )}
@@ -372,7 +372,7 @@ export function DiaCard({ dia, diaIdx, eHoje, semanaIdx, crono, plat, toggleBloc
                         }}
                         className="px-2.5 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white text-[10px] font-black transition-all border border-blue-500/20"
                       >
-                        ⚡ Iniciar FSRS
+                        Iniciar revisão
                       </button>
                     )}
                   </div>

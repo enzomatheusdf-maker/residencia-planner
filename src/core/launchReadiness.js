@@ -22,50 +22,50 @@ export function checkLaunchReadiness(context = {}) {
       label: "Onboarding configurado",
       status: onboarding.completed === true ? "ok" : "warn",
       reason: onboarding.completed === true
-        ? "Onboarding concluido."
-        : "Onboarding ainda nao concluido; o Mentor pode ter pouco contexto.",
+        ? "Onboarding conclu\u00eddo."
+        : "Onboarding ainda n\u00e3o conclu\u00eddo; o Mentor pode ter pouco contexto.",
     },
     {
       id: "calendar-provider",
-      label: "Calendario-base selecionado",
+      label: "Calend\u00e1rio-base selecionado",
       status: (calendarProvider.activeId || onboarding.calendarProvider) ? "ok" : "fail",
       reason: (calendarProvider.activeId || onboarding.calendarProvider)
-        ? "Provider de calendario definido."
-        : "Nenhum calendario-base selecionado.",
+        ? "Provider de calend\u00e1rio definido."
+        : "Nenhum calend\u00e1rio-base selecionado.",
     },
     {
       id: "mentor-action",
-      label: "Mentor gera acao principal",
+      label: "Mentor gera a\u00e7\u00e3o principal",
       status: hasOpenMentorAction(actionInbox) ? "ok" : "warn",
       reason: hasOpenMentorAction(actionInbox)
-        ? "Ha acao principal para hoje."
-        : "Ainda sem acao principal disponivel no Mentor.",
+        ? "H\u00e1 a\u00e7\u00e3o principal para hoje."
+        : "Ainda sem a\u00e7\u00e3o principal dispon\u00edvel no Mentor.",
     },
     {
       id: "enamed",
-      label: "ENAMED Intel disponivel",
+      label: "ENAMED Intel dispon\u00edvel",
       status: modules.enamed === false ? "warn" : enamedAnalises.length > 0 ? "ok" : "warn",
       reason: modules.enamed === false
-        ? "Modulo ENAMED desativado."
+        ? "M\u00f3dulo ENAMED desativado."
         : enamedAnalises.length > 0
-        ? "Analise ENAMED registrada."
+        ? "An\u00e1lise ENAMED registrada."
         : "ENAMED ativo, mas sem prova analisada.",
     },
     {
       id: "raciocinio",
-      label: "Raciocinio Clinico acessivel",
+      label: "Racioc\u00ednio Cl\u00ednico acess\u00edvel",
       status: modules.raciocinioClinico === true ? "ok" : "warn",
       reason: modules.raciocinioClinico === true
-        ? "Modulo de raciocinio habilitado."
-        : "Modulo de raciocinio ainda desativado.",
+        ? "M\u00f3dulo de racioc\u00ednio habilitado."
+        : "M\u00f3dulo de racioc\u00ednio ainda desativado.",
     },
     {
       id: "backup",
-      label: "Backup/exportacao disponivel",
+      label: "Backup/exporta\u00e7\u00e3o dispon\u00edvel",
       status: context.backupAvailable === false ? "fail" : "ok",
       reason: context.backupAvailable === false
-        ? "Backup indisponivel neste ambiente."
-        : "Exportacao de backup disponivel.",
+        ? "Backup indispon\u00edvel neste ambiente."
+        : "Exporta\u00e7\u00e3o de backup dispon\u00edvel.",
     },
   ];
 

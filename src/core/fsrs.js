@@ -21,6 +21,7 @@ export const STEP_ESTIMATED_MINUTES = {
   d1: 12,
   d4: 25,
   d7: 30,
+  d14: 30,
   d21: 35,
   manutencao: 25,
   relearning: 20,
@@ -32,13 +33,14 @@ const WORKLOAD_LEVEL_BY_MINUTES = (minutes) => {
   return "ok";
 };
 
-const STEP_SEQUENCE = ["d0", "d1", "d4", "d7", "d21"];
+const STEP_SEQUENCE = ["d0", "d1", "d4", "d7", "d14", "d21"];
 const STEP_INDEX = STEP_SEQUENCE.reduce((acc, key, idx) => ({ ...acc, [key]: idx }), {});
 const STEP_MIN_GAP = {
   d0: 1,
   d1: 3,
   d4: 3,
   d7: 14,
+  d14: 7,
   d21: 45,
 };
 
@@ -102,7 +104,7 @@ export function getWorkloadProjection(temas, numDays = 14) {
     Object.keys(t.rev).forEach(stepKey => {
       if (stepKey === "reviewHistory" || stepKey === "meta" || stepKey === "phase" || stepKey === "relearning") return;
       const r = t.rev[stepKey];
-      if (r && !r.done && r.date) {
+      if (r && !r.done && !r.skipped && r.skipReason !== "dominio_previo" && !r.skippeadoPorDominio && r.date) {
         const minutes = getEstimatedMinutesForStep(stepKey, r);
         const payload = {
           temaId: t.id,
@@ -177,7 +179,7 @@ export const FSRS_DECAY = -0.5;
 export const FSRS_FACTOR = 0.9 ** (1 / FSRS_DECAY) - 1;
 export const DESIRED_RETENTION = 0.90;
 
-export const S_BASE = { d0: 1, d1: 1, d4: 4, d7: 7, d21: 21 };
+export const S_BASE = { d0: 1, d1: 1, d4: 4, d7: 7, d14: 14, d21: 21 };
 
 export const AREA_PRIORS = {
   "Clínica Médica": { difBase: 0.55, sMult: 1.00 },
@@ -252,7 +254,7 @@ export function appendReviewHistory(rev = {}, event, limit = 100) {
 
 export function inferPhaseFromStep(stepKey, manutencao = false) {
   if (manutencao || stepKey === "manutencao") return "maintenance";
-  if (stepKey === "d21") return "review";
+  if (stepKey === "d14" || stepKey === "d21") return "review";
   if (["d0", "d1", "d4", "d7"].includes(stepKey)) return "learning";
   return "learning";
 }
@@ -275,6 +277,11 @@ export function resolveAgainPolicy(stepKey, acerto, context = {}) {
     return severe
       ? { targetStep: "d7", delayDays: 1, phaseAfter: "relearning", severity, shouldPushFuture: true }
       : { targetStep: "d21", delayDays: 2, phaseAfter: "review", severity, shouldPushFuture: false };
+  }
+  if (stepKey === "d14") {
+    return severe
+      ? { targetStep: "d7", delayDays: 1, phaseAfter: "relearning", severity, shouldPushFuture: true }
+      : { targetStep: "d14", delayDays: 2, phaseAfter: "review", severity, shouldPushFuture: false };
   }
   if (stepKey === "d7") {
     return severe
@@ -657,6 +664,42 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
       phaseAfter: nextRev.phase,
       intervalAfter: nextInt,
       intervalBefore: 45,
+    }, 100);
+    return nextRev;
+  }
+
+  if (doneKey === "d14") {
+    const interval = nextInterval(S_new, 7, desiredRetention, maxInterval, D_new);
+    const baseDate = rev.d14.date >= now ? rev.d14.date : now;
+    const nextDate = addDays(baseDate, interval);
+    const phaseAfter = (wasRelearning && (rating === "good" || rating === "easy"))
+      ? "review"
+      : (rev.phase || "review");
+    const nextRev = {
+      ...rev,
+      phase: phaseAfter,
+      relearning: (wasRelearning && (rating === "good" || rating === "easy")) ? null : rev.relearning,
+      d14: { ...rev.d14, S: S_new, D: D_new, phase: "review" },
+      d21: {
+        ...(rev.d21 || {}),
+        done: false,
+        date: nextDate,
+        scheduledAt: nextDate,
+        reviewedAt: null,
+        acerto: null,
+        questoes: null,
+        phase: "review",
+      },
+      meta: {
+        ...(rev.meta || {}),
+        schedulerWarning: null,
+      },
+    };
+    nextRev.reviewHistory = appendReviewHistory(nextRev, {
+      ...historyBase,
+      phaseAfter,
+      intervalAfter: interval,
+      intervalBefore: 7,
     }, 100);
     return nextRev;
   }

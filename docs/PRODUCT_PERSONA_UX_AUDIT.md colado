@@ -1,0 +1,403 @@
+# Plano — Auditoria de Produto por Persona & UX (MedRev)
+
+## Context
+
+O Enzo quer evoluir o MedRev de "muitas features" para "um sistema operacional de
+estudo claro pela persona". Pediu uma auditoria de produto/UX (não correção de bugs)
+usando `MEDREV_PRODUCT_PERSONA_UX_AUDIT_PROMPT.md` como fonte de verdade, em **modo
+planejamento**, sem implementar nada.
+
+O entregável é **um único arquivo**: `docs/PRODUCT_PERSONA_UX_AUDIT.md`.
+
+Como estou restrito ao arquivo de plano, este documento **contém o conteúdo final
+da auditoria**. A única ação de execução após aprovação é: **gravar o conteúdo das
+seções abaixo (a partir de "═══ DOCUMENTO ═══") em `docs/PRODUCT_PERSONA_UX_AUDIT.md`**.
+Nada de código de implementação, commit, deploy, push ou libs.
+
+### Achado-base da auditoria de código (working tree, escopado por git grep)
+
+O produto está **muito mais construído** do que o problema descrito no prompt sugere.
+Já existem no working tree (em grande parte sem commit):
+- Navegação por jornada de 6 itens em `src/core/navigationModel.js`
+  (Hoje/Plano/Estudar/Estatísticas/Banco/Mais) + `MORE_ITEMS` com gate `devOnly` e `onlyPlat:"res"`.
+- `src/core/copy.js` + `docs/COPY_GUIDE_PT_BR.md` já renomeiam Prontidão→Preparo, True
+  Retention→Retenção longa, etc.
+- Mentor unificado em `src/core/mentorDecisionPolicy.js` (1 comando do dia priorizado, 0–100).
+- `StatsPanel.jsx` já tem **7 seções** (resumo/aprendizagem/erros/provas/raciocinio/atividade/sistema).
+- Taxonomia de erro **canônica e unificada** (13 tipos) em `src/core/errorTaxonomy.js`
+  + `errorActionMap.js` (erro→ação corretiva) + `clinicalReasoningScoring.js` (score canônico único).
+- `VestibularStartTrail.jsx` já existe e renderiza no Dashboard quando `plat==="vest"`.
+
+Logo, a auditoria **não recomenda criar features** — recomenda **reclassificar,
+colapsar, explicar melhor e remover redundância/jargão**, exatamente como a Seção 6 do
+prompt exige ("se a solução for criar mais uma aba, rejeite por padrão").
+
+### Onde a dor real ainda mora (evidência de código)
+
+1. **Densidade do Dashboard acima da dobra.** `Dashboard.jsx` empilha, em sequência:
+   hero "Comando do dia" (com workload no subtítulo) → card **"Carga de hoje"**
+   (grid de 4: Revisões/Minutos/Relearning/Overload, `Dashboard.jsx:1610`) →
+   **ActionInbox** → alertas inline. Há **três superfícies sinalizando carga/ação**
+   competindo antes do "Avançado" colapsar (KPIs, Gargalo, Nota Projetada, Análise de
+   Desempenho, Top 3, 2 filas, Manutenção — `Dashboard.jsx:1669+`).
+2. **Vazamento de jargão técnico cru** na UI do aluno: o grid "Carga de hoje" mostra
+   literalmente **"Relearning"** e **"Overload"** em inglês (`Dashboard.jsx:1621,1625`).
+   A varredura de jargão segue **pendente** (memória `medrev-ux-simplificacao`).
+3. **Labels sem acento por causa da barreira anti-mojibake** ("Raciocinio Clinico",
+   "Estatisticas" em `navigationModel.js`/`StatsPanel.jsx`) — inconsistente com a copy
+   acentuada do resto do app; passa sensação de amadorismo.
+4. **ActionInbox vs Comando do Mentor**: o hero já dá 1 comando; o ActionInbox logo
+   abaixo repete a lógica de fila/ações — duas vozes do Mentor (viola o princípio
+   "o Mentor planeja, o aluno executa; não inundar com várias vozes").
+5. **Emojis hardcoded nos KPIs** (📋🎯✅🔥, `Dashboard.jsx:1676+`) contra a diretriz de
+   preferir ícones lucide em UI crítica.
+6. **`devOnly` não observável no preview** (dev server = NODE_ENV development mostra
+   tudo) — risco de auditar a versão errada; validar sempre por build de produção.
+
+### Verificação (após gravar o doc)
+
+- `npx markdownlint docs/PRODUCT_PERSONA_UX_AUDIT.md` se disponível (opcional).
+- `node scripts/check-mojibake.mjs` — o doc novo entra no escopo do gate; garantir que
+  não introduz dígrafos de double-encoding.
+- Conferir manualmente as 12 seções obrigatórias do prompt (§4.1–§4.12) presentes.
+- Nenhum arquivo de implementação tocado: `git status --short` deve mostrar só
+  `docs/PRODUCT_PERSONA_UX_AUDIT.md` como novo.
+
+---
+
+═══ DOCUMENTO A GRAVAR EM `docs/PRODUCT_PERSONA_UX_AUDIT.md` ═══
+
+# MedRev — Auditoria de Produto por Persona, UX e Coerência
+
+> Modo: análise (nenhuma feature nova proposta). Fonte: `MEDREV_PRODUCT_PERSONA_UX_AUDIT_PROMPT.md`.
+> Base de código auditada: working tree atual (escopado por `git grep`/`git ls-files`).
+
+## 1. Diagnóstico executivo
+
+**O produto está claro?** Parcialmente. A *arquitetura* já é boa (navegação por jornada
+de 6 itens, 1 comando do Mentor, Stats em 7 seções, gates de plataforma). O problema não
+é mais "falta de estrutura" — é **excesso de superfícies competindo e jargão cru** que
+diluem a clareza que a estrutura já oferece.
+
+**O usuário novo fica perdido?** No Dashboard, sim, depois do primeiro comando: abaixo do
+hero há *Carga de hoje*, *ActionInbox* e (ao expandir) ~8 blocos. O olho não sabe se a
+"próxima ação" é o botão do hero, um item do ActionInbox ou um KPI.
+
+**Maior problema de UX:** *redundância de sinal*. Carga, fila e "próxima ação" aparecem
+em 3+ lugares (hero, "Carga de hoje", ActionInbox, KPI "Fila de hoje"). Isso reintroduz a
+ansiedade de volume que o produto promete reduzir.
+
+**Maior problema de produto:** o **Mentor tem duas vozes** (Comando do dia + ActionInbox).
+O princípio "o Mentor planeja, o aluno executa" só se cumpre se houver **um** lugar
+canônico de decisão e o resto for execução/histórico.
+
+**Maior problema técnico que afeta UX:** **jargão e encoding**. (a) Termos crus vazam
+("Relearning", "Overload" em inglês no card de carga; "Bleeding Score", "illness script",
+"FSRS" em outras telas). (b) A barreira anti-mojibake forçou **labels sem acento**
+("Raciocinio Clinico", "Estatisticas") que destoam da copy acentuada — solução: manter
+acento usando `\u`-escapes ou a fonte de copy central, não ASCII.
+
+---
+
+## 2. Personas e jornadas
+
+| Persona | Objetivo | Dor principal | Primeira ação ideal | O que NÃO deve ver cedo |
+|---|---|---|---|---|
+| **A — Residência/ENAMED** | Passar na residência; saber o que fazer hoje | "Conteúdo, questões e métricas demais; não sei priorizar" | Ler **um** comando do Mentor e clicar **"Começar agora"** | KPIs avançados, Anki Audit, Weekly/Data Safety/Launch (dev), 7 seções de Stats, illness script, taxonomia de 13 erros |
+| **B — Vestibular** | Passar no vestibular-alvo; cronograma + revisão + simulado | "Quero começar rápido: prova-alvo, o que estudar 1º, como revisar" | Concluir a **Trilha inicial** (prova-alvo → data → 1º plano) | ENAMED, Raciocínio Clínico, illness script, casos clínicos, conduta/prescrição, erros médicos (Representação do problema, Diferencial, SCT, Conduta) |
+
+### Jornada de primeiro uso — Residência (estado atual × ideal)
+1. **Login** → hoje cai direto no Dashboard cheio. *Ideal:* onboarding curto define prova
+   e ritmo, depois 1 comando.
+2. **Configurar plano** → existe `OnboardingWizard` + card "Configuração inicial"
+   (`Dashboard.jsx:1452`). *Ideal:* não mostrar Avançado/KPIs antes do plano existir.
+3. **1ª ação do Mentor** → `comandoDoDia` já entrega título+CTA. *Bom; manter como
+   ÚNICA voz.*
+4. **1ª revisão** → `runMentorPrimaryAction` já inicia `topFilaItem` (corrigido). *Bom.*
+5. **1º erro** → `errorActionMap` mapeia erro→tarefa corretiva. *Falta torná-lo
+   consequência visível (o Mentor consumir o erro dominante já existe em policy prio 78).* 
+6. **1º simulado** → `EnamedProvaAnalyzer`/`Simulados` → vira `pendingExamAnalysis` que o
+   Mentor prioriza (prio 80). *Bom; explicar melhor a passagem simulado→plano.*
+
+### Jornada de primeiro uso — Vestibular
+`VestibularStartTrail` já cobre o início (renderiza enquanto `!vestibularStartComplete`,
+`Dashboard.jsx:1604`). *Ideal:* garantir que ela seja a **única** coisa proeminente até a
+trilha terminar, e que nenhum bloco médico apareça (validar via `getPlatformFeatures`).
+
+---
+
+## 3. Mapa de features por valor
+
+Classes: **Core diário · Diagnóstico · Avançada · Configuração · Sistema · Adiar/Remover**.
+Decisões: Manter principal · Mover p/ Mais · Mover p/ Stats · Unificar · Colapsar · Adiar · Remover do fluxo.
+
+| Feature | Persona | Valor real | Momento | Local ideal | Problema atual | Decisão |
+|---|---|---|---|---|---|---|
+| Hoje/Dashboard | A+B | Próxima ação | Diário | Principal | Denso; sinal redundante | **Manter + enxugar** |
+| Comando do Mentor | A+B | Decisão única | Diário | Topo do Hoje | Compete c/ ActionInbox | **Manter principal (voz única)** |
+| ActionInbox | A+B | Lista de execução | Diário | Sob o comando, modo "execução" | 2ª voz do Mentor | **Unificar (subordinar ao comando)** |
+| Carga de hoje (card) | A+B | Contexto de volume | Diário | Inline no hero | Duplica subtítulo do comando | **Colapsar/unir ao hero** |
+| KPIs (Fila/Preparo/Acerto/Streak) | A+B | Panorama | Ocasional | Dentro de "Avançado"/Stats | Emojis crus; acima do necessário | **Mover p/ Stats (resumo) / Colapsar** |
+| Plano/Cronograma | A+B | Onde estudar | Diário | Principal | OK | **Manter principal** |
+| Estudar/Simulados | A+B | Onde treina/registra | Diário | Principal | OK | **Manter principal** |
+| Estatísticas (7 seções) | A+B | Diagnóstico | Retrospectivo | Principal (entrada simples) | Densa de cara | **Manter; abrir em "Resumo"** |
+| Banco de Dados | A | Consulta | Ocasional | Principal desktop | OK | **Manter** |
+| Raciocínio Clínico | A | Treino de conduta | Quando fila estável | Mais (res) + ação do Mentor | Lateral; pouco integrado; 2 casos | **Mover p/ Mais + integrar via Mentor** |
+| Illness Script | A | Motor interno | — | Sob Raciocínio | Termo técnico exposto | **Colapsar (renomear p/ aluno)** |
+| Já domino | A+B | Tirar tema da fila | Pontual | Inline no tema | OK | **Manter inline** |
+| Mentor | A+B | Cérebro do app | Diário | Hoje | Duas vozes | **Unificar** |
+| Centro de Erros (ErrorActionCenter) | A+B | Erro→ação | Retrospectivo | Stats › Erros | Novo; pouco visível | **Mover p/ Stats › Erros** |
+| Anki Audit | A | Aderência | Ocasional | Mais | OK em Mais | **Manter em Mais** |
+| Weekly Review | A | Retrospectiva | Semanal | Stats › Atividade ou Mais | `devOnly` (oculto em prod) | **Mover p/ Stats / decidir lançar** |
+| Peak Mode | A | Reta final | Sazonal | Auto (badge) | OK (badge no hero) | **Manter automático** |
+| Data Safety | A+B | Confiança | Raro | Ajustes/Conta | `devOnly`; duplicava backup | **Adiar (já consolidado em Conta)** |
+| Launch Checklist | dev | Lançamento | — | — | `devOnly` | **Sistema (não-usuário)** |
+| Guia | A+B | Ajuda | Pontual | — | Já removido de Mais | **Adiar/On-demand** |
+| Onboarding | A+B | Setup | 1º uso | Pré-Hoje | OK | **Manter** |
+| Activity Log (futuro) | A+B | Histórico | Pós | Stats › Atividade | Não existe | **Adiar (Fase P5)** |
+| Vestibular Start Trail | B | Início claro | 1º uso vest | Topo do Hoje (vest) | OK | **Manter principal (vest)** |
+
+---
+
+## 4. Navegação ideal
+
+A navegação atual (6 itens) **já é a recomendada**. Justificativa por item:
+
+- **Hoje** — única tela de decisão; comando do Mentor + execução. (`dash`)
+- **Plano** — cronograma, onde abrir tema. (`crono`)
+- **Estudar** — fluxo de estudo/simulado, onde se registra dado. (`sims`)
+- **Estatísticas** — diagnóstico retrospectivo (7 seções), abre em "Resumo". (`stats`)
+- **Banco** — consulta de dados (desktop). (`banco`)
+- **Mais** — avançado/ocasional: **Raciocínio Clínico (res)**, Anki Audit, Academia/Método.
+  Tudo `devOnly` (Weekly/Data Safety/Launch) fica **fora** do build de produção.
+
+Regras aplicadas: nada que seja diário fora de Hoje/Plano/Estudar; nada diagnóstico fora
+de Stats; nada dev na navegação de produção. **Não criar abas novas.**
+
+---
+
+## 5. Dashboard/Hoje ideal
+
+Ordem proposta (enxugar o que já existe, sem novas telas):
+
+1. **Comando do Mentor** (1 título + por quê curto + **Começar agora** / **Ver por quê**).
+   *É a única voz de decisão.*
+2. **Carga de hoje** — **fundir** no comando como uma linha de contexto ("X revisões ·
+   Y min · carga: tranquila/moderada/alta"), em PT-BR, **sem** "Relearning"/"Overload" crus.
+3. **Próximas ações (ActionInbox)** — subordinado ao comando, rotulado como *execução*
+   (não como segunda recomendação); colapsar além de 2 itens.
+4. **Alertas** (sessão sem fechamento, reta final) — inline, só quando existem.
+5. **Avançado (colapsado)** — KPIs, Gargalo, Nota Projetada, Análise de Desempenho, Top 3,
+   filas, Manutenção. *Já está sob "Avançado"; manter fechado por padrão.*
+
+**O que deve sair do Hoje (mover/colapsar):**
+- Card "Carga de hoje" como bloco separado → vira linha do comando.
+- KPIs com emoji → migram para **Stats › Resumo** (ou ficam só no Avançado, com ícones lucide).
+- "Análise de Desempenho", "Top 3 Tópicos-Alavanca", filas detalhadas → **Stats**.
+
+---
+
+## 6. Stats ideal
+
+As **7 seções já existem** (`StatsPanel.jsx` `SECTIONS`). Conteúdo recomendado por seção:
+
+- **Resumo** — Preparo estimado, Acerto recente, Streak, Fila — *entrada padrão* (os KPIs
+  que hoje poluem o Hoje moram aqui).
+- **Aprendizagem** — Retenção longa, cobertura por área, calibração; *esconder* o termo
+  "True Retention"/"FSRS" (usar "Retenção longa", "Curva de revisão").
+- **Erros** — `ErrorActionCenter`: erro dominante → ação corretiva (`errorActionMap`).
+  *Entra aqui; é diagnóstico retrospectivo.*
+- **Provas/Simulados** — análise de simulado, nota projetada, gargalo ENAMED (res) /
+  frente prioritária (vest).
+- **Raciocínio Clínico** (res) — score canônico (`clinicalReasoningScoring`), cobertura
+  por área, casos vencidos.
+- **Atividade** — histórico/streak; **destino futuro do Activity Log e Weekly Review**.
+- **Sistema** — `devOnly`; manutenção/launch. **Não exibir ao usuário em produção.**
+
+**Sai de Stats:** métricas que não mudam decisão (ex.: contadores técnicos crus, "Bleeding
+Score" sem ação). **Entra:** o que hoje está espalhado no Dashboard avançado.
+
+---
+
+## 7. Mentor ideal
+
+O motor (`mentorDecisionPolicy.js`) **já decide bem** por prioridade (100→30):
+inconsistências → sobrecarga → relearning → vencidas → fila do dia → simulado pendente →
+**erro dominante** → gargalo ENAMED / matéria fraca → caso clínico → tema novo → Anki →
+descanso. Recomendações:
+
+- **Deve decidir:** o quê fazer **agora** (1 comando), o porquê (campo `explain`), e o
+  CTA/destino (`ctaView`/`target`).
+- **Não deve decidir:** detalhe de execução (qual flashcard) nem repetir-se em outra
+  superfície. **Eliminar a 2ª voz** (ActionInbox vira "execução do comando", não "outra
+  recomendação").
+- **Explicar a recomendação:** sempre 1 linha de `explain[0]` visível + "Ver por quê"
+  expande o resto (já existe estrutura).
+- **Quando NÃO recomendar tema novo:** `canSuggestNewTopic` já bloqueia com sobrecarga
+  alta, ≥2 dias sobrecarregados, relearning>0, vencidas>0 ou minutos>1.2×disponível. *Manter.*
+- **Quando recomendar descanso:** ramo `rest` (prio 30) quando não há urgência. *Bom;
+  reforçar a copy para soar intencional, não "sem nada a fazer".*
+- **Quando recomendar erro/ação corretiva:** prio 78 com `dominantErrorIsStrong`. *Tornar
+  o resultado visível em Stats › Erros (loop fechado).*
+- **Quando recomendar raciocínio clínico:** prio 72, só res, só com fila controlada e caso
+  vencido. *Correto — não puxar cedo demais.*
+
+---
+
+## 8. Raciocínio Clínico
+
+- **Fluxo principal?** Não para iniciantes. Vive em **Mais (res)** e entra no Hoje **só via
+  Mentor** quando a fila está estável (já é o comportamento, prio 72).
+- **Modo de revisão?** Sim — deve ser tratado como um *tipo de reencontro* (caso vencido),
+  alimentando o mesmo loop de fila, não uma ilha.
+- **Quando aparece?** Quando `clinical.dueCount>0` e sem urgências FSRS.
+- **Quais temas usam?** Os com caso clínico vinculado. *Hoje só há 2 casos semeados e o
+  vínculo caso↔tema (`clinicalCaseMatch`) ainda não existe* — limita o valor; ampliar
+  conteúdo é pré-requisito para promover a feature.
+- **Como cobrar conduta/prescrição?** Via tipos de erro já existentes (Conduta/prescrição,
+  Diferencial, SCT) + `errorActionMap` (`preferredTask: "conduta"/"sct"`).
+- **Como evitar complexidade cedo?** Esconder "illness script"/"problem representation" do
+  aluno novo (renomear para "raciocínio diagnóstico"); só expor SCT/conduta após o básico.
+
+---
+
+## 9. Vestibular
+
+- **Trilha inicial existe?** Sim — `VestibularStartTrail.jsx`, renderiza enquanto
+  `!vestibularStartComplete` (`Dashboard.jsx:1604`).
+- **O aluno entende como começar?** Sim, se a trilha for a **única** coisa proeminente até
+  concluir. Garantir que o hero/avançado não compitam antes disso.
+- **O que esconder?** ENAMED, Raciocínio Clínico, illness script, casos clínicos, conduta,
+  prescrição e os 4 tipos de erro médicos — já governados por `getPlatformFeatures`
+  (`enamed/raciocinioClinico/illnessScript/casosClinicos: !isVest`) e
+  `ERROR_TYPE_PLATFORMS`. *Validar que nenhuma string médica vaza em copy hardcoded.*
+- **O que aparecer?** Prova-alvo, data, simulados, matéria fraca, cronograma, revisão
+  espaçada, Mentor, Stats simples (`vestibularStats`).
+- **Jornada ideal:** Trilha (prova-alvo → data → 1º simulado opcional) → 1ª recomendação do
+  Mentor (matéria fraca / fila) → 1º plano → 1ª revisão.
+
+---
+
+## 10. Copy e linguagem (PT-BR)
+
+Já existe `docs/COPY_GUIDE_PT_BR.md` e `src/core/copy.js`. **Pendências reais:**
+
+**Termos a substituir (jargão exposto ao aluno):**
+| Atual | Trocar por |
+|---|---|
+| Relearning (`Dashboard.jsx:1621`) | "Reaprendendo" |
+| Overload (`Dashboard.jsx:1625`) | "Carga" (tranquila/moderada/alta) |
+| FSRS | "curva de revisão" |
+| True Retention | "Retenção longa" (já no guia — aplicar onde falta) |
+| Bleeding Score | "Risco de esquecimento" |
+| Illness script / Problem representation | "Raciocínio diagnóstico" |
+| Prontidão | "Preparo estimado" (já no guia — aplicar onde falta) |
+| SCT (sem expandir) | "Teste de concordância clínica" |
+
+**Acentuação:** restaurar acentos em labels que ficaram ASCII por causa do gate
+anti-mojibake ("Raciocinio Clinico"→"Raciocínio Clínico"; "Estatisticas"→"Estatísticas";
+"Avancado"→"Avançado") usando a fonte de copy central / `\u`-escapes — **sem** reintroduzir
+double-encoding (validar com `check-mojibake`).
+
+**Tom:** impessoal, direto, baseado em dado (memória já removeu a 1ª pessoa do Mentor).
+Manter. Banir "Promoção" (CLAUDE.md) — não aplicável aqui, mas valer para qualquer copy.
+
+**Frases a reescrever:** "coletando dados"/"acerto coletando" → dizer **o que falta**
+("faça 1 simulado para liberar o mapa"). Emojis em UI crítica (KPIs, 📋🎯✅🔥) →
+ícones lucide.
+
+---
+
+## 11. Top 10 mudanças de maior impacto
+
+| # | Mudança | Impacto | Esforço | Risco téc. | Prioridade |
+|---|---|---|---|---|---|
+| 1 | Unificar Mentor: 1 voz (comando) + ActionInbox como execução | Alto | Médio | Baixo | **P1** |
+| 2 | Fundir "Carga de hoje" no comando (remover card duplicado) | Alto | Baixo | Baixo | **P1** |
+| 3 | Traduzir jargão cru (Relearning/Overload/FSRS/Bleeding) | Alto | Baixo | Baixo | **P1** |
+| 4 | Restaurar acentos nos labels (sem mojibake) | Médio | Baixo | Médio | **P1** |
+| 5 | Mover KPIs/Análise/Top3/filas do Hoje → Stats; manter Hoje enxuto | Alto | Médio | Baixo | **P2** |
+| 6 | Stats abre em "Resumo"; substituir "coletando" por próximo passo | Médio | Baixo | Baixo | **P2** |
+| 7 | Trocar emojis dos KPIs por ícones lucide | Médio | Baixo | Baixo | **P2** |
+| 8 | Fechar loop de erro: erro dominante visível em Stats › Erros | Alto | Médio | Baixo | **P3** |
+| 9 | Integrar Raciocínio Clínico via Mentor + ampliar casos/vínculo tema | Médio | Alto | Médio | **P4** |
+| 10 | Garantir zero vazamento médico no Vestibular (auditar copy hardcoded) | Médio | Baixo | Baixo | **P2** |
+
+---
+
+## 12. Plano de implementação em fases
+
+> Regras transversais: não criar abas; não instalar libs; não tocar package-lock; não
+> push/deploy; validar `devOnly` **só em build de produção**; rodar `check:mojibake` +
+> `npm test` + build entre fases; commit local por fase.
+
+### P1 — Clareza inicial
+- **Objetivo:** Hoje com uma só voz e zero jargão cru.
+- **Arquivos prováveis:** `Dashboard.jsx`, `ActionInbox.jsx`, `core/copy.js`,
+  `navigationModel.js`, `StatsPanel.jsx`.
+- **Fazer:** fundir "Carga de hoje" no comando; subordinar ActionInbox; traduzir
+  Relearning/Overload/FSRS/Bleeding via `copy.js`; restaurar acentos.
+- **Não fazer:** mover métricas ainda; mexer no motor do Mentor.
+- **Testes:** `navigationModel.test.js`, `copy.test.js`; build prod; snapshot do Hoje.
+- **Aceite:** Hoje mostra 1 comando + execução + alertas; nenhum termo em inglês cru;
+  acentos corretos; `check-mojibake` verde.
+
+### P2 — Stats e métricas
+- **Objetivo:** tirar diagnóstico do Hoje; Stats vira o lar das métricas.
+- **Arquivos:** `Dashboard.jsx`, `StatsPanel.jsx`, `MetricCard.jsx`.
+- **Fazer:** mover KPIs/Análise/Top3/filas → Stats; abrir em "Resumo"; ícones lucide;
+  "coletando"→próximo passo; auditar copy hardcoded p/ vazamento vest.
+- **Não fazer:** remover dados (só reposicionar).
+- **Testes:** render de cada seção; vest não mostra seção "raciocinio".
+- **Aceite:** Hoje enxuto; Stats cobre 7 seções; vest sem conteúdo médico.
+
+### P3 — Erros e ações corretivas
+- **Objetivo:** fechar o loop erro→ação visível.
+- **Arquivos:** `ErrorActionCenter.jsx`, `errorActionMap.js`, `mentorSignals.js`,
+  `StatsPanel.jsx`, `Dashboard.jsx`.
+- **Fazer:** erro dominante consumido pelo Mentor (prio 78) **e** exibido em Stats › Erros
+  com CTA da ação corretiva.
+- **Não fazer:** criar 4ª taxonomia (a canônica de 13 já existe).
+- **Testes:** `errorActionMap.test.js`, `mentorSignals.test.js`.
+- **Aceite:** ao errar, o aluno vê tipo de erro + ação concreta no fluxo.
+
+### P4 — Raciocínio clínico integrado
+- **Objetivo:** Raciocínio como modo de revisão guiado pelo Mentor (não ilha).
+- **Arquivos:** `RaciocinioClinico.jsx`, `ClinicalTaskPanel.jsx`,
+  `clinicalReasoningScoring.js`, `illnessScript.js`, `constants/casosClinicos.js`.
+- **Fazer:** vínculo caso↔tema (`clinicalCaseMatch`); ampliar casos semeados; renomear
+  jargão clínico p/ aluno; entrar via comando do Mentor.
+- **Não fazer:** expor para vest; expor SCT/illness script cedo demais.
+- **Testes:** `clinicalReasoningScoring.test.js`, `illnessScript.test.js`,
+  `casosClinicos.test.js`.
+- **Aceite:** caso vencido vira comando do Mentor; score único; vest intacto.
+
+### P5 — Histórico/calendário (pós-Bloco N)
+- **Objetivo:** Activity Log + Weekly Review como retrospectiva em Stats › Atividade.
+- **Arquivos:** `StatsPanel.jsx`, `WeeklyReview.jsx`, store (activity log).
+- **Fazer:** decidir lançar Weekly Review (hoje `devOnly`) dentro de Stats; histórico.
+- **Não fazer:** nova aba.
+- **Aceite:** retrospectiva acessível sem poluir o Hoje.
+
+### P6 — Polish final
+- **Objetivo:** consistência visual/copy e prontidão de lançamento.
+- **Fazer:** varredura final de jargão; revisão de tom; checklist de lançamento (Sistema).
+- **Aceite:** copy uniforme PT-BR; `check-mojibake`/testes/build verdes; nada `devOnly`
+  vazando em produção.
+
+---
+
+## Apêndice — Comandos de auditoria usados (escopados)
+
+```
+git status --short
+git ls-files src package.json docs
+git grep -n "navigationModel|platformFeatures|featureEnabled|devOnly" -- src
+git grep -n "mentorNextAction|mentorTodayPlan|runMentorPrimaryAction|ctaView" -- src
+git grep -n "metricsRegistry|errorActionMap|clinicalReasoningScoring|reviewTaskPlanner" -- src
+```
+
+Arquivos-chave inspecionados: `core/navigationModel.js`, `core/platformFeatures.js`,
+`core/copy.js`, `core/mentorDecisionPolicy.js`, `core/errorTaxonomy.js`,
+`core/errorActionMap.js`, `components/Dashboard.jsx`, `components/StatsPanel.jsx`,
+`components/ActionInbox.jsx`, `docs/COPY_GUIDE_PT_BR.md`.

@@ -6,6 +6,20 @@ import { STEPS, S_BASE, addDays, todayStr, getAreaPrior, inferPhaseFromStep } fr
 export const DOMINIO_PREVIO_MIN_QUESTOES = 15;
 export const DOMINIO_PREVIO_MIN_ACERTO = 80;
 
+const REVIEW_DISPLAY_ORDER = ["d0", "d1", "d4", "d7", "d14", "d21", "manutencao"];
+
+function getStepLabel(stepKey) {
+  const step = STEPS.find((item) => item.key === stepKey);
+  if (step?.label) return step.label;
+  if (stepKey === "d14") return "D14";
+  if (stepKey === "manutencao") return "Manutenção";
+  return String(stepKey || "").toUpperCase();
+}
+
+function isSkippedReview(step = {}) {
+  return step?.skipped === true || step?.skipReason === "dominio_previo" || step?.skippeadoPorDominio === true;
+}
+
 export function isTemaNaoIniciado(tema = {}) {
   const dp = tema.dominioPrevio || tema.validacaoDominio || {};
   if (["validacao_pendente", "validado_previo", "reprovado"].includes(dp.status)) return false;
@@ -97,7 +111,7 @@ export function calcularDominioPrevio({ acertos, total }) {
       valido: false,
       status: "reprovado",
       percentual,
-      motivo: "Domínio ainda não está estável; o tema volta para o fluxo normal.",
+      motivo: "Melhor iniciar pelo estudo guiado. Este tema ainda não está seguro para pular a exposicao inicial.",
     };
   }
 
@@ -110,8 +124,8 @@ export function calcularDominioPrevio({ acertos, total }) {
     proximaRevisao: addDays(todayStr(), intervaloInicial),
     motivo:
       percentual >= 90
-        ? "Domínio prévio forte: tema entra em revisão inicial D14."
-        : "Domínio prévio suficiente: tema entra em revisão inicial D7.",
+        ? "Validado com alta seguranca. Proxima revisao em D14."
+        : "Validado. Proxima revisao em D7.",
   };
 }
 
@@ -133,6 +147,7 @@ export function criarValidacaoDominioPrevio() {
 
 export function finalizarValidacaoDominioPrevio({ acertos, total }) {
   const resultado = calcularDominioPrevio({ acertos, total });
+  const primeiraRevisao = resultado.intervaloInicial >= 14 ? "d14" : resultado.intervaloInicial === 7 ? "d7" : null;
   return {
     status: resultado.valido ? "validado_previo" : "reprovado",
     iniciadoEm: todayStr(),
@@ -144,6 +159,9 @@ export function finalizarValidacaoDominioPrevio({ acertos, total }) {
     percentual: resultado.percentual,
     intervaloInicial: resultado.intervaloInicial || null,
     proximaRevisao: resultado.proximaRevisao || null,
+    primeiraRevisao,
+    primeiraRevisaoLabel: primeiraRevisao ? getStepLabel(primeiraRevisao) : null,
+    primeiraRevisaoDate: resultado.proximaRevisao || null,
     observacao: resultado.motivo,
   };
 }
@@ -189,33 +207,261 @@ export function buildRevComDominio(d0, esp, importancia, classificacao, pctAcert
     acerto: acertoFrac,
     questoes: null,
     skippeadoPorDominio: true,
+    source: "dominio_previo",
   };
 
   rev.d1 = {
     ...rev.d1,
-    date: addDays(hoje, intervaloInicial),
-    scheduledAt: addDays(hoje, intervaloInicial),
+    done: true,
+    skipped: true,
+    skipReason: "dominio_previo",
+    reviewedAt: hoje,
+    completedAt: hoje,
+    acerto: acertoFrac,
+    source: "dominio_previo",
   };
   rev.d4 = {
     ...rev.d4,
-    date: addDays(hoje, intervaloInicial + 3),
-    scheduledAt: addDays(hoje, intervaloInicial + 3),
+    done: true,
+    skipped: true,
+    skipReason: "dominio_previo",
+    reviewedAt: hoje,
+    completedAt: hoje,
+    acerto: acertoFrac,
+    source: "dominio_previo",
   };
   rev.d7 = {
     ...rev.d7,
-    date: addDays(hoje, intervaloInicial + 7),
-    scheduledAt: addDays(hoje, intervaloInicial + 7),
+    date: addDays(hoje, 7),
+    scheduledAt: addDays(hoje, 7),
+    ...(intervaloInicial >= 14 ? {
+      done: true,
+      skipped: true,
+      skipReason: "dominio_previo",
+      reviewedAt: hoje,
+      completedAt: hoje,
+      acerto: acertoFrac,
+      source: "dominio_previo",
+    } : {
+      done: false,
+      skipped: false,
+      skipReason: null,
+      source: "dominio_previo",
+    }),
   };
+  if (intervaloInicial >= 14) {
+    rev.d14 = {
+      date: addDays(hoje, 14),
+      scheduledAt: addDays(hoje, 14),
+      reviewedAt: null,
+      done: false,
+      skipped: false,
+      acerto: null,
+      questoes: null,
+      S: 14,
+      D: prior.difBase,
+      motivosErro: [],
+      phase: "review",
+      source: "dominio_previo",
+    };
+  }
   rev.d21 = {
     ...rev.d21,
-    date: addDays(hoje, intervaloInicial + 21),
-    scheduledAt: addDays(hoje, intervaloInicial + 21),
+    date: addDays(hoje, 21),
+    scheduledAt: addDays(hoje, 21),
   };
   rev.reviewHistory = [];
   rev.phase = "learning";
   rev.relearning = null;
 
   return rev;
+}
+
+function normalizeAcertoInput(rawAcertos, total) {
+  const totalNum = Number(total);
+  const acertosNum = Number(rawAcertos);
+  if (!Number.isFinite(acertosNum) || !Number.isFinite(totalNum) || totalNum <= 0) {
+    return Number.NaN;
+  }
+  if (acertosNum <= 1) {
+    return Math.round(acertosNum * totalNum);
+  }
+  return Math.round(acertosNum);
+}
+
+export function applyDominioPrevioToTema(tema, resultado, options = {}) {
+  if (!tema || !resultado) return tema;
+  const total = Number(resultado.questoes ?? resultado.total);
+  const acertosNormalizados = normalizeAcertoInput(
+    resultado.acertos ?? resultado.acerto,
+    total
+  );
+  const validacao = calcularDominioPrevio({ acertos: acertosNormalizados, total });
+
+  if (!validacao.valido) {
+    return {
+      ...tema,
+      status: tema.status || "novo",
+      unstarted: tema.unstarted !== false,
+      dominioPrevio: finalizarValidacaoDominioPrevio({ total, acertos: acertosNormalizados }),
+    };
+  }
+
+  const registro = criarRegistroDominio(total, acertosNormalizados);
+  const novoRevBase = buildRevComDominio(
+    tema.d0 || todayStr(),
+    tema.esp,
+    tema.importancia,
+    registro.classificacao,
+    registro.pctAcerto
+  ) || tema.rev;
+  const hoje = todayStr();
+  const acertoFrac = Math.max(0, Math.min(1, Number(total > 0 ? acertosNormalizados / total : 0)));
+  const intervalo = validacao.intervaloInicial || 7;
+  const primeiraRevisao = intervalo >= 14 ? "d14" : "d7";
+  const reviewEvent = {
+    stepKey: "d0",
+    reviewedAt: hoje,
+    source: "dominio_previo",
+    rating: intervalo >= 14 ? "easy" : "good",
+    acerto: acertoFrac,
+    questoes: total,
+    official: true,
+  };
+  const reviewHistory = Array.isArray(novoRevBase?.reviewHistory) ? novoRevBase.reviewHistory : [];
+  const nextRev = {
+    ...novoRevBase,
+    d0: {
+      ...(novoRevBase?.d0 || {}),
+      done: true,
+      reviewedAt: hoje,
+      completedAt: hoje,
+      scheduledAt: novoRevBase?.d0?.scheduledAt || hoje,
+      date: novoRevBase?.d0?.date || hoje,
+      acerto: acertoFrac,
+      questoes: total,
+      source: "dominio_previo",
+      skippeadoPorDominio: true,
+    },
+    reviewHistory: [...reviewHistory, reviewEvent].slice(-100),
+  };
+  const dominioPrevio = {
+    ...finalizarValidacaoDominioPrevio({ total, acertos: acertosNormalizados }),
+    validado: true,
+    questoes: total,
+    acerto: acertoFrac,
+    validatedAt: hoje,
+    primeiraRevisao,
+    primeiraRevisaoLabel: getStepLabel(primeiraRevisao),
+    primeiraRevisaoDate: validacao.proximaRevisao || nextRev?.[primeiraRevisao]?.date || null,
+    source: "ja_domino",
+  };
+
+  return {
+    ...tema,
+    status: "validado_previo",
+    unstarted: false,
+    dominio: registro,
+    dominioPrevio,
+    rev: nextRev,
+    parentTopic: tema.parentTopic || options.parentTopic || null,
+  };
+}
+
+export function getDominioPrevioStatus(tema = {}) {
+  const dp = tema?.dominioPrevio || {};
+  const isValidated = dp.validado === true || dp.status === "validado_previo";
+  if (!isValidated) return { isValidated: false };
+
+  const firstReviewStep = dp.primeiraRevisao || (Number(dp.intervaloInicial || 0) >= 14 ? "d14" : "d7");
+  const firstReviewLabel = dp.primeiraRevisaoLabel || getStepLabel(firstReviewStep);
+  const firstReviewDate = dp.primeiraRevisaoDate || dp.proximaRevisao || tema?.rev?.[firstReviewStep]?.date || null;
+  const acerto = Number.isFinite(Number(dp.acerto))
+    ? Number(dp.acerto)
+    : Number.isFinite(Number(dp.percentual))
+    ? Number(dp.percentual) / 100
+    : null;
+
+  return {
+    isValidated: true,
+    acerto,
+    questoes: Number(dp.questoes ?? dp.total ?? 0) || null,
+    validatedAt: dp.validatedAt || dp.validadoEm || null,
+    firstReviewStep,
+    firstReviewLabel,
+    firstReviewDate,
+  };
+}
+
+export function getReviewDisplayLabel(tema, stepKey) {
+  const status = getDominioPrevioStatus(tema);
+  if (status.isValidated) {
+    if (stepKey === status.firstReviewStep) return status.firstReviewLabel;
+    const step = tema?.rev?.[stepKey];
+    if (!isSkippedReview(step) && step?.date === status.firstReviewDate) {
+      return status.firstReviewLabel;
+    }
+  }
+  return getStepLabel(stepKey);
+}
+
+export function getReviewDisplayMeta(tema, stepKey) {
+  const step = tema?.rev?.[stepKey] || {};
+  return {
+    stepKey,
+    label: getReviewDisplayLabel(tema, stepKey),
+    date: step.date || step.scheduledAt || null,
+    source: step.source || null,
+    skipped: isSkippedReview(step),
+  };
+}
+
+export function getNextReviewForTema(tema = {}, today = todayStr()) {
+  const rev = tema?.rev || {};
+  const status = getDominioPrevioStatus(tema);
+
+  if (status.isValidated && status.firstReviewStep) {
+    const firstRuntimeStepKey = rev[status.firstReviewStep]
+      ? status.firstReviewStep
+      : Object.keys(rev).find((key) => {
+        const step = rev[key];
+        return step && typeof step === "object" && !step.done && !isSkippedReview(step) && step.date === status.firstReviewDate;
+      });
+    const firstStep = rev[firstRuntimeStepKey] || {};
+    if (!firstStep.done && !isSkippedReview(firstStep)) {
+      return {
+        stepKey: firstRuntimeStepKey || status.firstReviewStep,
+        label: status.firstReviewLabel,
+        date: firstStep.date || firstStep.scheduledAt || status.firstReviewDate,
+        source: "dominio_previo",
+        overdue: Boolean((firstStep.date || status.firstReviewDate) < today),
+      };
+    }
+  }
+
+  const keys = Object.keys(rev)
+    .filter((key) => rev[key] && typeof rev[key] === "object")
+    .filter((key) => !["reviewHistory", "meta", "phase", "relearning"].includes(key))
+    .sort((a, b) => {
+      const orderA = REVIEW_DISPLAY_ORDER.includes(a) ? REVIEW_DISPLAY_ORDER.indexOf(a) : 99;
+      const orderB = REVIEW_DISPLAY_ORDER.includes(b) ? REVIEW_DISPLAY_ORDER.indexOf(b) : 99;
+      if (orderA !== orderB) return orderA - orderB;
+      return String(rev[a]?.date || "").localeCompare(String(rev[b]?.date || ""));
+    });
+
+  for (const key of keys) {
+    const step = rev[key];
+    if (step.done || isSkippedReview(step) || !step.date) continue;
+    return {
+      stepKey: key,
+      label: getReviewDisplayLabel(tema, key),
+      date: step.date,
+      source: step.source || null,
+      overdue: step.date < today,
+    };
+  }
+
+  return null;
 }
 
 export function criarRegistroDominio(questoes, acertos) {

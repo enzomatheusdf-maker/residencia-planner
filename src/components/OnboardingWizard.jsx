@@ -3,20 +3,20 @@ import { Brain, CalendarDays, Compass, SkipForward } from "lucide-react";
 import { getRecommendedDefaultsForGoal } from "../core/onboarding";
 
 const GOAL_OPTIONS = [
-  { id: "enamed", label: "ENAMED", hint: "Prioriza trilha ENAMED e recomendacoes por area." },
-  { id: "residencia", label: "Residencia medica", hint: "Prioriza cronograma de residencia e rotina clinica." },
-  { id: "ambos", label: "Os dois", hint: "Combina ENAMED e residencia no mesmo fluxo." },
+  { id: "enamed", label: "ENAMED", hint: "Prioriza trilha ENAMED e recomendações por área." },
+  { id: "residencia", label: "Residência médica", hint: "Prioriza plano de residência e rotina clínica." },
+  { id: "ambos", label: "Os dois", hint: "Combina ENAMED e residência no mesmo fluxo." },
 ];
 
 const CALENDAR_OPTIONS = [
-  { id: "medcof", label: "MEDCOF", hint: "Base pronta para comecar agora." },
-  { id: "estrategia_extensivo_user", label: "Estrategia MED", hint: "Importe seu cronograma ou configure depois." },
+  { id: "medcof", label: "MEDCOF", hint: "Base pronta para começar agora." },
+  { id: "estrategia_extensivo_user", label: "Estratégia MED", hint: "Importe seu calendário ou configure depois." },
   { id: "custom", label: "Personalizado", hint: "Monte seu plano manualmente." },
 ];
 
 const MODE_OPTIONS = [
-  { id: "mentor", label: "Modo Mentor recomendado", hint: "O app escolhe a proxima melhor acao." },
-  { id: "manual", label: "Modo Manual", hint: "Voce ve mais paineis e decide o fluxo." },
+  { id: "mentor", label: "Modo Mentor recomendado", hint: "O app escolhe a próxima melhor ação." },
+  { id: "manual", label: "Modo Manual", hint: "Você vê mais painéis e decide o fluxo." },
 ];
 
 function ChoiceCard({ selected, label, hint, onClick }) {
@@ -64,7 +64,7 @@ export default function OnboardingWizard({ onComplete, onSkip, onOpenImport }) {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-blue-300 font-black">Primeiros 2 minutos</p>
-              <h2 className="text-xl font-black text-white">Vamos configurar seu inicio</h2>
+              <h2 className="text-xl font-black text-white">Vamos configurar seu início</h2>
             </div>
             <span className="text-[11px] text-gray-400 font-bold">{step + 1}/3</span>
           </div>
@@ -77,7 +77,7 @@ export default function OnboardingWizard({ onComplete, onSkip, onOpenImport }) {
             <section className="space-y-3">
               <div className="flex items-center gap-2">
                 <Compass size={16} className="text-blue-300" />
-                <h3 className="text-sm font-bold text-white">Qual e seu foco agora?</h3>
+                <h3 className="text-sm font-bold text-white">Qual é seu foco agora?</h3>
               </div>
               <div className="space-y-2">
                 {GOAL_OPTIONS.map((item) => (
@@ -90,7 +90,7 @@ export default function OnboardingWizard({ onComplete, onSkip, onOpenImport }) {
                   />
                 ))}
               </div>
-              <p className="text-[11px] text-gray-500">Isso muda o peso das recomendacoes do Mentor. Voce pode alterar depois.</p>
+              <p className="text-[11px] text-gray-500">Isso muda o peso das recomendações do Mentor. Você pode alterar depois.</p>
             </section>
           )}
 
@@ -98,7 +98,7 @@ export default function OnboardingWizard({ onComplete, onSkip, onOpenImport }) {
             <section className="space-y-3">
               <div className="flex items-center gap-2">
                 <CalendarDays size={16} className="text-blue-300" />
-                <h3 className="text-sm font-bold text-white">Como voce quer organizar os temas?</h3>
+                <h3 className="text-sm font-bold text-white">Como você quer organizar os temas?</h3>
               </div>
               <div className="space-y-2">
                 {CALENDAR_OPTIONS.map((item) => (
@@ -113,7 +113,7 @@ export default function OnboardingWizard({ onComplete, onSkip, onOpenImport }) {
               </div>
               {calendarProvider === "estrategia_extensivo_user" && (
                 <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3">
-                  <p className="text-[11px] text-blue-100">Voce pode importar agora ou configurar depois sem travar o acesso.</p>
+                  <p className="text-[11px] text-blue-100">Você pode importar agora ou configurar depois sem travar o acesso.</p>
                   {onOpenImport && (
                     <button
                       type="button"
@@ -132,7 +132,7 @@ export default function OnboardingWizard({ onComplete, onSkip, onOpenImport }) {
             <section className="space-y-3">
               <div className="flex items-center gap-2">
                 <Brain size={16} className="text-blue-300" />
-                <h3 className="text-sm font-bold text-white">Como voce quer comecar?</h3>
+                <h3 className="text-sm font-bold text-white">Como você quer começar?</h3>
               </div>
               <div className="space-y-2">
                 {MODE_OPTIONS.map((item) => (
@@ -151,7 +151,7 @@ export default function OnboardingWizard({ onComplete, onSkip, onOpenImport }) {
           {showSkipWarn && (
             <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3">
               <p className="text-[11px] text-amber-100">
-                Voce pode pular, mas o Mentor tera menos contexto.
+                Você pode pular, mas o Mentor terá menos contexto.
               </p>
             </div>
           )}

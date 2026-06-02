@@ -9,7 +9,7 @@ function readPersistedState(storageKey, fallback) {
 }
 
 export default function AdvancedSection({
-  title = "Painel avancado",
+  title = "Painel avan\u00e7ado",
   defaultOpen = false,
   storageKey,
   children,
@@ -30,7 +30,7 @@ export default function AdvancedSection({
         className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left bg-transparent border-none cursor-pointer"
       >
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-gray-500 font-black">Avancado</p>
+          <p className="text-[10px] uppercase tracking-wider text-gray-500 font-black">Avan\u00e7ado</p>
           <h3 className="text-sm font-bold text-white">{title}</h3>
         </div>
         <span className="text-gray-300">{open ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</span>

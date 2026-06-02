@@ -1,7 +1,11 @@
 // src/App.js
 // Main entry point for MedRev - Clean & Modular Architecture
 import React, { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
-import { Eye, EyeOff, Settings } from "lucide-react";
+import {
+  Eye, EyeOff, Settings,
+  Brain, Layers, CalendarCheck, GraduationCap, ShieldCheck,
+  Rocket, BookOpen, SlidersHorizontal, ArrowRight,
+} from "lucide-react";
 
 // Camada Core & State
 import { useStore } from "./core/store";
@@ -70,29 +74,53 @@ import {
 
 const RaciocinioClinico = lazy(() => import("./components/RaciocinioClinico"));
 
+// Metadados visuais por ferramenta da aba Mais: icone + paleta de cor.
+const MORE_TOOL_META = {
+  raciocinio:       { icon: Brain,            color: "text-teal-300",    bg: "bg-teal-500/10",    ring: "border-teal-500/20",    glow: "group-hover:border-teal-400/40" },
+  anki:             { icon: Layers,           color: "text-purple-300",  bg: "bg-purple-500/10",  ring: "border-purple-500/20",  glow: "group-hover:border-purple-400/40" },
+  weekly_review:    { icon: CalendarCheck,    color: "text-blue-300",    bg: "bg-blue-500/10",    ring: "border-blue-500/20",    glow: "group-hover:border-blue-400/40" },
+  academia:         { icon: GraduationCap,    color: "text-amber-300",   bg: "bg-amber-500/10",   ring: "border-amber-500/20",   glow: "group-hover:border-amber-400/40" },
+  data_safety:      { icon: ShieldCheck,      color: "text-emerald-300", bg: "bg-emerald-500/10", ring: "border-emerald-500/20", glow: "group-hover:border-emerald-400/40" },
+  launch_checklist: { icon: Rocket,           color: "text-rose-300",    bg: "bg-rose-500/10",    ring: "border-rose-500/20",    glow: "group-hover:border-rose-400/40" },
+  guia:             { icon: BookOpen,         color: "text-sky-300",     bg: "bg-sky-500/10",     ring: "border-sky-500/20",     glow: "group-hover:border-sky-400/40" },
+  ajustes:          { icon: SlidersHorizontal,color: "text-gray-300",    bg: "bg-white/5",        ring: "border-white/10",       glow: "group-hover:border-white/25" },
+};
+
+const DEFAULT_TOOL_META = { icon: SlidersHorizontal, color: "text-gray-300", bg: "bg-white/5", ring: "border-white/10", glow: "group-hover:border-white/25" };
+
 function MoreToolsHub({ items, onOpen }) {
   return (
-    <section className="max-w-5xl mx-auto space-y-4">
+    <section className="max-w-5xl mx-auto space-y-5">
       <div className="space-y-1">
         <p className="text-[11px] font-black uppercase tracking-wider text-blue-300">Ferramentas</p>
         <h1 className="text-2xl font-black text-white tracking-tight">Mais</h1>
         <p className="text-[12px] text-gray-400">Acesso rapido aos recursos avancados sem poluir a jornada diaria.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {items.map((item) => (
-          <article key={item.view} className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-            <h2 className="text-sm font-black text-white">{item.label}</h2>
-            <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{item.description}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {items.map((item) => {
+          const meta = MORE_TOOL_META[item.view] || DEFAULT_TOOL_META;
+          const Icon = meta.icon;
+          return (
             <button
+              key={item.view}
               type="button"
               onClick={() => onOpen(item.view)}
-              className="mt-3 px-3 py-2 rounded-xl border border-blue-500/25 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-[11px] font-bold transition-colors cursor-pointer"
+              className={`group text-left rounded-2xl border border-white/8 bg-white/[0.02] p-4 flex items-start gap-3.5 transition-all hover:bg-white/[0.04] ${meta.glow} hover:-translate-y-0.5 cursor-pointer`}
             >
-              Abrir
+              <div className={`shrink-0 w-11 h-11 rounded-xl ${meta.bg} border ${meta.ring} flex items-center justify-center transition-colors`}>
+                <Icon size={20} className={meta.color} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-[13px] font-black text-white truncate">{item.label}</h2>
+                  <ArrowRight size={15} className="text-gray-600 group-hover:text-gray-300 group-hover:translate-x-0.5 transition-all shrink-0" />
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{item.description}</p>
+              </div>
             </button>
-          </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -189,6 +217,9 @@ export default function App() {
     raciocinioClinico: featureEnabled(plat, "raciocinioClinico") && meta.modulos?.raciocinioClinico === true,
   }), [meta.modulos, plat]);
   const moreNavItems = useMemo(() => getMoreNavItems(plat, navFeatures), [plat, navFeatures]);
+  // Secao alvo do StatsPanel quando aberto a partir da aba Mais (Sistema, etc.)
+  const [statsSection, setStatsSection] = useState(null);
+  const [statsSectionTrigger, setStatsSectionTrigger] = useState(0);
   const openFromMore = useCallback((targetView) => {
     if (targetView === NAV_VIEW.GUIDE) {
       setHelpModal(true);
@@ -198,11 +229,14 @@ export default function App() {
       openAjustes({ initialTab: "ajustes" });
       return;
     }
+    // DataSafety, WeeklyReview e LaunchChecklist vivem na secao "Sistema" do StatsPanel.
     if (
       targetView === NAV_VIEW.DATA_SAFETY
       || targetView === NAV_VIEW.WEEKLY_REVIEW
       || targetView === NAV_VIEW.LAUNCH_CHECKLIST
     ) {
+      setStatsSection("sistema");
+      setStatsSectionTrigger((n) => n + 1);
       setView(NAV_VIEW.STATS);
       return;
     }
@@ -1144,7 +1178,7 @@ export default function App() {
           {view === "banco" && <BancoDados />}
           {view === "stats" && (
             <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
-              <StatsPanel setView={setView} />
+              <StatsPanel setView={setView} initialSection={statsSection} sectionTrigger={statsSectionTrigger} />
             </ErrorBoundary>
           )}
           {view === "sims" && (

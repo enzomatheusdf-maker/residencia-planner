@@ -1,31 +1,37 @@
+import { COPY } from "./copy";
+
+// Itens marcados como devOnly so aparecem no build de desenvolvimento.
+// No build de producao (o que o usuario recebe) eles ficam ocultos.
+const IS_DEV = process.env.NODE_ENV !== "production";
+
 const PRIMARY_ITEMS = [
   {
     view: "dash",
-    label: "Hoje",
-    mobileLabel: "Hoje",
+    label: COPY.views.dash,
+    mobileLabel: COPY.views.dash,
     description: "Resumo do dia com comando do Mentor.",
     desktop: true,
     mobile: true,
   },
   {
     view: "crono",
-    label: "Plano",
-    mobileLabel: "Plano",
+    label: COPY.views.crono,
+    mobileLabel: COPY.views.crono,
     description: "Cronograma e planejamento de temas.",
     desktop: true,
     mobile: true,
   },
   {
     view: "sims",
-    label: "Estudar",
-    mobileLabel: "Estudar",
+    label: COPY.views.sims,
+    mobileLabel: COPY.views.sims,
     description: "Fluxo principal de estudo e simulados.",
     desktop: true,
     mobile: true,
   },
   {
     view: "stats",
-    label: "Estatisticas",
+    label: COPY.views.stats,
     mobileLabel: "Stats",
     description: "Metricas e paineis de progresso.",
     desktop: true,
@@ -33,7 +39,7 @@ const PRIMARY_ITEMS = [
   },
   {
     view: "banco",
-    label: "Banco",
+    label: COPY.views.banco,
     mobileLabel: "Banco",
     description: "Banco de dados e consultas.",
     desktop: true,
@@ -41,8 +47,8 @@ const PRIMARY_ITEMS = [
   },
   {
     view: "more",
-    label: "Mais",
-    mobileLabel: "Mais",
+    label: COPY.views.more,
+    mobileLabel: COPY.views.more,
     description: "Ferramentas avancadas e sistema.",
     desktop: true,
     mobile: true,
@@ -52,8 +58,8 @@ const PRIMARY_ITEMS = [
 const MORE_ITEMS = [
   {
     view: "raciocinio",
-    label: "Raciocinio Clinico",
-    description: "Treine problem representation, hipoteses e illness scripts.",
+    label: "Racioc\u00ednio Cl\u00ednico",
+    description: "Treine racioc\u00ednio diagn\u00f3stico, hip\u00f3teses e condutas simuladas.",
     onlyPlat: "res",
     requiresFeature: "raciocinioClinico",
   },
@@ -63,34 +69,15 @@ const MORE_ITEMS = [
     description: "Auditoria de aderencia e consistencia no Anki.",
   },
   {
+    view: "academia",
+    label: "Academia / M\u00e9todo",
+    description: "Fundamentos do m\u00e9todo e guias de estudo.",
+  },
+  {
     view: "weekly_review",
     label: "Weekly Review",
     description: "Revisao executiva da semana com acoes sugeridas.",
-  },
-  {
-    view: "academia",
-    label: "Academia / Metodo",
-    description: "Fundamentos do metodo e guias de estudo.",
-  },
-  {
-    view: "data_safety",
-    label: "Data Safety",
-    description: "Checklist de seguranca de dados e confiabilidade.",
-  },
-  {
-    view: "launch_checklist",
-    label: "Launch Checklist",
-    description: "Checklist de prontidao para lancamento.",
-  },
-  {
-    view: "guia",
-    label: "Guia",
-    description: "Guia rapido de uso do MedRev.",
-  },
-  {
-    view: "ajustes",
-    label: "Ajustes",
-    description: "Configuracoes de conta, plano e aplicativo.",
+    devOnly: true,
   },
 ];
 
@@ -122,16 +109,16 @@ const LEGACY_VIEW_MAP = {
 };
 
 const LABELS_BY_VIEW = {
-  dash: "Hoje",
-  crono: "Plano",
-  sims: "Estudar",
-  stats: "Estatisticas",
-  banco: "Banco",
-  more: "Mais",
-  raciocinio: "Raciocinio Clinico",
+  dash: COPY.views.dash,
+  crono: COPY.views.crono,
+  sims: COPY.views.sims,
+  stats: COPY.views.stats,
+  banco: COPY.views.banco,
+  more: COPY.views.more,
+  raciocinio: "Racioc\u00ednio Cl\u00ednico",
   anki: "Anki Audit",
   weekly_review: "Weekly Review",
-  academia: "Academia / Metodo",
+  academia: "Academia / M\u00e9todo",
   data_safety: "Data Safety",
   launch_checklist: "Launch Checklist",
   guia: "Guia",
@@ -170,6 +157,7 @@ function isRaciocinioEnabled(plat, features = {}) {
 }
 
 function isItemAvailable(item, plat, features = {}) {
+  if (item.devOnly && !IS_DEV) return false;
   if (item.onlyPlat && item.onlyPlat !== plat) return false;
   if (item.requiresFeature === "raciocinioClinico") {
     return isRaciocinioEnabled(plat, features);

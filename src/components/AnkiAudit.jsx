@@ -123,7 +123,7 @@ export default function AnkiAudit() {
         <div className="space-y-1">
           <p className="text-[10.5px] uppercase tracking-wider font-semibold text-gray-500">Adesão diária</p>
           <p className="text-[12px] text-gray-300">
-            Marque quando revisar seus cards. Esse check entra com peso leve no Score de Prontidão.
+            Marque quando revisar seus cards. Esse check entra com peso leve no Preparo estimado.
           </p>
         </div>
         <Btn onClick={marcarAnkiHoje} disabled={ankiFeitoHoje} className="gap-2 sm:shrink-0">

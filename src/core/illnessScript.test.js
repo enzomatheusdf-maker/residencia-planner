@@ -123,21 +123,25 @@ describe("illnessScript engine", () => {
     expect(fila[1].caso.id).toBe("cm-1");
   });
 
-  test("calcRaciocinioScore e cobertura por área resumem progresso", () => {
+  test("calcRaciocinioScore e cobertura por área resumem progresso (P4-A: campos reais)", () => {
+    // P4-A: notaCaso nunca e gravado pela UI — fixture atualizado para fase2Acerto/sctAcerto.
+    // Formula canonica: fase2Acerto*0.6 + sctAcerto*0.4 (peso adaptativo se um ausente).
     const casos = [
       { id: "a", area: "Cirurgia" },
       { id: "b", area: "Cirurgia" },
       { id: "c", area: "GO" },
     ];
     const progresso = {
-      a: { vistos: 1, notaCaso: 80 },
-      c: { vistos: 2, notaCaso: 60 },
+      // a: fase2=80 sct=80 -> 80
+      a: { vistos: 1, fase2Acerto: 80, sctAcerto: 80 },
+      // c: fase2=60 sct=60 -> 60
+      c: { vistos: 2, fase2Acerto: 60, sctAcerto: 60 },
     };
-
+    // media dos scores: (80 + 60) / 2 = 70
     expect(calcRaciocinioScore(progresso)).toBe(70);
 
     const cobertura = coberturaRaciocinioPorArea(casos, progresso);
-    expect(cobertura.Cirurgia.pctCobertura).toBe(50);
+    expect(cobertura.Cirurgia.pctCobertura).toBe(50); // 1 de 2 visitado
     expect(cobertura.GO.pctCobertura).toBe(100);
     expect(cobertura.GO.notaMedia).toBe(60);
   });

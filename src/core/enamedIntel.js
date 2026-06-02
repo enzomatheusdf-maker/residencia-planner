@@ -5,6 +5,7 @@
 import {
   ENAMED_BLUEPRINT,
   ENAMED_HOTNESS,
+  ENAMED_MACRO_QUESTOES,
   MACRO_PESO_ENAMED,
 } from "../constants/enamedIncidencia";
 import { STEPS } from "./fsrs";
@@ -225,6 +226,28 @@ export function calcPreparoEnamed(temas = []) {
 
 // Alias temporário se algum patch antigo já chamou calcProntidaoEnamed.
 export const calcProntidaoEnamed = calcPreparoEnamed;
+
+/**
+ * Retorna dados quantitativos de incidência no ENAMED para um tema específico.
+ * Usado pelo balão contextual no modal de tema e no card do cronograma.
+ */
+export function getEnamedContextBadge(area, temaName) {
+  if (!area || !temaName) return null;
+  const match = findHotnessSubarea(area, temaName);
+  if (!match) return null;
+  const totalArea = ENAMED_MACRO_QUESTOES[match.area] ?? null;
+  const questoes = totalArea ? Math.round(match.peso * totalArea) : null;
+  const nivel = match.normalizado >= 0.7 ? "alto" : match.normalizado >= 0.35 ? "medio" : "baixo";
+  return {
+    subarea: match.subarea,
+    area: match.area,
+    questoes,
+    pctAbsoluto: Math.round(match.peso * 100),
+    normalizado: Math.round(match.normalizado * 100),
+    nivel,
+    matchType: match.match,
+  };
+}
 
 export function getEnamedAction(intel) {
   const gargalo = intel?.gargalo;

@@ -216,7 +216,7 @@ export function getSimuladoProtocolo(tipo) {
     { t: "Não persiga o número", d: "Primeiras provas pontuam 40–55% e isso é normal. O que vale é a tendência da média móvel, não um simulado isolado." },
     { t: "Triagem de erro obrigatória", d: "Para cada erro, classifique a causa (lacuna / raciocínio / distrator / descuido / interpretação / não visto). Sem isso o simulado vira só uma nota." },
     { t: "Revise o racional de TODAS as erradas", d: "Leia o comentário inteiro, inclusive de acertos por chute. Re-leitura passiva engana; explicar o porquê consolida." },
-    { t: "Refaça só as erradas em 48–72h", d: "Relearning sucessivo: reencontrar o que você errou alguns dias depois é o que fixa de verdade. Lacunas viram tema no FSRS + card atômico (cloze)." },
+    { t: "Refa\u00e7a s\u00f3 as erradas em 48\u201372h", d: "Reaprendizado sucessivo: reencontrar o que voc\u00ea errou alguns dias depois \u00e9 o que fixa de verdade. Lacunas viram tema na curva de revis\u00e3o + card at\u00f4mico (cloze)." },
     { t: "Use provas NOVAS para prever desempenho", d: "Refazer prova já vista infla a nota por reconhecimento. Reaproveite provas antigas só como treino de erro, nunca como previsão." },
   ];
   if (tipo === "Confirmação") {

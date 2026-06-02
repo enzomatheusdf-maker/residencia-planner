@@ -255,7 +255,7 @@ export default function Simulados({ onStudy, setView }) {
   }, [todosErros]);
 
   const tabs = [
-    { k: "painel", label: "Prontidão", icon: Target },
+    { k: "painel", label: "Preparo", icon: Target },
     { k: "correcao", label: "Revisão D7", icon: Award },
     { k: "area", label: "Por Área", icon: BarChart3 },
     { k: "metricas", label: "Elite", icon: ShieldAlert }
@@ -340,10 +340,10 @@ export default function Simulados({ onStudy, setView }) {
 
     if (type === "lacuna") {
       return tom === "gentil"
-        ? `Notei que boa parte dos seus erros se deve a ${typeName}. É super normal esquecer detalhes, especialmente com o volume de matérias. Sugiro priorizar as revisões do FSRS para consolidar esses pontos e preencher os buracos na teoria antes de prosseguir.`
+        ? `Notei que boa parte dos seus erros se deve a ${typeName}. É super normal esquecer detalhes, especialmente com o volume de matérias. Sugiro priorizar as revisões da curva para consolidar esses pontos e preencher os buracos na teoria antes de prosseguir.`
         : tom === "firme"
         ? `Seu calcanhar de Aquiles é ${typeName}. Não adianta correr com matéria nova se a base está instável. Vá para o anki e finalize todas as revisões ativas pendentes antes de fechar o dia de hoje.`
-        : `Identifiquei predominância de ${typeName} nos erros de simulado. Recomendo pausar avanços rápidos no cronograma e focar o FSRS na consolidação ativa dos tópicos que apresentaram falhas.`;
+        : `Identifiquei predominância de ${typeName} nos erros de simulado. Recomendo pausar avanços rápidos no cronograma e focar a curva de revisão na consolidação ativa dos tópicos que apresentaram falhas.`;
     } else if (type === "descuido") {
       return tom === "gentil"
         ? `Identifiquei que desatenção ou descuido (${typeName}) é o padrão dominante de erros. Geralmente é cansaço acumulado. Tente respirar fundo, alongar e, na hora da prova, fazer uma leitura reversa das alternativas para manter o foco.`
@@ -372,7 +372,7 @@ export default function Simulados({ onStudy, setView }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-2">
         <div className="flex items-center gap-2">
           <Target size={20} className="text-orange-400" />
-          <h2 className="text-[15px] font-bold text-gray-100">Prontidão e Simulados</h2>
+          <h2 className="text-[15px] font-bold text-gray-100">Preparo e Simulados</h2>
         </div>
         <Btn onClick={() => setModalOpen(true)} className="gap-1.5"><Plus size={16} /> Registrar Simulado</Btn>
       </div>
@@ -382,7 +382,7 @@ export default function Simulados({ onStudy, setView }) {
         <Tabs items={tabs} active={activeTab} onChange={setActiveTab} />
       </div>
 
-      {/* Conteúdo Aba 1: Prontidão */}
+      {/* Conteúdo Aba 1: Preparo */}
       {activeTab === "painel" && (
         <div className="flex flex-col gap-5">
           <div className="bg-[var(--surface-1)] border border-blue-500/20 rounded-2xl p-4">
@@ -454,13 +454,13 @@ export default function Simulados({ onStudy, setView }) {
           })()}
           {/* BLOCK 1: PRONTIDÃO GERAL (KPIs & Volume & Ritmo) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Score de Prontidão */}
+            {/* Preparo estimado */}
             <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col justify-between shadow-lg relative overflow-hidden">
               <div className="absolute -right-8 -bottom-8 w-20 h-20 rounded-full bg-blue-600/5 blur-2xl pointer-events-none" />
               <div>
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
-                  Score de Prontidão
-                  <Info size={11} className="text-gray-600 cursor-help" title="Cálculo combinado: acertos simulados (média móvel 4 últimos), True Retention D21+, cobertura e ritmo. Componentes sem dados ainda (simulados, retenção D21) não entram no cálculo e são incluídos automaticamente quando houver histórico." />
+                  Preparo estimado
+                  <Info size={11} className="text-gray-600 cursor-help" title="Cálculo combinado: acertos simulados (média móvel 4 últimos), retenção longa D21+, cobertura e ritmo. Componentes sem dados ainda (simulados, retenção D21) não entram no cálculo e são incluídos automaticamente quando houver histórico." />
                 </p>
                 <div className="flex items-baseline gap-2 mt-2">
                   <p className={`text-4xl font-black tabular-nums ${readiness.score !== null ? (readiness.score >= 75 ? "text-emerald-400" : readiness.score >= 60 ? "text-blue-400" : "text-amber-400") : "text-gray-600"}`}>
@@ -512,7 +512,7 @@ export default function Simulados({ onStudy, setView }) {
                 )}
               </div>
               <p className="text-[9.5px] text-gray-600 mt-3">
-                Soma cumulativa de questões resolvidas em sessões ativas do FSRS.
+                Soma cumulativa de questões resolvidas em sessões ativas da curva de revisão.
               </p>
             </div>
 
@@ -537,7 +537,7 @@ export default function Simulados({ onStudy, setView }) {
                 ) : (
                   <div className="mt-2 space-y-2">
                     <p className="text-xl font-bold text-gray-500">—</p>
-                    <p className="text-[10px] text-gray-500 italic">Meta diária não configurada. Defina nos Ajustes para ativar o Equilíbrio de Ritmo e o Score de Prontidão completo.</p>
+                    <p className="text-[10px] text-gray-500 italic">Meta diária não configurada. Defina nos Ajustes para ativar o Equilíbrio de Ritmo e o Preparo estimado completo.</p>
                     <button
                       type="button"
                       onClick={() => setView && setView("ajustes")}
@@ -982,6 +982,4 @@ export default function Simulados({ onStudy, setView }) {
     </div>
   );
 }
-
-
 

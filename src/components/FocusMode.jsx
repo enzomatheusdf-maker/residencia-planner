@@ -12,6 +12,10 @@ import { getMentorPhrase, getRecentPhrases, trackRecentPhrase, isExhaustionDetec
 import { getFaseItem, todayStr, addDays, STEPS } from "../core/fsrs";
 import { ERROR_TYPE, dominantErrorType } from "../core/errorTaxonomy";
 import { createSessionReflection } from "../core/sessionReflection";
+import ErrorActionPrompt from "./ErrorActionPrompt";
+import ClinicalTaskPanel from "./ClinicalTaskPanel";
+import { getReviewTaskForStep } from "../core/reviewTaskPlanner";
+import { CASOS_CLINICOS } from "../constants/casosClinicos";
 
 const STEP_ICONS = { pretest: FileText, leitura: BookOpen, esqueleto: Layers, braindump: Brain, questoes: PenTool, anki: Zap };
 
@@ -53,6 +57,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const temaStats = useStore((s) => s.temaStats || {});
   const addSessionReflection = useStore((s) => s.addSessionReflection);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
+  const casosProgresso = useStore((s) => s[plat]?.casosProgresso || {});
 
   const doneReviews = useMemo(() => {
     return temas.flatMap((t) => STEPS.map((s) => t.rev[s.key])).filter(r => r && r.done);
@@ -106,6 +111,20 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
 
   const tema = activeReviewItem?.tema;
   const stepKey = activeReviewItem?.stepKey;
+
+  // P4-C: tarefa clinica multimodal para o step atual (res only, gated por modulo)
+  const clinicalTask = useMemo(() => {
+    if (!tema || !stepKey || plat !== "res") return null;
+    return getReviewTaskForStep({
+      tema,
+      stepKey,
+      casos: CASOS_CLINICOS,
+      progresso: casosProgresso,
+      plat,
+      modulos: meta?.modulos,
+    });
+  }, [tema, stepKey, plat, casosProgresso, meta?.modulos]);
+
   const fase = useMemo(() => {
     if (!tema || !stepKey) return null;
     return getFaseItem(tema, stepKey);
@@ -135,6 +154,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
 
   const [showTransitionScreen, setShowTransitionScreen] = useState(false);
   const [lastCompletedItem, setLastCompletedItem] = useState(null);
+  const [lastDominantError, setLastDominantError] = useState(null);
   const [showSessionClosure, setShowSessionClosure] = useState(false);
   const [closureDraft, setClosureDraft] = useState(null);
 
@@ -153,9 +173,16 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const inferMainIssue = useCallback((markData = {}) => {
     const dominant = dominantErrorType(markData.erros || []);
     if (dominant === ERROR_TYPE.CONTENT || dominant === ERROR_TYPE.MEMORY) return "conteudo";
-    if (dominant === ERROR_TYPE.REASONING) return "raciocinio";
+    // Raciocinio clinico: inclui os 5 novos tipos de P3-A
+    if (
+      dominant === ERROR_TYPE.REASONING ||
+      dominant === ERROR_TYPE.PROBLEM_REPRESENTATION ||
+      dominant === ERROR_TYPE.DIFFERENTIAL ||
+      dominant === ERROR_TYPE.SCT_UNCERTAINTY ||
+      dominant === ERROR_TYPE.MANAGEMENT
+    ) return "raciocinio";
     if (dominant === ERROR_TYPE.INTERPRETATION || dominant === ERROR_TYPE.DISTRACTION) return "distracao";
-    if (dominant === ERROR_TYPE.TIME) return "tempo";
+    if (dominant === ERROR_TYPE.TIME || dominant === ERROR_TYPE.EXAM_STRATEGY) return "tempo";
     if (String(markData.cansaco || "").toLowerCase().startsWith("alt")) return "energia";
     return "nenhum";
   }, []);
@@ -200,6 +227,10 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
     const nextAdjustment = inferNextAdjustment(mainIssue, outcome);
     const confidenceRaw = String(markData.confianca || confianca || "media").toLowerCase();
     const confidence = confidenceRaw.startsWith("alt") ? "alta" : confidenceRaw.startsWith("baix") ? "baixa" : "media";
+    // Captura erro dominante para exibir apos fechamento
+    const stepErrors = Array.isArray(markData.erros) ? markData.erros : [];
+    const stepDominant = dominantErrorType(stepErrors);
+    setLastDominantError(stepDominant || null);
     setClosureDraft({
       source: "focus",
       tema: currentTemaName,
@@ -279,8 +310,10 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
 
   // Derived accuracy
   const totalQuestoes = +questoes || 0;
-  const certasQuestoes = Math.min(+acertos || 0, totalQuestoes);
+  const acertosRaw = +acertos || 0;
+  const certasQuestoes = Math.min(acertosRaw, totalQuestoes);
   const pct = totalQuestoes > 0 ? Math.round((certasQuestoes / totalQuestoes) * 100) : null;
+  const hasValidQuestionResult = totalQuestoes > 0 && acertos !== "" && acertosRaw >= 0 && acertosRaw <= totalQuestoes;
 
   // TIMER
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -452,7 +485,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
       : nextItem.esp === "Preventiva"
       ? "Preventiva tem peso estratégico no ENAMED (12%) e alto retorno por tempo de estudo."
       : nextItem.overdue
-      ? "Este item está atrasado no agendamento do FSRS e atingiu o ponto ideal de revisão."
+      ? "Este item está atrasado na curva de revisão e atingiu o ponto ideal de revisão."
       : "Item de alta prevalência e prioridade de memorização para a prova.") : "";
 
     const lowestComp = lastCompletedItem?.esp === "Redação" && lastCompletedItem.c1 !== undefined
@@ -500,6 +533,16 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
               <p className="text-xs text-gray-500 italic">Parabéns! Sua fila de hoje está totalmente limpa! 🎉</p>
             )}
           </div>
+
+          {lastDominantError && (
+            <ErrorActionPrompt
+              dominantError={lastDominantError}
+              context="pos-sessao"
+              tema={lastCompletedItem?.nome || null}
+              onAction={() => setShowTransitionScreen(false)}
+              onDismiss={() => setLastDominantError(null)}
+            />
+          )}
 
           <div className="flex flex-col gap-2 pt-2">
             {nextItem && (
@@ -921,7 +964,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
               <div className="bg-white/[0.01] border border-white/5 p-4 rounded-xl">
                 <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wide">Finalização do Estudo Ativo (D0)</h4>
                 <p className="text-xs text-gray-400 leading-relaxed mt-1.5">
-                  Informe o resultado das questões feitas para registrar seu ponto de partida e calibrar o algoritmo FSRS.
+                  Informe o resultado das questões feitas para registrar seu ponto de partida e calibrar a curva de revisão.
                 </p>
               </div>
 
@@ -1309,7 +1352,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
           )}
 
           {/* ─── D4 / D7 / D21 REVIEW STEPS ─── */}
-          {["d4", "d7", "d21", "manutencao"].includes(stepKey) && (
+          {["d4", "d7", "d14", "d21", "manutencao"].includes(stepKey) && (
             <div className="space-y-6 text-left">
               <div className="bg-[#141421]/60 border border-blue-500/10 p-4 rounded-xl">
                 <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wide">Mentor Científico</h4>
@@ -1317,11 +1360,17 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                   {formatTextWithPlatform(mentorPhrase) || formatTextWithPlatform(
                     stepKey === "d4" ? "Resolva questões ativas sobre o tema. O objetivo é forçar a recuperação mental de pontos-chave e mapear lacunas." :
                     stepKey === "d7" ? "Faça questões de prova e conclua a revisão do Deck do Anki correspondente. Ajuste os cards baseando-se nos erros." :
+                    stepKey === "d14" ? "Revisão de consolidação: resolva questões ativas para confirmar que o domínio prévio se manteve estável." :
                     stepKey === "d21" ? "Revisão interleaved: resolva questões misturadas sobre o tema junto com outros conteúdos. É a etapa final de fixação." :
                     "Manutenção de Longo Prazo: Resolva questões ativas e revise materiais essenciais para manter este tema consolidado."
                   )}
                 </p>
               </div>
+
+              {/* P4-C: Tarefa clinica multimodal (res only, gated por modulo) */}
+              {clinicalTask && tema?.esp !== "Redação" && (
+                <ClinicalTaskPanel task={clinicalTask} />
+              )}
 
               {tema?.esp !== "Redação" && (
                 <div className="bg-indigo-950/20 border border-indigo-500/20 p-4 rounded-2xl text-left space-y-1.5 animate-fade-in">
@@ -1563,7 +1612,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                   <button
                     type="button"
                     onClick={handleCompleteReview}
-                    disabled={tema?.esp !== "Redação" && !revelado}
+                    disabled={tema?.esp !== "Redação" && !hasValidQuestionResult}
                     className="flex-1 sm:flex-none px-6 py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-bold text-[11.5px] transition-all active:scale-[0.98] shadow-lg shadow-slate-900/25 disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     ✓ Confirmar Revisão

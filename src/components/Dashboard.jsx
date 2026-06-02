@@ -1,14 +1,13 @@
 // src/components/Dashboard.jsx
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Flame, Calendar, AlertTriangle, X, Zap, BookOpen, Layers, Share2, Unlock, Lightbulb, GraduationCap } from "lucide-react";
+import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Flame, Calendar, AlertTriangle, X, Zap, BookOpen, Layers, Share2, Unlock, GraduationCap, BarChart3, ClipboardList, Target } from "lucide-react";
 import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection } from "../core/fsrs";
 import { calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
-import { getMentorDiagnosis, getMentorVoice, getMentorPhrase, getRecentPhrases, trackRecentPhrase, isExhaustionDetected } from "../core/mentor";
+import { getMentorDiagnosis, getMentorVoice, isExhaustionDetected } from "../core/mentor";
 import { buildMentorContext, getMentorNextAction, getMentorTodayPlan } from "../core/mentorAutopilot";
 import { getReadinessData } from "../core/readiness";
-import { getUserState } from "../core/userState";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip, InfoTooltip } from "./Primitives";
 import { ModalValidarDominio } from "./Modals";
 import {
@@ -28,6 +27,8 @@ import { resolveCatalogo, getCronogramaById } from "../constants/cronogramas";
 import ActionInbox from "./ActionInbox";
 import WeeklyReview from "./WeeklyReview";
 import EmptyState from "./EmptyState";
+import VestibularStartTrail from "./VestibularStartTrail";
+import { isVestibularStartComplete } from "../core/vestibularOnboarding";
 
 /* --- CARGA FUTURA WIDGET --- */
 function CargaFuturaWidget({ temas, maxRevisoesDia }) {
@@ -41,8 +42,9 @@ function CargaFuturaWidget({ temas, maxRevisoesDia }) {
     <div className="medrev-card medrev-card-hover p-5 select-none animate-fade-in">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-[12px] font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-          📊 Carga de Revisões (Próximos 14 dias)
-          <InfoTooltip texto="Projeção das revisões pendentes agendadas para os próximos 14 dias com base no algoritmo FSRS." />
+          <BarChart3 size={13} className="text-blue-400" />
+          Carga de Revisões (Próximos 14 dias)
+          <InfoTooltip texto="Projeção das revisões pendentes agendadas para os próximos 14 dias com base na curva de revisão." />
         </h4>
         <span className="text-[10px] text-gray-500 font-mono">Teto: {maxRevisoesDia}/dia · {diasSobrecarga} dias acima do teto</span>
       </div>
@@ -397,11 +399,11 @@ function MiniCronogramaWidget({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-        {/* ── Column 1: FSRS de Hoje ── */}
+        {/* ── Column 1: Curva de revisão hoje ── */}
         <div className="flex flex-col gap-2 rounded-xl border border-blue-500/15 bg-gradient-to-b from-blue-950/30 to-transparent p-3 min-h-[150px]">
           <div className="flex items-center justify-between">
             <span className="text-[9px] font-black uppercase tracking-wider text-blue-300/70">
-              FSRS de Hoje
+              Curva de revisão hoje
             </span>
             <span className={`text-[9px] font-bold tabular-nums px-1.5 py-0.5 rounded-full ${
               dueTodayItems.length === 0
@@ -847,7 +849,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       (showToast || showToastGlobal)("Abra o bloco azul de calendário e use 'Importar cronograma'.");
     } else if (action.type === "ja_domino") {
       setView && setView("crono");
-      (showToast || showToastGlobal)("No calendário da semana, use o botão 'Ja domino' no tema desejado.");
+      (showToast || showToastGlobal)("No plano da semana, use o botão 'Já domino' no tema desejado.");
     } else if (action.type === "aliviar") {
       const currentCap = meta.maxRevisoesDia || 30;
       const newCap = Math.max(5, Math.round(currentCap / 2));
@@ -864,7 +866,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [showConfettiLocal, setShowConfettiLocal] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
-  const [showWeeklyDiag, setShowWeeklyDiag] = useState(false);
   const [showCompleto, setShowCompleto] = useState(!modoSimples);
   const [showSetupFlow, setShowSetupFlow] = useState(false);
   const [temaValidando, setTemaValidando] = useState(null);
@@ -904,7 +905,9 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     autoCatchUp();
   }, [autoCatchUp]);
 
-  const done    = temasFiltrados.flatMap((t) => STEPS.map((s) => ({ ...t.rev[s.key], esp: t.esp, step: s, temaNome: t.nome, temaId: t.id, ankiDeck: t.ankiDeck }))).filter((r) => r.done);
+  const done    = temasFiltrados
+    .flatMap((t) => STEPS.map((s) => ({ ...t.rev[s.key], esp: t.esp, step: s, temaNome: t.nome, temaId: t.id, ankiDeck: t.ankiDeck })))
+    .filter((r) => r.done && !r.skipped && r.skipReason !== "dominio_previo" && !r.skippeadoPorDominio);
 
   const filaInteligente = useFilaInteligente(temasFiltrados);
 
@@ -945,18 +948,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   }, [exibidosHoje, temasFiltrados]);
 
   const pending = overdue.length + today_.length;
-  const userState = useMemo(() => {
-    const dataCriacao = meta?.createdAt || meta?.lastActiveDate || todayStr();
-    const datasSessoes = done.map((r) => r.date).filter(Boolean);
-    return getUserState(dataCriacao, datasSessoes, todayStr());
-  }, [meta?.createdAt, meta?.lastActiveDate, done]);
-  const userStateMentorMsg = useMemo(() => {
-    const key = `estado_${userState}`;
-    const recent = getRecentPhrases();
-    const phrase = getMentorPhrase(key, { userName }, recent, plat, meta?.tomMentor || "gentil");
-    if (phrase?.id) trackRecentPhrase(phrase.id);
-    return phrase?.text || "";
-  }, [userState, userName, plat, meta?.tomMentor]);
 
   const diag = useMemo(() => {
     return getMentorDiagnosis(userName, temasFiltrados, done, temaStats, plat, meta);
@@ -1035,7 +1026,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         ...STEPS.map((s) => t.rev?.[s.key]),
         t.rev?.manutencao,
       ])
-      .filter((r) => r?.done === true)
+      .filter((r) => r?.done === true && !r.skipped && r.skipReason !== "dominio_previo" && !r.skippeadoPorDominio)
       .length;
   }, [temas]);
 
@@ -1113,23 +1104,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   useEffect(() => {
     if (!onboardingDone) return;       // still in tour — don't show
     if (tourStep) return;              // tour in progress
-    const shown = sessionStorage.getItem(SESSION_KEY);
-    if (shown) {
-      if (diag && diag.status !== "calibracao" && diag.insights && diag.insights.length > 0) {
-        const lastShown = meta.lastWeeklyDiagnosisDate;
-        const today = todayStr();
-        if (!lastShown || (new Date(today) - new Date(lastShown)) / (1000 * 60 * 60 * 24) >= 7) {
-          setShowWeeklyDiag(true);
-        }
-      }
-      return;
-    }
+    if (sessionStorage.getItem(SESSION_KEY)) return;
     const t = setTimeout(() => {
       setShowWelcome(true);
       sessionStorage.setItem(SESSION_KEY, "1");
     }, 600);                           // small delay so UI renders first
     return () => clearTimeout(t);
-  }, [onboardingDone, tourStep, diag, meta.lastWeeklyDiagnosisDate]);
+  }, [onboardingDone, tourStep]);
 
   const acertoMedio = useMemo(() => {
     const rs = done.filter(r => r.acerto != null);
@@ -1216,7 +1197,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       title: action.title || "Manter consistência leve",
       subtitle: subtitle || "Sem urgência crítica detectada. Siga o plano com ritmo sustentável.",
       primaryLabel: action.cta || "Executar ação",
-      secondaryLabel: "Ver estatísticas",
+      secondaryLabel: "Ver por quê",
       tone,
       action,
     };
@@ -1225,24 +1206,25 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const runMentorPrimaryAction = useCallback(() => {
     const action = mentorNextAction || {};
     const target = action.target || {};
+    // 1. Alvo explícito de revisão (tema + etapa): inicia o Modo Foco direto.
     if (target.temaId && target.stepKey && onStudy) {
       onStudy(target.temaId, target.stepKey);
       return;
     }
+    // 2. Comandos de fila/revisão sem alvo explícito (ex.: "Fechar fila de hoje").
+    //    O Mentor planeja, o aluno executa: abrimos a próxima revisão da fila.
     const view = action.ctaView || target.view || "dash";
-    if (!target.temaId && view === "focus" && !topFilaItem) {
-      console.warn("[Mentor] Action without executable target in Dashboard");
-      if (setView) setView("crono");
-      return;
-    }
-    if (view === "focus") {
+    const isQueueCommand =
+      ["fila_do_dia", "revisao_vencida", "relearning"].includes(action.type) || view === "focus";
+    if (isQueueCommand) {
       if (topFilaItem && onStudy) {
         onStudy(topFilaItem.temaId, topFilaItem.stepKey);
       } else if (setView) {
-        setView("dash");
+        setView("crono");
       }
       return;
     }
+    // 3. Demais comandos: navega para a tela correspondente.
     if (setView) setView(view);
   }, [mentorNextAction, onStudy, setView, topFilaItem]);
 
@@ -1421,12 +1403,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const showMilestoneCelebration = useMemo(() => {
     return streakCurrent > 0 && (streakCurrent === 7 || streakCurrent === 30 || streakCurrent === 100);
   }, [streakCurrent]);
-  const nextTwoActions = useMemo(() => {
-    return (Array.isArray(mentorTodayPlan) ? mentorTodayPlan : [])
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((item) => (typeof item === "string" ? { title: item } : item));
-  }, [mentorTodayPlan]);
   const todayLoadSignals = useMemo(() => {
     const scheduler = mentorContext?.scheduler || {};
     return {
@@ -1436,7 +1412,23 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       relearningCount: Number(scheduler.relearningCount ?? 0),
     };
   }, [mentorContext, pending]);
+  const todayLoadSummary = useMemo(() => {
+    const loadLabel = {
+      high: "alta",
+      moderate: "moderada",
+      ok: "tranquila",
+    }[todayLoadSignals.overloadLevelToday] || "tranquila";
+    const relearningText = todayLoadSignals.relearningCount > 0
+      ? ` · ${todayLoadSignals.relearningCount} reaprendendo`
+      : "";
+    return `${todayLoadSignals.dueTodayCount} revisões · ${todayLoadSignals.todayMinutes} min · carga ${loadLabel}${relearningText}`;
+  }, [todayLoadSignals]);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showMentorWhy, setShowMentorWhy] = useState(false);
+  const vestibularStartComplete = useMemo(() => {
+    if (plat !== "vest") return true;
+    return isVestibularStartComplete(meta);
+  }, [plat, meta]);
   useEffect(() => {
     if (streakCurrent >= 100 && !meta?.streakMaxAvisado) {
       (showToast || showToastGlobal)("Streak consolidado: agora priorize retenção real, não o número.");
@@ -1511,12 +1503,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 animate-fade-up text-left max-w-6xl mx-auto">
-      {(userState === "at_risk" || userState === "dormant" || userState === "resurrected") && userStateMentorMsg && (
-        <div className="bg-[var(--surface-1)] border border-amber-500/25 rounded-2xl p-3">
-          <p className="text-[10px] uppercase tracking-wider text-amber-400 font-black">Intervenção do Mentor</p>
-          <p className="text-xs text-gray-200 mt-1">{userStateMentorMsg}</p>
-        </div>
-      )}
       {/* Camada primaria: mentor + acao do dia + progresso */}
       <section
         className="relative overflow-hidden rounded-[var(--radius)] border border-[var(--border-strong)] bg-[var(--surface-2)] p-5 md:p-7 shadow-[0_1px_0_rgba(255,255,255,.03)_inset,0_18px_42px_-28px_rgba(37,99,235,.45)]"
@@ -1593,6 +1579,9 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               <p className="max-w-2xl text-sm leading-relaxed text-[var(--text-2)]">
                 {comandoDoDia.subtitle}
               </p>
+              <p className="inline-flex w-fit rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-[11px] font-bold text-blue-200">
+                {todayLoadSummary}
+              </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -1613,7 +1602,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               </button>
               <button
                 type="button"
-                onClick={() => setView && setView("stats")}
+                onClick={() => setShowMentorWhy((prev) => !prev)}
                 className="min-h-[44px] rounded-xl px-4 py-3 text-sm font-bold text-gray-200 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
               >
                 {comandoDoDia.secondaryLabel}
@@ -1624,52 +1613,23 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 </span>
               )}
             </div>
+            {showMentorWhy && (
+              <div className="max-w-2xl rounded-2xl border border-white/10 bg-black/20 p-3 text-[12px] text-gray-300">
+                <p className="mb-2 font-black uppercase tracking-wider text-[10px] text-blue-300">Por que o Mentor escolheu isso</p>
+                {(comandoDoDia.action?.explain?.length ? comandoDoDia.action.explain : [comandoDoDia.action?.reason || comandoDoDia.subtitle]).slice(0, 4).map((item, index) => (
+                  <p key={`${item}-${index}`} className="leading-relaxed">• {item}</p>
+                ))}
+              </div>
+            )}
           </div>
 
           <DailyProgressRing value={dailyProgress} goal={dailyGoal} />
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <article className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4">
-          <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Proximas 2 acoes</p>
-          {nextTwoActions.length > 0 ? (
-            <div className="mt-2 space-y-2">
-              {nextTwoActions.map((item, idx) => (
-                <div key={idx} className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
-                  <p className="text-[11px] font-bold text-white">{item.title || "Acao sugerida"}</p>
-                  {item.subtitle && <p className="text-[10px] text-gray-500 mt-0.5">{item.subtitle}</p>}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[11px] text-gray-500 mt-2">Sem acoes pendentes no plano de hoje.</p>
-          )}
-        </article>
-        <article className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4">
-          <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Carga de hoje</p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
-              <p className="text-[9px] text-gray-500 uppercase tracking-wider">Revisoes</p>
-              <p className="text-sm font-black text-white">{todayLoadSignals.dueTodayCount}</p>
-            </div>
-            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
-              <p className="text-[9px] text-gray-500 uppercase tracking-wider">Minutos</p>
-              <p className="text-sm font-black text-white">{todayLoadSignals.todayMinutes}</p>
-            </div>
-            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
-              <p className="text-[9px] text-gray-500 uppercase tracking-wider">Relearning</p>
-              <p className="text-sm font-black text-white">{todayLoadSignals.relearningCount}</p>
-            </div>
-            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
-              <p className="text-[9px] text-gray-500 uppercase tracking-wider">Overload</p>
-              <p className={`text-sm font-black ${todayLoadSignals.overloadLevelToday === "high" ? "text-red-400" : todayLoadSignals.overloadLevelToday === "moderate" ? "text-amber-300" : "text-emerald-300"}`}>
-                {todayLoadSignals.overloadLevelToday}
-              </p>
-            </div>
-          </div>
-        </article>
-      </section>
+      {plat === "vest" && !vestibularStartComplete && (
+        <VestibularStartTrail setView={setView} onOpenAjustes={onOpenAjustes} />
+      )}
 
       <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} />
 
@@ -1701,7 +1661,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           onClick={() => setShowAdvanced((prev) => !prev)}
           className="w-full text-left flex items-center justify-between px-2 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider text-gray-300 hover:text-white cursor-pointer border-none bg-transparent"
         >
-          <span>Avancado</span>
+          <span>Avançado</span>
           <span className="text-[10px] text-gray-500">{showAdvanced ? "ocultar" : "mostrar"}</span>
         </button>
       </section>
@@ -1712,7 +1672,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 select-none">
         <DashboardKpiCard
           label="Fila de hoje"
-          icon="📋"
+          icon={<ClipboardList size={13} className="text-amber-300" />}
           accentColor={pending > 0 ? "#f59e0b" : "#10b981"}
           value={String(pendingCountUp) + (naReserva > 0 ? " +" + naReserva : "")}
           tone={pending > 0 ? "text-amber-400" : "text-emerald-400"}
@@ -1726,7 +1686,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
         <DashboardKpiCard
           label="Preparo"
-          icon="🎯"
+          icon={<Target size={13} className="text-blue-300" />}
           accentColor="#3b82f6"
           value={String(readinessCountUp) + "%"}
           tone="text-blue-400"
@@ -1760,7 +1720,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
         <DashboardKpiCard
           label="Acerto"
-          icon="✅"
+          icon={<CheckCircle size={13} className="text-emerald-300" />}
           accentColor={acertoMedio != null ? (acertoMedio >= 80 ? "#10b981" : acertoMedio >= 65 ? "#3b82f6" : "#ef4444") : "#6b7280"}
           value={acertoMedio != null ? String(acertoCountUp) + "%" : "—"}
           tone={acertoMedio != null ? (acertoMedio >= 80 ? "text-emerald-400" : acertoMedio >= 65 ? "text-blue-400" : "text-red-400") : "text-gray-500"}
@@ -1772,7 +1732,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
         <DashboardKpiCard
           label="Streak"
-          icon="🔥"
+          icon={<Flame size={13} className="text-orange-300" />}
           accentColor="#f97316"
           value={String(streakCountUp) + "/7"}
           tone="text-orange-400"
@@ -1981,7 +1941,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 <InfoTooltip texto="Defina detalhes cruciais como a data da prova, meta de acertos e seu banco de questões para que o algoritmo do MedRev trabalhe perfeitamente ajustado ao seu objetivo." />
               </h4>
               <p className="text-[11px] text-gray-400 mt-1">
-                Você está utilizando configurações padrão. Personalize suas datas e metas de acerto para calibrar o motor FSRS.
+                Você está utilizando configurações padrão. Personalize suas datas e metas de acerto para calibrar a curva de revisão.
               </p>
             </div>
           </div>
@@ -2012,7 +1972,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       {/* Camada terciaria: carga e detalhes */}
       <CargaFuturaWidget temas={temas} maxRevisoesDia={meta.maxRevisoesDia || 30} />
 
-      {/* DICA P5: retenção FSRS alta demais → sobrecarga */}
+      {/* DICA P5: retenção alta demais → sobrecarga */}
       {(() => {
         const proj = getWorkloadProjection(temas, 14);
         const cap_ = meta.maxRevisoesDia || 30;
@@ -2022,7 +1982,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           return (
             <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] uppercase tracking-wider text-amber-400 font-black">Dica de Eficiência FSRS</p>
+                <p className="text-[10px] uppercase tracking-wider text-amber-400 font-black">Dica de eficiência da curva</p>
                 <p className="text-[11.5px] text-gray-300 mt-1 leading-relaxed max-w-lg">
                   Você está afogado em revisões por {diasSobrecarga} dias. Considere baixar a retenção-alvo para 85% temporariamente — menos revisões/dia, mantendo a maior parte do conhecimento.
                 </p>
@@ -2144,14 +2104,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       )}
 
-      {/* ZONA 2 — Diagnóstico do Mentor */}
+      {/* ZONA 2 — Análise de desempenho (dados, não voz do mentor) */}
       <div className="medrev-card p-5 flex flex-col gap-4 relative overflow-hidden">
         <div className="absolute -left-12 -bottom-12 w-28 h-28 rounded-full bg-cyan-600/5 blur-2xl pointer-events-none" />
-        
+
         <div className="flex items-center justify-between border-b border-white/5 pb-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <Brain size={16} className="text-blue-400" />
-            <h3 className="text-[10px] font-black uppercase text-gray-300 tracking-wider mr-2">Diagnóstico do Mentor</h3>
+            <BarChart3 size={16} className="text-blue-400" />
+            <h3 className="text-[10px] font-black uppercase text-gray-300 tracking-wider mr-2">Análise de Desempenho</h3>
             <span className="text-[9px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">
               {totalSessions < 7 ? "Fase 1: Calibração" : totalSessions < 30 ? "Fase 2: Ritmo" : "Fase 3: Elite"}
             </span>
@@ -2166,10 +2126,10 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         {diag.status === "calibracao" ? (
           <div className="space-y-4">
             <div className="flex items-start gap-3 p-4 bg-white/[0.02] border border-white/5 rounded-xl flex-col sm:flex-row">
-              <div className="text-2xl shrink-0">🤖</div>
+              <Info size={20} className="text-blue-400 shrink-0 mt-0.5" />
               <div className="space-y-2 flex-1">
                 <p className="text-xs text-gray-300 leading-relaxed font-semibold">
-                  Estou calibrando meu algoritmo de inteligência cognitiva para seu perfil.
+                  Dados insuficientes para análise completa. Conclua mais sessões para liberar as métricas avançadas.
                 </p>
                 <div className="space-y-1">
                   <div className="bg-white/5 rounded-full h-2 overflow-hidden border border-white/5 relative">
@@ -2188,48 +2148,45 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
-                <span className="flex items-center gap-1.5 text-[10px] font-black text-blue-400 uppercase tracking-wide"><Unlock size={11} className="shrink-0" /> Nível 7+ (Calibrado)</span>
+                <span className="flex items-center gap-1.5 text-[10px] font-black text-blue-400 uppercase tracking-wide"><Unlock size={11} className="shrink-0" /> A partir de 7 sessões</span>
                 <p className="text-[10.5px] text-gray-400 leading-relaxed">
-                  Desbloqueia análise de horário ótimo, fraquezas por especialidade e detecção de viés de confiança.
+                  Libera análise de horário ótimo, fraquezas por especialidade e detecção de viés de confiança.
                 </p>
               </div>
               <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
-                <span className="flex items-center gap-1.5 text-[10px] font-black text-sky-400 uppercase tracking-wide"><Unlock size={11} className="shrink-0" /> Nível 30+ (Elite)</span>
+                <span className="flex items-center gap-1.5 text-[10px] font-black text-sky-400 uppercase tracking-wide"><Unlock size={11} className="shrink-0" /> A partir de 30 sessões</span>
                 <p className="text-[10.5px] text-gray-400 leading-relaxed">
-                  Desbloqueia projeção estatística de nota/aprovação com base no seu histórico e peso das provas.
+                  Libera projeção estatística de nota/aprovação com base no seu histórico e peso das provas.
                 </p>
               </div>
             </div>
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">
-            <div className="flex items-start gap-3 p-3 bg-blue-500/5 text-blue-300 border border-blue-500/10 rounded-xl mb-1">
-              <span className="text-base shrink-0 mt-0.5">🧠</span>
-              <p className="text-[12px] leading-relaxed font-bold">
-                {totalSessions < 30 
-                  ? "Já conheço seu ritmo. Ajustei a fila para seus horários de pico." 
-                  : "Perfil completo. A fila agora é 100% sua."}
-              </p>
-            </div>
+            <p className="text-[11px] text-gray-500 leading-relaxed pl-1 mb-0.5">
+              {totalSessions < 30
+                ? "Fila ajustada aos seus horários de maior desempenho."
+                : "Histórico suficiente: fila calibrada 100% pelo seu desempenho real."}
+            </p>
             {nonCriticalInsights.map((insight, idx) => {
-              let icon = "💡";
+              let InsightIcon = Info;
               let colorClass = "bg-white/[0.02] text-gray-300 border border-white/5";
               if (insight.type === "alerta" || insight.type === "vies_excesso") {
-                icon = "🤝";
+                InsightIcon = AlertTriangle;
                 colorClass = "bg-amber-500/5 text-amber-300 border border-amber-500/10";
               } else if (insight.type === "tendencia_baixa") {
-                icon = "🤝";
+                InsightIcon = TrendingDown;
                 colorClass = "bg-red-500/5 text-red-300 border border-red-500/10";
               } else if (insight.type === "tendencia_alta") {
-                icon = "🤝";
+                InsightIcon = TrendingUp;
                 colorClass = "bg-emerald-500/5 text-emerald-300 border border-emerald-500/10";
               } else if (insight.type === "horario") {
-                icon = "🤝";
+                InsightIcon = Zap;
                 colorClass = "bg-indigo-500/5 text-indigo-300 border border-indigo-500/10";
               }
               return (
                 <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl transition-all ${colorClass}`}>
-                  <span className="text-base shrink-0 mt-0.5">{icon}</span>
+                  <InsightIcon size={16} className="shrink-0 mt-0.5" />
                   <div className="flex-1 flex flex-col gap-1.5 text-left">
                     <p className="text-[12px] leading-relaxed font-medium">{insight.text}</p>
                     <div className="flex items-center justify-between gap-2 mt-0.5 flex-wrap">
@@ -2298,18 +2255,18 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               <span className="text-[10px] text-gray-500 block mt-1">Nenhum tema ativo</span>
             )}
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[min(13rem,calc(100vw-2rem))] bg-[#141417] border border-white/10 rounded-xl p-3 text-[10px] text-gray-400 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none leading-relaxed">
-              Número de temas cadastrados que completaram com sucesso todas as etapas da curva FSRS (D0 até o D21).
+              Número de temas cadastrados que completaram com sucesso todas as etapas da curva de revisão (D0 até o D21).
             </div>
           </div>
 
-          {/* True Retention */}
+          {/* Retenção longa */}
           <ProgressiveTooltip
             tooltipId="true_retention"
-            text="Mentor: True Retention mede a taxa de acerto nas revisões de longo prazo (D21+). Manter esse índice acima de 80% indica retenção sólida de conteúdo."
+            text="Mentor: Retenção longa mede a taxa de acerto nas revisões de longo prazo (D21+). Manter esse índice acima de 80% indica retenção sólida de conteúdo."
           >
             <div className="bg-white/5 border border-white/5 rounded-2xl p-4 relative group w-full">
               <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5 cursor-help">
-                True Retention
+                Retenção longa
                 <Info size={13} className="text-gray-600 hover:text-gray-400 transition-colors" />
               </p>
               {trueRet != null ? (
@@ -2470,7 +2427,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                           <div className="flex items-center gap-1 flex-wrap">
                             <p className="text-xs font-bold text-white truncate">{r.temaNome}</p>
                             {isOptimalItem && (
-                              <span className="text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-black shrink-0" title="Retrievabilidade FSRS em ~87%: Ponto ideal de revisibilidade deliberada">
+                              <span className="text-[8px] bg-amber-500/20 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-black shrink-0" title="Ponto ideal de revisão em ~87% de retenção projetada">
                                 🎯 Ponto Ótimo
                               </span>
                             )}
@@ -2666,16 +2623,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           forceExhausted={hasExhaustionNow}
           meta={meta}
           naReserva={naReserva}
-          onClose={() => {
-            setShowWelcome(false);
-            if (diag && diag.status !== "calibracao" && diag.insights && diag.insights.length > 0) {
-              const lastShown = meta.lastWeeklyDiagnosisDate;
-              const today = todayStr();
-              if (!lastShown || (new Date(today) - new Date(lastShown)) / (1000 * 60 * 60 * 24) >= 7) {
-                setShowWeeklyDiag(true);
-              }
-            }
-          }}
+          onClose={() => setShowWelcome(false)}
           onStartFocus={() => {
             setShowWelcome(false);
             if (topFilaItem) {
@@ -2683,79 +2631,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             }
           }}
         />
-      )}
-
-      {showWeeklyDiag && (
-        <div
-          className="fixed inset-0 z-[400] flex items-center justify-center p-4"
-          style={{
-            background: "rgba(5,5,12,0.85)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            transition: "opacity 0.25s ease",
-          }}
-          onClick={() => {
-            setShowWeeklyDiag(false);
-            useStore.setState({ meta: { ...meta, lastWeeklyDiagnosisDate: todayStr() } });
-          }}
-        >
-          <div
-            className="relative w-full max-w-[min(26rem,calc(100vw-2rem))] animate-fade-up bg-[var(--surface-2)] border border-blue-500/25 rounded-2xl overflow-hidden shadow-2xl shadow-indigo-950/50"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="h-[3px] w-full bg-gradient-to-r from-blue-600 via-sky-500 to-blue-600" />
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/5">
-              <div className="flex items-center gap-2">
-                <Brain size={18} className="text-blue-400" />
-                <h3 className="text-sm font-black text-white uppercase tracking-wider">Ritual de Retorno</h3>
-              </div>
-              <button
-                onClick={() => {
-                  setShowWeeklyDiag(false);
-                  useStore.setState({ meta: { ...meta, lastWeeklyDiagnosisDate: todayStr() } });
-                }}
-                className="text-gray-500 hover:text-white transition-colors border-none bg-transparent cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              <div className="space-y-1">
-                <h4 className="text-base font-extrabold text-white leading-tight">Sua semana em 3 frases:</h4>
-                <p className="text-xs text-gray-400">Aqui está o ajuste de rota recomendado pelo seu Mentor:</p>
-              </div>
-
-              <div className="space-y-3">
-                {diag?.insights && diag.insights.map((insight, idx) => {
-                  let InsightIcon = Lightbulb;
-                  if (insight.type === "alerta" || insight.type === "vies_excesso") InsightIcon = AlertTriangle;
-                  else if (insight.type === "tendencia_baixa") InsightIcon = TrendingDown;
-                  else if (insight.type === "tendencia_alta") InsightIcon = TrendingUp;
-                  else if (insight.type === "horario") InsightIcon = Zap;
-
-                  return (
-                    <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5 text-gray-300">
-                      <InsightIcon size={16} className="shrink-0 mt-0.5" />
-                      <p className="text-xs leading-relaxed font-medium">{insight.text}</p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowWeeklyDiag(false);
-                  useStore.setState({ meta: { ...meta, lastWeeklyDiagnosisDate: todayStr() } });
-                }}
-                className="w-full py-3 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] cursor-pointer border-none shadow-lg shadow-indigo-900/25"
-              >
-                Bora ajustar! →
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {tourStep === "dash" && showTourBalloon && (
@@ -2777,19 +2652,20 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           onConfirm={({ questoes, acertos }) => {
             const resultado = calcularDominioPrevio({ total: questoes, acertos });
             validarDominio(plat, temaValidando.id, { questoes, acertos });
-            const pct = Math.round((acertos / questoes) * 100);
             if (resultado.valido) {
-              (showToast || showToastGlobal)(
-                `Domínio prévio validado: ${pct}% — próxima revisão em D${resultado.intervaloInicial}.`
-              );
+              if ((resultado.intervaloInicial || 7) >= 14) {
+                (showToast || showToastGlobal)("Tema validado com alta segurança. Próxima revisão: D14.");
+              } else {
+                (showToast || showToastGlobal)("Tema validado. Próxima revisão: D7.");
+              }
             } else {
-              (showToast || showToastGlobal)(`Domínio ainda não está estável (${pct}%). Tema mantido no fluxo normal.`);
+              (showToast || showToastGlobal)("Validação insuficiente. Comece pelo estudo guiado para proteger sua base.");
             }
             if (trackEvent) {
               trackEvent("dominio_previo_avaliado", {
                 plat,
                 tema_id: temaValidando.id,
-                percentual: pct,
+                percentual: resultado.percentual,
                 status: resultado.status,
               });
             }

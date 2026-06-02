@@ -11,6 +11,7 @@
 // 6. Reencontro espaçado: agenda o caso conforme desempenho.
 
 import { addDays, todayStr } from "./fsrs";
+import { calculateClinicalReasoningScore, calcCoverageByArea as calcCoverageByAreaCanonical } from "./clinicalReasoningScoring";
 
 export const PESO_FASE = Object.freeze({
   problemRep: 0.20,
@@ -421,41 +422,14 @@ export function casosDeHoje(casos = [], progresso = {}, areasPrioritarias = [], 
   return [...devidos, ...novosSelecionados];
 }
 
-export function calcRaciocinioScore(progresso = {}) {
-  const notas = Object.values(progresso || {})
-    .filter((p) => p && Number(p.vistos || 0) > 0 && typeof p.notaCaso === "number")
-    .map((p) => clamp(p.notaCaso));
+// P4-A: calcRaciocinioScore substituida por calculateClinicalReasoningScore (fonte canonica).
+// A versao antiga lia notaCaso — campo nunca gravado pela UI, retornando sempre null.
+// Re-exportamos para manter compatibilidade de importacao com callers existentes.
+export { calculateClinicalReasoningScore as calcRaciocinioScore };
 
-  if (!notas.length) return null;
-  return Math.round(notas.reduce((acc, nota) => acc + nota, 0) / notas.length);
-}
-
+// P4-A: coberturaRaciocinioPorArea substituida por calcCoverageByArea (fonte canonica).
+// A versao antiga lia notaCaso — campo nunca gravado, retornando notaMedia sempre null.
+// Re-exportamos com o nome antigo para compatibilidade.
 export function coberturaRaciocinioPorArea(casos = [], progresso = {}) {
-  const out = {};
-
-  for (const caso of casos || []) {
-    if (!caso?.area) continue;
-    const area = caso.area;
-    if (!out[area]) {
-      out[area] = { total: 0, vistos: 0, somaNota: 0, comNota: 0, pctCobertura: 0, notaMedia: null };
-    }
-
-    out[area].total += 1;
-    const p = progresso?.[caso.id];
-    if (Number(p?.vistos || 0) > 0) {
-      out[area].vistos += 1;
-      if (typeof p.notaCaso === "number") {
-        out[area].somaNota += clamp(p.notaCaso);
-        out[area].comNota += 1;
-      }
-    }
-  }
-
-  for (const area of Object.keys(out)) {
-    const row = out[area];
-    row.pctCobertura = row.total ? Math.round((row.vistos / row.total) * 100) : 0;
-    row.notaMedia = row.comNota ? Math.round(row.somaNota / row.comNota) : null;
-  }
-
-  return out;
+  return calcCoverageByAreaCanonical(casos, progresso);
 }

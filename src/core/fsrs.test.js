@@ -182,6 +182,40 @@ describe("FSRS Core Logic Test Suite", () => {
     expect(proj[today].estimatedMinutes).toBeGreaterThan(0);
   });
 
+  test("getWorkloadProjection ignores skipped domain validation steps", () => {
+    const today = todayStr();
+    const temas = [
+      {
+        unstarted: false,
+        rev: {
+          d1: { done: true, skipped: true, skipReason: "dominio_previo", date: today },
+          d4: { done: true, skipped: true, skipReason: "dominio_previo", date: today },
+          d7: { done: false, date: today, source: "dominio_previo" },
+        },
+      },
+    ];
+
+    const proj = getWorkloadProjection(temas, 1);
+    expect(proj[today].count).toBe(1);
+    expect(proj[today].items[0].stepKey).toBe("d7");
+  });
+
+  test("recalcAfterMark completes D14 and schedules D21", () => {
+    const today = todayStr();
+    const initialRev = {
+      ...buildRev(today, "Clínica Médica"),
+      d14: { done: true, date: today, scheduledAt: today, reviewedAt: today, S: 14, D: 0.55, acerto: 0.9 },
+      d21: { done: false, date: addDays(today, 21), scheduledAt: addDays(today, 21), S: 21, D: 0.55 },
+    };
+
+    const updated = recalcAfterMark(initialRev, "d14", 0.9, 0.90, 180, "Clínica Médica");
+
+    expect(updated.d14.S).toBeGreaterThan(0);
+    expect(updated.d21.done).toBe(false);
+    expect(updated.d21.date).not.toBe(addDays(today, 21));
+    expect(updated.reviewHistory.at(-1).stepKey).toBe("d14");
+  });
+
   test("recalcAfterMark with D1 dynamic acertos recalcs correctly", () => {
     const today = todayStr();
     const initialRev = {

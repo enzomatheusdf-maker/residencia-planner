@@ -8,6 +8,13 @@ import { getCronogramasByPlat, getDefaultCronogramaId, resolveCatalogo } from ".
 import { stepState, STATE_DOT, STATE_TW, Badge, SBadge, Btn, Input, TourBalloon, InfoTooltip } from "./Primitives";
 import { CALENDAR_PROVIDER_IDS } from "../constants/calendarProviders";
 import { attachCalendarIntelligence, getProviderSeed, matchMedcofTopic } from "../core/calendarProvider";
+import {
+  calcularDominioPrevio,
+  getDominioPrevioStatus,
+  getNextReviewForTema,
+  getReviewDisplayMeta,
+} from "../core/domainValidation";
+import { getEnamedContextBadge } from "../core/enamedIntel";
 import CalendarProviderSelector from "./CalendarProviderSelector";
 import { ModalValidarDominio } from "./Modals";
 import RetrievabilitySpark from "./RetrievabilitySpark";
@@ -26,12 +33,28 @@ function prioToImportancia(prio) {
   }
 }
 
-export function CronoCard({ tema, onStep, onEdit, onIniciarTema }) {
+function formatShortDate(date) {
+  if (!date) return "agendada";
+  const [year, month, day] = String(date).split("-");
+  if (!year || !month || !day) return date;
+  return `${day}/${month}`;
+}
+
+export function CronoCard({ tema, onStep, onEdit, onIniciarTema, plat = "res" }) {
   const esp     = ESP_COLORS[tema.esp] || "#94a3b8";
-  const allDone = STEPS.every((s) => tema.rev[s.key].done);
-  const next    = STEPS.find((s) => !tema.rev[s.key].done);
+  const dominioStatus = getDominioPrevioStatus(tema);
+  const semanticNextReview = getNextReviewForTema(tema);
+  const allDone = STEPS.every((s) => tema.rev[s.key].done || tema.rev[s.key].skipped) && !semanticNextReview;
+  const next    = semanticNextReview
+    ? { key: semanticNextReview.stepKey, label: semanticNextReview.label, desc: semanticNextReview.label }
+    : STEPS.find((s) => !tema.rev[s.key].done && !tema.rev[s.key].skipped);
+  const nextMeta = next ? getReviewDisplayMeta(tema, next.key) : null;
   const nextState = next ? stepState(tema.rev[next.key]) : "done";
   const imp     = IMPORTANCIA[tema.importancia || "ALTA"];
+  const dominioPrevio = tema?.dominioPrevio || {};
+  const enamedBadge = plat === "res" ? getEnamedContextBadge(tema.esp, tema.nome) : null;
+  const isValidadoPrevio = dominioStatus.isValidated || dominioPrevio.status === "validado_previo";
+  const acertoValidacao = dominioStatus.acerto != null ? Math.round(dominioStatus.acerto * 100) : null;
 
   const stepsWithData = STEPS.map(s => tema.rev[s.key]).filter(r => r && r.done && r.confianca != null && r.acerto != null);
   const hasVies = stepsWithData.length >= 2 && (() => {
@@ -56,6 +79,21 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema }) {
               <p className="text-[10px] uppercase tracking-[0.35em] text-gray-500 truncate">{tema.esp}</p>
               {imp && <Badge color={imp.color}>{imp.label}</Badge>}
               {next && <SBadge S={tema.rev[next.key]?.S} nextDate={tema.rev[next.key]?.date} />}
+              {enamedBadge && (
+                <span
+                  className={`text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-0.5 shrink-0 ${
+                    enamedBadge.nivel === "alto"
+                      ? "bg-orange-500/15 text-orange-400 border border-orange-500/25"
+                      : enamedBadge.nivel === "medio"
+                      ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                      : "bg-white/5 text-gray-500 border border-white/10"
+                  }`}
+                  title={`${enamedBadge.subarea} · ${enamedBadge.pctAbsoluto}% de ${enamedBadge.area} no ENAMED${enamedBadge.questoes ? ` (~${enamedBadge.questoes} questões)` : ""}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Hot {enamedBadge.questoes ? `~${enamedBadge.questoes}q` : `${enamedBadge.pctAbsoluto}%`}
+                </span>
+              )}
               {hasVies && (
                 <span
                   className="text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/25 px-2 py-0.5 rounded font-medium flex items-center gap-1"
@@ -78,16 +116,29 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema }) {
             {tema.pico}
           </p>
         )}
+        {isValidadoPrevio && (
+          <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5">
+            <p className="text-[10px] font-bold text-emerald-200 truncate">
+              Validado previamente
+              {acertoValidacao != null ? ` · ${acertoValidacao}%` : ""}
+              {" · Próxima revisão: "}
+              <span className="text-emerald-100">
+                {dominioStatus.firstReviewLabel || nextMeta?.label || "D7"} · {formatShortDate(dominioStatus.firstReviewDate || nextMeta?.date)}
+              </span>
+            </p>
+          </div>
+        )}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex-1 flex gap-1.5 min-w-[120px]">
             {STEPS.map((s) => {
               const st2 = stepState(tema.rev[s.key]);
-              return <div key={s.key} title={`${s.label} · ${s.desc}`} className={`flex-1 h-2 rounded-full transition-all ${tema.rev[s.key].done ? "bg-emerald-500" : STATE_DOT[st2]}`} />;
+              const meta = getReviewDisplayMeta(tema, s.key);
+              return <div key={s.key} title={`${meta.label} · ${s.desc}${meta.skipped ? " · pulado por domínio prévio" : ""}`} className={`flex-1 h-2 rounded-full transition-all ${meta.skipped ? "bg-emerald-500/40" : tema.rev[s.key].done ? "bg-emerald-500" : STATE_DOT[st2]}`} />;
             })}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <RetrievabilitySpark tema={tema} />
-            <span className={`text-[11px] font-semibold ${STATE_TW[nextState]}`}>RO: {next ? next.label : "Fixação"}</span>
+            <span className={`text-[11px] font-semibold ${STATE_TW[nextState]}`}>RO: {nextMeta ? nextMeta.label : "Fixação"}</span>
           </div>
         </div>
       </div>
@@ -503,7 +554,11 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                                   const isStarted = subTema && !subTema.unstarted;
 
                                   if (isStarted) {
-                                    const next = STEPS.find((s) => !subTema.rev[s.key].done);
+                                    const semanticNext = getNextReviewForTema(subTema);
+                                    const next = semanticNext
+                                      ? { key: semanticNext.stepKey, label: semanticNext.label, desc: semanticNext.label }
+                                      : STEPS.find((s) => !subTema.rev[s.key].done && !subTema.rev[s.key].skipped);
+                                    const nextMeta = next ? getReviewDisplayMeta(subTema, next.key) : null;
                                     const nextState = next ? stepState(subTema.rev[next.key]) : "done";
 
                                     return (
@@ -515,15 +570,15 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                                               {STEPS.map((s) => (
                                                 <div
                                                   key={s.key}
-                                                  title={`${s.label} · ${s.desc}`}
-                                                  className={`h-1.5 rounded-full flex-1 ${subTema.rev[s.key].done ? "bg-emerald-500" : STATE_DOT[stepState(subTema.rev[s.key])]}`}
+                                                  title={`${getReviewDisplayMeta(subTema, s.key).label} · ${s.desc}${subTema.rev[s.key].skipped ? " · pulado por domínio prévio" : ""}`}
+                                                  className={`h-1.5 rounded-full flex-1 ${subTema.rev[s.key].skipped ? "bg-emerald-500/40" : subTema.rev[s.key].done ? "bg-emerald-500" : STATE_DOT[stepState(subTema.rev[s.key])]}`}
                                                 />
                                               ))}
                                             </div>
                                             <div className="flex items-center gap-2">
                                               <RetrievabilitySpark tema={subTema} />
                                               <span className={`text-[9.5px] font-bold ${STATE_TW[nextState]}`}>
-                                                RO: {next ? next.label : "Fixado"}
+                                                RO: {nextMeta ? nextMeta.label : "Fixado"}
                                               </span>
                                             </div>
                                           </div>
@@ -553,14 +608,19 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
 
                                   return (
                                     <div key={sub} className="p-4 flex items-center justify-between gap-3 hover:bg-white/[0.01] transition-colors">
-                                      <p className="text-xs font-medium text-gray-400 min-w-0 flex-1">{sub}</p>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-medium text-gray-400">{sub}</p>
+                                        <div className="mt-2">
+                                          <RetrievabilitySpark tema={subTema || { id: `sub_${topNome}_${sub}`, nome: subName, esp, unstarted: true }} />
+                                        </div>
+                                      </div>
                                       <div className="flex flex-col gap-1 shrink-0">
                                         <button
                                           type="button"
                                           onClick={() => onIniciarTema(subTema || { nome: subName, esp, prio: topPrio, parentTopic: topNome })}
                                           className="px-2.5 py-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white text-[10px] font-black transition-all border border-blue-500/10 cursor-pointer"
                                         >
-                                          Iniciar FSRS
+                                          Iniciar revisão
                                         </button>
                                         <button
                                           type="button"
@@ -584,7 +644,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                       }
 
                       const tema = temaMap.get(topNome);
-                      if (tema && !tema.unstarted) return <CronoCard key={topNome} tema={tema} onStep={onStep} onEdit={onEdit} onIniciarTema={onIniciarTema} />;
+                      if (tema && !tema.unstarted) return <CronoCard key={topNome} tema={tema} plat={plat} onStep={onStep} onEdit={onEdit} onIniciarTema={onIniciarTema} />;
 
                       const espC  = ESP_COLORS[esp] || "#94a3b8";
                       const currentPrio = tema ? tema.prio : topPrio;
@@ -614,6 +674,9 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                                 {tema.obs && <span className="truncate max-w-[120px]">· {tema.obs}</span>}
                               </div>
                             )}
+                            <div className="mt-3">
+                              <RetrievabilitySpark tema={tema || { id: `catalog_${topNome}`, nome: topNome, esp, unstarted: true }} />
+                            </div>
                           </div>
                           <div className="flex flex-col sm:flex-row gap-2">
                             <button
@@ -681,9 +744,19 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
         <ModalValidarDominio
           tema={temaValidando}
           onConfirm={({ questoes, acertos }) => {
+            const resultado = calcularDominioPrevio({ total: questoes, acertos });
             validarDominio(plat, temaValidando.id, { questoes, acertos });
-            const pct = Math.round((acertos / questoes) * 100);
-            if (showToast) showToast(`Validação de domínio registrada (${pct}%).`);
+            if (showToast) {
+              if (resultado.valido) {
+                if ((resultado.intervaloInicial || 7) >= 14) {
+                  showToast("Tema validado com alta segurança. Próxima revisão: D14.");
+                } else {
+                  showToast("Tema validado. Próxima revisão: D7.");
+                }
+              } else {
+                showToast("Validação insuficiente. Comece pelo estudo guiado para proteger sua base.");
+              }
+            }
             setTemaValidando(null);
           }}
           onStartLater={() => {

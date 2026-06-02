@@ -36,13 +36,16 @@ test("raciocinio is not available for vestibular", () => {
   expect(isViewAvailable("raciocinio", "vest", { raciocinioClinico: true })).toBe(false);
 });
 
-test("settings remains reachable", () => {
+test("guide, settings and hidden system tools are not visible in more", () => {
   const views = getMoreNavItems("res").map((item) => item.view);
-  expect(views).toContain(NAV_VIEW.SETTINGS);
+  expect(views).not.toContain(NAV_VIEW.GUIDE);
+  expect(views).not.toContain(NAV_VIEW.SETTINGS);
+  expect(views).not.toContain(NAV_VIEW.DATA_SAFETY);
+  expect(views).not.toContain(NAV_VIEW.LAUNCH_CHECKLIST);
 });
 
 test("legacy view labels still resolve", () => {
   expect(normalizeView("dashboard")).toBe("dash");
   expect(resolveViewLabel("simulados")).toBe("Estudar");
-  expect(resolveViewLabel("estatisticas")).toBe("Estatisticas");
+  expect(resolveViewLabel("estatisticas")).toBe("Estatísticas");
 });

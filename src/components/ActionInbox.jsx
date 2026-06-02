@@ -38,8 +38,8 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView }) {
     return (
       <EmptyState
         icon={Inbox}
-        title="Nada urgente agora"
-        description="Quando houver revisao, prova analisada ou caso vencido, o Mentor colocara aqui."
+        title="Plano executado por enquanto"
+        description="Quando o Comando do Mentor gerar próximos passos, eles aparecem aqui como execução do plano."
       />
     );
   }
@@ -52,7 +52,7 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView }) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Inbox size={16} className="text-blue-400" />
-          <h3 className="text-xs font-black uppercase tracking-wider text-gray-200">Caixa de Acoes</h3>
+          <h3 className="text-xs font-black uppercase tracking-wider text-gray-200">Execução do plano</h3>
         </div>
         {openActions.length > 3 && mode !== "manual" && (
           <button
@@ -66,7 +66,7 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView }) {
       </div>
 
       <article className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3 space-y-2">
-        <p className="text-[10px] uppercase tracking-wider font-black text-blue-300">Acao principal</p>
+        <p className="text-[10px] uppercase tracking-wider font-black text-blue-300">Próximo passo do comando</p>
         <p className="text-sm font-black text-white">{primary.title}</p>
         <p className="text-[11px] text-gray-300">{primary.reason}</p>
         <div className="flex flex-wrap gap-2 pt-1">

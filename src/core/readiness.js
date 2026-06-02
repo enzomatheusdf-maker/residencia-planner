@@ -3,6 +3,7 @@ import { PROVA_STATS_RES, PROVA_STATS_VEST, PROVAS_RES, PROVAS_VEST } from "../c
 import { saldoRitmo, scoreProntidao } from "./volume";
 import { calcTrueRetention, calcTrend } from "../hooks/useMetrics";
 import { getEnamedIntel, calcPreparoEnamed } from "./enamedIntel";
+import { calculateClinicalReasoningScore } from "./clinicalReasoningScoring";
 
 export function pickTargetProva(provasAlvo, plat) {
   const list = plat === "res" ? PROVAS_RES : PROVAS_VEST;
@@ -22,21 +23,8 @@ export function matchesArea(studentEsp, examAreaName) {
   return false;
 }
 
-function calcRaciocinioScore(casosProgresso) {
-  const vistos = Object.values(casosProgresso || {}).filter((p) => p?.vistos > 0);
-  const scores = vistos.map((p) => {
-    const parts = [
-      typeof p.fase2Acerto === "number" ? { value: p.fase2Acerto, weight: 0.6 } : null,
-      typeof p.sctAcerto === "number" ? { value: p.sctAcerto, weight: 0.4 } : null,
-    ].filter(Boolean);
-    if (!parts.length) return null;
-    const weightSum = parts.reduce((sum, part) => sum + part.weight, 0);
-    return parts.reduce((sum, part) => sum + part.value * part.weight, 0) / weightSum;
-  }).filter((score) => score != null);
-
-  if (!scores.length) return null;
-  return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
-}
+// Removido: calcRaciocinioScore local substituida por calculateClinicalReasoningScore
+// de clinicalReasoningScoring.js (fonte canonica unica — P4-A)
 
 export function getReadinessData({ temas, simulados, meta, plat, casosProgresso = {} }) {
   const startedTemas = temas.filter(t => !t.unstarted);
@@ -95,7 +83,7 @@ export function getReadinessData({ temas, simulados, meta, plat, casosProgresso 
     adesaoAnkiNorm: adesaoAnkiNorm
   });
   const raciocinioScore = meta?.modulos?.raciocinioClinico
-    ? calcRaciocinioScore(casosProgresso)
+    ? calculateClinicalReasoningScore(casosProgresso)
     : null;
 
   // 6. Confidence range (e.g. +/- 6 points, bounded by 0-100)

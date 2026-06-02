@@ -75,7 +75,7 @@ export const ACHIEVEMENTS = [
   {
     id: "high_retention",
     nome: "Retenção de Elite",
-    desc: "Alcançou True Retention global igual ou superior a 80%",
+    desc: "Alcançou reten\u00e7\u00e3o longa global igual ou superior a 80%",
     icon: "📈",
     xpReward: 120,
     criterio: (s) => {

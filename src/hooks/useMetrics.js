@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { STEPS, IMPORTANCIA, todayStr, diffDays, addDays } from "../core/fsrs";
 import { getAreaWeight, findHotnessSubarea, BONUS_RETORNO_RAPIDO } from "../core/provasStats";
 import { useStore } from "../core/store";
+import { getDominioPrevioStatus, getNextReviewForTema } from "../core/domainValidation";
 
 // ─── VESTIBULAR WEIGHTS & SCORE ──────────────────────────────────────────────
 
@@ -82,10 +83,11 @@ export function calcFilaInteligente(temas, plat, meta) {
     let sumAcertos = 0;
     let doneStepsCount = 0;
     
-    for (let j = 0; j < STEPS.length; j++) {
-      const stepKey = STEPS[j].key;
+    const stepKeys = Array.from(new Set([...STEPS.map((step) => step.key), "d14"]));
+    for (let j = 0; j < stepKeys.length; j++) {
+      const stepKey = stepKeys[j];
       const r = rev[stepKey];
-      if (r && r.done && r.acerto != null) {
+      if (r && r.done && !r.skipped && r.skipReason !== "dominio_previo" && !r.skippeadoPorDominio && r.acerto != null) {
         sumAcertos += r.acerto;
         doneStepsCount++;
       }
@@ -95,10 +97,15 @@ export function calcFilaInteligente(temas, plat, meta) {
     const imp = t.importancia || "ALTA";
     const pesoImp = IMPORTANCIA[imp]?.peso || 2.0;
     
-    for (let j = 0; j < STEPS.length; j++) {
-      const s = STEPS[j];
+    const isDominioPrevio = getDominioPrevioStatus(t).isValidated;
+    const nextReview = isDominioPrevio ? getNextReviewForTema(t, today) : null;
+    const queueSteps = isDominioPrevio && nextReview
+      ? [{ key: nextReview.stepKey, label: nextReview.label, offset: 0, desc: nextReview.label, checkbox: false }]
+      : STEPS;
+    for (let j = 0; j < queueSteps.length; j++) {
+      const s = queueSteps[j];
       const r = rev[s.key];
-      if (!r || r.done) continue;
+      if (!r || r.done || r.skipped || r.skipReason === "dominio_previo" || r.skippeadoPorDominio) continue;
       
       const rDate = r.date;
       if (!rDate) continue;
