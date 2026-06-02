@@ -160,7 +160,8 @@ export function CycleCompleteModal({ tema, onClose }) {
   const userName = useStore((s) => s.userName || "Estudante");
   const temas = useStore((s) => s[plat]?.temas || []);
 
-  const done = Object.values(tema.rev).filter(r => r.done && r.acerto != null);
+  const safeRevValues = (rev) => Object.values(rev || {}).filter((r) => r && typeof r === "object" && !Array.isArray(r));
+  const done = safeRevValues(tema.rev).filter(r => r.done && r.acerto != null);
   const avgAcerto = done.length ? Math.round(done.reduce((a, r) => a + r.acerto, 0) / done.length * 100) : 0;
 
   // Specialty average accuracy
@@ -168,7 +169,7 @@ export function CycleCompleteModal({ tema, onClose }) {
   let sumEsp = 0;
   let countEsp = 0;
   espTemas.forEach(t => {
-    Object.values(t.rev).forEach(r => {
+    safeRevValues(t.rev).forEach(r => {
       if (r.done && r.acerto != null) {
         sumEsp += r.acerto;
         countEsp++;

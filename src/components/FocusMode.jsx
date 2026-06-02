@@ -314,6 +314,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const certasQuestoes = Math.min(acertosRaw, totalQuestoes);
   const pct = totalQuestoes > 0 ? Math.round((certasQuestoes / totalQuestoes) * 100) : null;
   const hasValidQuestionResult = totalQuestoes > 0 && acertos !== "" && acertosRaw >= 0 && acertosRaw <= totalQuestoes;
+  const canCompleteQuestionStep = tema?.esp === "Redação" || hasValidQuestionResult;
 
   // TIMER
   const [secondsLeft, setSecondsLeft] = useState(0);
@@ -651,16 +652,11 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                 "Você zerou as revisões e hoje não é dia de tema novo. Descansar não é falha — é o que consolida o que você já aprendeu. Te vejo amanhã, inteiro."
               </p>
               <div className="flex flex-col gap-2 pt-2">
-                <button
-                  onClick={() => {
-                    updateGamifStreak(todayStr());
-                    onCompleteStep(tema.id, "d0", {
-                      acerto: 1.0,
-                      questoes: 0,
-                      descansoPrescrito: true
-                    });
-                    onExit();
-                  }}
+                  <button
+                    onClick={() => {
+                      updateGamifStreak(todayStr());
+                      onExit();
+                    }}
                   className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-black text-xs tracking-wider transition-all active:scale-[0.98] shadow-lg shadow-slate-900/25 cursor-pointer border-none"
                 >
                   Seguir Orientação e Descansar
@@ -1162,6 +1158,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                 <button
                   type="button"
                   onClick={() => {
+                    if (!canCompleteQuestionStep) return;
                     const elapsedMin = Math.max(1, Math.round((Date.now() - stepStartTime) / 60000));
                     if (tema?.esp === "Redação") {
                       const sum = (+c1) + (+c2) + (+c3) + (+c4) + (+c5);
@@ -1200,7 +1197,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                       });
                     }
                   }}
-                  className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-bold text-[11.5px] transition-all active:scale-[0.98] shadow-lg shadow-slate-900/20"
+                  disabled={!canCompleteQuestionStep}
+                  className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white rounded-xl font-bold text-[11.5px] transition-all active:scale-[0.98] shadow-lg shadow-slate-900/20 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   ✓ Concluir Estudo D0
                 </button>

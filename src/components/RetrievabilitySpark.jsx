@@ -28,8 +28,49 @@ function normalizeAcerto(acerto) {
   return clampRetention(value > 1 ? value / 100 : value);
 }
 
-function emptyRetentionCurve(days = 14) {
-  return Array.from({ length: days }, () => 0);
+function isOperationalReview(review) {
+  return review
+    && typeof review === "object"
+    && !Array.isArray(review)
+    && !review.skipped
+    && review.skipReason !== "dominio_previo"
+    && !review.skippeadoPorDominio;
+}
+
+const REVIEW_STEPS = [
+  { key: "d0", label: "D0" },
+  { key: "d1", label: "D1" },
+  { key: "d4", label: "D4" },
+  { key: "d7", label: "D7" },
+  { key: "d14", label: "D14" },
+  { key: "d21", label: "D21" },
+];
+
+function getNextReviewStep(tema) {
+  if (!tema?.rev) return null;
+  for (const step of REVIEW_STEPS) {
+    const review = tema.rev[step.key];
+    if (isOperationalReview(review) && !review.done) {
+      return { ...step, date: review.date };
+    }
+  }
+  if (isOperationalReview(tema.rev.manutencao) && !tema.rev.manutencao.done) {
+    return { key: "manutencao", label: "Manutenção", date: tema.rev.manutencao.date };
+  }
+  return null;
+}
+
+function buildRetentionCurve({ startDate, currentS, initialRetention, horizonDays }) {
+  if (!startDate || initialRetention == null) return [];
+  const today = todayStr();
+  const pointCount = Math.max(2, horizonDays + 1);
+  return Array.from({ length: pointCount }, (_, i) => {
+    const dayOffset = horizonDays === 0 ? 0 : i;
+    const targetDate = addDays(today, dayOffset);
+    const t = Math.max(0, diffDays(startDate, targetDate));
+    const modeled = (1 + FSRS_FACTOR * t / currentS) ** FSRS_DECAY;
+    return Math.round(clampRetention(initialRetention * modeled) * 100);
+  });
 }
 
 export default function RetrievabilitySpark({ tema }) {
@@ -37,29 +78,25 @@ export default function RetrievabilitySpark({ tema }) {
   const awaitingFirstDominioReview = dominioStatus.isValidated
     && dominioStatus.firstReviewStep
     && !tema?.rev?.[dominioStatus.firstReviewStep]?.done;
+  const nextReviewStep = useMemo(() => getNextReviewStep(tema), [tema]);
 
   const curve = useMemo(() => {
+    if (!tema || tema.unstarted) {
+      return [];
+    }
+
     if (awaitingFirstDominioReview) {
       const today = todayStr();
-      const horizonDays = getDominioHorizonDays(dominioStatus, today);
+      const horizonDays = Math.max(0, diffDays(today, dominioStatus.firstReviewDate || addDays(today, getDominioHorizonDays(dominioStatus, today))));
       const initialRetention = getDominioInitialRetention(dominioStatus);
       if (initialRetention == null) return [];
 
-      const currentS = horizonDays;
-      const points = [];
-      for (let i = 0; i <= horizonDays; i++) {
-        const targetDate = addDays(today, i);
-        const t = Math.max(0, diffDays(today, targetDate));
-        const modeled = (1 + FSRS_FACTOR * t / currentS) ** FSRS_DECAY;
-        points.push(Math.round(clampRetention(initialRetention * modeled) * 100));
-      }
-      return points;
-    }
-    if (!tema) {
-      return [];
-    }
-    if (tema.unstarted) {
-      return emptyRetentionCurve();
+      return buildRetentionCurve({
+        startDate: dominioStatus.validatedAt || today,
+        currentS: Math.max(1, getDominioHorizonDays(dominioStatus, today)),
+        initialRetention,
+        horizonDays,
+      });
     }
 
     const today = todayStr();
@@ -68,24 +105,14 @@ export default function RetrievabilitySpark({ tema }) {
     let lastReviewDate = tema.d0 || today;
     let currentS = 1.0;
 
-    const activeStepKey = STEPS.find(s => !tema.rev[s.key]?.done)?.key || "manutencao";
-
-    if (activeStepKey === "d0") {
-      const d0Acerto = normalizeAcerto(tema.rev?.d0?.acerto);
-      if (d0Acerto == null) return emptyRetentionCurve();
-      return Array.from({ length: 14 }, (_, i) => {
-        const targetDate = addDays(today, i);
-        const t = Math.max(0, diffDays(tema.rev?.d0?.reviewedAt || tema.rev?.d0?.date || today, targetDate));
-        const modeled = (1 + FSRS_FACTOR * t / (tema.rev?.d0?.S || S_BASE.d0 || 1)) ** FSRS_DECAY;
-        return Math.round(clampRetention(d0Acerto * modeled) * 100);
-      });
-    }
+    const activeStepKey = nextReviewStep?.key;
+    if (!activeStepKey) return [];
 
     // Encontrar o último passo concluído
     let latestDoneStepIdx = -1;
     for (let i = STEPS.length - 1; i >= 0; i--) {
       const review = tema.rev[STEPS[i].key];
-      if (review?.done && !review?.skipped && review?.skipReason !== "dominio_previo" && !review?.skippeadoPorDominio) {
+      if (isOperationalReview(review) && review.done) {
         latestDoneStepIdx = i;
         break;
       }
@@ -93,28 +120,27 @@ export default function RetrievabilitySpark({ tema }) {
 
     if (latestDoneStepIdx >= 0) {
       const key = STEPS[latestDoneStepIdx].key;
-      lastReviewDate = tema.rev[key]?.date || tema.d0 || today;
+      lastReviewDate = tema.rev[key]?.reviewedAt || tema.rev[key]?.completedAt || tema.rev[key]?.date || tema.d0 || today;
       currentS = tema.rev[key]?.S || S_BASE[key] || 1.0;
     } else {
-      return emptyRetentionCurve();
+      return [];
     }
 
     if (activeStepKey === "manutencao" && tema.rev.manutencao) {
       currentS = tema.rev.manutencao.S || 45.0;
-      lastReviewDate = tema.rev.d21?.date || tema.d0 || today;
+      lastReviewDate = tema.rev.d21?.reviewedAt || tema.rev.d21?.completedAt || tema.rev.d21?.date || tema.d0 || today;
     }
 
-    const points = [];
     const latestDoneStep = latestDoneStepIdx >= 0 ? tema.rev[STEPS[latestDoneStepIdx].key] : null;
     const initialRetention = normalizeAcerto(latestDoneStep?.acerto) ?? 1;
-    for (let i = 0; i < 14; i++) {
-      const targetDate = addDays(today, i);
-      const t = Math.max(0, diffDays(lastReviewDate, targetDate));
-      const R = (1 + FSRS_FACTOR * t / currentS) ** FSRS_DECAY;
-      points.push(Math.round(clampRetention(initialRetention * R) * 100));
-    }
-    return points;
-  }, [tema, awaitingFirstDominioReview, dominioStatus]);
+    const horizonDays = Math.max(0, diffDays(today, nextReviewStep?.date || addDays(today, 14)));
+    return buildRetentionCurve({
+      startDate: lastReviewDate,
+      currentS,
+      initialRetention,
+      horizonDays,
+    });
+  }, [tema, awaitingFirstDominioReview, dominioStatus, nextReviewStep]);
 
   const sparklineData = useMemo(() => {
     if (curve.length < 2) return { path: "", fillPath: "", color: "#10b981", finalVal: null, finalY: 8 };
@@ -151,11 +177,22 @@ export default function RetrievabilitySpark({ tema }) {
   if (!tema) return null;
   if (curve.length < 2 || sparklineData.finalVal == null) return null;
 
-  const horizonLabel = awaitingFirstDominioReview ? dominioStatus.firstReviewLabel : "D14";
+  const horizonLabel = awaitingFirstDominioReview
+    ? dominioStatus.firstReviewLabel
+    : (nextReviewStep?.label || "próxima revisão");
+  const today = todayStr();
+  let daysUntil = null;
+  if (awaitingFirstDominioReview) {
+    const firstDate = dominioStatus.firstReviewDate || addDays(today, getDominioHorizonDays(dominioStatus, today));
+    daysUntil = Math.max(0, diffDays(today, firstDate));
+  } else if (nextReviewStep?.date) {
+    daysUntil = Math.max(0, diffDays(today, nextReviewStep.date));
+  }
+  const horizonLabelWithDays = daysUntil != null ? `${horizonLabel} (em ${daysUntil}d)` : horizonLabel;
   const isUnmeasured = sparklineData.isUnmeasured;
   const title = isUnmeasured
     ? "Retenção ainda não mensurada: conclua a primeira revisão para calibrar a curva."
-    : `Retenção projetada até ${horizonLabel}. Hoje: ${curve[0]}% · ${horizonLabel}: ${sparklineData.finalVal}%`;
+    : `Retenção projetada até ${horizonLabelWithDays}. Hoje: ${curve[0]}% · ${horizonLabelWithDays}: ${sparklineData.finalVal}%`;
 
   return (
     <div className="flex items-center gap-1.5 select-none" title={title}>
@@ -185,6 +222,9 @@ export default function RetrievabilitySpark({ tema }) {
       }`}>
         {isUnmeasured ? "—" : `${sparklineData.finalVal}%`}
       </span>
+      {daysUntil != null && !isUnmeasured && (
+        <span className="text-[9px] text-slate-300 font-mono ml-1 shrink-0">{`${daysUntil}d`}</span>
+      )}
     </div>
   );
 }

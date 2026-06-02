@@ -671,6 +671,11 @@ export default function App() {
         });
         showToast("🧠 Brain Dump consolidado e gravado no perfil!");
       } else if (stepKey === "d0") {
+        const d0Questoes = Number(markData.questoes);
+        if (!Number.isFinite(d0Questoes) || d0Questoes <= 0) {
+          showToast("Informe pelo menos 1 questão feita para concluir o D0.", false, 5000);
+          return;
+        }
         pushUndo(plat);
         markStep(plat, temaId, "d0", {
           acerto: markData.acerto !== undefined ? markData.acerto : 1.0,

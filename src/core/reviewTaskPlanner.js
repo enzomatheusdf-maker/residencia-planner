@@ -15,8 +15,8 @@
 export const TASK_TYPE = Object.freeze({
   BRAIN_DUMP: "brain_dump",         // D1: recuperacao ativa livre
   ILLNESS_RECALL: "illness_recall", // D4: illness script recall estruturado
-  MINI_CASE: "mini_case",           // D7: mini caso + diferenciais
-  SCT: "sct",                       // D21/manutencao: SCT + conduta simulada
+  MINI_CASE: "mini_case",           // D21: mini caso + diferenciais
+  SCT: "sct",                       // manutencao: SCT + conduta simulada
   STANDARD: "standard",             // fallback: revisao padrao sem modalidade clinica
 });
 
@@ -25,8 +25,8 @@ export const TASK_TYPE = Object.freeze({
 const STEP_TASK_MAP = Object.freeze({
   d1:          TASK_TYPE.BRAIN_DUMP,
   d4:          TASK_TYPE.ILLNESS_RECALL,
-  d7:          TASK_TYPE.MINI_CASE,
-  d21:         TASK_TYPE.SCT,
+  d7:          null,
+  d21:         TASK_TYPE.MINI_CASE,
   manutencao:  TASK_TYPE.SCT,
   // Steps sem modalidade clinica — retornam null (fallback padrao)
   d0:          null,
@@ -64,8 +64,8 @@ export const TASK_DESCRIPTIONS = Object.freeze({
   },
   [TASK_TYPE.MINI_CASE]: {
     label: "Mini caso cl\u00ednico",
-    shortLabel: "D7",
-    instruction: "Resolva o mini caso: racioc\u00ednio diagn\u00f3stico -> hip\u00f3teses ranqueadas -> justificativa.",
+    shortLabel: "D21",
+    instruction: "Resolva o mini caso para consolida\u00e7\u00e3o m\u00e1xima: racioc\u00ednio diagn\u00f3stico -> hip\u00f3teses ranqueadas -> justificativa.",
     fields: [
       { key: "problemRep", label: "Racioc\u00ednio diagn\u00f3stico", placeholder: "Paciente de X anos, contexto, queixa principal + dados discriminantes" },
       { key: "hipoteses", label: "Top 3 hip\u00f3teses + n\u00e3o-pode-perder", placeholder: "1. ... 2. ... 3. ... N\u00e3o-pode-perder: ..." },
