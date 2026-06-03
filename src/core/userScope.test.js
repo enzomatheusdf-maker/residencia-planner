@@ -29,6 +29,10 @@ describe("userScope", () => {
     expect(getAnonymousStorageKey("", "dev")).toBe("medrev:dev:anonymous:default:store");
   });
 
+  test("uids diferentes geram escopos diferentes", () => {
+    expect(getUserScopedStorageKey("u1", "prod")).not.toBe(getUserScopedStorageKey("u2", "prod"));
+  });
+
   test("cria sessao anonima persistida em sessionStorage", () => {
     const sid1 = getOrCreateAnonymousSessionId("test", sessionStorage);
     const sid2 = getOrCreateAnonymousSessionId("test", sessionStorage);

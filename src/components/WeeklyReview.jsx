@@ -4,6 +4,11 @@ import { CalendarCheck2, ChevronDown, ChevronUp, X } from "lucide-react";
 import { addDays, STEPS, todayStr } from "../core/fsrs";
 import { buildWeeklyReview } from "../core/sessionReflection";
 import { dominantErrorType, ERROR_TYPE_LABEL } from "../core/errorTaxonomy";
+import {
+  buildContextualWeeklyActions,
+  canShowWeeklyReview,
+  WEEKLY_REVIEW_LOCKED_MESSAGE,
+} from "../core/weeklyReviewGate";
 import { useStore } from "../core/store";
 
 function countRecentDoneSteps(temas = [], days = 7) {
@@ -20,6 +25,7 @@ export default function WeeklyReview({ onAdjust, onAction }) {
   const casosProgresso = useStore((s) => s[plat]?.casosProgresso || {});
   const enamedAnalises = useStore((s) => s.enamedAnalises || []);
   const actionInbox = useStore((s) => s.actionInbox || []);
+  const cronogramas = useStore((s) => s[plat]?.cronogramas || []);
   const sessionReflections = useStore((s) => s.sessionReflections || []);
   const weeklyReviews = useStore((s) => s.weeklyReviews || []);
   const saveWeeklyReview = useStore((s) => s.saveWeeklyReview);
@@ -103,7 +109,22 @@ export default function WeeklyReview({ onAdjust, onAction }) {
 
   const lastReviewDate = weeklyReviews.slice(-1)[0]?.date;
   const alreadyReviewedThisWeek = Boolean(lastReviewDate && lastReviewDate >= addDays(todayStr(), -6));
-  const suggestedArea = review.blocked.areaFraca || review.plan.priorities[0]?.split(":")[0] || null;
+  const overdueCount = actionInbox.filter((action) => action.type === "review").length;
+  const reviewUnlocked = canShowWeeklyReview({
+    today: todayStr(),
+    temas,
+    simulados,
+    sessionReflections,
+    sessionsCompleted: review.executed.sessions,
+    trackedVolume: review.executed.sessions + review.executed.revisoes + simulados.length,
+  });
+  const contextualActions = buildContextualWeeklyActions({
+    hasSchedule: cronogramas.length > 0,
+    sessionsCompleted: review.executed.sessions,
+    weakArea: review.blocked.areaFraca,
+    hasUnstartedTopics: temas.some((tema) => tema?.unstarted),
+    overdueCount,
+  });
 
   const handleAccept = () => {
     if (saveWeeklyReview) saveWeeklyReview({ ...review, status: "accepted" });
@@ -137,7 +158,13 @@ export default function WeeklyReview({ onAdjust, onAction }) {
         {expanded ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />}
       </button>
 
-      {expanded && (
+      {!reviewUnlocked && (
+        <div className="border-t border-white/5 px-4 pb-4 pt-3">
+          <p className="text-[12px] leading-relaxed text-gray-400">{WEEKLY_REVIEW_LOCKED_MESSAGE}</p>
+        </div>
+      )}
+
+      {expanded && reviewUnlocked && (
         <div className="px-4 pb-4 space-y-4 border-t border-white/5">
           <div className="pt-3">
             <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">1. O que voce executou</p>
@@ -151,7 +178,7 @@ export default function WeeklyReview({ onAdjust, onAction }) {
             <p className="text-[12px] text-gray-300 mt-1">
               {review.blocked.baixaEnergia ? "Baixa energia detectada. " : ""}
               {review.blocked.errosRecorrentes ? `Erro recorrente: ${review.blocked.errosRecorrentes}. ` : ""}
-              {review.blocked.areaFraca ? `Area mais fraca: ${review.blocked.areaFraca}.` : "Sem bloqueio dominante."}
+              {review.blocked.areaFraca ? `Area mais fraca: ${review.blocked.areaFraca}.` : "Nenhum bloqueio dominante apareceu com confiança suficiente."}
             </p>
           </div>
 
@@ -161,11 +188,11 @@ export default function WeeklyReview({ onAdjust, onAction }) {
               {review.plan.priorities.length > 0 ? (
                 review.plan.priorities.map((priority) => <li key={priority}>• {priority}</li>)
               ) : (
-                <li>• Definir 3 prioridades no inicio da semana.</li>
+                <li>• Ainda sem prioridade forte o bastante para um plano fechado.</li>
               )}
-              <li>• Tema novo: {review.plan.newTopic || "a definir"}</li>
-              <li>• Revisao critica: {review.plan.criticalReview || "a definir"}</li>
-              <li>• Caso clinico: {review.plan.clinicalCase || "a definir"}</li>
+              {review.plan.newTopic ? <li>• Tema novo: {review.plan.newTopic}</li> : null}
+              {review.plan.criticalReview ? <li>• Revisao critica: {review.plan.criticalReview}</li> : null}
+              {review.plan.clinicalCase ? <li>• Caso clinico: {review.plan.clinicalCase}</li> : null}
             </ul>
           </div>
 
@@ -218,34 +245,20 @@ export default function WeeklyReview({ onAdjust, onAction }) {
               Escolha o que quer ajustar agora. Isso sincroniza o plano do Mentor com o Dashboard.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => triggerAction({ type: "focar", esp: suggestedArea || "prioridades da semana", label: "Focar área fraca" })}
-                className="px-3 py-2.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 text-blue-300 border border-blue-500/25 text-[11px] font-bold text-left cursor-pointer"
-              >
-                Focar área fraca
-              </button>
-              <button
-                type="button"
-                onClick={() => triggerAction({ type: "setView", view: "crono", label: "Selecionar temas da semana" })}
-                className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 text-[11px] font-bold text-left cursor-pointer"
-              >
-                Selecionar temas da semana
-              </button>
-              <button
-                type="button"
-                onClick={() => triggerAction({ type: "import_calendar", label: "Importar cronograma" })}
-                className="px-3 py-2.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/25 text-[11px] font-bold text-left cursor-pointer"
-              >
-                Importar cronograma
-              </button>
-              <button
-                type="button"
-                onClick={() => triggerAction({ type: "ja_domino", label: "Marcar já domino" })}
-                className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 text-[11px] font-bold text-left cursor-pointer"
-              >
-                Usar "Já domino"
-              </button>
+              {contextualActions.length > 0 ? contextualActions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => triggerAction(item.action)}
+                  className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 text-[11px] font-bold text-left cursor-pointer"
+                >
+                  {item.label}
+                </button>
+              )) : (
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Ainda não há ajuste contextual forte o bastante para automatizar.
+                </p>
+              )}
             </div>
           </div>
         </div>,

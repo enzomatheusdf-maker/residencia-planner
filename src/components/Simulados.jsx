@@ -8,7 +8,7 @@ import { Btn, Modal, Field, Input, Select, Tabs } from "./Primitives";
 import { getReadinessData, matchesArea, pickTargetProva } from "../core/readiness";
 import { totalQuestoesFeitas, saldoRitmo } from "../core/volume";
 import { getSimRecommendation, getResultActions, getSimuladoGuidance, getSimuladoProtocolo } from "../core/simStrategy";
-import { trackEvent } from "../services/firebase";
+import { safeTrackEvent } from "../core/telemetry";
 
 const ZONA_UI = {
   vermelha: {
@@ -974,7 +974,7 @@ export default function Simulados({ onStudy, setView }) {
           onClose={() => setModalOpen(false)}
           onSave={(sim) => {
             addSim(plat, sim);
-            trackEvent("simulado_registrado", { plat, pct: sim?.pct ?? 0, total: sim?.total ?? 0 });
+            safeTrackEvent("simulation_result_recorded", { plat, pct: sim?.pct ?? 0, total: sim?.total ?? 0 }, { state: useStore.getState() });
             setModalOpen(false);
           }}
         />
@@ -982,4 +982,3 @@ export default function Simulados({ onStudy, setView }) {
     </div>
   );
 }
-

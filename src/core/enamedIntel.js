@@ -273,3 +273,47 @@ export function getEnamedAction(intel) {
     area: gargalo.area,
   };
 }
+
+export function getEnamedBottleneckExplanation(intel, options = {}) {
+  const minimumStarted = options.minimumStarted ?? 2;
+  const minimumCoverage = options.minimumCoverage ?? 1;
+  const fallbackArea = intel?.lista?.find((item) => item.iniciados >= minimumStarted && item.cobertura >= minimumCoverage) || null;
+  const gargalo = (() => {
+    if (!intel?.gargalo) return fallbackArea;
+    if (intel.gargalo.iniciados >= minimumStarted && intel.gargalo.cobertura >= minimumCoverage) return intel.gargalo;
+    return fallbackArea;
+  })();
+
+  if (!gargalo || !intel?.temDados || gargalo.iniciados < minimumStarted || gargalo.cobertura < minimumCoverage) {
+    return {
+      area: null,
+      motivo: "Ainda coletando gargalos",
+      evidencias: [
+        `Faça pelo menos ${minimumStarted} sessões ou avance os primeiros temas da área para estimar com confiança.`,
+      ],
+      actionLabel: "Ver plano",
+      target: { view: "crono" },
+      confidence: "baixa",
+      collecting: true,
+    };
+  }
+
+  const hotPending = gargalo.hotTopicsPendentes?.[0]?.subarea || gargalo.hotTopics?.[0]?.subarea || null;
+  const evidencias = [
+    `Cobertura ${gargalo.cobertura}% na área.`,
+    `Retenção ${gargalo.retencao ?? "coletando"}%.`,
+  ];
+  if (hotPending) {
+    evidencias.push(`Subtópico quente ainda pouco coberto: ${hotPending}.`);
+  }
+
+  return {
+    area: gargalo.area,
+    motivo: `${gargalo.motivo}.`,
+    evidencias,
+    actionLabel: hotPending ? "Ver plano da área" : "Ver mapa completo",
+    target: hotPending ? { view: "crono", area: gargalo.area, subarea: hotPending } : { view: "stats" },
+    confidence: gargalo.retencao == null ? "media" : "alta",
+    collecting: false,
+  };
+}

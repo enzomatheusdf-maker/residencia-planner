@@ -276,6 +276,29 @@ export function decideMentorAction(context = {}) {
     });
   }
 
+  // firstAction: novo usuário com planSetup mas ainda sem temas iniciados
+  if (context.firstAction && !context.firstAction.isUpcoming) {
+    return buildAction({
+      type: "new_topic",
+      priority: 80,
+      title: context.firstAction.temaNome
+        ? `Começar: ${context.firstAction.temaNome}`
+        : "Iniciar primeiro tema do plano",
+      subtitle: "Seu plano está pronto — primeira ação de hoje.",
+      reason: "planSetup concluído; nenhum tema iniciado ainda.",
+      explain: [
+        "O cronograma está distribuído — este é o primeiro tópico do dia.",
+        "Após concluir, o FSRS agendará as revisões automaticamente.",
+      ],
+      cta: "Iniciar tema",
+      ctaView: "crono",
+      estimatedMinutes: context.firstAction.estimatedMinutes || 50,
+      confidence: 0.95,
+      safety: "ok",
+      target: { temaId: context.firstAction.temaId, stepKey: "d0" },
+    });
+  }
+
   if (canSuggestNewTopic(context)) {
     const area = plat === "res"
       ? (areaCritica || context.readinessData?.priorityList?.[0]?.area || null)

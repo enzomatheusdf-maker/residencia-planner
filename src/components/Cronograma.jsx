@@ -18,6 +18,7 @@ import CalendarProviderSelector from "./CalendarProviderSelector";
 import { ModalValidarDominio } from "./Modals";
 import RetrievabilitySpark from "./RetrievabilitySpark";
 import EmptyState from "./EmptyState";
+import AgendaMonthGrid from "./AgendaMonthGrid";
 
 const CalendarImportWizard = React.lazy(() => import("./CalendarImportWizard"));
 const CalendarMappingPanel = React.lazy(() => import("./CalendarMappingPanel"));
@@ -219,6 +220,12 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
   const [openBlocks, setOpenBlocks] = useState({ 1: true });
   const [expandedTopics, setExpandedTopics] = useState({});
   const [showPlanPanel, setShowPlanPanel] = useState(true);
+  const [cronoTab, setCronoTab] = useState("plano"); // "plano" | "agenda"
+  const scheduledTopics = useMemo(
+    () => calendarProvider?.scheduledTopics || [],
+    [calendarProvider?.scheduledTopics]
+  );
+  const simulados = useStore((s) => s[plat].simulados);
   const medcofTemas = useMemo(
     () => (resolveCatalogo("res", getDefaultCronogramaId("res")) || []).flatMap((bl) =>
       (bl.t || []).map((entry) => ({ nome: parseCatalogEntry(entry).nome }))
@@ -321,6 +328,38 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
 
       {tourStep !== "crono" && (
         <>
+          {/* Tab bar — Plano | Agenda */}
+          <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-fit">
+            {[["plano", "Plano"], ["agenda", "Agenda"]].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setCronoTab(id)}
+                className={`px-4 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer ${
+                  cronoTab === id
+                    ? "bg-blue-600 text-white"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Aba Agenda */}
+          {cronoTab === "agenda" && (
+            <AgendaMonthGrid
+              temas={temas}
+              scheduledTopics={scheduledTopics}
+              simulados={simulados}
+              planSetup={meta?.planSetup || {}}
+              plat={plat}
+            />
+          )}
+
+          {/* Aba Plano (conteúdo original) */}
+          {cronoTab === "plano" && (
+          <>
           <div className="bg-[var(--surface-1)] border border-white/5 rounded-3xl p-4 mb-2 select-none animate-fade-in">
             {showSelector && (
               <>
@@ -724,6 +763,8 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                 onClick: () => saveImportedCalendarTopics(getProviderSeed(CALENDAR_PROVIDER_IDS.USER_IMPORTED)),
               }}
             />
+          )}
+          </>
           )}
         </>
       )}

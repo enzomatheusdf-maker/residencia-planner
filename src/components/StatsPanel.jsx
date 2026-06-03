@@ -1,7 +1,7 @@
 // src/components/StatsPanel.jsx
 // Estatisticas reorganizadas em 7 secoes diagnosticaveis.
 // Cada secao responde: o que mede / da pra confiar / o que fazer.
-import React, { useMemo, useState, lazy, Suspense } from "react";
+import React, { useMemo, useState, useEffect, useRef, lazy, Suspense } from "react";
 import {
   BarChart3, Flame, BookOpen, AlertCircle, Trophy,
   Brain, Activity,
@@ -17,6 +17,8 @@ import {
 import {
   evaluateMetric, formatMetricValue, METRIC_STATUS,
 } from "../core/metricsRegistry";
+import { compareReadinessToSimulado, createReadinessSnapshot } from "../core/readinessValidation";
+import { safeTrackEvent } from "../core/telemetry";
 import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
 import { calculateClinicalReasoningScoreDetailed } from "../core/clinicalReasoningScoring";
 import EnamedMapa from "./EnamedMapa";
@@ -186,6 +188,7 @@ export default function StatsPanel({ setView = null }) {
   const sessionReflections = useStore((s) => s.sessionReflections || []);
 
   const [activeSection, setActiveSection] = useState("resumo");
+  const lastReadinessTelemetryRef = useRef("");
 
   // Filtrar secoes para plataforma atual
   const availableSections = SECTIONS.filter(
@@ -209,6 +212,28 @@ export default function StatsPanel({ setView = null }) {
     () => getReadinessData({ temas, simulados, meta, plat, casosProgresso }),
     [temas, simulados, meta, plat, casosProgresso]
   );
+  const readinessValidation = useMemo(() => {
+    const latestSimulado = simulados[simulados.length - 1] || null;
+    return compareReadinessToSimulado(
+      createReadinessSnapshot({ score: readinessData.score, plat }),
+      latestSimulado || {}
+    );
+  }, [plat, readinessData.score, simulados]);
+
+  useEffect(() => {
+    if (readinessData.score == null) return;
+    const key = `${todayStr()}:${plat}:${readinessData.score}:${readinessValidation.status}:${readinessValidation.absoluteError ?? "na"}`;
+    if (lastReadinessTelemetryRef.current === key) return;
+    safeTrackEvent("readiness_snapshot", { plat, score: readinessData.score, confidence: readinessData.confidence || "coletando" }, { state: { meta } });
+    if (readinessValidation.status !== "coletando") {
+      safeTrackEvent(
+        "readiness_vs_simulado_result",
+        { plat, status: readinessValidation.status, absolute_error: readinessValidation.absoluteError },
+        { state: { meta } }
+      );
+    }
+    lastReadinessTelemetryRef.current = key;
+  }, [meta, plat, readinessData.confidence, readinessData.score, readinessValidation.absoluteError, readinessValidation.status]);
 
   // Sparkline de prontidao
   const sparklinePath = useMemo(() => {
@@ -532,6 +557,19 @@ export default function StatsPanel({ setView = null }) {
               emptyState="Nenhuma revisao vencida"
               action={metricsEvaluated.overdueReviews.action}
             />
+          </div>
+
+          <div className="rounded-2xl border border-white/5 bg-[#111113] p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Validação do preparo</p>
+            <p className="mt-1 text-[12px] text-gray-300">
+              {readinessValidation.status === "coletando"
+                ? "Ainda coletando validação. Registre simulados para comparar preparo estimado com resultado real."
+                : readinessValidation.status === "alinhado"
+                ? `Preparo estimado alinhado ao resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`
+                : readinessValidation.status === "superestimado"
+                ? `Preparo estimado acima do resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`
+                : `Preparo estimado abaixo do resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

@@ -1,11 +1,31 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
     match /usuarios/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isOwner(uid);
+
+      match /activityLog/{eventId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /backups/{backupId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /telemetry/{eventId} {
+        allow read, write: if isOwner(uid);
+      }
+
+      match /calendarImports/{importId} {
+        allow read, write: if isOwner(uid);
+      }
 
       match /{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if false;
       }
     }
   }

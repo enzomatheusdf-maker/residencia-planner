@@ -1,12 +1,12 @@
 // src/components/Dashboard.jsx
-import React, { useMemo, useState, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
-import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Flame, Calendar, AlertTriangle, X, Zap, BookOpen, Layers, Share2, Unlock, GraduationCap, BarChart3, ClipboardList, Target } from "lucide-react";
+import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Flame, Calendar, AlertTriangle, X, Zap, Layers, Share2, Unlock, GraduationCap, BarChart3, ClipboardList, Target } from "lucide-react";
 import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection } from "../core/fsrs";
 import { calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
-import { getMentorDiagnosis, getMentorVoice, isExhaustionDetected } from "../core/mentor";
+import { getMentorDiagnosis, isExhaustionDetected } from "../core/mentor";
 import { buildMentorContext, getMentorNextAction, getMentorTodayPlan } from "../core/mentorAutopilot";
+import { isPlanSetupComplete } from "../core/onboardingGate";
 import { getReadinessData } from "../core/readiness";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip, InfoTooltip } from "./Primitives";
 import { ModalValidarDominio } from "./Modals";
@@ -18,11 +18,19 @@ import RetrievabilitySpark from "./RetrievabilitySpark";
 import DicaContextual from "./DicaContextual";
 import TrilhaJornada from "./TrilhaJornada";
 import useCountUp from "../hooks/useCountUp";
-import { trackEvent } from "../services/firebase";
+import { auth } from "../services/firebase";
 import { CALENDAR_PROVIDERS, CALENDAR_PROVIDER_IDS } from "../constants/calendarProviders";
 import { getPeakModePolicy, getPeakPhase } from "../core/peakMode";
 import { parseCatalogEntry } from "../constants/catalogos";
 import { resolveCatalogo, getCronogramaById } from "../constants/cronogramas";
+import { safeTrackEvent } from "../core/telemetry";
+import {
+  buildDailyBriefing,
+  canShowDailyBriefing,
+  dismissDailyBriefing,
+  getDailyBriefingStorageKey,
+} from "../core/dailyBriefing";
+import { getEnamedBottleneckExplanation, getEnamedIntel } from "../core/enamedIntel";
 import ActionInbox from "./ActionInbox";
 import WeeklyReview from "./WeeklyReview";
 import EmptyState from "./EmptyState";
@@ -133,157 +141,61 @@ function getPreparoCalibration({ readinessData, trueRet, totalSessions, temasFil
 }
 
 /* --- WELCOME POPUP --- */
-function WelcomePopup({ userName, pending, streakCurrent, totalSessions, onClose, onStartFocus, meta, naReserva, totalRevisoesFeitas, prontidao, forceFluencia = false, forceExhausted = false }) {
-  const [visible, setVisible] = useState(false);
+function WelcomePopup({ briefing, streakCurrent, onClose, onStartFocus }) {
+  if (!briefing) return null;
 
-  useEffect(() => {
-    // pequeno delay para a animação de entrada
-    const t = setTimeout(() => setVisible(true), 80);
-    return () => clearTimeout(t);
-  }, []);
+  return (
+    <section className="rounded-2xl border border-blue-500/20 bg-gradient-to-r from-blue-950/35 via-[var(--surface-1)] to-sky-950/20 p-4 shadow-lg shadow-slate-950/30">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-300">Resumo do dia</p>
+          <h3 className="mt-1 text-sm font-black text-white">{briefing.title}</h3>
+          <p className="mt-1 text-[12px] leading-relaxed text-gray-300">{briefing.priority}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-gray-400 hover:text-gray-200"
+          aria-label="Fechar resumo do dia"
+        >
+          <X size={15} />
+        </button>
+      </div>
 
-  const { plat } = useStore();
-  const mentorMsg = useMemo(() => {
-    return getMentorVoice({
-      situation: forceFluencia ? "fluencia" : "boas_vindas_diario",
-      userName,
-      pending,
-      streakCurrent,
-      meta: { ...meta, isExhaustedNow: forceExhausted },
-      plat,
-      tom: meta?.tomMentor || "gentil",
-      totalSessions,
-      totalRevisoesFeitas,
-      prontidao
-    });
-  }, [userName, pending, streakCurrent, meta, plat, totalSessions, totalRevisoesFeitas, prontidao, forceFluencia, forceExhausted]);
-
-  const handleClose = () => {
-    setVisible(false);
-    if (meta?.isRetornoAcolhedor) {
-      useStore.setState({ meta: { ...meta, isRetornoAcolhedor: false } });
-    }
-    setTimeout(onClose, 250);
-  };
-
-  const handleStart = () => {
-    setVisible(false);
-    if (meta?.isRetornoAcolhedor) {
-      useStore.setState({ meta: { ...meta, isRetornoAcolhedor: false } });
-    }
-    setTimeout(onStartFocus, 250);
-  };
-
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, []);
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[400] flex items-start sm:items-center justify-center p-4 overflow-y-auto"
-      style={{
-        background: "rgba(5,5,12,0.75)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
-        transition: "opacity 0.25s ease",
-        opacity: visible ? 1 : 0,
-      }}
-      onClick={handleClose}
-    >
-      <div
-        className="relative w-full max-w-[min(24rem,calc(100vw-2rem))]"
-        style={{
-          transition: "transform 0.28s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease",
-          transform: visible ? "scale(1) translateY(0)" : "scale(0.93) translateY(16px)",
-          opacity: visible ? 1 : 0,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* glow ambiental */}
-        <div className="absolute -inset-6 rounded-3xl bg-gradient-to-br from-blue-600/20 via-sky-600/10 to-transparent blur-3xl pointer-events-none" />
-
-        <div className="relative bg-[var(--surface-2)] border border-blue-500/25 rounded-2xl overflow-hidden shadow-2xl shadow-indigo-950/50">
-          {/* barra de acento superior */}
-          <div className="h-[3px] w-full bg-gradient-to-r from-blue-600 via-sky-500 to-blue-600" />
-
-          {/* header */}
-          <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/5">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center shadow-lg shadow-indigo-900/40">
-                <span className="text-sm">🧠</span>
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-400">
-                Mentora · MedRev
-              </span>
-            </div>
-            <button
-              onClick={handleClose}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 hover:text-gray-300 hover:bg-white/5 transition-all"
-            >
-              <X size={15} />
-            </button>
-          </div>
-
-          {/* mensagem */}
-          <div className="px-5 py-4">
-            <p className="text-[13px] leading-relaxed text-gray-200 font-semibold">
-              {mentorMsg}
-            </p>
-          </div>
-
-          {/* stats row */}
-          {totalSessions > 0 && (
-            <div className="mx-5 mb-4 grid grid-cols-2 gap-2">
-              <div className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 flex items-center gap-2">
-                <Flame size={14} className={streakCurrent > 0 ? "text-orange-400" : "text-gray-600"} />
-                <div>
-                  <p className="text-[9px] text-gray-500 uppercase tracking-wider font-bold">Streak</p>
-                  <p className="text-[13px] font-black text-white">{streakCurrent}/7 dias</p>
-                </div>
-              </div>
-              <div className="bg-white/[0.03] border border-white/5 rounded-xl px-3 py-2 flex items-center gap-2">
-                <BookOpen size={14} className="text-blue-400" />
-                <div>
-                  <p className="text-[9px] text-gray-500 uppercase tracking-wider font-bold">Hoje</p>
-                  <p className={`text-[13px] font-black ${pending > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-                    {pending > 0 ? `${pending} pendente${pending === 1 ? "" : "s"}${naReserva > 0 ? ` (+${naReserva})` : ""}` : "Fila zerada ✓"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* actions */}
-          <div className="flex flex-col sm:flex-row gap-2 px-5 pb-5">
-            {pending > 0 ? (
-              <button
-                onClick={handleStart}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white font-black text-[12px] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-900/30"
-              >
-                <Zap size={13} />
-                Iniciar Foco Agora
-              </button>
-            ) : (
-              <button
-                onClick={handleClose}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white font-black text-[12px] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-indigo-900/30"
-              >
-                Entendido!
-              </button>
-            )}
-            <button
-              onClick={handleClose}
-              className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/8 text-gray-400 hover:text-gray-200 font-semibold text-[12px] border border-white/8 transition-all w-full sm:w-auto"
-            >
-              Fechar
-            </button>
-          </div>
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="rounded-xl border border-white/5 bg-black/20 px-3 py-2">
+          <p className="text-[9px] font-black uppercase tracking-wider text-gray-500">Revisões de hoje</p>
+          <p className="mt-1 text-[14px] font-black text-white">{briefing.reviewsToday}</p>
+        </div>
+        <div className="rounded-xl border border-white/5 bg-black/20 px-3 py-2">
+          <p className="text-[9px] font-black uppercase tracking-wider text-gray-500">Tempo estimado</p>
+          <p className="mt-1 text-[14px] font-black text-white">{briefing.estimatedMinutes} min</p>
+        </div>
+        <div className="rounded-xl border border-white/5 bg-black/20 px-3 py-2">
+          <p className="text-[9px] font-black uppercase tracking-wider text-gray-500">Streak</p>
+          <p className="mt-1 text-[14px] font-black text-white">{streakCurrent}/7 dias</p>
         </div>
       </div>
-    </div>,
-    document.body
+
+      <p className="mt-3 text-[11px] leading-relaxed text-gray-400">{briefing.helperText}</p>
+
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <button
+          type="button"
+          onClick={onStartFocus}
+          className="flex-1 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 px-4 py-2.5 text-[12px] font-black text-white shadow-lg shadow-blue-950/25"
+        >
+          {briefing.primaryCta}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-[12px] font-semibold text-gray-300"
+        >
+          {briefing.secondaryCta}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -398,11 +310,11 @@ function MiniCronogramaWidget({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-        {/* ── Column 1: Curva de revisão hoje ── */}
+        {/* ── Column 1: Revisões de hoje ── */}
         <div className="flex flex-col gap-2 rounded-xl border border-blue-500/15 bg-gradient-to-b from-blue-950/30 to-transparent p-3 min-h-[150px]">
           <div className="flex items-center justify-between">
             <span className="text-[9px] font-black uppercase tracking-wider text-blue-300/70">
-              Curva de revisão hoje
+              Revisões de hoje
             </span>
             <span className={`text-[9px] font-bold tabular-nums px-1.5 py-0.5 rounded-full ${
               dueTodayItems.length === 0
@@ -465,7 +377,7 @@ function MiniCronogramaWidget({
         <div className="flex flex-col gap-2 rounded-xl border border-white/8 bg-white/[0.015] p-3 min-h-[150px]">
           <div className="flex items-center justify-between">
             <span className="text-[9px] font-black uppercase tracking-wider text-gray-400">
-              Cronograma
+              Plano da semana
             </span>
             <div className="flex items-center gap-1.5">
               <span className="text-[8.5px] font-bold text-blue-400/80 bg-blue-500/10 px-1.5 py-0.5 rounded-full">
@@ -693,8 +605,6 @@ function MetacognitiveChart({ doneReviews }) {
   );
 }
 
-const SESSION_KEY = "medrev_welcome_shown";
-
 function DashboardKpiCard({ label, value, tone = "text-white", children, action, tooltip, className = "", delayMs = 0, icon, accentColor }) {
   return (
     <div
@@ -767,6 +677,7 @@ function DailyProgressRing({ value, goal }) {
 }
 
 export default function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, setView, showToast, onOpenAjustes }) {
+  const currentUid = auth.currentUser?.uid || null;
   const { plat, sprint, tourStep, setTourStep, setOnboardingDone, onboardingDone } = useStore();
   const showToastGlobal = useStore((s) => s.showToast);
   const openConfirm = useStore((s) => s.openConfirm);
@@ -780,6 +691,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const enamedAnalises = useStore((s) => s.enamedAnalises || []);
   const sessionReflections = useStore((s) => s.sessionReflections || []);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
+  const telemetryMeta = useStore((s) => s.meta);
   const calendarProvider = useStore((s) => s.calendarProvider || { activeId: "medcof" });
   const cronogramaSel = useStore((s) => s.cronogramaSel);
   const providerAtivoLabel = useMemo(() => {
@@ -867,7 +779,9 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const [showWelcome, setShowWelcome] = useState(false);
   const [showCompleto, setShowCompleto] = useState(!modoSimples);
   const [showSetupFlow, setShowSetupFlow] = useState(false);
+  const [showHeroMeta, setShowHeroMeta] = useState(false);
   const [temaValidando, setTemaValidando] = useState(null);
+  const lastMentorSeenRef = useRef("");
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
@@ -898,6 +812,11 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     }
     return list;
   }, [temas, sprint, tourStep, plat]);
+  const enamedBottleneck = useMemo(() => (
+    plat === "res"
+      ? getEnamedBottleneckExplanation(getEnamedIntel(temasFiltrados), { minimumStarted: 2 })
+      : null
+  ), [plat, temasFiltrados]);
 
   const autoCatchUp = useStore((s) => s.autoCatchUp);
   useEffect(() => {
@@ -1014,10 +933,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     if (!diag || !diag.insights) return [];
     return diag.insights.filter(ins => ins.type !== "alerta" && ins.type !== "vies_excesso" && ins.type !== "vies_inseguranca");
   }, [diag]);
-  const hasFluenciaTrigger = useMemo(() => {
-    if (!diag?.insights) return false;
-    return diag.insights.some((ins) => ins.type === "tendencia_baixa" || ins.type === "vies_excesso");
-  }, [diag]);
   const hasExhaustionNow = useMemo(() => isExhaustionDetected(temaStats, done), [temaStats, done]);
   const totalSessions = useMemo(() => {
     return temas
@@ -1101,15 +1016,17 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   }, [modoSimples]);
 
   useEffect(() => {
-    if (!onboardingDone) return;       // still in tour — don't show
-    if (tourStep) return;              // tour in progress
-    if (sessionStorage.getItem(SESSION_KEY)) return;
-    const t = setTimeout(() => {
-      setShowWelcome(true);
-      sessionStorage.setItem(SESSION_KEY, "1");
-    }, 600);                           // small delay so UI renders first
-    return () => clearTimeout(t);
-  }, [onboardingDone, tourStep]);
+    const shouldShow = canShowDailyBriefing({
+      state: { plat, meta, onboardingDone, tourStep, userName },
+      context: {
+        pendingCount: pending,
+        overdueCount: overdue.length,
+        estimatedMinutes: pending * 12,
+      },
+      uid: currentUid,
+    });
+    setShowWelcome(shouldShow);
+  }, [currentUid, meta, onboardingDone, overdue.length, pending, plat, tourStep, userName]);
 
   const acertoMedio = useMemo(() => {
     const rs = done.filter(r => r.acerto != null);
@@ -1178,6 +1095,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
   const mentorNextAction = useMemo(() => getMentorNextAction(mentorContext), [mentorContext]);
   const mentorTodayPlan = useMemo(() => getMentorTodayPlan(mentorContext), [mentorContext]);
+  const agendaTodaySummary = mentorContext?.agendaTodaySummary || null;
 
   const comandoDoDia = useMemo(() => {
     const action = mentorNextAction || {};
@@ -1205,9 +1123,16 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const runMentorPrimaryAction = useCallback(() => {
     const action = mentorNextAction || {};
     const target = action.target || {};
+    const actionType = action.type || target.view || action.ctaView || "mentor";
+    safeTrackEvent(
+      "mentor_action_started",
+      { plat, action_type: actionType, source: action.source || "mentor" },
+      { state: { meta: telemetryMeta } }
+    );
     // 1. Alvo explícito de revisão (tema + etapa): inicia o Modo Foco direto.
     if (target.temaId && target.stepKey && onStudy) {
       onStudy(target.temaId, target.stepKey);
+      safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
       return;
     }
     // 2. Comandos de fila/revisão sem alvo explícito (ex.: "Fechar fila de hoje").
@@ -1221,11 +1146,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       } else if (setView) {
         setView("crono");
       }
+      safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
       return;
     }
     // 3. Demais comandos: navega para a tela correspondente.
     if (setView) setView(view);
-  }, [mentorNextAction, onStudy, setView, topFilaItem]);
+    safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
+  }, [mentorNextAction, onStudy, plat, setView, telemetryMeta, topFilaItem]);
 
   const days = Array.from({ length: 35 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - 34 + i);
@@ -1421,13 +1348,42 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       ? ` · ${todayLoadSignals.relearningCount} reaprendendo`
       : "";
     return `${todayLoadSignals.dueTodayCount} revisões · ${todayLoadSignals.todayMinutes} min · carga ${loadLabel}${relearningText}`;
-  }, [todayLoadSignals]);
+    }, [todayLoadSignals]);
+  const dailyBriefing = useMemo(() => buildDailyBriefing({
+    state: { plat, meta, onboardingDone, tourStep, userName },
+    context: {
+      pendingCount: pending,
+      overdueCount: overdue.length,
+      estimatedMinutes: todayLoadSignals.todayMinutes,
+    },
+  }), [meta, onboardingDone, overdue.length, pending, plat, todayLoadSignals.todayMinutes, tourStep, userName]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showMentorWhy, setShowMentorWhy] = useState(false);
   const vestibularStartComplete = useMemo(() => {
     if (plat !== "vest") return true;
     return isVestibularStartComplete(meta);
   }, [plat, meta]);
+  const dismissWelcome = useCallback(() => {
+    dismissDailyBriefing(
+      typeof window !== "undefined" ? window.localStorage : null,
+      getDailyBriefingStorageKey({ uid: currentUid })
+    );
+    setShowWelcome(false);
+  }, [currentUid]);
+
+  useEffect(() => {
+    const actionType = comandoDoDia.action?.type;
+    if (!actionType) return;
+    const eventKey = `${todayStr()}:${plat}:${actionType}`;
+    if (lastMentorSeenRef.current === eventKey) return;
+    safeTrackEvent(
+      "mentor_action_seen",
+      { plat, action_type: actionType, source: comandoDoDia.action?.source || "mentor" },
+      { state: { meta: telemetryMeta } }
+    );
+    lastMentorSeenRef.current = eventKey;
+  }, [comandoDoDia.action, plat, telemetryMeta]);
+
   useEffect(() => {
     if (streakCurrent >= 100 && !meta?.streakMaxAvisado) {
       (showToast || showToastGlobal)("Streak consolidado: agora priorize retenção real, não o número.");
@@ -1448,16 +1404,35 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           </div>
         </div>
 
-        <EmptyState
-          icon={GraduationCap}
-          title="Comece em 2 minutos"
-          description={"1. Escolha um calendário.\n2. Deixe o Mentor montar a primeira ação.\n3. Faça uma sessão curta."}
-          primaryAction={{
-            label: "Configurar agora",
-            onClick: () => setShowSetupFlow(true),
-          }}
-          className="my-4 whitespace-pre-line"
-        />
+        {isPlanSetupComplete({ meta }) ? (
+          <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-5 space-y-3">
+            <p className="text-[11px] font-bold text-blue-300 uppercase tracking-wide">Plano ativo</p>
+            <p className="text-lg font-black text-white">
+              Hoje:{" "}
+              {agendaTodaySummary && agendaTodaySummary.totalCount > 0
+                ? `${agendaTodaySummary.totalCount} tarefa${agendaTodaySummary.totalCount > 1 ? "s" : ""} · ${agendaTodaySummary.totalMinutes} min`
+                : "nenhuma tarefa agendada"}
+            </p>
+            <button
+              type="button"
+              onClick={() => setView && setView("crono")}
+              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[12px] font-bold border-none cursor-pointer"
+            >
+              Ver agenda
+            </button>
+          </div>
+        ) : (
+          <EmptyState
+            icon={GraduationCap}
+            title="Comece em 2 minutos"
+            description={"1. Escolha um calendário.\n2. Deixe o Mentor montar a primeira ação.\n3. Faça uma sessão curta."}
+            primaryAction={{
+              label: "Configurar agora",
+              onClick: () => setShowSetupFlow(true),
+            }}
+            className="my-4 whitespace-pre-line"
+          />
+        )}
 
         {showSetupFlow && (
           <Modal onClose={() => setShowSetupFlow(false)}>
@@ -1515,6 +1490,17 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 <button type="button" onClick={onEditName} className="text-gray-500 hover:text-gray-300 transition-colors border-none p-1 bg-transparent cursor-pointer" aria-label="Editar nome">
                   <Edit2 size={14} />
                 </button>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowHeroMeta((prev) => !prev)}
+                  className="md:hidden rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-300"
+                >
+                  {showHeroMeta ? "Ocultar detalhes" : "Ver detalhes"}
+                </button>
+              </div>
+              <div className={`${showHeroMeta ? "flex" : "hidden"} md:flex flex-wrap items-center gap-2.5`}>
                 {plat === "res" && (
                   <>
                     <span className="text-[9px] uppercase tracking-wider font-bold text-blue-300 border border-blue-500/30 bg-blue-500/10 rounded-lg px-2 py-1">
@@ -1529,8 +1515,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                     </button>
                   </>
                 )}
-              </div>
-              <div className="flex flex-wrap items-center gap-2.5">
                 <div className="flex items-center gap-1 rounded-xl border border-white/5 bg-black/25 px-2.5 py-1.5">
                   <span className="text-[8.5px] font-bold text-gray-500 uppercase tracking-wider mr-1 select-none flex items-center gap-1">
                     Consistencia
@@ -1569,6 +1553,20 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 )}
               </div>
             </div>
+
+            {showWelcome && (
+              <WelcomePopup
+                briefing={dailyBriefing}
+                streakCurrent={streakCurrent}
+                onClose={dismissWelcome}
+                onStartFocus={() => {
+                  dismissWelcome();
+                  if (topFilaItem) {
+                    onStudy(topFilaItem.temaId, topFilaItem.stepKey);
+                  }
+                }}
+              />
+            )}
 
             <div className="space-y-3">
               <p className="text-[10px] font-bold uppercase tracking-wide text-blue-300">{comandoDoDia.eyebrow}</p>
@@ -1626,11 +1624,31 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       </section>
 
-      {plat === "vest" && !vestibularStartComplete && (
+      {plat === "vest" && !vestibularStartComplete && meta?.onboarding?.version !== 2 && (
         <VestibularStartTrail setView={setView} onOpenAjustes={onOpenAjustes} />
       )}
 
       <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} />
+
+      <MiniCronogramaWidget
+        plat={plat}
+        setView={setView}
+        onStudy={onStudy}
+        onMarkMastery={handleMarkMastery}
+        overdue={overdue}
+        today_={today_}
+        temas={temasFiltrados}
+        calendarProvider={calendarProvider}
+        cronogramaSel={cronogramaSel}
+        temasPerWeek={meta?.temasPerWeek}
+        estrategiaStartDate={meta?.estrategiaStartDate}
+        onAdjustWeeklyTopics={handleAdjustWeeklyTopics}
+      />
+
+      <WeeklyReview
+        onAdjust={() => setView && setView("crono")}
+        onAction={(action) => handleInsightAction(action)}
+      />
 
       {/* Alertas compactos inline */}
       {(hasPendingClosure || peakModeAtivo) && (
@@ -1670,7 +1688,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       {/* KPIs — 4 métricas primárias */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 select-none">
         <DashboardKpiCard
-          label="Fila de hoje"
+          label="Revisões de hoje"
           icon={<ClipboardList size={13} className="text-amber-300" />}
           accentColor={pending > 0 ? "#f59e0b" : "#10b981"}
           value={String(pendingCountUp) + (naReserva > 0 ? " +" + naReserva : "")}
@@ -1760,7 +1778,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             <TrendingDown size={11} className="text-red-400" />
             {plat === "vest" ? "Frente prioritária" : "Gargalo ENAMED"}
           </p>
-          {readinessData?.priorityList?.[0] ? (
+          {plat === "vest" && readinessData?.priorityList?.[0] ? (
             <>
               <div>
                 <p className="text-sm font-black text-white leading-tight">{readinessData.priorityList[0].area}</p>
@@ -1775,6 +1793,25 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 className="self-start px-2.5 py-1.5 rounded-xl bg-blue-600/15 hover:bg-blue-600/30 text-blue-400 border border-blue-500/20 text-[10px] font-bold cursor-pointer transition-colors"
               >
                 Ver mapa completo →
+              </button>
+            </>
+          ) : plat === "res" && enamedBottleneck ? (
+            <>
+              <div>
+                <p className="text-sm font-black text-white leading-tight">{enamedBottleneck.area || "Ainda coletando gargalos"}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">{enamedBottleneck.motivo}</p>
+              </div>
+              <div className="space-y-1">
+                {enamedBottleneck.evidencias.slice(0, 2).map((item) => (
+                  <p key={item} className="text-[10px] text-gray-500">• {item}</p>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setView && setView(enamedBottleneck.target?.view || "stats")}
+                className="self-start px-2.5 py-1.5 rounded-xl bg-blue-600/15 hover:bg-blue-600/30 text-blue-400 border border-blue-500/20 text-[10px] font-bold cursor-pointer transition-colors"
+              >
+                {enamedBottleneck.actionLabel} →
               </button>
             </>
           ) : (
@@ -1824,25 +1861,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       </section>
 
-      <MiniCronogramaWidget
-        plat={plat}
-        setView={setView}
-        onStudy={onStudy}
-        onMarkMastery={handleMarkMastery}
-        overdue={overdue}
-        today_={today_}
-        temas={temasFiltrados}
-        calendarProvider={calendarProvider}
-        cronogramaSel={cronogramaSel}
-        temasPerWeek={meta?.temasPerWeek}
-        estrategiaStartDate={meta?.estrategiaStartDate}
-        onAdjustWeeklyTopics={handleAdjustWeeklyTopics}
-      />
-
-      <WeeklyReview
-        onAdjust={() => setView && setView("crono")}
-        onAction={(action) => handleInsightAction(action)}
-      />
         </>
       )}
 
@@ -2610,27 +2628,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       </div>
     </div>
   )}
-      {showWelcome && (
-        <WelcomePopup
-          userName={userName}
-          pending={pending}
-          streakCurrent={streakCurrent}
-          totalSessions={totalSessions}
-          totalRevisoesFeitas={totalRevisoesFeitas}
-          prontidao={prontidao}
-          forceFluencia={hasFluenciaTrigger}
-          forceExhausted={hasExhaustionNow}
-          meta={meta}
-          naReserva={naReserva}
-          onClose={() => setShowWelcome(false)}
-          onStartFocus={() => {
-            setShowWelcome(false);
-            if (topFilaItem) {
-              onStudy(topFilaItem.temaId, topFilaItem.stepKey);
-            }
-          }}
-        />
-      )}
 
       {tourStep === "dash" && showTourBalloon && (
         <TourBalloon
@@ -2651,14 +2648,15 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           onConfirm={({ questoes, acertos }) => {
             const resultado = validarDominio(plat, temaValidando.id, { questoes, acertos });
             (showToast || showToastGlobal)(resultado?.observacao || "Validação de domínio registrada para este tema.");
-            if (trackEvent) {
-              trackEvent("dominio_previo_avaliado", {
-                plat,
-                tema_id: temaValidando.id,
-                percentual: resultado?.percentual,
-                status: resultado?.status,
-              });
-            }
+              safeTrackEvent(
+                "dominio_previo_avaliado",
+                {
+                  plat,
+                  percentual: resultado?.percentual,
+                  status: resultado?.status,
+                },
+                { state: { meta: telemetryMeta } }
+              );
             setTemaValidando(null);
           }}
           onStartLater={() => {
@@ -2673,7 +2671,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       {showCompletionModal && (
         <Modal onClose={() => {
           setShowCompletionModal(false);
-          trackEvent("onboarding_done");
+            safeTrackEvent("onboarding_done", {}, { state: { meta: telemetryMeta } });
           setOnboardingDone();
           setTourStep(null);
         }}>
@@ -2693,7 +2691,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               className="w-full py-3"
               onClick={() => {
                 setShowCompletionModal(false);
-                trackEvent("onboarding_done");
+                safeTrackEvent("onboarding_done", {}, { state: { meta: telemetryMeta } });
                 setOnboardingDone();
                 setTourStep(null);
                 setView && setView("crono");

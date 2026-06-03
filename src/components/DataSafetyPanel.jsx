@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Download, HardDrive, ShieldCheck, Upload, Database, RefreshCcw } from "lucide-react";
 import { exportMedrevBackup, importMedrevBackup, validateMedrevBackup } from "../core/backup";
+import { validateStateIntegrity } from "../core/dataIntegrity";
 import {
   backupLegacyGlobalStore,
   detectLegacyGlobalStore,
@@ -66,11 +67,22 @@ export default function DataSafetyPanel() {
   const handleValidateLocal = () => {
     const payload = readPersistedPayload(storageKey);
     if (!payload) {
-      setValidation({ valid: false, errors: ["Nao foi encontrado backup local neste escopo."], warnings: [], summary: null });
+      setValidation({ valid: false, errors: ["Nao foi encontrado backup local neste escopo."], warnings: [], criticals: [], summary: null });
       return;
     }
     const localBackup = exportMedrevBackup(payload, { ownerUid: currentUid });
-    setValidation(validateMedrevBackup(localBackup));
+    const backupValidation = validateMedrevBackup(localBackup);
+    const integrity = validateStateIntegrity(localBackup);
+    setValidation({
+      ...backupValidation,
+      criticals: integrity.criticals,
+      warnings: [...backupValidation.warnings, ...integrity.warnings.map((item) => `${item.path}: ${item.message}`)],
+      summary: {
+        ...backupValidation.summary,
+        criticalCount: integrity.summary.criticalCount,
+        warningCount: integrity.summary.warningCount,
+      },
+    });
   };
 
   const handleImportFile = (event) => {
@@ -85,7 +97,7 @@ export default function DataSafetyPanel() {
         setImportValidation(result);
       } catch (error) {
         setImportCandidate(null);
-        setImportValidation({ valid: false, errors: [error.message], warnings: [], summary: null });
+        setImportValidation({ valid: false, errors: [error.message], warnings: [], criticals: [], summary: null });
       }
     };
     reader.readAsText(file);
@@ -236,9 +248,17 @@ export default function DataSafetyPanel() {
       </div>
 
       {validation && (
-        <p className={`text-[10px] ${validation.valid ? "text-emerald-300" : "text-red-300"}`}>
-          {validation.valid ? "Estrutura local valida." : validation.errors.join(" | ")}
-        </p>
+        <div className={`rounded-xl border p-3 text-[10px] ${validation.valid ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-200" : "border-red-500/20 bg-red-500/10 text-red-200"}`}>
+          <p className="font-bold">
+            {validation.valid ? "Estrutura local valida." : validation.errors.join(" | ")}
+          </p>
+          <p className="mt-1 text-gray-300">
+            Criticos: {validation.summary?.criticalCount || validation.criticals?.length || 0} · Warnings: {validation.summary?.warningCount || validation.warnings?.length || 0}
+          </p>
+          {validation.warnings?.length > 0 && (
+            <p className="mt-1 text-yellow-200">{validation.warnings.join(" | ")}</p>
+          )}
+        </div>
       )}
     </section>
   );

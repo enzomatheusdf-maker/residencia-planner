@@ -128,12 +128,22 @@ export function Field({ label, info, children }) {
 
 export function SmartTooltip({ content, children, preferred = "top" }) {
   const [open, setOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0, placement: preferred });
   const anchorRef = useRef(null);
   const bubbleRef = useRef(null);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const media = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobile(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
   useLayoutEffect(() => {
-    if (!open || !anchorRef.current || !bubbleRef.current) return;
+    if (!open || isMobile || !anchorRef.current || !bubbleRef.current) return;
     const a = anchorRef.current.getBoundingClientRect();
     const b = bubbleRef.current.getBoundingClientRect();
     const gap = 8;
@@ -146,18 +156,22 @@ export function SmartTooltip({ content, children, preferred = "top" }) {
     let left = a.left + (a.width / 2) - (b.width / 2);
     left = Math.max(8, Math.min(left, window.innerWidth - b.width - 8));
     setPos({ top, left, placement });
-  }, [open, preferred]);
+  }, [isMobile, open, preferred]);
 
   useEffect(() => {
     if (!open) return undefined;
     const close = () => setOpen(false);
-    window.addEventListener("scroll", close, true);
+    if (!isMobile) {
+      window.addEventListener("scroll", close, true);
+    }
     window.addEventListener("resize", close);
     return () => {
-      window.removeEventListener("scroll", close, true);
+      if (!isMobile) {
+        window.removeEventListener("scroll", close, true);
+      }
       window.removeEventListener("resize", close);
     };
-  }, [open]);
+  }, [isMobile, open]);
 
   return (
     <span ref={anchorRef} className="inline-flex items-center">
@@ -171,7 +185,7 @@ export function SmartTooltip({ content, children, preferred = "top" }) {
       >
         {children}
       </span>
-      {open &&
+      {open && !isMobile &&
         createPortal(
           <div
             ref={bubbleRef}
@@ -186,6 +200,31 @@ export function SmartTooltip({ content, children, preferred = "top" }) {
                 ? { top: "100%", marginTop: "-1px", borderRightWidth: "1px", borderBottomWidth: "1px" }
                 : { bottom: "100%", marginBottom: "-1px", borderLeftWidth: "1px", borderTopWidth: "1px" }}
             />
+          </div>,
+          document.body
+        )}
+      {open && isMobile &&
+        createPortal(
+          <div className="fixed inset-0 z-[720] flex items-end justify-center bg-black/60 backdrop-blur-sm p-3" onClick={() => setOpen(false)}>
+            <div
+              role="dialog"
+              aria-label="Detalhes"
+              className="w-full max-w-md rounded-[1.4rem] border border-white/10 bg-[#141418] p-4 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-300">Detalhe</p>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/5 text-gray-300"
+                  aria-label="Fechar detalhe"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+              <div className="text-[12px] leading-relaxed text-gray-200">{content}</div>
+            </div>
           </div>,
           document.body
         )}

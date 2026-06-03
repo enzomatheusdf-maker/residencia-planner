@@ -1,3 +1,5 @@
+import { validateStateIntegrity } from "./dataIntegrity";
+
 export const MEDREV_BACKUP_VERSION = "reviewflow-v6-backup";
 export const MEDREV_BACKUP_SCHEMA = "medrev-backup-v1";
 
@@ -74,6 +76,14 @@ export function validateMedrevBackup(backup) {
   if (!isObject(backup.meta)) errors.push("Campo 'meta' invalido.");
   if (!isObject(backup.res)) errors.push("Campo 'res' invalido.");
   if (!isObject(backup.vest)) errors.push("Campo 'vest' invalido.");
+
+  const integrity = validateStateIntegrity(backup);
+  if (integrity.criticals.length > 0) {
+    errors.push(...integrity.criticals.map((item) => `${item.path}: ${item.message}`));
+  }
+  if (integrity.warnings.length > 0) {
+    warnings.push(...integrity.warnings.map((item) => `${item.path}: ${item.message}`));
+  }
 
   const resTemas = Array.isArray(backup.res?.temas) ? backup.res.temas.length : 0;
   const vestTemas = Array.isArray(backup.vest?.temas) ? backup.vest.temas.length : 0;

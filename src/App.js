@@ -18,6 +18,7 @@ import { exportMedrevBackup } from "./core/backup";
 import { buildAuthSession, getInitialAuthSession, assertActiveUserScope } from "./core/authSession";
 import { getAnonymousStorageKey, getOrCreateAnonymousSessionId, getUserScopedStorageKey } from "./core/userScope";
 import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } from "./core/onboarding";
+import { shouldShowOnboardingV2 } from "./core/onboardingGate";
 import { featureEnabled } from "./core/platformFeatures";
 import { NAV_VIEW, getMoreNavItems } from "./core/navigationModel";
 
@@ -32,8 +33,8 @@ import {
   sincronizarComFirebase,
   carregarDadosUsuario,
   fazerLogout,
-  trackEvent
 } from "./services/firebase";
+import { safeTrackEvent } from "./core/telemetry";
 
 // Camada de Componentes
 import Sidebar from "./components/Sidebar";
@@ -52,6 +53,7 @@ import AcademiaMetodo from "./components/AcademiaMetodo";
 import FocusMode from "./components/FocusMode";
 import AuthModal from "./components/AuthModal";
 import OnboardingWizard from "./components/OnboardingWizard";
+import OnboardingWizardV2 from "./components/OnboardingWizardV2";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 // Modais e Primitivos
@@ -208,7 +210,8 @@ export default function App() {
   const trackedReturnRef = useRef(false);
   const onboardingMeta = useMemo(() => getOnboardingDefaults(meta || {}), [meta]);
   const onboardingCompleted = onboardingDone || isOnboardingComplete({ onboarding: onboardingMeta });
-  const shouldShowOnboarding = !onboardingCompleted && !tourStep;
+  const shouldShowV2 = shouldShowOnboardingV2({ tourStep, meta, onboardingDone });
+  const shouldShowOnboarding = !shouldShowV2 && !onboardingCompleted && !tourStep;
   const openAjustes = useCallback((payload = true) => {
     if (payload === false) {
       setAjustes(false);
@@ -294,7 +297,7 @@ export default function App() {
     if (!lastActive) return;
     const gap = Math.max(0, Math.round((new Date(todayStr()) - new Date(lastActive)) / (1000 * 60 * 60 * 24)));
     if (gap >= 1) {
-      trackEvent(gap >= 7 ? "retorno_d7" : "retorno_d1", { gap_dias: gap, uid: usuarioLogado.uid });
+      safeTrackEvent(gap >= 7 ? "retorno_d7" : "retorno_d1", { gap_dias: gap }, { state: useStore.getState() });
       trackedReturnRef.current = true;
     }
   }, [usuarioLogado]);
@@ -868,16 +871,19 @@ export default function App() {
       const stateAfterTrack = useStore.getState();
       const analyticsMeta = stateAfterTrack.meta?.analytics || {};
       if (!analyticsMeta.primeira_revisao_done) {
-        trackEvent("primeira_revisao", { uid: usuarioLogado?.uid, step: stepKey, plat });
+        safeTrackEvent("activation_first_review_done", { step: stepKey, plat }, { state: useStore.getState() });
+        safeTrackEvent("review_completed", { step: stepKey, plat }, { state: useStore.getState() });
         useStore.setState({
           meta: {
             ...stateAfterTrack.meta,
             analytics: { ...analyticsMeta, primeira_revisao_done: true }
           }
         });
+      } else {
+        safeTrackEvent("review_completed", { step: stepKey, plat }, { state: useStore.getState() });
       }
       if (totalFilaHoje === 1 && analyticsMeta.last_zero_day !== todayStr()) {
-        trackEvent("revisoes_zeradas_dia", { uid: usuarioLogado?.uid, plat });
+        safeTrackEvent("revisoes_zeradas_dia", { plat }, { state: useStore.getState() });
         useStore.setState({
           meta: {
             ...useStore.getState().meta,
@@ -938,6 +944,10 @@ export default function App() {
     [completeOnboarding, setCalendarProvider, setTourStep]
   );
 
+  const handleOnboardingV2Finish = useCallback(() => {
+    setView("dash");
+  }, []);
+
   // ─── CARREGANDO AUTH ───────────────────────────────────────────────────────
   if (carregandoAuth) {
     return (
@@ -967,7 +977,13 @@ export default function App() {
   if (focusMode) {
     return (
       <div className="flex h-screen bg-[#07070f] text-white font-sans antialiased overflow-hidden">
-        {shouldShowOnboarding && (
+        {shouldShowV2 && (
+          <OnboardingWizardV2
+            onComplete={handleOnboardingV2Finish}
+            onSkip={handleOnboardingFinish}
+          />
+        )}
+        {!shouldShowV2 && shouldShowOnboarding && (
           <OnboardingWizard
             onComplete={handleOnboardingFinish}
             onSkip={handleOnboardingFinish}
@@ -995,7 +1011,13 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-[#07070f] text-white font-sans antialiased overflow-hidden">
-      {shouldShowOnboarding && (
+      {shouldShowV2 && (
+        <OnboardingWizardV2
+          onComplete={handleOnboardingV2Finish}
+          onSkip={handleOnboardingFinish}
+        />
+      )}
+      {!shouldShowV2 && shouldShowOnboarding && (
         <OnboardingWizard
           onComplete={handleOnboardingFinish}
           onSkip={handleOnboardingFinish}
@@ -1129,27 +1151,29 @@ export default function App() {
             <MoreToolsHub items={moreNavItems} onOpen={openFromMore} />
           )}
           {view === "crono" && plat === "res" && (
-            <Cronograma
-              onStep={handleStudyTrigger}
-              onEdit={(t) => setTemaEdit(t)}
-              onIniciarTema={(temaConfig) => {
-                if (!checkWorkloadAndWarn()) return;
-                if (temaConfig.id) {
-                  updateTema(plat, temaConfig.id, { unstarted: false, d0: todayStr() });
-                  handleStudyTrigger(temaConfig.id, "d0");
-                } else {
-                  const existing = temas.find(t => t.nome === temaConfig.nome);
-                  if (existing) {
-                    updateTema(plat, existing.id, { unstarted: false, d0: todayStr() });
-                    handleStudyTrigger(existing.id, "d0");
+            <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
+              <Cronograma
+                onStep={handleStudyTrigger}
+                onEdit={(t) => setTemaEdit(t)}
+                onIniciarTema={(temaConfig) => {
+                  if (!checkWorkloadAndWarn()) return;
+                  if (temaConfig.id) {
+                    updateTema(plat, temaConfig.id, { unstarted: false, d0: todayStr() });
+                    handleStudyTrigger(temaConfig.id, "d0");
                   } else {
-                    const novoId = Date.now();
-                    addTema(plat, { ...temaConfig, id: novoId, d0: todayStr() });
-                    handleStudyTrigger(novoId, "d0");
+                    const existing = temas.find(t => t.nome === temaConfig.nome);
+                    if (existing) {
+                      updateTema(plat, existing.id, { unstarted: false, d0: todayStr() });
+                      handleStudyTrigger(existing.id, "d0");
+                    } else {
+                      const novoId = Date.now();
+                      addTema(plat, { ...temaConfig, id: novoId, d0: todayStr() });
+                      handleStudyTrigger(novoId, "d0");
+                    }
                   }
-                }
-              }}
-            />
+                }}
+              />
+            </ErrorBoundary>
           )}
           {view === "crono" && plat === "vest" && (
             <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>

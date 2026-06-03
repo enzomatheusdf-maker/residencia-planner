@@ -40,6 +40,15 @@ describe("userDataMigration", () => {
     expect(localStorage.getItem(result.to)).toContain("\"state\"");
   });
 
+  test("nao sobrescreve escopo destino existente sem overwrite", () => {
+    localStorage.setItem("reviewflow-v6", "{\"state\":{\"res\":{\"temas\":[1]}}}");
+    localStorage.setItem("medrev:prod:user:uid-a:store", "{\"state\":{\"res\":{\"temas\":[2]}}}");
+    const result = migrateLegacyStoreToUserScope("uid-a", { confirm: true, env: "prod" });
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("target_scope_already_has_data");
+    expect(localStorage.getItem("medrev:prod:user:uid-a:store")).toContain("[2]");
+  });
+
   test("limpa legado apenas com confirmacao", () => {
     localStorage.setItem("reviewflow-v6", "{}");
     const denied = clearLegacyGlobalStoreAfterConfirm();
@@ -51,4 +60,3 @@ describe("userDataMigration", () => {
     expect(localStorage.getItem("reviewflow-v6")).toBeNull();
   });
 });
-

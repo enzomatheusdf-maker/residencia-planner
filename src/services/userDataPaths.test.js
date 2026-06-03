@@ -3,6 +3,7 @@ import {
   userActivityPath,
   userBackupPath,
   userCalendarImportPath,
+  userTelemetryPath,
 } from "./userDataPaths";
 
 describe("userDataPaths", () => {
@@ -21,5 +22,12 @@ describe("userDataPaths", () => {
   test("calendar imports path inclui uid", () => {
     expect(userCalendarImportPath("u1")).toEqual(["usuarios", "u1", "calendarImports"]);
   });
-});
 
+  test("telemetry path inclui uid", () => {
+    expect(userTelemetryPath("u1")).toEqual(["usuarios", "u1", "telemetry"]);
+  });
+
+  test("uid obrigatorio", () => {
+    expect(() => userStatePath("")).toThrow("Missing authenticated user uid");
+  });
+});

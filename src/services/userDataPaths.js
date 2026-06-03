@@ -17,6 +17,10 @@ export function userCalendarImportPath(uid) {
   return [...getUserRootPath(uid), "calendarImports"];
 }
 
+export function userTelemetryPath(uid) {
+  return [...getUserRootPath(uid), "telemetry"];
+}
+
 export function userStateDoc(db, uid) {
   return doc(db, ...userStatePath(assertUid(uid)));
 }
@@ -29,3 +33,6 @@ export function userBackupCollection(db, uid) {
   return collection(db, ...userBackupPath(assertUid(uid)));
 }
 
+export function userTelemetryCollection(db, uid) {
+  return collection(db, ...userTelemetryPath(assertUid(uid)));
+}

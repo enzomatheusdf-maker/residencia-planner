@@ -97,6 +97,7 @@ const LEGACY_VIEW_MAP = {
   home: "dash",
   plano: "crono",
   cronograma: "crono",
+  agenda: "crono",
   estudar: "sims",
   simulado: "sims",
   simulados: "sims",

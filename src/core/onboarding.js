@@ -61,8 +61,37 @@ export function getOnboardingDefaults(existingMeta = {}) {
       ...previousModules,
       anki: existingAnkiEnabled || previousModules.anki === true,
     },
+    // v2 extensions (aditivas — não quebram dados v1)
+    version: previous.version || 1,
+    source: previous.source || null,
+    track: previous.track || null,
+    dismissedAt: previous.dismissedAt || null,
   };
 }
+
+export const DEFAULT_PLAN_SETUP = {
+  completedAt: null,
+  startDate: null,
+  targetDate: null,
+  horizonMode: "duration",
+  horizonMonths: 6,
+  studyDays: {
+    dom: { active: false, maxNewTopics: 0 },
+    seg: { active: true,  maxNewTopics: 3 },
+    ter: { active: true,  maxNewTopics: 3 },
+    qua: { active: true,  maxNewTopics: 3 },
+    qui: { active: true,  maxNewTopics: 3 },
+    sex: { active: true,  maxNewTopics: 3 },
+    sab: { active: false, maxNewTopics: 0 },
+  },
+  topicsPerWeek: 15,
+  scopeMode: "essential",
+  minutesPerTopic: 50,
+  focusMode: "medrev_base",
+  institutions: ["ENAMED"],
+  simulationPlan: "none",
+  feasibility: null,
+};
 
 export function applyOnboardingChoice(meta = {}, choice = {}) {
   const current = getOnboardingDefaults(meta);

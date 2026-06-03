@@ -1,4 +1,6 @@
 import { STEPS, todayStr, diffDays, getWorkloadProjection } from "./fsrs";
+import { buildAgendaItems, getAgendaDaySummary } from "./agendaEngine";
+import { getFirstActionAfterOnboarding } from "./onboardingEngine";
 import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
 import { dominantErrorType, summarizeErrors } from "./errorTaxonomy";
 import { getCorrectiveAction } from "./errorActionMap";
@@ -230,6 +232,18 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
   const pendingExamAnalysis = Boolean(simulados.length > 0 && !latestEnamed);
   const errorSignal = collectDominantErrorSignal(temas, simulados, plat);
 
+  // ── Onboarding v2 signals ──────────────────────────────────────────────────
+  const planSetup = meta?.planSetup || null;
+  const scheduledTopics = (state.calendarProvider?.scheduledTopics) || [];
+  const agendaItems = planSetup?.completedAt
+    ? buildAgendaItems(temas, scheduledTopics, simulados, planSetup, plat, 30, today)
+    : [];
+  const agendaTodaySummary = getAgendaDaySummary(agendaItems, today);
+  const firstAction = (planSetup?.completedAt && temas.length === 0)
+    ? getFirstActionAfterOnboarding(scheduledTopics, planSetup, today)
+    : null;
+  const planHealth = planSetup?.feasibility?.status || null;
+
   return {
     plat,
     today,
@@ -249,5 +263,8 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     dominantError: errorSignal.dominantError,
     dominantErrorAction: errorSignal.dominantErrorAction,
     dominantErrorIsStrong: errorSignal.dominantErrorIsStrong,
+    firstAction,
+    agendaTodaySummary,
+    planHealth,
   };
 }

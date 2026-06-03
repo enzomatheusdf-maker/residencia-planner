@@ -4,6 +4,7 @@ import {
   calcPreparoEnamed,
   topHotness,
   getEnamedAction,
+  getEnamedBottleneckExplanation,
 } from "./enamedIntel";
 
 const rev = (acerto) => ({ d0: { done: true, acerto } });
@@ -59,5 +60,17 @@ describe("enamedIntel", () => {
     ]);
     const action = getEnamedAction(intel);
     expect(action.title).toMatch(/Foque|Comece/);
+  });
+
+  test("gera explicacao acionavel para gargalo", () => {
+    const intel = getEnamedIntel([
+      { esp: "Cirurgia", tema: "Apendicite", unstarted: false, rev: rev(0.50) },
+      { esp: "Cirurgia", tema: "Abdome agudo", unstarted: false, rev: rev(0.40) },
+      { esp: "Clínica Médica", tema: "Cardiologia", unstarted: false, rev: rev(0.85) },
+    ]);
+    const explanation = getEnamedBottleneckExplanation(intel, { minimumStarted: 1 });
+    expect(explanation.collecting).toBe(false);
+    expect(explanation.area).toBeTruthy();
+    expect(explanation.evidencias.length).toBeGreaterThan(0);
   });
 });

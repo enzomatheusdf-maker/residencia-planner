@@ -326,6 +326,40 @@ export const useStore = create(
             onboarding: getOnboardingDefaults({}),
           },
         })),
+      // ── Onboarding v2 ───────────────────────────────────────────────────────
+      setOnboardingTrack: (track) =>
+        set((state) => ({
+          plat: track === "vest" ? "vest" : "res",
+          meta: {
+            ...state.meta,
+            onboarding: {
+              ...(state.meta?.onboarding || getOnboardingDefaults({})),
+              track,
+              version: 2,
+            },
+          },
+        })),
+      completePlanSetup: (planSetup = {}, scheduledTopics = []) =>
+        set((state) => ({
+          calendarProvider: {
+            ...(state.calendarProvider || { activeId: "medcof", importedTopics: [], customTopics: [] }),
+            scheduledTopics: Array.isArray(scheduledTopics) ? scheduledTopics : [],
+          },
+          meta: {
+            ...state.meta,
+            planSetup: {
+              ...planSetup,
+              completedAt: planSetup.completedAt || new Date().toISOString().slice(0, 10),
+            },
+            onboarding: {
+              ...(state.meta?.onboarding || getOnboardingDefaults({})),
+              version: 2,
+              completed: true,
+              completedAt: state.meta?.onboarding?.completedAt || new Date().toISOString().slice(0, 10),
+            },
+          },
+          onboardingDone: true,
+        })),
       toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
       toggleModoSimples: () => set((state) => ({ modoSimples: !state.modoSimples })),
       toggleMentorMode: () => set((state) => ({ mentorMode: !state.mentorMode })),

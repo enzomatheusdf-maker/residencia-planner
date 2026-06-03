@@ -14,6 +14,7 @@ import {
   DOMINIO_META,
   DOMINIO_PREVIO_MIN_QUESTOES,
 } from "../core/domainValidation";
+import { readSanitizedNumber, sanitizeNumericInput } from "../core/numberInput";
 import { getAnonymousStorageKey, getOrCreateAnonymousSessionId, getUserScopedStorageKey } from "../core/userScope";
 import { detectLegacyGlobalStore, migrateLegacyStoreToUserScope } from "../core/userDataMigration";
 import { getReadinessData } from "../core/readiness";
@@ -1287,6 +1288,14 @@ export function AjustesModal({
   const saveMeta = (newFields) => {
     setMeta({ ...meta, ...newFields, estrategiaRefinada: true });
   };
+  const saveMetaNumber = (field, rawValue, options, fallback = null) => {
+    const value = readSanitizedNumber(rawValue, options);
+    if (value == null) {
+      if (fallback != null) saveMeta({ [field]: fallback });
+      return;
+    }
+    saveMeta({ [field]: value });
+  };
   const esps = plat === "res" ? ESPS_RES : ESPS_VEST;
 
   const readiness = getReadinessData({ temas, simulados, meta, plat });
@@ -1609,7 +1618,7 @@ export function AjustesModal({
                   <Input type="date" value={meta.dataProva} onChange={(e) => saveMeta({ dataProva: e.target.value })} />
                 </Field>
                 <Field label="Meta de acerto (%)" info="A porcentagem de acertos em simulados que você deseja atingir no final da preparação.">
-                  <Input type="number" min={50} max={100} step={0.1} value={meta.acerto} onChange={(e) => saveMeta({ acerto: parseFloat(e.target.value) || 85 })} />
+                  <Input type="number" min={50} max={100} step={0.1} value={meta.acerto} onChange={(e) => saveMetaNumber("acerto", e.target.value, { allowDecimal: true, maxDecimals: 1, min: 50, max: 100 }, 85)} />
                 </Field>
               </div>
               <p className="text-[9.5px] text-gray-500 pl-1 -mt-2">
@@ -1618,10 +1627,10 @@ export function AjustesModal({
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Teto diário de revisões" info="O número máximo de cards de revisão exibidos no Dashboard por dia. Excessos são movidos de forma inteligente para a fila reserva para amanhã, aliviando a carga mental.">
-                  <Input type="number" min={5} max={500} value={meta.maxRevisoesDia || 30} onChange={(e) => saveMeta({ maxRevisoesDia: parseInt(e.target.value, 10) || 30 })} />
+                  <Input type="number" min={5} max={500} value={meta.maxRevisoesDia ?? 30} onChange={(e) => saveMetaNumber("maxRevisoesDia", e.target.value, { min: 5, max: 500 }, 30)} />
                 </Field>
                 <Field label="Intervalo Máximo (Dias)" info="O limite máximo de dias para o agendamento de uma revisão. Garante que você revise todos os temas consolidados pelo menos uma vez a cada N dias.">
-                  <Input type="number" min={30} max={365} value={meta.intervaloMaxDias || 180} onChange={(e) => saveMeta({ intervaloMaxDias: parseInt(e.target.value, 10) || 180 })} />
+                  <Input type="number" min={30} max={365} value={meta.intervaloMaxDias ?? 180} onChange={(e) => saveMetaNumber("intervaloMaxDias", e.target.value, { min: 30, max: 365 }, 180)} />
                 </Field>
               </div>
 
@@ -1641,7 +1650,7 @@ export function AjustesModal({
 
               <Field label="Meta diária de revisões (0 = ilimitada)" info="Número de revisões que você se compromete a fazer diariamente como meta pessoal (não confunda com o Teto Diário do FSRS).">
                 <div className="flex gap-2">
-                  <Input type="number" min={0} value={meta.metaDiaria || 0} onChange={(e) => saveMeta({ metaDiaria: +e.target.value })} className="flex-1" />
+                  <Input type="number" min={0} value={meta.metaDiaria ?? 0} onChange={(e) => saveMetaNumber("metaDiaria", e.target.value, { min: 0 }, 0)} className="flex-1" />
                   <button
                     type="button"
                     onClick={() => {
@@ -1661,10 +1670,10 @@ export function AjustesModal({
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Meta diária de questões (0 = inativo)" info="Quantidade de questões resolvidas que você quer atingir por dia (utilizado para calcular o Saldo de Ritmo na aba de Preparo).">
-                  <Input type="number" min={0} value={meta.metaQuestoesDia || 0} onChange={(e) => saveMeta({ metaQuestoesDia: parseInt(e.target.value, 10) || 0 })} />
+                  <Input type="number" min={0} value={meta.metaQuestoesDia ?? 0} onChange={(e) => saveMetaNumber("metaQuestoesDia", e.target.value, { min: 0 }, 0)} />
                 </Field>
                 <Field label="Meta total de questões (0 = inativo)" info="Quantidade total de questões resolvidas que você quer atingir ao final da preparação.">
-                  <Input type="number" min={0} value={meta.metaQuestoesTotal || 0} onChange={(e) => saveMeta({ metaQuestoesTotal: parseInt(e.target.value, 10) || 0 })} />
+                  <Input type="number" min={0} value={meta.metaQuestoesTotal ?? 0} onChange={(e) => saveMetaNumber("metaQuestoesTotal", e.target.value, { min: 0 }, 0)} />
                 </Field>
               </div>
 
@@ -1953,7 +1962,7 @@ export function AjustesModal({
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Horas disponíveis / dia" info="Média de horas diárias dedicadas ao estudo. Auxilia o Mentor na recomendação e limite de carga.">
-                  <Input type="number" min={1} max={24} value={meta.tempoDisponivel || 2} onChange={(e) => saveMeta({ tempoDisponivel: +e.target.value })} />
+                  <Input type="number" min={1} max={24} value={meta.tempoDisponivel ?? 2} onChange={(e) => saveMetaNumber("tempoDisponivel", e.target.value, { min: 1, max: 24 }, 2)} />
                 </Field>
               </div>
 
@@ -1973,10 +1982,10 @@ export function AjustesModal({
                       <Input
                         type="number"
                         min={0}
-                        value={meta.acertosAlvo || 0}
+                        value={meta.acertosAlvo ?? 0}
                         onChange={(e) => {
-                          const val = +e.target.value;
-                          const tot = meta.totalQuestoesAlvo || 100;
+                          const val = readSanitizedNumber(e.target.value, { min: 0 }) ?? 0;
+                          const tot = meta.totalQuestoesAlvo ?? 100;
                           const pct = tot > 0 ? parseFloat(((val / tot) * 100).toFixed(2)) : 0;
                           saveMeta({ acertosAlvo: val, notaCorteAlvo: pct });
                         }}
@@ -1987,10 +1996,10 @@ export function AjustesModal({
                       <Input
                         type="number"
                         min={1}
-                        value={meta.totalQuestoesAlvo || 100}
+                        value={meta.totalQuestoesAlvo ?? 100}
                         onChange={(e) => {
-                          const tot = +e.target.value;
-                          const val = meta.acertosAlvo || 0;
+                          const tot = readSanitizedNumber(e.target.value, { min: 1 }) ?? 1;
+                          const val = meta.acertosAlvo ?? 0;
                           const pct = tot > 0 ? parseFloat(((val / tot) * 100).toFixed(2)) : 0;
                           saveMeta({ totalQuestoesAlvo: tot, notaCorteAlvo: pct });
                         }}
@@ -2397,8 +2406,8 @@ export function ModalValidarDominio({ tema, onConfirm, onCancel, onStartLater })
   const [acertos, setAcertos] = React.useState("");
   const [submitted, setSubmitted] = React.useState(false);
 
-  const qtd = parseInt(questoes, 10) || 0;
-  const acertosNum = parseInt(acertos, 10);
+  const qtd = readSanitizedNumber(questoes, { min: 1, max: 50 }) ?? 0;
+  const acertosNum = readSanitizedNumber(acertos, { min: 0, max: qtd || 50 });
   const pct = qtd > 0 && !isNaN(acertosNum) ? Math.round((acertosNum / qtd) * 100) : null;
   const classificacao = pct != null ? classificarDominio(pct) : null;
   const meta_ = classificacao ? DOMINIO_META[classificacao] : null;
@@ -2434,7 +2443,7 @@ export function ModalValidarDominio({ tema, onConfirm, onCancel, onStartLater })
               min="1"
               max="50"
               value={questoes}
-              onChange={(e) => setQuestoes(e.target.value)}
+              onChange={(e) => setQuestoes(sanitizeNumericInput(e.target.value, { min: 1, max: 50 }).text)}
               placeholder={String(DOMINIO_PREVIO_MIN_QUESTOES)}
             />
           </Field>
@@ -2444,7 +2453,7 @@ export function ModalValidarDominio({ tema, onConfirm, onCancel, onStartLater })
               min="0"
               max={qtd || 50}
               value={acertos}
-              onChange={(e) => setAcertos(e.target.value)}
+              onChange={(e) => setAcertos(sanitizeNumericInput(e.target.value, { min: 0, max: qtd || 50 }).text)}
               placeholder="ex: 13"
             />
           </Field>
