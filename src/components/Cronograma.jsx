@@ -267,6 +267,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
   });
   const [bankQuery, setBankQuery] = useState("");
   const [bankAreaFilter, setBankAreaFilter] = useState("TODAS");
+  const [bancoAreaExpanded, setBancoAreaExpanded] = useState({});
   const [cronoTab, setCronoTab] = useState(() => getPlanTabFromTarget(navigationTarget, PLAN_TAB.PLAN)); // "plano" | "agenda" | "banco"
   const scheduledTopics = useMemo(
     () => calendarProvider?.scheduledTopics || [],
@@ -532,52 +533,67 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
           {/* Aba Banco de Temas */}
           {cronoTab === "banco" && (
             <div className="space-y-4">
-              <div className="rounded-3xl border border-white/5 bg-[var(--surface-1)] p-4">
-                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <h4 className="text-[12px] font-black text-white uppercase tracking-wider">Banco de Temas</h4>
-                    <p className="mt-1 text-[10px] text-gray-500">
-                      {filteredTopicBankItems.length} de {topicBankItems.length} temas do plano ativo.
-                    </p>
-                  </div>
-                  <Input
-                    placeholder="Buscar no banco..."
-                    value={bankQuery}
-                    onChange={(e) => setBankQuery(e.target.value)}
-                    className="lg:max-w-[260px]"
-                  />
-                  <div className="flex gap-1 bg-[#0d0d10] border border-white/5 rounded-xl p-1 overflow-x-auto">
-                    {topicBankAreas.map((area) => (
-                      <button
-                        type="button"
-                        key={area}
-                        onClick={() => setBankAreaFilter(area)}
-                        className={`px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold whitespace-nowrap ${
-                          bankAreaFilter === area ? "bg-blue-600 text-white" : "text-gray-500 hover:text-white"
-                        }`}
-                      >
-                        {area === "TODAS" ? "Todas" : area}
-                      </button>
-                    ))}
-                  </div>
+              <div className="rounded-3xl border border-white/5 bg-[var(--surface-1)] p-4 space-y-3">
+                {/* Linha 1: Titulo + contagem + tooltip */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <h4 className="text-[12px] font-black text-white uppercase tracking-wider shrink-0">Banco de Temas</h4>
+                  <InfoTooltip text="Todos os temas do plano ativo, organizados por especialidade. Clique no cabeçalho de cada área para expandir ou recolher. Use a busca e os filtros para navegar." />
+                  <span className="text-[10px] text-gray-500 ml-1">
+                    {filteredTopicBankItems.length} de {topicBankItems.length} temas
+                  </span>
+                </div>
+                {/* Linha 2: Busca */}
+                <Input
+                  placeholder="Buscar no banco..."
+                  value={bankQuery}
+                  onChange={(e) => setBankQuery(e.target.value)}
+                  className="w-full"
+                />
+                {/* Linha 3: Filtros de area */}
+                <div className="flex gap-1 bg-[#0d0d10] border border-white/5 rounded-xl p-1 overflow-x-auto">
+                  {topicBankAreas.map((area) => (
+                    <button
+                      type="button"
+                      key={area}
+                      onClick={() => setBankAreaFilter(area)}
+                      className={`px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold whitespace-nowrap transition-colors ${
+                        bankAreaFilter === area ? "bg-blue-600 text-white" : "text-gray-500 hover:text-white"
+                      }`}
+                    >
+                      {area === "TODAS" ? "Todas" : area}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {/* Vista hierarquica: Area > Subarea > Temas */}
-              <div className="space-y-6">
-                {Object.entries(groupedBankItems).map(([area, subareas]) => (
-                  <div key={area} className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-px flex-1 bg-white/5" />
-                      <h3 className="text-[11px] font-black uppercase tracking-widest text-gray-400">{area}</h3>
-                      <div className="h-px flex-1 bg-white/5" />
-                    </div>
+              <div className="space-y-4">
+                {Object.entries(groupedBankItems).map(([area, subareas]) => {
+                  const isExpanded = bancoAreaExpanded[area] !== false; // default: expanded
+                  const totalInArea = Object.values(subareas).flat().length;
+                  return (
+                  <div key={area} className="rounded-2xl border border-white/5 bg-[var(--surface-1)]/40 overflow-hidden">
+                    {/* Cabecalho colapsavel da area */}
+                    <button
+                      type="button"
+                      onClick={() => setBancoAreaExpanded((prev) => ({ ...prev, [area]: !isExpanded }))}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors"
+                    >
+                      <div className="h-px flex-1 bg-white/8" />
+                      <span className="text-[11px] font-black uppercase tracking-widest text-gray-300 whitespace-nowrap">{area}</span>
+                      <span className="text-[9px] text-gray-600 font-mono">{totalInArea}</span>
+                      <div className="h-px flex-1 bg-white/8" />
+                      {isExpanded ? <ChevronUp size={13} className="text-gray-500 shrink-0" /> : <ChevronDown size={13} className="text-gray-500 shrink-0" />}
+                    </button>
+
+                    {isExpanded && (
+                    <div className="px-4 pb-4 space-y-3">
                     {Object.entries(subareas).map(([subarea, items]) => (
                       <div key={subarea} className="space-y-2">
                         {subarea !== "Geral" && (
                           <p className="text-[10px] text-gray-600 font-bold uppercase tracking-wider pl-1">↳ {subarea}</p>
                         )}
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3">
                           {items.map((item) => {
                             const tema = findTemaForBankItem(item);
                             const started = tema && !tema.unstarted;
@@ -653,8 +669,11 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                         </div>
                       </div>
                     ))}
+                    </div>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
                 {filteredTopicBankItems.length === 0 && (
                   <p className="text-center py-12 text-gray-500 text-[12px]">Nenhum tema encontrado.</p>
                 )}
