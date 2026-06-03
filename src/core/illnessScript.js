@@ -368,24 +368,53 @@ export function agendarReencontro(prev = {}, nota) {
 }
 
 /**
- * Elo tema↔caso clínico (P2.6). Stub heurístico: casa pelo nome do tema e, em
- * segundo nível, por inclusão dentro da mesma área. Retorna o caso ou null.
- *
- * NOTA: função-contrato — Enzo vai refiná-la (aliases, sinonímia, subarea) numa
- * próxima atualização. Enquanto retornar null, o fluxo "Já domino" cai no skip
- * simples (fallback seguro), sem semear re-encontros.
+ * Elo tema↔caso clínico. Matching por (1) temaId exato, (2) nome exato,
+ * (3) nome parcial + mesma área, (4) área igual com maior sobreposição de tokens.
  */
 export function clinicalCaseMatch(tema, casos = []) {
   if (!tema || !Array.isArray(casos) || !casos.length) return null;
   const temaNome = normalize(tema?.nome ?? tema?.tema ?? "");
   const temaArea = normalize(tema?.esp ?? tema?.area ?? "");
-  if (!temaNome) return null;
-  const byTema = casos.find((c) => normalize(c?.tema) === temaNome);
-  if (byTema) return byTema;
-  const byArea = casos.find(
-    (c) => temaArea && normalize(c?.area) === temaArea && normalize(c?.tema).includes(temaNome)
-  );
-  return byArea || null;
+  const temaId = tema?.id ?? tema?.temaId ?? null;
+
+  if (!temaNome && !temaId) return null;
+
+  // 1. Matching por temaId vinculado
+  if (temaId) {
+    const byId = casos.find((c) => c?.temaId === temaId || c?.id === String(temaId));
+    if (byId) return byId;
+  }
+
+  // 2. Nome exato
+  const byNomeExato = casos.find((c) => normalize(c?.tema) === temaNome);
+  if (byNomeExato) return byNomeExato;
+
+  // 3. Nome parcial dentro da mesma área
+  if (temaArea) {
+    const byAreaNome = casos.find((c) => {
+      const cArea = normalize(c?.area ?? "");
+      const cTema = normalize(c?.tema ?? "");
+      return (cArea === temaArea || cArea.includes(temaArea) || temaArea.includes(cArea))
+        && (cTema.includes(temaNome) || temaNome.includes(cTema));
+    });
+    if (byAreaNome) return byAreaNome;
+  }
+
+  // 4. Máxima sobreposição de tokens de nome (fallback)
+  const temaNomeTokens = temaNome.split(/\s+/).filter(t => t.length > 3);
+  if (temaNomeTokens.length === 0) return null;
+
+  let bestMatch = null;
+  let bestScore = 0;
+  for (const c of casos) {
+    const cNome = normalize(c?.tema ?? "");
+    const overlap = temaNomeTokens.filter(t => cNome.includes(t)).length;
+    if (overlap > bestScore && overlap >= Math.ceil(temaNomeTokens.length / 2)) {
+      bestScore = overlap;
+      bestMatch = c;
+    }
+  }
+  return bestMatch;
 }
 
 function areaPriority(area, areasPrioritarias = []) {

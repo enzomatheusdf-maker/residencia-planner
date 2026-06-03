@@ -65,14 +65,16 @@ export default function RaciocinioClinico() {
   const [conductaRevelada, setConductaRevelada] = useState(false);
   const [showCreateCase, setShowCreateCase] = useState(false);
   const [showWhy, setShowWhy] = useState(false);
+  const [wizardStep, setWizardStep] = useState(1); // 1-6
+  const [temaQuery, setTemaQuery] = useState("");
+  const [showTemaDropdown, setShowTemaDropdown] = useState(false);
   const [caseDraft, setCaseDraft] = useState({
-    tema: "",
-    area: "",
-    subarea: "",
-    vinheta: "",
-    diagnostico: "",
-    conduta: "",
+    tema: "", temaId: null, area: "", subarea: "", fonte: "custom",
+    vinheta: "", novaInfo1: "", novaInfo2: "",
+    diagnostico: "", diferenciais: "", conduta: "",
   });
+
+  const temas = useStore((s) => s[plat]?.temas || []);
 
   const customCases = useMemo(() => Array.isArray(meta?.clinicalCustomCases) ? meta.clinicalCustomCases : [], [meta?.clinicalCustomCases]);
   const allCases = useMemo(() => [...CASOS_CLINICOS, ...customCases], [customCases]);
@@ -133,7 +135,9 @@ export default function RaciocinioClinico() {
     setMeta({ ...meta, clinicalCustomCases: [...customCases, nextCase] });
     setActiveCasoId(nextCase.id);
     setShowCreateCase(false);
-    setCaseDraft({ tema: "", area: "", subarea: "", vinheta: "", diagnostico: "", conduta: "" });
+    setWizardStep(1);
+    setCaseDraft({ tema: "", temaId: null, area: "", subarea: "", fonte: "custom", vinheta: "", novaInfo1: "", novaInfo2: "", diagnostico: "", diferenciais: "", conduta: "" });
+    setTemaQuery("");
     if (showToast) showToast("Caso clinico criado e vinculado ao treino.");
   };
 
@@ -606,32 +610,143 @@ export default function RaciocinioClinico() {
           </div>
         </Modal>
       )}
-      {showCreateCase && (
-        <Modal onClose={() => setShowCreateCase(false)} wide>
-          <div className="space-y-4 text-left">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Criar caso clínico</p>
-              <h2 className="text-[16px] font-black text-white mt-1">Caso base vinculado a um tema</h2>
+      {showCreateCase && (() => {
+        const filteredTemas = (() => {
+          const q = temaQuery.trim().toLowerCase();
+          if (!q) return [];
+          return temas.filter(t => t.nome.toLowerCase().includes(q)).slice(0, 8);
+        })();
+        const STEPS_WIZARD = [
+          "Escolher tema",
+          "Vinheta base",
+          "Nova informação 1",
+          "Nova informação 2",
+          "Diagnóstico e diferenciais",
+          "Conduta educacional",
+        ];
+        const canAdvance = [
+          caseDraft.tema.trim().length > 0,
+          caseDraft.vinheta.trim().length > 10,
+          true,
+          true,
+          caseDraft.diagnostico.trim().length > 0,
+          caseDraft.conduta.trim().length > 0,
+        ][wizardStep - 1];
+
+        return (
+          <Modal onClose={() => { setShowCreateCase(false); setWizardStep(1); }} wide>
+            <div className="space-y-4 text-left">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Criar caso clínico · Passo {wizardStep}/{STEPS_WIZARD.length}</p>
+                  <h2 className="text-[15px] font-black text-white mt-0.5">{STEPS_WIZARD[wizardStep - 1]}</h2>
+                </div>
+                <div className="flex gap-1">
+                  {STEPS_WIZARD.map((_, i) => (
+                    <div key={i} className={`h-1.5 w-6 rounded-full transition-all ${i < wizardStep ? "bg-blue-500" : "bg-white/10"}`} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Passo 1: Tema */}
+              {wizardStep === 1 && (
+                <div className="space-y-3">
+                  <p className="text-[11px] text-gray-400">Vincule o caso a um tema do seu cronograma.</p>
+                  <div className="relative">
+                    <Input
+                      placeholder="Buscar tema no plano..."
+                      value={temaQuery}
+                      onChange={e => { setTemaQuery(e.target.value); setCaseDraft(d => ({ ...d, tema: e.target.value, temaId: null, area: "" })); setShowTemaDropdown(true); }}
+                      onFocus={() => setShowTemaDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowTemaDropdown(false), 200)}
+                    />
+                    {showTemaDropdown && filteredTemas.length > 0 && (
+                      <div className="absolute z-50 top-full mt-1 w-full bg-[#18181b] border border-white/15 rounded-xl shadow-xl max-h-40 overflow-y-auto">
+                        {filteredTemas.map(t => (
+                          <button key={t.id} type="button"
+                            className="w-full text-left px-3 py-2 text-[11px] text-gray-200 hover:bg-white/10 transition-colors border-none bg-transparent cursor-pointer"
+                            onMouseDown={() => { setTemaQuery(t.nome); setCaseDraft(d => ({ ...d, tema: t.nome, temaId: t.id, area: t.esp || "" })); setShowTemaDropdown(false); }}
+                          >
+                            <span className="font-bold">{t.nome}</span>
+                            <span className="text-gray-500 ml-1.5">· {t.esp}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Field label="Área" info="Preenchida automaticamente ao selecionar o tema.">
+                      <Input value={caseDraft.area} onChange={e => setCaseDraft(d => ({ ...d, area: e.target.value }))} placeholder="ex: Cirurgia" />
+                    </Field>
+                    <Field label="Subárea (opcional)">
+                      <Input value={caseDraft.subarea} onChange={e => setCaseDraft(d => ({ ...d, subarea: e.target.value }))} placeholder="ex: Trauma abdominal" />
+                    </Field>
+                  </div>
+                </div>
+              )}
+
+              {/* Passo 2: Vinheta */}
+              {wizardStep === 2 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-gray-400">Construa o caso base: queixa guia, contexto, dados vitais, achados positivos e negativos importantes.</p>
+                  <Textarea rows={5} placeholder="Ex: Paciente masculino, 28 anos, dor abdominal em FID há 12 horas, iniciou em região periumbilical, náuseas, sem febre. Sinal de Blumberg positivo, Rovsing positivo, defesa muscular local." value={caseDraft.vinheta} onChange={e => setCaseDraft(d => ({ ...d, vinheta: e.target.value }))} />
+                </div>
+              )}
+
+              {/* Passo 3: Nova informação 1 */}
+              {wizardStep === 3 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-gray-400">Acrescente um dado clínico/laboratorial que modifica ou confirma a hipótese. Como impacta a probabilidade do diagnóstico?</p>
+                  <Textarea rows={4} placeholder="Ex: Leucocitose 14.000 com desvio à esquerda. TC abdominal com espessamento do apêndice e infiltração de gordura periapendicular." value={caseDraft.novaInfo1} onChange={e => setCaseDraft(d => ({ ...d, novaInfo1: e.target.value }))} />
+                </div>
+              )}
+
+              {/* Passo 4: Nova informação 2 */}
+              {wizardStep === 4 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-gray-400">Acrescente um dado que muda conduta ou diagnóstico. Use para criar dilema clínico ou reforçar o raciocínio.</p>
+                  <Textarea rows={4} placeholder="Ex: Febre 38.5°C nas últimas 2 horas. Peristaltismo ausente. Defesa abdominal difusa — pensar em perfuração." value={caseDraft.novaInfo2} onChange={e => setCaseDraft(d => ({ ...d, novaInfo2: e.target.value }))} />
+                </div>
+              )}
+
+              {/* Passo 5: Diagnóstico e diferenciais */}
+              {wizardStep === 5 && (
+                <div className="space-y-3">
+                  <Field label="Diagnóstico central" info="Diagnóstico de referência ou hipótese principal do caso.">
+                    <Input value={caseDraft.diagnostico} onChange={e => setCaseDraft(d => ({ ...d, diagnostico: e.target.value }))} placeholder="ex: Apendicite aguda" />
+                  </Field>
+                  <Field label="Diferenciais principais (separe por vírgula)" info="Hipóteses que devem ser discriminadas.">
+                    <Input value={caseDraft.diferenciais} onChange={e => setCaseDraft(d => ({ ...d, diferenciais: e.target.value }))} placeholder="ex: Cólica renal, DIP, hérnia encarcerada" />
+                  </Field>
+                </div>
+              )}
+
+              {/* Passo 6: Conduta */}
+              {wizardStep === 6 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-gray-400">Descreva a conduta educacional: exames iniciais, manejo, red flags e contraindicações específicas do caso.</p>
+                  <Textarea rows={5} placeholder="Ex: Laparotomia de urgência. Exames: Hb, Ht, leucograma, creatinina, tipagem. Contraindicação a opióides antes do diagnóstico firmado. Red flag: febre alta + defesa difusa = peritonite." value={caseDraft.conduta} onChange={e => setCaseDraft(d => ({ ...d, conduta: e.target.value }))} />
+                </div>
+              )}
+
+              {/* Botões de navegação */}
+              <div className="flex gap-2 pt-2">
+                {wizardStep > 1 && <Btn variant="ghost" onClick={() => setWizardStep(s => s - 1)}>Anterior</Btn>}
+                {wizardStep < STEPS_WIZARD.length ? (
+                  <Btn className="flex-1" onClick={() => setWizardStep(s => s + 1)} disabled={!canAdvance}>
+                    Próximo →
+                  </Btn>
+                ) : (
+                  <Btn className="flex-1" onClick={saveCustomCase} disabled={!caseDraft.tema.trim() || !caseDraft.vinheta.trim() || !caseDraft.diagnostico.trim()}>
+                    Salvar e vincular ao plano
+                  </Btn>
+                )}
+              </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Tema" info="Tema do cronograma ou customizado."><Input value={caseDraft.tema} onChange={(e) => setCaseDraft({ ...caseDraft, tema: e.target.value })} /></Field>
-              <Field label="Área" info="Especialidade ou grande área."><Input value={caseDraft.area} onChange={(e) => setCaseDraft({ ...caseDraft, area: e.target.value })} /></Field>
-              <Field label="Subárea" info="Opcional, ajuda a buscar depois."><Input value={caseDraft.subarea} onChange={(e) => setCaseDraft({ ...caseDraft, subarea: e.target.value })} /></Field>
-              <Field label="Diagnóstico ou hipótese central" info="Pode ficar amplo nesta versão."><Input value={caseDraft.diagnostico} onChange={(e) => setCaseDraft({ ...caseDraft, diagnostico: e.target.value })} /></Field>
-            </div>
-            <Field label="Vinheta clínica" info="Queixa, contexto, achados positivos e negativos importantes.">
-              <Textarea rows={4} value={caseDraft.vinheta} onChange={(e) => setCaseDraft({ ...caseDraft, vinheta: e.target.value })} />
-            </Field>
-            <Field label="Conduta educacional" info="Exames iniciais, manejo, red flags e contraindicações.">
-              <Textarea rows={3} value={caseDraft.conduta} onChange={(e) => setCaseDraft({ ...caseDraft, conduta: e.target.value })} />
-            </Field>
-            <div className="flex gap-2">
-              <Btn className="flex-1" onClick={saveCustomCase} disabled={!caseDraft.tema.trim() || !caseDraft.vinheta.trim()}>Salvar caso</Btn>
-              <Btn variant="ghost" className="flex-1" onClick={() => setShowCreateCase(false)}>Cancelar</Btn>
-            </div>
-          </div>
-        </Modal>
-      )}
+          </Modal>
+        );
+      })()}
     </div>
   );
 }
