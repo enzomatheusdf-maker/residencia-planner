@@ -106,16 +106,41 @@ export function getSimRecommendation(dataProva, simulados = [], temas = [], plat
     .map(entry => entry[0])
     .slice(0, 3);
 
+  // Intervalo numerico em dias para calculo de proxima data
+  const freqMap = {
+    "1 agora (diagnóstico)": 0,
+    "Semanal": 7,
+    "A cada 14 dias": 14,
+    "A cada 21 dias": 21,
+  };
+  const intervaloDias = freqMap[freq] !== undefined ? freqMap[freq] : null;
+
   return {
     tipo,
     titulo,
     descricao,
     justificativa,
     frequenciaRecomendada: freq,
+    intervaloDias,
     focoEspecialidades,
     diasRestantes,
     cobertura,
   };
+}
+
+/**
+ * Calcula a data do proximo simulado com base no ultimo realizado e no intervalo recomendado.
+ * Retorna null se nao for possivel calcular.
+ */
+export function getNextSimuladoDate(simulados = [], intervaloDias) {
+  if (intervaloDias == null || intervaloDias === 0) return null;
+  if (simulados.length === 0) return null;
+  const sorted = [...simulados].sort((a, b) => (a.data > b.data ? 1 : -1));
+  const lastDate = sorted[sorted.length - 1]?.data;
+  if (!lastDate) return null;
+  const base = new Date(lastDate);
+  base.setDate(base.getDate() + intervaloDias);
+  return base.toISOString().split("T")[0];
 }
 
 /**

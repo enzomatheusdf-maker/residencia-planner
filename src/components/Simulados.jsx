@@ -1,55 +1,16 @@
 // src/components/Simulados.jsx
 import React, { useState, useMemo } from "react";
-import { Target, Plus, X, Trash2, ShieldAlert, Award, BarChart3, Info, Brain, BookOpen, Activity } from "lucide-react";
+import { Target, Plus, X, Trash2, ShieldAlert, Award, BarChart3, Info, BookOpen } from "lucide-react";
 import { useStore } from "../core/store";
-import { todayStr, fmtDate, fmtFull, ESPS_RES, ESPS_VEST, STEPS } from "../core/fsrs";
+import { todayStr, fmtDate, fmtFull, ESPS_RES, ESPS_VEST } from "../core/fsrs";
 import { calcMetricasElite, migrarSim } from "../hooks/useMetrics";
-import { Btn, Modal, Field, Input, Select, Tabs } from "./Primitives";
-import { getReadinessData, matchesArea, pickTargetProva } from "../core/readiness";
-import { totalQuestoesFeitas, saldoRitmo } from "../core/volume";
-import { getSimRecommendation, getResultActions, getSimuladoGuidance, getSimuladoProtocolo } from "../core/simStrategy";
+import { Btn, Modal, Field, Input, Select } from "./Primitives";
+import { pickTargetProva } from "../core/readiness";
+import { getSimRecommendation, getSimuladoProtocolo, getNextSimuladoDate } from "../core/simStrategy";
 import { safeTrackEvent } from "../core/telemetry";
+import { Badge, Button as PremiumButton, Card, SegmentedControl } from "./ui";
 
-const ZONA_UI = {
-  vermelha: {
-    bg: "bg-red-500/5",
-    border: "border-red-500/25",
-    text: "text-red-400",
-    badgeBg: "bg-red-500/10 text-red-400 border-red-500/20",
-    label: "Zona Vermelha",
-    desc: "Alta Incidência × Baixo Domínio"
-  },
-  laranja: {
-    bg: "bg-amber-500/5",
-    border: "border-amber-500/25",
-    text: "text-amber-400",
-    badgeBg: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    label: "Zona Laranja",
-    desc: "Alta Incidência × Alto Domínio"
-  },
-  roxa: {
-    bg: "bg-indigo-500/5",
-    border: "border-indigo-500/25",
-    text: "text-indigo-400",
-    badgeBg: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
-    label: "Zona Roxa",
-    desc: "Baixa Incidência × Baixo Domínio"
-  },
-  verde: {
-    bg: "bg-emerald-500/5",
-    border: "border-emerald-500/25",
-    text: "text-emerald-400",
-    badgeBg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    label: "Zona Verde",
-    desc: "Baixa Incidência × Alto Domínio"
-  }
-};
 
-function incLabel(inc) {
-  if (inc >= 1.15) return "Alta";
-  if (inc >= 0.95) return "Média";
-  return "Baixa";
-}
 
 const SIM_ERROR_TYPES = [
   { value: "lacuna", label: "Lacuna de conteúdo" },
@@ -200,8 +161,9 @@ export function SimRegistroModal({ onClose, onSave, platKey, temas = [] }) {
           </Field>
 
           {f.acertos > f.total && (
-            <p className="text-red-400 text-xs font-bold mt-1 bg-red-500/10 border border-red-500/25 p-2 rounded-xl">
-              ⚠️ O número de acertos não pode ser maior que o total de questões.
+            <p className="text-red-400 text-xs font-bold mt-1 bg-red-500/10 border border-red-500/25 p-2 rounded-xl inline-flex items-center gap-1.5">
+              <ShieldAlert size={14} aria-hidden="true" />
+              O número de acertos não pode ser maior que o total de questões.
             </p>
           )}
 
@@ -377,10 +339,8 @@ export function SimRegistroModal({ onClose, onSave, platKey, temas = [] }) {
 
 export default function Simulados({ onStudy, setView }) {
   const { plat, addSim, deleteSim, marcarD7, meta } = useStore();
-  const showToast = useStore((s) => s.showToast);
   const openConfirm = useStore((s) => s.openConfirm);
   const rawSims = useStore((s) => s[plat]?.simulados || []);
-  const userName = useStore((s) => s.userName || "Estudante");
   const simulados = useMemo(() => rawSims.map(migrarSim), [rawSims]);
   const temas = useStore((s) => s[plat]?.temas || []);
 
@@ -389,11 +349,7 @@ export default function Simulados({ onStudy, setView }) {
   const [howToOpen, setHowToOpen] = useState(false);
   const [showSimConfetti, setShowSimConfetti] = useState(false);
 
-  // Core calculations and readiness score
   const targetProva = useMemo(() => pickTargetProva(meta?.provasAlvo, plat), [meta?.provasAlvo, plat]);
-  const readiness = useMemo(() => {
-    return getReadinessData({ temas, simulados, meta, plat });
-  }, [temas, simulados, meta, plat]);
 
   const analytics = useMemo(() => calcMetricasElite(simulados, plat, targetProva), [simulados, plat, targetProva]);
   const pcts = useMemo(() => simulados.map(s => s.pct), [simulados]);
@@ -424,557 +380,158 @@ export default function Simulados({ onStudy, setView }) {
   const simRecommendation = useMemo(() => {
     return getSimRecommendation(meta?.dataProva, simulados, temas, plat);
   }, [meta?.dataProva, simulados, temas, plat]);
-  const simGuidance = useMemo(() => {
-    return getSimuladoGuidance({
-      dataProva: meta?.dataProva,
-      simulados,
-      cobertura: readiness.cobertura || 0,
-      score: readiness.score || 0,
-    });
-  }, [meta?.dataProva, simulados, readiness.cobertura, readiness.score]);
 
-  const todosErros = useMemo(() => {
-    return simulados.flatMap(s => s.questoesErradas || []);
-  }, [simulados]);
+  const nextSimDate = useMemo(() => {
+    return getNextSimuladoDate(simulados, simRecommendation.intervaloDias);
+  }, [simulados, simRecommendation.intervaloDias]);
 
-  const acoesErros = useMemo(() => {
-    return getResultActions(todosErros);
-  }, [todosErros]);
+  const daysUntilNextSim = useMemo(() => {
+    if (!nextSimDate) return null;
+    const today = todayStr();
+    if (nextSimDate <= today) return 0;
+    const diff = Math.ceil((new Date(nextSimDate) - new Date(today)) / (1000 * 60 * 60 * 24));
+    return diff;
+  }, [nextSimDate]);
 
   const tabs = [
     { k: "painel", label: "Estratégia", icon: Target },
     { k: "correcao", label: "Revisão D7", icon: Award },
     { k: "area", label: "Por Área", icon: BarChart3 },
-    { k: "metricas", label: "Erros avançados", icon: ShieldAlert }
   ];
 
-  // Rhythm/Pace calculation
-  const ritmoPace = useMemo(() => {
-    if (!meta?.metaQuestoesDia) return null;
-    const started = temas.filter(t => !t.unstarted);
-    const firstD0 = started.length > 0 ? started.sort((a,b) => a.d0.localeCompare(b.d0))[0].d0 : null;
-    return saldoRitmo(temas, meta, firstD0);
-  }, [temas, meta]);
 
-  // Priority list and quadrants calculation
-  const priorityList = readiness.priorityList || [];
-  const topPrioridade = priorityList[0] || null;
-  const hasProvaSelecionada = (meta?.provasAlvo || []).length > 0;
-  const canShowStrongReadiness = totalQuestoesFeitas(temas) >= 300 && simulados.length >= 1;
 
-  const handleAdicionarFila = (esp) => {
-    const unstartedTemas = temas.filter(t => t.unstarted && matchesArea(t.esp, esp));
-    if (unstartedTemas.length === 0) {
-      showToast(`Todos os temas de ${esp} já estão na fila.`);
-      return;
-    }
-    const target = unstartedTemas[0];
-    useStore.getState().updateTema(plat, target.id, { unstarted: false, d0: todayStr() });
-    showToast(`Tema "${target.nome}" de ${esp} acoplado à grade.`);
-  };
 
-  const handleFocarArea = (esp) => {
-    const areaTemas = temas.filter(t => !t.unstarted && matchesArea(t.esp, esp));
-    if (areaTemas.length === 0) {
-      const allAreaTemas = temas.filter(t => matchesArea(t.esp, esp));
-      if (allAreaTemas.length > 0) {
-        // Activate the first one
-        const target = allAreaTemas[0];
-        useStore.getState().updateTema(plat, target.id, { unstarted: false, d0: todayStr() });
-        if (onStudy && setView) {
-          onStudy(target.id, "d0");
-          setView("dash");
-        } else {
-          showToast(`Tema "${target.nome}" ativado. Vá ao Painel para estudar.`);
-        }
-      } else {
-        showToast(`Nenhum tema cadastrado em ${esp}.`);
-      }
-      return;
-    }
-    
-    // Find first topic and start/resume its study
-    const firstTema = areaTemas[0];
-    const pendingStep = STEPS.find(s => !firstTema.rev[s.key].done);
-    const stepKey = pendingStep ? pendingStep.key : "d0";
 
-    if (onStudy && setView) {
-      onStudy(firstTema.id, stepKey);
-      setView("dash");
-    } else {
-      showToast(`Foco em ${firstTema.nome}.`);
-    }
-  };
-
-  const getReadinessMentorAdvice = () => {
-    const tom = meta?.tomMentor || "gentil";
-    const errorTypeNames = {
-      lacuna: "Lacuna de Conteúdo (esquecimento ou base teórica)",
-      raciocinio: "Erro de Raciocínio (aplicação incorreta de diretriz)",
-      distractor: "Pegadinha/Distrator (armadilhas nas alternativas)",
-      descuido: "Descuido ou Falta de Atenção",
-      nao_visto: "Matéria Não Vista anteriormente",
-      interpretacao: "Erro de Interpretação do enunciado"
-    };
-
-    const type = readiness.dominantError;
-    const errors = readiness.totalErrors;
-
-    if (!errors) {
-      return `Olá, ${userName}. Ainda não há erros registrados nos simulados para eu formular seu diagnóstico de desvios cognitivos. Prossiga com seus estudos e registre os simulados com o mapeamento detalhado dos erros para eu calibrar minha análise de prontidão.`;
-    }
-
-    const typeName = errorTypeNames[type] || type;
-
-    if (type === "lacuna") {
-      return tom === "gentil"
-        ? `Notei que boa parte dos seus erros se deve a ${typeName}. É super normal esquecer detalhes, especialmente com o volume de matérias. Sugiro priorizar as revisões da curva para consolidar esses pontos e preencher os buracos na teoria antes de prosseguir.`
-        : tom === "firme"
-        ? `Seu calcanhar de Aquiles é ${typeName}. Não adianta correr com matéria nova se a base está instável. Vá para o anki e finalize todas as revisões ativas pendentes antes de fechar o dia de hoje.`
-        : `Identifiquei predominância de ${typeName} nos erros de simulado. Recomendo pausar avanços rápidos no cronograma e focar a curva de revisão na consolidação ativa dos tópicos que apresentaram falhas.`;
-    } else if (type === "descuido") {
-      return tom === "gentil"
-        ? `Identifiquei que desatenção ou descuido (${typeName}) é o padrão dominante de erros. Geralmente é cansaço acumulado. Tente respirar fundo, alongar e, na hora da prova, fazer uma leitura reversa das alternativas para manter o foco.`
-        : tom === "firme"
-        ? `Você está desperdiçando pontos críticos por ${typeName}. Um concorrente de alto nível não se permite errar o que sabe por pressa. Leia com caneta ativa e revise a alternativa selecionada antes de ir para a próxima.`
-        : `Desvios por ${typeName} detectados. Recomendo criar um ritual pré-simulado de 3 minutos de respiração e usar marcadores visuais no enunciado para destacar exceções e negações.`;
-    } else if (type === "raciocinio") {
-      return tom === "gentil"
-        ? `Seus erros mostram uma tendência de ${typeName}. Você entende a matéria, mas a aplicação prática na questão confunde um pouco. Tente ler os comentários das questões erradas com foco no fluxo lógico de decisão.`
-        : tom === "firme"
-        ? `Você está falhando em ${typeName}. Acumular teoria não aprova ninguém se o raciocínio clínico não estiver afiado. Gaste mais tempo analisando o porquê da conduta recomendada nos gabaritos comentados.`
-        : `Padrão de erro por ${typeName} mapeado. Sugiro focar em engenharia reversa de gabaritos e resolução estruturada de casos clínicos nas especialidades afetadas.`;
-    } else if (type === "distractor" || type === "interpretacao") {
-      return tom === "gentil"
-        ? `Você tem caído em pegadinhas (${typeName}). Não desanime, as bancas são mesmo espertas. O segredo é ler as alternativas com desconfiança saudável e circular palavras absolutas.`
-        : tom === "firme"
-        ? `A banca está te pegando em ${typeName}. Você precisa ler as questões com malícia. Desconfie de alternativas excessivamente genéricas ou restritivas e filtre os distratores antes de responder.`
-        : `Predominância de erros por ${typeName}. Recomendo estudo direcionado para decodificação de enunciados, sublinhando comandos centrais (ex: 'exceto', 'incorreto') para blindar a resposta.`;
-    } else {
-      return `Olá, ${userName}. Seu padrão de erros atual está sob análise, com leve tendência em ${typeName}. Continue alimentando o histórico de práticas para eu apurar as recomendações.`;
-    }
-  };
 
   return (
     <div className="flex flex-col gap-4 animate-fade-up">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-2">
-        <div className="flex items-center gap-2">
-          <Target size={20} className="text-orange-400" />
-          <h2 className="text-[15px] font-bold text-gray-100">Simulados</h2>
+      <Card variant="elevated" className="med-animate-in" style={{ padding: 18, background: "linear-gradient(180deg, rgba(6,182,212,.1), rgba(59,130,246,.045)), var(--med-surface-0)" }}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cyan-500/12 text-cyan-300 ring-1 ring-cyan-500/20">
+              <Target size={20} />
+            </div>
+            <div>
+              <Badge tone="cyan">Simulados</Badge>
+              <h2 className="mt-2 text-xl font-black tracking-tight text-white">Estratégia de prova</h2>
+              <p className="mt-1 max-w-2xl text-[12px] leading-relaxed text-gray-400">
+                Registre provas, classifique erros e transforme cada simulado em plano de revisão.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <PremiumButton variant="secondary" onClick={() => setHowToOpen(true)} size="sm">
+              <BookOpen size={16} /> Como fazer
+            </PremiumButton>
+            <PremiumButton onClick={() => setModalOpen(true)} size="sm">
+              <Plus size={16} /> Registrar
+            </PremiumButton>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Btn variant="ghost" onClick={() => setHowToOpen(true)} className="gap-1.5"><BookOpen size={16} /> Como fazer</Btn>
-          <Btn onClick={() => setModalOpen(true)} className="gap-1.5"><Plus size={16} /> Registrar Simulado</Btn>
-        </div>
-      </div>
+      </Card>
 
       {/* Tabs Menu */}
       <div className="mb-2">
-        <Tabs items={tabs} active={activeTab} onChange={setActiveTab} />
+        <SegmentedControl
+          ariaLabel="Seções de simulados"
+          value={activeTab}
+          onChange={setActiveTab}
+          options={tabs.map((tab) => ({ value: tab.k, label: tab.label }))}
+        />
       </div>
 
-      {/* Conteúdo Aba 1: Preparo */}
+      {/* Conteúdo Aba 1: Estratégia */}
       {activeTab === "painel" && (
         <div className="flex flex-col gap-5">
-          <div className="bg-[var(--surface-1)] border border-blue-500/20 rounded-2xl p-4">
-            <p className="text-[10px] uppercase tracking-wider text-blue-400 font-black">Quando fazer o próximo simulado</p>
-            <p className="text-sm text-white font-bold mt-1">{simGuidance.titulo}</p>
-            <p className="text-xs text-gray-300 mt-1">{simGuidance.recomendacao}</p>
-            <p className="text-[11px] text-gray-500 mt-1">{simGuidance.porque}</p>
-          </div>
 
-          {/* ROADMAP DE FASES ATÉ A PROVA */}
-          {meta?.dataProva && (() => {
-            const fases = ["Construção", "Stamina", "Stamina+", "Confirmação", "Lapidação"];
-            const faseAtual = simRecommendation.tipo;
-            return (
-              <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4">
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-black mb-3">Plano até a prova</p>
-                <div className="flex items-center gap-1 flex-wrap">
-                  {fases.map((fase, i) => {
-                    const isAtual = fase === faseAtual || (faseAtual === "Baseline" && i === 0);
-                    const isPast = fases.indexOf(faseAtual) > i;
-                    return (
-                      <React.Fragment key={fase}>
-                        <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                          isAtual
-                            ? "bg-blue-500/20 border-blue-500/40 text-blue-300"
-                            : isPast
-                            ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500 opacity-60"
-                            : "bg-white/[0.03] border-white/5 text-gray-600"
-                        }`}>
-                          {isAtual && <span className="mr-1">▶</span>}{fase}
-                        </div>
-                        {i < fases.length - 1 && <span className="text-gray-700 text-[10px]">→</span>}
-                      </React.Fragment>
-                    );
-                  })}
+          {/* CARD ÚNICO: ESTRATÉGIA DE SIMULADOS (diagnóstico → calibração → cadência → próxima data) */}
+          <Card variant="elevated" style={{ padding: 20, borderColor: "rgba(59,130,246,.25)", background: "linear-gradient(135deg, rgba(6,182,212,.08), rgba(59,130,246,.06)), var(--med-surface-0)" }}>
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+                  <Target size={16} className="text-cyan-400" />
                 </div>
-                {simRecommendation.cobertura !== undefined && (
-                  <p className="text-[10px] text-gray-500 mt-2">Cobertura atual: <strong className="text-gray-300">{simRecommendation.cobertura}%</strong> · {simRecommendation.diasRestantes}d restantes</p>
-                )}
-              </div>
-            );
-          })()}
-
-          <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-gray-400 font-black">Protocolo de execução</p>
-              <p className="text-[11px] text-gray-500 mt-1">Guia de cronometro, mistura de areas, classificacao de erros e revisao 48-72h.</p>
-            </div>
-            <Btn variant="ghost" onClick={() => setHowToOpen(true)} className="sm:shrink-0"><BookOpen size={15} /> Como fazer</Btn>
-          </div>
-          {/* BLOCK 1: PRONTIDÃO GERAL (KPIs & Volume & Ritmo) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Previsao de desempenho */}
-            <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col justify-between shadow-lg relative overflow-hidden">
-              <div className="absolute -right-8 -bottom-8 w-20 h-20 rounded-full bg-blue-600/5 blur-2xl pointer-events-none" />
-              <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
-                  Previsão de desempenho
-                  <Info size={11} className="text-gray-600 cursor-help" title="Cálculo combinado: acertos simulados (média móvel 4 últimos), retenção longa D21+, cobertura e ritmo. Componentes sem dados ainda (simulados, retenção D21) não entram no cálculo e são incluídos automaticamente quando houver histórico." />
-                </p>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <p className={`text-4xl font-black tabular-nums ${readiness.score !== null ? (readiness.score >= 75 ? "text-emerald-400" : readiness.score >= 60 ? "text-blue-400" : "text-amber-400") : "text-gray-600"}`}>
-                    {canShowStrongReadiness && readiness.score !== null ? `${readiness.score}/100` : "Coletando"}
-                  </p>
-                </div>
-                {readiness.range && (
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    Intervalo real estimado: <span className="font-bold text-white">{readiness.range[0]}% – {readiness.range[1]}%</span>
-                  </p>
-                )}
-                {readiness.tendenciaSim !== null && readiness.tendenciaSim !== undefined && (
-                  <p className={`text-[10px] font-bold mt-1 ${readiness.tendenciaSim > 0 ? "text-emerald-400" : readiness.tendenciaSim < 0 ? "text-red-400" : "text-gray-500"}`}>
-                    Tendência simulados: {readiness.tendenciaSim > 0 ? "▲ melhorando" : readiness.tendenciaSim < 0 ? "▼ caindo" : "→ estável"}
-                  </p>
-                )}
-              </div>
-              <p className="text-[9.5px] text-gray-600 mt-3 leading-relaxed">
-                {canShowStrongReadiness
-                  ? `Calcula a faixa real de probabilidade de desempenho no exame alvo (${targetProva}).`
-                  : "Libera número forte depois de volume mínimo e pelo menos 1 simulado diagnóstico."}
-              </p>
-            </div>
-
-            {/* Volume de Questões */}
-            <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col justify-between shadow-lg relative overflow-hidden">
-              <div className="absolute -right-8 -bottom-8 w-20 h-20 rounded-full bg-cyan-600/5 blur-2xl pointer-events-none" />
-              <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1">
-                  Volume de Questões
-                </p>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <p className="text-4xl font-black text-cyan-400 tabular-nums">
-                    {totalQuestoesFeitas(temas)}
-                  </p>
-                  {meta?.metaQuestoesTotal > 0 && (
-                    <span className="text-xs text-gray-500">/ {meta.metaQuestoesTotal} total</span>
-                  )}
-                </div>
-                {meta?.metaQuestoesTotal > 0 ? (
-                  <div className="w-full mt-2">
-                    <div className="bg-white/5 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-cyan-500 h-full transition-all" style={{ width: `${Math.min(100, (totalQuestoesFeitas(temas) / meta.metaQuestoesTotal) * 100)}%` }} />
-                    </div>
-                    <p className="text-[9px] text-gray-500 mt-1 uppercase font-black font-mono">
-                      Progresso: {Math.round((totalQuestoesFeitas(temas) / meta.metaQuestoesTotal) * 100)}%
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-[10px] text-gray-500 mt-1 italic">Configure a meta total de questões nos ajustes.</p>
-                )}
-              </div>
-              <p className="text-[9.5px] text-gray-600 mt-3">
-                Soma cumulativa de questões resolvidas em sessões ativas da curva de revisão.
-              </p>
-            </div>
-
-            {/* Ritmo de Estudos */}
-            <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col justify-between shadow-lg relative overflow-hidden">
-              <div className="absolute -right-8 -bottom-8 w-20 h-20 rounded-full bg-orange-600/5 blur-2xl pointer-events-none" />
-              <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1">
-                  Equilíbrio de Ritmo
-                </p>
-                {ritmoPace ? (
-                  <div className="mt-2 space-y-1">
-                    <p className={`text-4xl font-black tabular-nums ${ritmoPace.saldo >= 0 ? "text-emerald-400" : "text-amber-400"}`}>
-                      {ritmoPace.saldo >= 0 ? `+${ritmoPace.saldo}` : ritmoPace.saldo}
-                    </p>
-                    <p className="text-[10px] text-gray-400 leading-relaxed font-semibold">
-                      {ritmoPace.saldo >= 0
-                        ? "Excelente! Você está adiantado nas suas metas."
-                        : `Você está ${Math.abs(ritmoPace.saldo)} questões atrás do planejado.`}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="mt-2 space-y-2">
-                    <p className="text-xl font-bold text-gray-500">—</p>
-                    <p className="text-[10px] text-gray-500 italic">Meta diária não configurada. Defina nos Ajustes para ativar o Equilíbrio de Ritmo e a previsão completa.</p>
-                    <button
-                      type="button"
-                      onClick={() => setView && setView("ajustes")}
-                      className="text-[9.5px] bg-blue-600/20 text-blue-400 border border-blue-500/25 px-2 py-1 rounded-xl font-bold cursor-pointer border-none"
-                    >
-                      Configurar meta
-                    </button>
-                  </div>
-                )}
-              </div>
-              <p className="text-[9.5px] text-gray-600 mt-3">
-                Saldo de ritmo de questões resolvidas versus planejado por dia. Recalibrável.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* BLOCK 3: DIAGNÓSTICO CONVERSACIONAL (Mentor Advice) */}
-            <div className="bg-gradient-to-br from-blue-600/10 via-[var(--surface-1)] to-sky-500/10 border border-blue-500/20 rounded-2xl p-5 flex items-start gap-4 shadow-lg select-none relative overflow-hidden text-left">
-              <div className="absolute right-0 top-0 w-24 h-24 bg-blue-600/5 rounded-full blur-2xl pointer-events-none" />
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center shadow-lg shadow-indigo-900/40 shrink-0">
-                <Brain size={18} className="text-white" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-[11px] font-black uppercase text-blue-400 tracking-wider">Direcionamento do Mentor</h4>
-                <p className="text-[12px] leading-relaxed text-gray-300 font-medium">
-                  {getReadinessMentorAdvice()}
-                </p>
-              </div>
-            </div>
-
-            {/* BLOCK 4: PRÓXIMO SIMULADO ESTRATÉGICO */}
-            <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col justify-between shadow-lg relative overflow-hidden text-left">
-              <div className="absolute -right-8 -bottom-8 w-20 h-20 rounded-full bg-orange-600/5 blur-2xl pointer-events-none" />
-              <div>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
-                  Estratégia de Simulados
-                  <Info size={11} className="text-gray-600" title="Estratégia recomendada de acordo com o edital e a proximidade da prova." />
-                </p>
-                
-                <div className="flex items-center gap-2 mt-2">
-                  <span className={`text-[9px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
-                    simRecommendation.tipo === "Baseline" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
-                    simRecommendation.tipo === "Stamina" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
-                    simRecommendation.tipo === "Confirmação" ? "bg-red-500/10 text-red-400 border-red-500/20" :
-                    "bg-white/5 text-gray-400 border border-white/10"
-                  }`}>
-                    {simRecommendation.tipo}
-                  </span>
-                  {simRecommendation.diasRestantes > 0 && (
-                    <span className="text-[10px] text-gray-400 font-bold">
-                      {simRecommendation.diasRestantes}d restantes
-                    </span>
-                  )}
-                </div>
-
-                <h4 className="text-[13px] font-black text-gray-100 uppercase mt-3 tracking-wide">{simRecommendation.titulo}</h4>
-                <p className="text-[11.5px] text-gray-400 mt-1 leading-relaxed">
-                  {simRecommendation.descricao}
-                </p>
-                <p className="text-[10.5px] text-gray-500 italic mt-2">
-                  "{simRecommendation.justificativa}"
-                </p>
-
-                {simRecommendation.focoEspecialidades.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-[9.5px] text-gray-500 font-bold uppercase tracking-wider">Foco Prioritário:</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {simRecommendation.focoEspecialidades.map((esp, i) => (
-                        <span key={i} className="text-[9px] bg-white/5 text-gray-300 border border-white/5 px-2 py-0.5 rounded-lg font-medium">
-                          {esp}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 border-t border-white/5 pt-3 flex justify-between items-center text-[11px]">
-                <span className="text-gray-500 font-bold uppercase">Frequência:</span>
-                <span className="font-black text-white uppercase">{simRecommendation.frequenciaRecomendada}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* AÇÕES CORRETIVAS DIRECIONADAS */}
-          {acoesErros.length > 0 && (
-            <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-4 shadow-lg text-left">
-              <div>
-                <h3 className="text-[13px] font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <Activity size={15} className="text-orange-400" />
-                  Ações Corretivas Direcionadas (Mapeamento de Falhas)
-                </h3>
-                <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
-                  Diagnósticos gerados automaticamente a partir dos tipos de erros mais frequentes nos seus simulados.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {acoesErros.map((acao) => (
-                  <div key={acao.tipoErro} className="p-4 rounded-xl bg-white/[0.01] border border-white/5 hover:bg-white/[0.02] transition-all flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-baseline mb-2">
-                        <span className="text-[11.5px] font-black text-white uppercase tracking-wide">{acao.label}</span>
-                        <span className="text-[10px] bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2 py-0.5 rounded font-black font-mono">
-                          {acao.pct}% dos erros
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-gray-400 leading-relaxed font-medium">
-                        {acao.text}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* BLOCK 2: MAPA DE PRIORIDADE (80/20 principle: Incidence × Weakness) */}
-          <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-4 shadow-lg">
-            <div>
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <h3 className="text-[13px] font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-                  <Activity size={15} className="text-blue-400" />
-                  Mapa de Prioridade da Prova Alvo ({targetProva})
-                </h3>
-                <span className="text-[10px] text-gray-500 font-medium">Princípio 80/20: Incidência × Fraqueza</span>
-              </div>
-              <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
-                Direcionamento inteligente baseado nas estatísticas da banca e no seu domínio (retention).
-              </p>
-            </div>
-
-            {/* Aviso de Prova Default */}
-            {!hasProvaSelecionada && (
-              <div className="bg-amber-500/5 border border-amber-500/25 rounded-xl p-3 flex items-center gap-2 text-[11px] text-amber-400">
-                <ShieldAlert size={14} className="shrink-0" />
-                <span>Nenhuma prova-alvo selecionada em Ajustes. Usando padrão do foco: <strong>{targetProva}</strong>.</span>
-              </div>
-            )}
-
-            {/* Card Prioridade nº 1 */}
-            {topPrioridade && (
-              <div className="bg-gradient-to-br from-blue-600/15 via-[#16161a] to-sky-500/5 border border-blue-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-md relative overflow-hidden">
-                <div className="absolute right-0 bottom-0 w-24 h-24 bg-blue-600/5 rounded-full blur-2xl pointer-events-none" />
                 <div>
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-[9px] font-black uppercase tracking-wider bg-blue-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full">
-                      🎯 Prioridade Nº 1 Agora
-                    </span>
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${ZONA_UI[topPrioridade.zona].badgeBg}`}>
-                      {ZONA_UI[topPrioridade.zona].label}
-                    </span>
-                  </div>
-                  <h4 className="text-lg font-bold text-gray-100">{topPrioridade.area}</h4>
-                  <p className="text-[11px] text-gray-400 mt-0.5">
-                    Incidência {incLabel(topPrioridade.incidence)} ({topPrioridade.incidence.toFixed(2)}) · Domínio {topPrioridade.retention !== null ? `${topPrioridade.retention}%` : "—"} · Cobertura {topPrioridade.cobertura}%
-                  </p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-cyan-400">Estratégia de Simulados</p>
+                  <h3 className="text-[14px] font-black text-white leading-tight">{simRecommendation.titulo}</h3>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => handleFocarArea(topPrioridade.area)}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white font-bold text-xs transition-all shadow shadow-indigo-900/20 cursor-pointer shrink-0"
-                >
-                  Focar Agora
-                </button>
+              </div>
+              <span className={`text-[9px] font-black uppercase px-2.5 py-1 rounded-full border ${
+                simRecommendation.tipo === "Baseline" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                simRecommendation.tipo === "Stamina" || simRecommendation.tipo === "Stamina+" ? "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" :
+                simRecommendation.tipo === "Confirmação" ? "bg-red-500/10 text-red-400 border-red-500/20" :
+                simRecommendation.tipo === "Lapidação" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                "bg-white/5 text-gray-400 border-white/10"
+              }`}>
+                {simRecommendation.tipo}
+              </span>
+            </div>
+
+            {/* 1. Diagnóstico / descrição */}
+            <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3 mb-3">
+              <p className="text-[12px] text-gray-200 leading-relaxed font-medium">{simRecommendation.descricao}</p>
+              <p className="text-[11px] text-gray-500 italic mt-1">"{simRecommendation.justificativa}"</p>
+            </div>
+
+            {/* 2. Calibração (após 1º simulado) */}
+            {simulados.length >= 1 && (
+              <div className="flex items-start gap-2 bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-3 mb-3">
+                <Info size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-emerald-300 leading-relaxed">
+                  <strong>Calibrado com {simulados.length} simulado{simulados.length > 1 ? "s" : ""}.</strong> O sistema ajusta a estratégia conforme seus resultados históricos.
+                </p>
               </div>
             )}
 
-            {/* Lista Ranqueada */}
-            <div className="space-y-2 mt-2">
-              {priorityList.map((item, idx) => {
-                const ui = ZONA_UI[item.zona];
-                const isCritical = item.zona === "vermelha" || item.zona === "roxa";
-                return (
-                  <div key={item.area} className={`p-4 rounded-xl border ${ui.bg} ${ui.border} transition-all hover:bg-white/[0.01]`}>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      {/* Left: Ranked number, name, badges */}
-                      <div className="flex items-start gap-3">
-                        <span className="font-mono text-base font-black text-gray-500 w-5 shrink-0 mt-0.5">{idx + 1}.</span>
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className="text-sm font-bold text-gray-200">{item.area}</span>
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${ui.badgeBg}`}>{ui.label}</span>
-                            <span className="text-[9px] bg-white/5 text-gray-400 px-1.5 py-0.5 rounded border border-white/5 font-mono">
-                              Inc: {incLabel(item.incidence)} ({item.incidence.toFixed(2)})
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-3 text-[10.5px] text-gray-400 font-medium mt-1 flex-wrap">
-                            <span>Aproveitamento: <strong className={item.retention === null ? "text-gray-500" : item.retention >= 75 ? "text-emerald-400" : "text-red-400"}>{item.retention !== null ? `${item.retention}%` : "Sem dados"}</strong></span>
-                            <span>·</span>
-                            <span>Cobertura: <strong className="text-gray-300">{item.cobertura}%</strong></span>
-                            {item.startedCount > 0 && (
-                              <>
-                                <span>·</span>
-                                <span>Iniciados: <strong className="text-gray-300">{item.startedCount}</strong></span>
-                              </>
-                            )}
-                          </div>
-
-                          {/* Temas Quentes */}
-                          {item.hotTopics.length > 0 && isCritical && (
-                            <div className="mt-2.5 bg-black/40 rounded-xl p-2.5 border border-white/5">
-                              <p className="text-[9px] font-black text-amber-500 uppercase tracking-wider flex items-center gap-1 mb-1">
-                                🔥 Temas Quentes da Prova
-                              </p>
-                              <div className="flex flex-wrap gap-1">
-                                {item.hotTopics.map((topic, i) => (
-                                  <span key={i} className="text-[9.5px] bg-white/5 text-gray-300 px-2 py-0.5 rounded-lg border border-white/5 font-medium leading-none">
-                                    {topic}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Right: Actions */}
-                      <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
-                        {isCritical ? (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => handleAdicionarFila(item.area)}
-                              className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 active:scale-95 text-[10px] font-bold text-gray-300 rounded-lg border border-white/10 cursor-pointer transition-all"
-                            >
-                              + Fila
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleFocarArea(item.area)}
-                              className="px-2.5 py-1.5 bg-white/10 hover:bg-blue-600 hover:text-white active:scale-95 text-[10px] font-bold text-indigo-400 rounded-lg border border-indigo-500/10 cursor-pointer transition-all"
-                            >
-                              Focar
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/10 select-none font-mono flex items-center gap-1.5">
-                            Domínio ✓
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Legenda das Zonas */}
-            <div className="border-t border-white/5 pt-4 mt-2">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2.5">Legenda de Quadrantes</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {Object.entries(ZONA_UI).map(([key, value]) => (
-                  <div key={key} className="flex flex-col gap-0.5">
-                    <span className={`text-[10.5px] font-bold ${value.text}`}>{value.label}</span>
-                    <span className="text-[9px] text-gray-600 leading-tight">{value.desc}</span>
-                  </div>
-                ))}
+            {/* 3. Cadência + próxima data */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="bg-black/30 border border-white/5 rounded-xl p-3 text-center">
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Cadência</p>
+                <p className="text-[13px] font-black text-white mt-1">{simRecommendation.frequenciaRecomendada}</p>
+              </div>
+              <div className={`border rounded-xl p-3 text-center ${
+                daysUntilNextSim === 0
+                  ? "bg-amber-500/10 border-amber-500/25"
+                  : daysUntilNextSim != null && daysUntilNextSim <= 3
+                  ? "bg-orange-500/10 border-orange-500/25"
+                  : "bg-black/30 border-white/5"
+              }`}>
+                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Próximo simulado</p>
+                {nextSimDate ? (
+                  <>
+                    <p className={`text-[13px] font-black mt-1 ${daysUntilNextSim === 0 ? "text-amber-400" : daysUntilNextSim <= 3 ? "text-orange-400" : "text-white"}`}>
+                      {daysUntilNextSim === 0 ? "Hoje!" : `em ${daysUntilNextSim}d`}
+                    </p>
+                    <p className="text-[9px] text-gray-600 mt-0.5">{nextSimDate}</p>
+                  </>
+                ) : (
+                  <p className="text-[12px] font-black text-gray-500 mt-1">—</p>
+                )}
               </div>
             </div>
-          </div>
+
+            {/* 4. Foco de especialidades (se houver) */}
+            {simRecommendation.focoEspecialidades.length > 0 && (
+              <div>
+                <p className="text-[9.5px] text-gray-500 font-bold uppercase tracking-wider mb-1">Foco Prioritário</p>
+                <div className="flex flex-wrap gap-1">
+                  {simRecommendation.focoEspecialidades.map((esp, i) => (
+                    <span key={i} className="text-[9px] bg-white/5 text-gray-300 border border-white/5 px-2 py-0.5 rounded-lg font-medium">
+                      {esp}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 5. Registrar */}
+            <div className="mt-4 pt-3 border-t border-white/5">
+              <PremiumButton onClick={() => setModalOpen(true)} size="sm" className="w-full sm:w-auto">
+                <Plus size={14} /> Registrar simulado
+              </PremiumButton>
+            </div>
+          </Card>
 
           {/* HISTÓRICO DE SIMULADOS (LIST) */}
           <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-4 shadow-lg">
