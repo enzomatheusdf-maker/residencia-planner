@@ -27,6 +27,20 @@ export default function AnkiAudit() {
     return Math.round((hits / 7) * 100);
   }, [adesaoDatas, hoje]);
 
+  const streakAnki = useMemo(() => {
+    let streak = 0;
+    for (let i = 0; i < 60; i++) {
+      if (adesaoDatas.includes(addDays(hoje, -i))) { streak++; } else { break; }
+    }
+    return streak;
+  }, [adesaoDatas, hoje]);
+
+  const tempoEstimadoHoje = useMemo(() => {
+    return ankiLog
+      .filter(l => l.data === hoje)
+      .reduce((s, l) => s + (l.tempoMin || 0), 0);
+  }, [ankiLog, hoje]);
+
   const cardsFromErrors = useMemo(() => {
     const list = [];
 
@@ -144,8 +158,20 @@ export default function AnkiAudit() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
+          {
+            l: "Streak",
+            v: `${streakAnki}d`,
+            c: streakAnki >= 7 ? "text-emerald-400" : streakAnki >= 3 ? "text-blue-400" : "text-gray-400",
+            tooltip: "Dias consecutivos com revisão de Anki registrada. Meta: ≥7 dias.",
+          },
+          {
+            l: "Adesão (7d)",
+            v: `${adesaoAnki7d}%`,
+            c: adesaoAnki7d >= 85 ? "text-emerald-400" : adesaoAnki7d >= 50 ? "text-yellow-400" : "text-red-400",
+            tooltip: "Percentual de dias com revisão marcada nos últimos 7 dias.",
+          },
           {
             l: "Novos na Semana",
             v: newCardsThisWeek,
@@ -153,16 +179,10 @@ export default function AnkiAudit() {
             tooltip: "Total de novos flashcards criados via sessões ou erros nos últimos 7 dias. Meta: até 50 cards.",
           },
           {
-            l: "Qualidade do Deck",
-            v: `${atomicityStats.score}%`,
-            c: atomicityStats.score >= 80 ? "text-emerald-400" : atomicityStats.score >= 60 ? "text-yellow-400" : "text-red-400",
-            tooltip: "Estimativa de atomicidade. Considera apenas cards com anotação de pelo menos 8 caracteres e marca listas complexas.",
-          },
-          {
-            l: "Adesão ao Anki (7d)",
-            v: `${adesaoAnki7d}%`,
-            c: adesaoAnki7d >= 85 ? "text-emerald-400" : adesaoAnki7d >= 50 ? "text-yellow-400" : "text-red-400",
-            tooltip: "Percentual de dias com revisão marcada nos últimos 7 dias. Esse sinal pesa pouco, mas entra na prontidão.",
+            l: "Tempo hoje",
+            v: tempoEstimadoHoje > 0 ? `${tempoEstimadoHoje}min` : "--",
+            c: tempoEstimadoHoje > 0 ? "text-cyan-400" : "text-gray-500",
+            tooltip: "Tempo total de revisão de Anki registrado hoje.",
           },
         ].map((kpi) => (
           <div key={kpi.l} className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col justify-between">

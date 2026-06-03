@@ -689,6 +689,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const enamedAnalises = useStore((s) => s.enamedAnalises || []);
   const sessionReflections = useStore((s) => s.sessionReflections || []);
   const ankiLog = useStore((s) => s[plat]?.ankiLog || []);
+  const marcarAnkiHoje = useStore((s) => s.marcarAnkiHoje);
+  const ankiAdesaoDatas = useStore((s) => s.meta?.ankiAdesao?.datas || []);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
   const telemetryMeta = useStore((s) => s.meta);
   const calendarProvider = useStore((s) => s.calendarProvider || { activeId: "medcof" });
@@ -1044,6 +1046,24 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     const rs = done.filter(r => r.acerto != null);
     return rs.length ? Math.round(rs.reduce((a, r) => a + r.acerto, 0) / rs.length * 100) : null;
   }, [done]);
+
+  const ankiFeitoHoje = ankiAdesaoDatas.includes(todayStr());
+
+  const ankiStreak = useMemo(() => {
+    let streak = 0;
+    for (let i = 0; i < 30; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      if (ankiAdesaoDatas.includes(ds)) { streak++; } else { break; }
+    }
+    return streak;
+  }, [ankiAdesaoDatas]);
+
+  const ankiTempoEstimadoHoje = useMemo(() => {
+    const today = todayStr();
+    return ankiLog.filter(l => l.data === today).reduce((s, l) => s + (l.tempoMin || 0), 0);
+  }, [ankiLog]);
 
   // Métricas de execução de hoje (questões + anki)
   const questoesHoje = useMemo(() => {
@@ -1706,25 +1726,45 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </Card>
 
         {/* Card 2: Anki/Flashcards de hoje */}
-        <Card variant="elevated" className="med-animate-in" style={{ display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
-          <MetricRing
-            value={ankiSessaoHoje.revisados}
-            max={meta?.metaAnkiDia || 50}
-            label="A"
-            sublabel="hoje"
-            tone={ankiSessaoHoje.revisados >= (meta?.metaAnkiDia || 50) ? "green" : "cyan"}
-            size={72}
-          />
-          <div className="min-w-0">
-            <Badge tone={ankiSessaoHoje.revisados > 0 ? "cyan" : "neutral"}>
-              {ankiSessaoHoje.revisados > 0 ? "Anki feito" : "Anki pendente"}
-            </Badge>
-            <h2 className="mt-2 text-sm font-black text-white leading-tight">Flashcards hoje</h2>
-            <p className="mt-1 text-[11px] text-gray-400">
-              {ankiSessaoHoje.revisados > 0
-                ? `+${ankiSessaoHoje.novos} novos · ${ankiSessaoHoje.again} again`
-                : "Abra Anki Audit para registrar"}
-            </p>
+        <Card variant="elevated" className="med-animate-in" style={{ display: "flex", flexDirection: "column", gap: 10, padding: 16 }}>
+          <div className="flex items-center gap-3">
+            <MetricRing
+              value={ankiSessaoHoje.revisados}
+              max={meta?.metaAnkiDia || 50}
+              label="A"
+              sublabel="hoje"
+              tone={ankiFeitoHoje ? "green" : "cyan"}
+              size={64}
+            />
+            <div className="min-w-0 flex-1">
+              <Badge tone={ankiFeitoHoje ? "green" : "neutral"}>
+                {ankiFeitoHoje ? `Streak ${ankiStreak}d` : "Anki pendente"}
+              </Badge>
+              <h2 className="mt-1 text-sm font-black text-white leading-tight">Anki hoje</h2>
+              <p className="mt-0.5 text-[11px] text-gray-400">
+                {ankiSessaoHoje.revisados > 0
+                  ? `${ankiSessaoHoje.revisados} rev · +${ankiSessaoHoje.novos} novos · ${ankiSessaoHoje.again} again${ankiTempoEstimadoHoje > 0 ? ` · ${ankiTempoEstimadoHoje}min` : ""}`
+                  : "Nenhuma sessão registrada"}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-1.5">
+            {!ankiFeitoHoje && (
+              <button
+                type="button"
+                onClick={() => marcarAnkiHoje && marcarAnkiHoje()}
+                className="flex-1 py-1.5 rounded-xl bg-cyan-600/20 hover:bg-cyan-600/35 text-cyan-300 border border-cyan-500/20 text-[10px] font-black cursor-pointer transition-colors"
+              >
+                Zerar Anki hoje
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setView && setView("anki")}
+              className="flex-1 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 border border-white/10 text-[10px] cursor-pointer transition-colors"
+            >
+              {ankiFeitoHoje ? "Ver Anki Audit" : "Registrar sessão"}
+            </button>
           </div>
         </Card>
 
