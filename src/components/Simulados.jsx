@@ -63,9 +63,24 @@ const SIM_ERROR_TYPES = [
   { value: "conduta", label: "Conduta/prescrição" },
 ];
 
-export function SimRegistroModal({ onClose, onSave, platKey }) {
+const SIM_ERROR_TYPE_GUIDE = [
+  { value: "lacuna", label: "Lacuna de conteúdo", desc: "Você não sabia o fato clínico ou teórico exigido pela questão.", acao: "Crie um flashcard atômico com o fato. Revise o tema no cronograma." },
+  { value: "raciocinio", label: "Raciocínio", desc: "Você conhecia o conteúdo mas chegou a conclusão errada.", acao: "Refaça a questão com atenção ao encadeamento lógico. Crie um illness script do tema." },
+  { value: "interpretacao", label: "Interpretação", desc: "Você errou na leitura do enunciado ou na identificação do que era pedido.", acao: "Pratique grifar o comando da questão. Releia os enunciados com atenção ao 'exceto' e 'mais provável'." },
+  { value: "distrator", label: "Distrator", desc: "Você foi atraído por uma alternativa plausível que parecia certa.", acao: "Estude os diferenciais do tema. Faça illness script comparando diagnósticos próximos." },
+  { value: "descuido", label: "Descuido", desc: "Você sabia a resposta mas clicou na alternativa errada ou não leu com cuidado.", acao: "Monitore o padrão. Se frequente, reveja seu ritmo durante a prova." },
+  { value: "tempo", label: "Tempo", desc: "Você não conseguiu responder com qualidade por falta de tempo.", acao: "Treine simulados cronometrados. Marque questões longas para revisar no fim." },
+  { value: "confianca_mal_calibrada", label: "Confiança/calibração", desc: "Você tinha certeza mas errou — ou duvida mas acertou por chute.", acao: "Compare sua confiança declarada com o acerto nos relatórios. Ajuste a calibração metacognitiva." },
+  { value: "nao_visto", label: "Não visto", desc: "O tema cobrado ainda não foi estudado no seu plano.", acao: "Verifique se o tema está no calendário. Se não, adicione ao plano." },
+  { value: "conduta", label: "Conduta/prescrição", desc: "Você errou a conduta clínica específica exigida (para Residência).", acao: "Revise o protocolo de conduta do tema. Use raciocínio clínico e illness script." },
+];
+
+export function SimRegistroModal({ onClose, onSave, platKey, temas = [] }) {
   const [page, setPage] = useState(1);
   const esps = platKey === "res" ? ESPS_RES : ESPS_VEST;
+  const [errorsGuideOpen, setErrorsGuideOpen] = useState(false);
+  const [temaQuery, setTemaQuery] = useState("");
+  const [showTemaDropdown, setShowTemaDropdown] = useState(false);
   const [f, setF] = useState({
     tipo: "simulado",
     nome: "",
@@ -101,11 +116,18 @@ export function SimRegistroModal({ onClose, onSave, platKey }) {
     && Number(f.metaAcerto) > 0;
   const errorMapComplete = erradas.length === realErrors;
 
+  const filteredTemas = useMemo(() => {
+    const q = temaQuery.trim().toLowerCase();
+    if (!q || temas.length === 0) return [];
+    return temas.filter(t => t.nome.toLowerCase().includes(q)).slice(0, 8);
+  }, [temaQuery, temas]);
+
   const addErrorToList = () => {
     if (erradas.length >= realErrors) return;
     if (!newError.num) return;
     setErradas([...erradas, { ...newError, id: Date.now(), corrigidaD7: null }]);
-    setNewError({ num: "", esp: esps[0], tema: "", tipoErro: "lacuna", desc: "", virouCard: false });
+    setNewError({ num: "", esp: esps[0], tema: "", temaId: null, tipoErro: "lacuna", desc: "", virouCard: false });
+    setTemaQuery("");
   };
 
   const handleSaveAll = () => {
@@ -253,7 +275,16 @@ export function SimRegistroModal({ onClose, onSave, platKey }) {
             </p>
           </div>
           <div className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-2">
-            <p className="text-[11px] font-bold text-blue-400 uppercase tracking-wider mb-1">Mapeamento de Questões Erradas</p>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[11px] font-bold text-blue-400 uppercase tracking-wider">Mapeamento de Questões Erradas</p>
+              <button
+                type="button"
+                onClick={() => setErrorsGuideOpen(true)}
+                className="text-[10px] font-bold text-gray-500 hover:text-blue-400 transition-colors flex items-center gap-1 border-none bg-transparent cursor-pointer"
+              >
+                <Info size={11} /> Tipos de erro
+              </button>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Input type="number" placeholder="Nº Questão" value={newError.num} onChange={e => setNewError({...newError, num: e.target.value})} />
               <Select value={newError.esp} onChange={e => setNewError({...newError, esp: e.target.value})}>
@@ -265,21 +296,61 @@ export function SimRegistroModal({ onClose, onSave, platKey }) {
                 ))}
               </Select>
             </div>
-            <div className="flex gap-2 items-center">
-              <Input type="text" placeholder="Tema vinculado" value={newError.tema || ""} onChange={e => setNewError({...newError, tema: e.target.value})} className="flex-1" />
-              <Input type="text" placeholder="Fato atômico / Anotação do erro" value={newError.desc || ""} onChange={e => setNewError({...newError, desc: e.target.value})} className="flex-1" />
-              <label className="flex items-center gap-1.5 text-[11px] text-gray-300 cursor-pointer shrink-0 select-none">
-                <input
-                  type="checkbox"
-                  checked={newError.virouCard}
-                  onChange={e => setNewError({...newError, virouCard: e.target.checked})}
-                  className="rounded border-white/20 text-blue-600 focus:ring-blue-500 bg-black h-4 w-4"
+            <div className="flex gap-2 items-start flex-wrap">
+              {/* Tema com autocomplete */}
+              <div className="relative flex-1 min-w-[160px]">
+                <Input
+                  type="text"
+                  placeholder="Tema vinculado (buscar...)"
+                  value={temaQuery}
+                  onChange={e => { setTemaQuery(e.target.value); setNewError({...newError, tema: e.target.value, temaId: null}); setShowTemaDropdown(true); }}
+                  onFocus={() => setShowTemaDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowTemaDropdown(false), 200)}
                 />
-                <span>Criou Card?</span>
+                {showTemaDropdown && filteredTemas.length > 0 && (
+                  <div className="absolute z-50 top-full mt-1 w-full bg-[#18181b] border border-white/15 rounded-xl shadow-xl max-h-36 overflow-y-auto">
+                    {filteredTemas.map(t => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-[11px] text-gray-200 hover:bg-white/10 transition-colors border-none bg-transparent cursor-pointer"
+                        onMouseDown={() => { setTemaQuery(t.nome); setNewError(prev => ({...prev, tema: t.nome, temaId: t.id})); setShowTemaDropdown(false); }}
+                      >
+                        <span className="font-bold">{t.nome}</span>
+                        <span className="text-gray-500 ml-1.5">· {t.esp}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Input type="text" placeholder="Fato atômico / Anotação" value={newError.desc || ""} onChange={e => setNewError({...newError, desc: e.target.value})} className="flex-1 min-w-[140px]" />
+              <label className="flex items-center gap-1.5 text-[11px] text-gray-300 cursor-pointer shrink-0 select-none">
+                <input type="checkbox" checked={newError.virouCard} onChange={e => setNewError({...newError, virouCard: e.target.checked})} className="rounded border-white/20 text-blue-600 bg-black h-4 w-4" />
+                <span>Card?</span>
               </label>
-              <Btn onClick={addErrorToList} variant="ghost" className="py-2">Incluir</Btn>
+              <Btn onClick={addErrorToList} variant="ghost" className="py-2 shrink-0">Incluir</Btn>
             </div>
           </div>
+
+          {errorsGuideOpen && (
+            <Modal onClose={() => setErrorsGuideOpen(false)} wide>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-[14px] font-black text-white">Tipos de Erro — O que fazer com cada um</h3>
+                  <p className="text-[11px] text-gray-400 mt-1">Identificar o tipo certo direciona a correção para o que realmente resolve o erro.</p>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {SIM_ERROR_TYPE_GUIDE.filter(g => platKey === "res" || g.value !== "conduta").map(g => (
+                    <div key={g.value} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                      <p className="text-[11px] font-black text-blue-300 uppercase tracking-wider">{g.label}</p>
+                      <p className="text-[11px] text-gray-300 mt-1 leading-relaxed">{g.desc}</p>
+                      <p className="text-[10px] text-emerald-400 mt-1.5 font-bold">→ {g.acao}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Modal>
+          )}
 
           <div className="max-h-40 overflow-y-auto border border-white/5 rounded-xl divide-y divide-white/5">
             {erradas.length === 0 && <p className="text-center py-4 text-[11px] text-gray-600 italic">{realErrors === 0 ? "Nenhum erro real. Pode salvar como corrigido." : "Insira os erros reais para liberar o salvamento."}</p>}
@@ -316,6 +387,7 @@ export default function Simulados({ onStudy, setView }) {
   const [activeTab, setActiveTab] = useState("painel"); // painel | correcao | area | metricas
   const [modalOpen, setModalOpen] = useState(false);
   const [howToOpen, setHowToOpen] = useState(false);
+  const [showSimConfetti, setShowSimConfetti] = useState(false);
 
   // Core calculations and readiness score
   const targetProva = useMemo(() => pickTargetProva(meta?.provasAlvo, plat), [meta?.provasAlvo, plat]);
@@ -325,6 +397,29 @@ export default function Simulados({ onStudy, setView }) {
 
   const analytics = useMemo(() => calcMetricasElite(simulados, plat, targetProva), [simulados, plat, targetProva]);
   const pcts = useMemo(() => simulados.map(s => s.pct), [simulados]);
+
+  // Estatísticas de erro expandidas
+  const statsErros = useMemo(() => {
+    const allErrors = simulados.flatMap(s => s.questoesErradas || []);
+    const porTipo = {};
+    const porArea = {};
+    const porTema = {};
+    allErrors.forEach(e => {
+      const t = e.tipoErro || "lacuna";
+      porTipo[t] = (porTipo[t] || 0) + 1;
+      const area = e.esp || "Geral";
+      porArea[area] = (porArea[area] || 0) + 1;
+      if (e.tema) porTema[e.tema] = (porTema[e.tema] || 0) + 1;
+    });
+    return {
+      total: allErrors.length,
+      corrigidos: allErrors.filter(e => e.corrigidaD7 === true).length,
+      cards: allErrors.filter(e => e.virouCard).length,
+      porTipo: Object.entries(porTipo).sort((a, b) => b[1] - a[1]).slice(0, 6),
+      porArea: Object.entries(porArea).sort((a, b) => b[1] - a[1]).slice(0, 6),
+      temasRecorrentes: Object.entries(porTema).filter(([, v]) => v > 1).sort((a, b) => b[1] - a[1]).slice(0, 5),
+    };
+  }, [simulados]);
 
   const simRecommendation = useMemo(() => {
     return getSimRecommendation(meta?.dataProva, simulados, temas, plat);
@@ -922,8 +1017,10 @@ export default function Simulados({ onStudy, setView }) {
                 {/* Lista de simulados */}
                 <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
                   {[...simulados].reverse().map((s) => {
-                    const col = s.pct >= 80 ? "text-emerald-400" : s.pct >= 65 ? "text-blue-400" : "text-red-400";
-                    const bgCol = s.pct >= 80 ? "bg-emerald-500/10" : s.pct >= 65 ? "bg-blue-500/10" : "bg-red-500/10";
+                    const metaAcerto = s.metaAcerto || 0;
+                    const hitsMeta = metaAcerto > 0 && s.pct >= metaAcerto;
+                    const col = hitsMeta ? "text-blue-200" : s.pct >= 80 ? "text-emerald-400" : s.pct >= 65 ? "text-blue-400" : s.pct >= 50 ? "text-amber-400" : "text-red-400";
+                    const bgCol = hitsMeta ? "bg-blue-800/30 border border-blue-500/30" : s.pct >= 80 ? "bg-emerald-500/10" : s.pct >= 65 ? "bg-blue-500/10" : "bg-red-500/10";
                     const errosPend = (s.questoesErradas || []).filter(q => q.corrigidaD7 == null).length;
                     return (
                       <div key={s.id} className="bg-black/40 border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-white/10 transition-all">
@@ -1023,22 +1120,96 @@ export default function Simulados({ onStudy, setView }) {
 
       {/* Conteudo Aba 4: Erros avancados */}
       {activeTab === "metricas" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-2">
-            <h3 className="text-[13px] font-bold text-white flex items-center gap-1.5"><ShieldAlert size={16} className="text-yellow-400"/> Fator Falta de Atenção Geral</h3>
-            <p className="text-4xl font-black text-yellow-400 font-mono mt-2">{analytics.indiceDescuido != null ? `${analytics.indiceDescuido}%` : "—"}</p>
-            <p className="text-[11px] text-gray-500 mt-1">Proporção de erros classificados puramente como distração ou falta de atenção.</p>
+        <div className="space-y-4">
+          {/* Overview de erros */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { l: "Erros totais", v: statsErros.total, c: statsErros.total > 0 ? "text-red-400" : "text-gray-500" },
+              { l: "Corrigidos (D7)", v: statsErros.corrigidos, c: "text-emerald-400" },
+              { l: "Viraram Card", v: statsErros.cards, c: "text-blue-400" },
+              { l: "Desc./Atenção", v: analytics.indiceDescuido != null ? `${analytics.indiceDescuido}%` : "—", c: "text-yellow-400" },
+            ].map(kpi => (
+              <div key={kpi.l} className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{kpi.l}</p>
+                <p className={`text-3xl font-black tabular-nums mt-2 ${kpi.c}`}>{kpi.v}</p>
+              </div>
+            ))}
           </div>
 
-          <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-2">
-            <h3 className="text-[13px] font-bold text-white flex items-center gap-1.5"><Award size={16} className="text-emerald-400"/> Taxa de Conversão D7</h3>
-            <p className="text-4xl font-black text-emerald-400 font-mono mt-2">{analytics.taxaConversao != null ? `${analytics.taxaConversao}%` : "—"}</p>
-            <p className="text-[11px] text-gray-500 mt-1">Eficiência de eliminação de erros após 1 semana de consolidação activa.</p>
-          </div>
+          {statsErros.total > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Por tipo */}
+              {statsErros.porTipo.length > 0 && (
+                <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 space-y-3">
+                  <p className="text-[11px] font-black uppercase tracking-wider text-gray-300">Erros por tipo</p>
+                  {statsErros.porTipo.map(([tipo, count]) => {
+                    const label = SIM_ERROR_TYPES.find(t => t.value === tipo)?.label || tipo;
+                    const pct = statsErros.total > 0 ? Math.round((count / statsErros.total) * 100) : 0;
+                    return (
+                      <div key={tipo} className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-gray-300">{label}</span>
+                          <span className="text-gray-500 font-mono">{count} ({pct}%)</span>
+                        </div>
+                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div className="h-full bg-blue-500/50 rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Por área */}
+              {statsErros.porArea.length > 0 && (
+                <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 space-y-3">
+                  <p className="text-[11px] font-black uppercase tracking-wider text-gray-300">Erros por área</p>
+                  {statsErros.porArea.map(([area, count]) => {
+                    const pct = statsErros.total > 0 ? Math.round((count / statsErros.total) * 100) : 0;
+                    return (
+                      <div key={area} className="space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-gray-300">{area}</span>
+                          <span className="text-gray-500 font-mono">{count} ({pct}%)</span>
+                        </div>
+                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div className="h-full bg-amber-500/50 rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Temas recorrentes */}
+              {statsErros.temasRecorrentes.length > 0 && (
+                <div className="bg-[var(--surface-1)] border border-red-500/15 rounded-2xl p-4 space-y-2">
+                  <p className="text-[11px] font-black uppercase tracking-wider text-red-400">Temas com erros recorrentes</p>
+                  {statsErros.temasRecorrentes.map(([tema, count]) => (
+                    <div key={tema} className="flex items-center justify-between text-[11px]">
+                      <span className="text-gray-300">{tema}</span>
+                      <span className="text-red-400 font-bold">{count}x erros</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Taxa de conversão */}
+              <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2">
+                <h3 className="text-[12px] font-bold text-white flex items-center gap-1.5"><Award size={14} className="text-emerald-400"/> Taxa de Conversão D7</h3>
+                <p className="text-3xl font-black text-emerald-400 font-mono">{analytics.taxaConversao != null ? `${analytics.taxaConversao}%` : "—"}</p>
+                <p className="text-[10px] text-gray-500">Eficiência de eliminação de erros após 1 semana de consolidação.</p>
+              </div>
+            </div>
+          )}
+
+          {statsErros.total === 0 && (
+            <p className="text-center py-8 text-gray-500 text-[12px] italic">Nenhum erro mapeado ainda. Registre simulados com auditoria de erros para ver estas estatísticas.</p>
+          )}
 
           {analytics.insights?.length > 0 && (
-            <div className="md:col-span-2 bg-blue-600/10 border border-blue-500/20 rounded-2xl p-4">
-              <p className="text-[11px] uppercase tracking-wider font-bold text-blue-400 mb-2">💡 Direcionamento Estratégico Baseado em Dados:</p>
+            <div className="bg-blue-600/10 border border-blue-500/20 rounded-2xl p-4">
+              <p className="text-[11px] uppercase tracking-wider font-bold text-blue-400 mb-2">Direcionamento estratégico</p>
               <ul className="text-[12px] text-gray-300 space-y-1.5 list-disc pl-4">
                 {analytics.insights.map((ins, idx) => <li key={idx}>{ins}</li>)}
               </ul>
@@ -1074,13 +1245,38 @@ export default function Simulados({ onStudy, setView }) {
         </Modal>
       )}
 
+      {showSimConfetti && (
+        <div className="fixed inset-0 z-[200] pointer-events-none overflow-hidden">
+          {Array.from({ length: 30 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute top-0 rounded-full animate-bounce"
+              style={{
+                left: `${Math.random() * 100}%`,
+                width: `${6 + Math.random() * 8}px`,
+                height: `${6 + Math.random() * 8}px`,
+                backgroundColor: ["#3b82f6", "#06b6d4", "#10b981", "#f59e0b", "#a78bfa"][i % 5],
+                animationDelay: `${Math.random() * 1}s`,
+                animationDuration: `${1 + Math.random()}s`,
+                transform: `translateY(${Math.random() * -80}vh)`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       {modalOpen && (
         <SimRegistroModal
           platKey={plat}
+          temas={temas}
           onClose={() => setModalOpen(false)}
           onSave={(sim) => {
             addSim(plat, sim);
             safeTrackEvent("simulation_result_recorded", { plat, pct: sim?.pct ?? 0, total: sim?.total ?? 0 }, { state: useStore.getState() });
+            if (sim.metaAcerto > 0 && sim.pct >= sim.metaAcerto) {
+              setShowSimConfetti(true);
+              setTimeout(() => setShowSimConfetti(false), 3500);
+            }
             setModalOpen(false);
           }}
         />
