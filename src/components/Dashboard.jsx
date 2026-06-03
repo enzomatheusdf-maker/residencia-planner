@@ -1,6 +1,6 @@
 // src/components/Dashboard.jsx
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Calendar, AlertTriangle, X, Zap, Layers, Unlock, GraduationCap, BarChart3 } from "lucide-react";
+import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Calendar, AlertTriangle, X, Zap, Layers, GraduationCap, BarChart3 } from "lucide-react";
 import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection } from "../core/fsrs";
 import { calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
@@ -938,10 +938,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     return diag.insights.filter(ins => ins.type === "alerta" || ins.type === "vies_excesso" || ins.type === "vies_inseguranca");
   }, [diag]);
 
-  const nonCriticalInsights = useMemo(() => {
-    if (!diag || !diag.insights) return [];
-    return diag.insights.filter(ins => ins.type !== "alerta" && ins.type !== "vies_excesso" && ins.type !== "vies_inseguranca");
-  }, [diag]);
   const hasExhaustionNow = useMemo(() => isExhaustionDetected(temaStats, done), [temaStats, done]);
   const totalSessions = useMemo(() => {
     return temas
@@ -2217,119 +2213,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       )}
 
-      {/* ZONA 2 — Análise de desempenho (dados, não voz do mentor) */}
-      <div className="medrev-card p-5 flex flex-col gap-4 relative overflow-hidden">
-        <div className="absolute -left-12 -bottom-12 w-28 h-28 rounded-full bg-cyan-600/5 blur-2xl pointer-events-none" />
 
-        <div className="flex items-center justify-between border-b border-white/5 pb-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <BarChart3 size={16} className="text-blue-400" />
-            <h3 className="text-[10px] font-black uppercase text-gray-300 tracking-wider mr-2">Análise de Desempenho</h3>
-            <span className="text-[9px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">
-              {totalSessions < 7 ? "Fase 1: Calibração" : totalSessions < 30 ? "Fase 2: Ritmo" : "Fase 3: Consolidação"}
-            </span>
-          </div>
-          {diag.projection && (
-            <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-              Projeção: {diag.projection.score}%
-            </span>
-          )}
-        </div>
-
-        {diag.status === "calibracao" ? (
-          <div className="space-y-4">
-            <div className="flex items-start gap-3 p-4 bg-white/[0.02] border border-white/5 rounded-xl flex-col sm:flex-row">
-              <Info size={20} className="text-blue-400 shrink-0 mt-0.5" />
-              <div className="space-y-2 flex-1">
-                <p className="text-xs text-gray-300 leading-relaxed font-semibold">
-                  Dados insuficientes para análise completa. Conclua mais sessões para liberar as métricas avançadas.
-                </p>
-                <div className="space-y-1">
-                  <div className="bg-white/5 rounded-full h-2 overflow-hidden border border-white/5 relative">
-                    <div
-                      className="bg-gradient-to-r from-blue-500 to-sky-500 h-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (totalSessions / 7) * 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[9px] font-black text-gray-500 uppercase tracking-wider font-mono">
-                    <span>Progresso de Calibração</span>
-                    <span>{totalSessions} de 7 sessões concluídas</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
-                <span className="flex items-center gap-1.5 text-[10px] font-black text-blue-400 uppercase tracking-wide"><Unlock size={11} className="shrink-0" /> A partir de 7 sessões</span>
-                <p className="text-[10.5px] text-gray-400 leading-relaxed">
-                  Libera análise de horário ótimo, fraquezas por especialidade e detecção de viés de confiança.
-                </p>
-              </div>
-              <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
-                <span className="flex items-center gap-1.5 text-[10px] font-black text-sky-400 uppercase tracking-wide"><Unlock size={11} className="shrink-0" /> A partir de 30 sessões</span>
-                <p className="text-[10.5px] text-gray-400 leading-relaxed">
-                  Libera projeção estatística de nota/aprovação com base no seu histórico e peso das provas.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2.5">
-            <p className="text-[11px] text-gray-500 leading-relaxed pl-1 mb-0.5">
-              {totalSessions < 30
-                ? "Fila ajustada aos seus horários de maior desempenho."
-                : "Histórico suficiente: fila calibrada 100% pelo seu desempenho real."}
-            </p>
-            {nonCriticalInsights.map((insight, idx) => {
-              let InsightIcon = Info;
-              let colorClass = "bg-white/[0.02] text-gray-300 border border-white/5";
-              if (insight.type === "alerta" || insight.type === "vies_excesso") {
-                InsightIcon = AlertTriangle;
-                colorClass = "bg-amber-500/5 text-amber-300 border border-amber-500/10";
-              } else if (insight.type === "tendencia_baixa") {
-                InsightIcon = TrendingDown;
-                colorClass = "bg-red-500/5 text-red-300 border border-red-500/10";
-              } else if (insight.type === "tendencia_alta") {
-                InsightIcon = TrendingUp;
-                colorClass = "bg-emerald-500/5 text-emerald-300 border border-emerald-500/10";
-              } else if (insight.type === "horario") {
-                InsightIcon = Zap;
-                colorClass = "bg-indigo-500/5 text-indigo-300 border border-indigo-500/10";
-              }
-              return (
-                <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl transition-all ${colorClass}`}>
-                  <InsightIcon size={16} className="shrink-0 mt-0.5" />
-                  <div className="flex-1 flex flex-col gap-1.5 text-left">
-                    <p className="text-[12px] leading-relaxed font-medium">{insight.text}</p>
-                    <div className="flex items-center justify-between gap-2 mt-0.5 flex-wrap">
-                      {insight.confidence && (
-                        <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wider">
-                          confiança: {insight.confidence}
-                        </span>
-                      )}
-                      {insight.action && (
-                        <button
-                          type="button"
-                          onClick={() => handleInsightAction(insight.action)}
-                          className="px-2.5 py-1 bg-blue-600/90 hover:bg-blue-500 active:scale-[0.98] text-[9.5px] font-bold text-white rounded-lg transition-all border border-blue-500/20 cursor-pointer shadow-sm hover:shadow"
-                        >
-                          {insight.action.label}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            {diag.projection && (
-              <p className="text-[11px] text-gray-500 italic mt-1 pl-1">
-                {diag.projection.text}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
 
       {/* ZONA 3 — Métricas (Grid 3 colunas) — só exibe após a primeira sessão */}
       {totalSessions > 0 ? (

@@ -4,12 +4,12 @@
 import React, { useMemo, useState, useEffect, useRef, lazy, Suspense } from "react";
 import {
   BarChart3, Flame, BookOpen, AlertCircle, Trophy,
-  Brain, Activity,
+  Brain, Activity, Info, AlertTriangle, TrendingDown, TrendingUp, Zap, Unlock,
 } from "lucide-react";
 import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, todayStr, addDays, fmtDate } from "../core/fsrs";
 import { calcCalibration } from "../core/calibration";
-import { getMentorPhrase } from "../core/mentor";
+import { getMentorPhrase, getMentorDiagnosis } from "../core/mentor";
 import { getReadinessData } from "../core/readiness";
 import {
   ERROR_TYPE_LABEL, dominantErrorType, summarizeErrors,
@@ -26,6 +26,7 @@ import EnamedMapa from "./EnamedMapa";
 import AdvancedSection from "./AdvancedSection";
 import MetricCard from "./MetricCard";
 import ErrorActionCenter from "./ErrorActionCenter";
+import { Badge, Card, SegmentedControl } from "./ui";
 
 const EnamedProvaAnalyzer = lazy(() => import("./EnamedProvaAnalyzer"));
 
@@ -45,29 +46,12 @@ const SECTIONS = [
 
 function SectionNav({ sections, active, onChange }) {
   return (
-    <div className="w-full overflow-x-auto pb-1">
-      <div className="flex gap-1 min-w-max">
-        {sections.map((s) => {
-          const Icon = s.icon;
-          const isActive = s.id === active;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => onChange(s.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold transition-all whitespace-nowrap ${
-                isActive
-                  ? "bg-indigo-600/20 text-indigo-300 border border-indigo-500/30"
-                  : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
-              }`}
-            >
-              <Icon size={12} />
-              {s.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <SegmentedControl
+      ariaLabel="Seções de estatísticas"
+      value={active}
+      onChange={onChange}
+      options={sections.map((section) => ({ value: section.id, label: section.label }))}
+    />
   );
 }
 
@@ -304,6 +288,41 @@ export default function StatsPanel({ setView = null }) {
     const phraseObj = getMentorPhrase(key, { userName: userName || "Estudante" }, [], plat);
     return phraseObj.text;
   }, [calibrationData, userName, plat]);
+
+  // Analise de Desempenho (migrada do Dashboard)
+  const doneForDiag = useMemo(() => {
+    return temas
+      .flatMap((t) => STEPS.map((s) => ({
+        ...t.rev?.[s.key],
+        esp: t.esp, step: s, temaNome: t.nome, temaId: t.id,
+      })))
+      .filter((r) => r.done && !r.skipped && r.skipReason !== "dominio_previo" && !r.skippeadoPorDominio);
+  }, [temas]);
+
+  const totalSessions = useMemo(() => {
+    return temas
+      .flatMap((t) => [...STEPS.map((s) => t.rev?.[s.key]), t.rev?.manutencao])
+      .filter((r) => r?.done === true && !r.skipped && r.skipReason !== "dominio_previo" && !r.skippeadoPorDominio)
+      .length;
+  }, [temas]);
+
+  const diagDesempenho = useMemo(
+    () => getMentorDiagnosis(userName, temas, doneForDiag, temaStats, plat, meta),
+    [userName, temas, doneForDiag, temaStats, plat, meta]
+  );
+
+  const nonCriticalInsights = useMemo(() => {
+    if (!diagDesempenho?.insights) return [];
+    return diagDesempenho.insights.filter(
+      (ins) => ins.type !== "alerta" && ins.type !== "vies_excesso" && ins.type !== "vies_inseguranca"
+    );
+  }, [diagDesempenho]);
+
+  const handleInsightActionStats = (action) => {
+    if (!action) return;
+    if (action.type === "setView" && setView) setView(action.view);
+    else if (setView) setView("crono");
+  };
 
   // Heatmap 12 semanas
   const heatmapDays = useMemo(() => {
@@ -568,10 +587,20 @@ export default function StatsPanel({ setView = null }) {
   return (
     <div className="space-y-4 animate-fade-up text-left">
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-        <BarChart3 size={20} className="text-indigo-400" />
-        <h2 className="text-[15px] font-bold text-gray-100">Estat\u00edsticas</h2>
-      </div>
+      <Card variant="elevated" className="med-animate-in" style={{ padding: 18, background: "linear-gradient(180deg, rgba(16,185,129,.08), rgba(59,130,246,.04)), var(--med-surface-0)" }}>
+        <div className="flex items-start gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-emerald-500/12 text-emerald-300 ring-1 ring-emerald-500/20">
+            <BarChart3 size={20} />
+          </div>
+          <div>
+            <Badge tone="green">Relatório</Badge>
+            <h2 className="mt-2 text-xl font-black tracking-tight text-white">Estatísticas acionáveis</h2>
+            <p className="mt-1 max-w-2xl text-[12px] leading-relaxed text-gray-400">
+              Aprendizagem, provas, erros e revisões organizados por decisão prática.
+            </p>
+          </div>
+        </div>
+      </Card>
 
       {/* Navegacao */}
       <SectionNav
@@ -720,8 +749,8 @@ export default function StatsPanel({ setView = null }) {
 
           {/* Proxima acao do Mentor */}
           {readinessData.score != null && (
-            <div className="bg-indigo-950/20 border border-indigo-500/10 rounded-2xl p-4">
-              <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider mb-1">Proximo passo recomendado</p>
+            <div className="bg-blue-950/20 border border-blue-500/10 rounded-2xl p-4">
+              <p className="text-[10px] font-bold text-blue-300 uppercase tracking-wider mb-1">Proximo passo recomendado</p>
               <p className="text-[12px] text-gray-300 leading-relaxed">
                 {overdueCount > 0
                   ? `Resolva as ${overdueCount} revisoes vencidas antes de qualquer coisa.`
@@ -744,7 +773,7 @@ export default function StatsPanel({ setView = null }) {
           {/* KPIs rapidos */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: "Temas totais", value: temas.length, color: "text-indigo-400" },
+              { label: "Temas totais", value: temas.length, color: "text-blue-300" },
               { label: "Iniciados", value: startedTemas.length, color: "text-blue-400" },
               { label: "Ciclos completos", value: personalStats?.totalConcluidos ?? 0, color: "text-emerald-400" },
               {
@@ -843,7 +872,7 @@ export default function StatsPanel({ setView = null }) {
                   const h = (d.count / maxCount) * 80;
                   return (
                     <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5 group">
-                      <span className="text-[9.5px] font-mono text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity select-none">{d.count}</span>
+                      <span className="text-[9.5px] font-mono text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity select-none">{d.count}</span>
                       <div
                         style={{ height: `${Math.max(4, h)}px` }}
                         className={`w-full rounded-t transition-all ${
@@ -932,10 +961,126 @@ export default function StatsPanel({ setView = null }) {
                     {calibrationData.vies > 0 ? "Otimista" : calibrationData.vies < 0 ? "Pessimista" : "Alinhado"}
                   </span>
                 </div>
-                <div className="bg-indigo-950/20 border border-indigo-500/10 rounded-xl p-4 flex flex-col justify-center text-left">
-                  <span className="text-[9.5px] font-bold text-indigo-300 uppercase tracking-wider block mb-1">Mentor Metacognitivo</span>
+                <div className="bg-blue-950/20 border border-blue-500/10 rounded-xl p-4 flex flex-col justify-center text-left">
+                  <span className="text-[9.5px] font-bold text-blue-300 uppercase tracking-wider block mb-1">Mentor Metacognitivo</span>
                   <p className="text-[11.5px] text-gray-400 leading-relaxed mt-0.5 italic">"{calibrationMentorPhrase}"</p>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Analise de Desempenho (migrada do Dashboard) */}
+          <div className="bg-[#0d0d10] border border-white/5 rounded-2xl p-5 flex flex-col gap-4 relative overflow-hidden">
+            <div className="absolute -left-12 -bottom-12 w-28 h-28 rounded-full bg-cyan-600/5 blur-2xl pointer-events-none" />
+            <div className="flex items-center justify-between border-b border-white/5 pb-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <BarChart3 size={16} className="text-blue-400" />
+                <h3 className="text-[10px] font-black uppercase text-gray-300 tracking-wider mr-2">Análise de Desempenho</h3>
+                <span className="text-[9px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">
+                  {totalSessions < 7 ? "Fase 1: Calibração" : totalSessions < 30 ? "Fase 2: Ritmo" : "Fase 3: Consolidação"}
+                </span>
+              </div>
+              {diagDesempenho?.projection && (
+                <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                  Projeção: {diagDesempenho.projection.score}%
+                </span>
+              )}
+            </div>
+
+            {diagDesempenho?.status === "calibracao" ? (
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-4 bg-white/[0.02] border border-white/5 rounded-xl flex-col sm:flex-row">
+                  <Info size={20} className="text-blue-400 shrink-0 mt-0.5" />
+                  <div className="space-y-2 flex-1">
+                    <p className="text-xs text-gray-300 leading-relaxed font-semibold">
+                      Dados insuficientes para análise completa. Conclua mais sessões para liberar as métricas avançadas.
+                    </p>
+                    <div className="space-y-1">
+                      <div className="bg-white/5 rounded-full h-2 overflow-hidden border border-white/5">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-sky-500 h-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, (totalSessions / 7) * 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[9px] font-black text-gray-500 uppercase tracking-wider font-mono">
+                        <span>Progresso de Calibração</span>
+                        <span>{totalSessions} de 7 sessões concluídas</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                    <span className="flex items-center gap-1.5 text-[10px] font-black text-blue-400 uppercase tracking-wide">
+                      <Unlock size={11} className="shrink-0" /> A partir de 7 sessões
+                    </span>
+                    <p className="text-[10.5px] text-gray-400 leading-relaxed">
+                      Libera análise de horário ótimo, fraquezas por especialidade e detecção de viés de confiança.
+                    </p>
+                  </div>
+                  <div className="p-3 bg-black/40 border border-white/5 rounded-xl space-y-1">
+                    <span className="flex items-center gap-1.5 text-[10px] font-black text-sky-400 uppercase tracking-wide">
+                      <Unlock size={11} className="shrink-0" /> A partir de 30 sessões
+                    </span>
+                    <p className="text-[10.5px] text-gray-400 leading-relaxed">
+                      Libera projeção estatística de nota/aprovação com base no seu histórico e peso das provas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                <p className="text-[11px] text-gray-500 leading-relaxed pl-1 mb-0.5">
+                  {totalSessions < 30
+                    ? "Fila ajustada aos seus horários de maior desempenho."
+                    : "Histórico suficiente: fila calibrada 100% pelo seu desempenho real."}
+                </p>
+                {nonCriticalInsights.map((insight, idx) => {
+                  let InsightIcon = Info;
+                  let colorClass = "bg-white/[0.02] text-gray-300 border border-white/5";
+                  if (insight.type === "alerta" || insight.type === "vies_excesso") {
+                    InsightIcon = AlertTriangle;
+                    colorClass = "bg-amber-500/5 text-amber-300 border border-amber-500/10";
+                  } else if (insight.type === "tendencia_baixa") {
+                    InsightIcon = TrendingDown;
+                    colorClass = "bg-red-500/5 text-red-300 border border-red-500/10";
+                  } else if (insight.type === "tendencia_alta") {
+                    InsightIcon = TrendingUp;
+                    colorClass = "bg-emerald-500/5 text-emerald-300 border border-emerald-500/10";
+                  } else if (insight.type === "horario") {
+                    InsightIcon = Zap;
+                    colorClass = "bg-indigo-500/5 text-indigo-300 border border-indigo-500/10";
+                  }
+                  return (
+                    <div key={idx} className={`flex items-start gap-3 p-3 rounded-xl transition-all ${colorClass}`}>
+                      <InsightIcon size={16} className="shrink-0 mt-0.5" />
+                      <div className="flex-1 flex flex-col gap-1.5 text-left">
+                        <p className="text-[12px] leading-relaxed font-medium">{insight.text}</p>
+                        <div className="flex items-center justify-between gap-2 mt-0.5 flex-wrap">
+                          {insight.confidence && (
+                            <span className="text-[9px] font-mono text-gray-500 uppercase tracking-wider">
+                              confiança: {insight.confidence}
+                            </span>
+                          )}
+                          {insight.action && (
+                            <button
+                              type="button"
+                              onClick={() => handleInsightActionStats(insight.action)}
+                              className="px-2.5 py-1 bg-blue-600/90 hover:bg-blue-500 active:scale-[0.98] text-[9.5px] font-bold text-white rounded-lg transition-all border border-blue-500/20 cursor-pointer shadow-sm hover:shadow"
+                            >
+                              {insight.action.label}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {diagDesempenho?.projection && (
+                  <p className="text-[11px] text-gray-500 italic mt-1 pl-1">
+                    {diagDesempenho.projection.text}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -1074,7 +1219,7 @@ export default function StatsPanel({ setView = null }) {
                   const h = (d.count / maxCount) * 80;
                   return (
                     <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5 group">
-                      <span className="text-[9.5px] font-mono text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity select-none">{d.count}</span>
+                      <span className="text-[9.5px] font-mono text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity select-none">{d.count}</span>
                       <div
                         style={{ height: `${Math.max(4, h)}px` }}
                         className={`w-full rounded-t transition-all ${
@@ -1126,10 +1271,10 @@ export default function StatsPanel({ setView = null }) {
           </div>
 
           {/* Placeholder P4 */}
-          <div className="bg-indigo-950/10 border border-indigo-500/10 rounded-2xl p-5 flex items-start gap-3">
-            <Brain size={16} className="text-indigo-400 mt-0.5 shrink-0" />
+          <div className="bg-purple-950/10 border border-purple-500/10 rounded-2xl p-5 flex items-start gap-3">
+            <Brain size={16} className="text-purple-300 mt-0.5 shrink-0" />
             <div>
-              <p className="text-[12px] font-bold text-indigo-300">Racioc\u00ednio Cl\u00ednico integrado \u00e0 curva de revis\u00e3o (P4)</p>
+              <p className="text-[12px] font-bold text-purple-300">Racioc\u00ednio Cl\u00ednico integrado \u00e0 curva de revis\u00e3o (P4)</p>
               <p className="text-[11px] text-gray-500 mt-1">
                 Em breve: revis\u00e3o multimodal por est\u00e1gio da curva (D1 recorda\u00e7\u00e3o estruturada, D4 racioc\u00ednio diagn\u00f3stico, D7 mini caso, D21 concord\u00e2ncia cl\u00ednica + conduta),
                 score \u00fanico e conduta/prescri\u00e7\u00e3o simulada.
@@ -1155,7 +1300,7 @@ export default function StatsPanel({ setView = null }) {
             />
             <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 min-h-[100px]">
               <p className="text-[10px] text-gray-500 uppercase font-semibold">Sessoes registradas</p>
-              <p className="text-2xl font-black text-indigo-400 tabular-nums">{sessionReflections.length}</p>
+              <p className="text-2xl font-black text-purple-300 tabular-nums">{sessionReflections.length}</p>
               <p className="text-[10px] text-gray-600">Fechamentos de sessao acumulados.</p>
             </div>
             <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 min-h-[100px]">
