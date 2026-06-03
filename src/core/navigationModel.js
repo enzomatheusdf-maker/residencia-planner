@@ -100,6 +100,11 @@ const MORE_ITEMS = [
     description: "Conta, estudos, mentor, seguranca e preferencias.",
   },
   {
+    view: "conquistas",
+    label: "Conquistas",
+    description: "Realizacoes desbloqueadas com base no seu progresso.",
+  },
+  {
     view: "launch_checklist",
     label: "Checklist",
     description: "Itens de prontidao e verificacoes do app.",
@@ -148,6 +153,7 @@ const LABELS_BY_VIEW = {
   academia: "Academia / M\u00e9todo",
   data_safety: "Data Safety",
   launch_checklist: "Launch Checklist",
+  conquistas: "Conquistas",
   guia: "Guia",
   ajustes: "Ajustes",
 };

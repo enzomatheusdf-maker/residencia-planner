@@ -51,6 +51,8 @@ import LaunchChecklistPanel from "./components/LaunchChecklistPanel";
 import Simulados from "./components/Simulados";
 import AnkiAudit from "./components/AnkiAudit";
 import AcademiaMetodo from "./components/AcademiaMetodo";
+import Conquistas from "./components/Conquistas";
+import PomodoroWidget from "./components/PomodoroWidget";
 import FocusMode from "./components/FocusMode";
 import AuthModal from "./components/AuthModal";
 import OnboardingWizard from "./components/OnboardingWizard";
@@ -1286,6 +1288,11 @@ export default function App() {
               <AcademiaMetodo />
             </ErrorBoundary>
           )}
+          {view === "conquistas" && (
+            <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
+              <Conquistas />
+            </ErrorBoundary>
+          )}
         </main>
       </div>
 
@@ -1324,6 +1331,7 @@ export default function App() {
         <LojaModal onClose={() => setLojaOpen(false)} />
       )}
 
+      <PomodoroWidget />
       {showConfetti && <ConfettiOverlay />}
       {showCheckmark && (
         <CheckmarkOverlay onComplete={() => setShowCheckmark(false)} />

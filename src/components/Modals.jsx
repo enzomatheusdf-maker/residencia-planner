@@ -1527,6 +1527,45 @@ export function AjustesModal({
             </div>
 
             <div className="bg-white/5 rounded-2xl p-4 space-y-3">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Dados acadêmicos (opcional)</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Idade" info="Opcional — não afeta o algoritmo.">
+                  <Input
+                    type="number"
+                    min="16" max="80"
+                    value={meta?.perfilIdade || ""}
+                    onChange={e => setMeta({ ...meta, perfilIdade: e.target.value })}
+                    placeholder="ex: 24"
+                  />
+                </Field>
+                <Field label="Ano/semestre do curso" info="Ano de conclusão da graduação ou semestre atual.">
+                  <Input
+                    type="text"
+                    value={meta?.perfilAno || ""}
+                    onChange={e => setMeta({ ...meta, perfilAno: e.target.value })}
+                    placeholder="ex: 6º ano / R3"
+                  />
+                </Field>
+                <Field label="Especialidade pretendida" info="Área de residência de interesse.">
+                  <Input
+                    type="text"
+                    value={meta?.perfilEspecialidade || ""}
+                    onChange={e => setMeta({ ...meta, perfilEspecialidade: e.target.value })}
+                    placeholder="ex: Clínica Médica"
+                  />
+                </Field>
+                <Field label="Cidade/UF (opcional)">
+                  <Input
+                    type="text"
+                    value={meta?.perfilCidade || ""}
+                    onChange={e => setMeta({ ...meta, perfilCidade: e.target.value })}
+                    placeholder="ex: Brasília/DF"
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-2xl p-4 space-y-3">
               <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Foco de Estudo Ativo</p>
               <div className="grid grid-cols-2 gap-2 bg-black/40 rounded-xl p-1">
                 {[["res","Residência"],["vest","Vestibular"]].map(([k,l]) => (
@@ -1873,8 +1912,12 @@ export function AjustesModal({
               
               <div>
                 <span className="text-[11px] text-gray-500 uppercase tracking-wide font-semibold block mb-2">Exames Alvo</span>
-                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto border border-white/5 p-2 rounded-xl bg-black/40">
-                  {(plat === "res" ? PROVAS_RES : PROVAS_VEST).map((pr) => {
+                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto border border-white/5 p-2 rounded-xl bg-black/40">
+                  {(plat === "res" ? [
+                    "ENAMED","USP-SP","UNIFESP","UNICAMP","USP-RP","SUS-SP","SUS-BA","SES-DF","SES-PE",
+                    "AMRIGS","PSU-MG","SURCE","HCPA","UFRJ","UERJ","IAMSPE","Einstein",
+                    "Sírio-Libanês","Santa Casa SP","HC-FMUSP","FHDF","outra"
+                  ] : PROVAS_VEST).map((pr) => {
                     const selected = (meta.provasAlvo || []).includes(pr);
                     return (
                       <button
@@ -1961,8 +2004,11 @@ export function AjustesModal({
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Horas disponíveis / dia" info="Média de horas diárias dedicadas ao estudo. Auxilia o Mentor na recomendação e limite de carga.">
-                  <Input type="number" min={1} max={24} value={meta.tempoDisponivel ?? 2} onChange={(e) => saveMetaNumber("tempoDisponivel", e.target.value, { min: 1, max: 24 }, 2)} />
+                <Field label="Tópicos por dia" info="Quantos temas novos (D0) pretende iniciar por dia. O Mentor usa isso para calibrar a carga.">
+                  <Input type="number" min={1} max={10} value={meta.temasPerDay ?? meta.temasPerWeek ?? 1} onChange={(e) => saveMeta({ temasPerDay: Math.max(1, Math.min(10, Number(e.target.value))) })} />
+                </Field>
+                <Field label="Meta de questões/dia" info="Quantas questões quer responder por dia. Usado no card de progresso e no Dashboard.">
+                  <Input type="number" min={0} max={500} value={meta.metaQuestoesDia ?? meta.metaDiaria ?? 0} onChange={(e) => saveMeta({ metaQuestoesDia: Math.max(0, Math.min(500, Number(e.target.value))), metaDiaria: Math.max(0, Math.min(500, Number(e.target.value))) })} />
                 </Field>
               </div>
 
