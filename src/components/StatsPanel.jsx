@@ -5,6 +5,7 @@ import React, { useMemo, useState, useEffect, useRef, lazy, Suspense } from "rea
 import {
   BarChart3, Flame, BookOpen, AlertCircle, Trophy,
   Brain, Activity, Info, AlertTriangle, TrendingDown, TrendingUp, Zap, Unlock,
+  Target, ChevronRight, CheckCircle,
 } from "lucide-react";
 import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, todayStr, addDays, fmtDate } from "../core/fsrs";
@@ -21,6 +22,8 @@ import { compareReadinessToSimulado, createReadinessSnapshot } from "../core/rea
 import { calcPrevisaoDesempenho, CONFIDENCE_LABEL } from "../core/forecast";
 import { safeTrackEvent } from "../core/telemetry";
 import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
+import { saldoRitmo } from "../core/volume";
+import { getEnamedIntel } from "../core/enamedIntel";
 import { calculateClinicalReasoningScoreDetailed } from "../core/clinicalReasoningScoring";
 import EnamedMapa from "./EnamedMapa";
 import AdvancedSection from "./AdvancedSection";
@@ -323,6 +326,48 @@ export default function StatsPanel({ setView = null }) {
     if (action.type === "setView" && setView) setView(action.view);
     else if (setView) setView("crono");
   };
+
+  // Equilíbrio de Ritmo para secao Provas
+  const ritmoPaceStats = useMemo(() => {
+    if (!meta?.metaQuestoesDia) return null;
+    const started = temas.filter((t) => !t.unstarted);
+    const firstD0 = started.length > 0
+      ? [...started].sort((a, b) => (a.d0 || "").localeCompare(b.d0 || ""))[0].d0
+      : null;
+    return saldoRitmo(temas, meta, firstD0);
+  }, [temas, meta]);
+
+  // Erros avancados de simulados para secao Provas
+  const statsErrosSimulados = useMemo(() => {
+    const allErrors = simulados.flatMap((s) => s.questoesErradas || []);
+    const porTipo = {};
+    const porArea = {};
+    const porTema = {};
+    allErrors.forEach((e) => {
+      const t = e.tipoErro || "lacuna";
+      porTipo[t] = (porTipo[t] || 0) + 1;
+      const area = e.esp || "Geral";
+      porArea[area] = (porArea[area] || 0) + 1;
+      if (e.tema) porTema[e.tema] = (porTema[e.tema] || 0) + 1;
+    });
+    return {
+      total: allErrors.length,
+      corrigidos: allErrors.filter((e) => e.corrigidaD7 === true).length,
+      cards: allErrors.filter((e) => e.virouCard).length,
+      porTipo: Object.entries(porTipo).sort((a, b) => b[1] - a[1]).slice(0, 6),
+      porArea: Object.entries(porArea).sort((a, b) => b[1] - a[1]).slice(0, 6),
+      temasRecorrentes: Object.entries(porTema)
+        .filter(([, v]) => v > 1)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5),
+    };
+  }, [simulados]);
+
+  // ENAMED Intel para o Mapa de Prioridades (somente res)
+  const enamedIntelData = useMemo(() => {
+    if (plat !== "res") return null;
+    return getEnamedIntel(temas);
+  }, [plat, temas]);
 
   // Heatmap 12 semanas
   const heatmapDays = useMemo(() => {
@@ -1166,6 +1211,218 @@ export default function StatsPanel({ setView = null }) {
           )}
         </div>
       )}
+
+
+          {/* Previsao de desempenho */}
+          <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <Target size={15} className="text-cyan-400" />
+                <h3 className="text-[12px] font-black uppercase tracking-wider text-gray-200">Previsao de Desempenho</h3>
+              </div>
+              {readinessData.score != null && (
+                <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border ${
+                  readinessData.score >= 75 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                  : readinessData.score >= 60 ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                  : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                }`}>
+                  {readinessData.score}/100
+                </span>
+              )}
+            </div>
+            {!readinessSample.hasMinimum ? (
+              <div className="space-y-1">
+                <p className="text-[11px] text-gray-400 leading-relaxed">
+                  Libera apos: <strong className="text-gray-200">{readinessSample.missing.join(", ")}</strong>.
+                </p>
+                <p className="text-[10px] text-gray-600 italic">Volume minimo e simulado diagnostico necessarios.</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {readinessData.range && (
+                  <p className="text-[11px] text-gray-300">
+                    Intervalo estimado:{" "}
+                    <strong className="text-white">{readinessData.range[0]}% &ndash; {readinessData.range[1]}%</strong>
+                  </p>
+                )}
+                {readinessData.tendenciaSim != null && (
+                  <p className={`text-[11px] font-bold ${readinessData.tendenciaSim > 0 ? "text-emerald-400" : readinessData.tendenciaSim < 0 ? "text-red-400" : "text-gray-500"}`}>
+                    Tendencia simulados:{" "}
+                    {readinessData.tendenciaSim > 0 ? "melhorando" : readinessData.tendenciaSim < 0 ? "caindo" : "estavel"}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Equilibrio de Ritmo */}
+          <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-2">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={15} className="text-emerald-400" />
+              <h3 className="text-[12px] font-black uppercase tracking-wider text-gray-200">Equilibrio de Ritmo</h3>
+            </div>
+            {ritmoPaceStats ? (
+              <>
+                <p className={`text-3xl font-black tabular-nums ${ritmoPaceStats.saldo >= 0 ? "text-emerald-400" : "text-amber-400"}`}>
+                  {ritmoPaceStats.saldo >= 0 ? `+${ritmoPaceStats.saldo}` : ritmoPaceStats.saldo}
+                </p>
+                <p className="text-[10.5px] text-gray-400">
+                  {ritmoPaceStats.saldo >= 0
+                    ? "Adiantado nas metas de questoes."
+                    : `${Math.abs(ritmoPaceStats.saldo)} questoes atras do planejado.`}
+                </p>
+              </>
+            ) : (
+              <p className="text-[11px] text-gray-500 italic">Configure a meta diaria de questoes nos Ajustes.</p>
+            )}
+          </div>
+
+          {/* Erros avancados de simulados */}
+          {statsErrosSimulados.total > 0 && (
+            <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle size={15} className="text-red-400" />
+                  <h3 className="text-[12px] font-black uppercase tracking-wider text-gray-200">Erros de Simulados</h3>
+                </div>
+                <div className="flex gap-3 text-[10px]">
+                  <span className="text-red-400 font-bold">{statsErrosSimulados.total} erros</span>
+                  <span className="text-emerald-400 font-bold">{statsErrosSimulados.corrigidos} D7 corrigidos</span>
+                </div>
+              </div>
+              {statsErrosSimulados.porTipo.length > 0 && (
+                <div>
+                  <p className="text-[9.5px] font-bold text-gray-500 uppercase tracking-wider mb-2">Por tipo</p>
+                  <div className="space-y-1.5">
+                    {statsErrosSimulados.porTipo.map(([tipo, count]) => {
+                      const pct = Math.round((count / statsErrosSimulados.total) * 100);
+                      const lbs = { lacuna: "Lacuna", raciocinio: "Raciocinio", distractor: "Distrator", descuido: "Descuido", nao_visto: "Nao visto", interpretacao: "Interpretacao", conteudo: "Conteudo", memoria: "Memoria" };
+                      return (
+                        <div key={tipo} className="flex items-center gap-2">
+                          <div className="w-20 shrink-0 text-[9.5px] text-gray-400 truncate">{lbs[tipo] || tipo}</div>
+                          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+                            <div className="bg-red-500/70 h-full" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-[9px] text-gray-500 w-7 text-right tabular-nums">{pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {statsErrosSimulados.porArea.length > 0 && (
+                <div>
+                  <p className="text-[9.5px] font-bold text-gray-500 uppercase tracking-wider mb-2">Por area</p>
+                  <div className="space-y-1.5">
+                    {statsErrosSimulados.porArea.map(([area, count]) => {
+                      const pct = Math.round((count / statsErrosSimulados.total) * 100);
+                      return (
+                        <div key={area} className="flex items-center gap-2">
+                          <div className="w-20 shrink-0 text-[9.5px] text-gray-400 truncate">{area}</div>
+                          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
+                            <div className="bg-amber-500/60 h-full" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-[9px] text-gray-500 w-7 text-right tabular-nums">{pct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {statsErrosSimulados.temasRecorrentes.length > 0 && (
+                <div>
+                  <p className="text-[9.5px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Temas recorrentes</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {statsErrosSimulados.temasRecorrentes.map(([tema, count]) => (
+                      <span key={tema} className="text-[9px] bg-red-500/10 text-red-300 border border-red-500/20 px-2 py-0.5 rounded-lg font-bold">
+                        {tema} ({count}x)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Mapa de Prioridades ENAMED — somente Residencia */}
+          {plat === "res" && enamedIntelData && (
+            <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <BarChart3 size={15} className="text-blue-400" />
+                  <h3 className="text-[12px] font-black uppercase tracking-wider text-gray-200">Mapa de Prioridades ENAMED</h3>
+                </div>
+                <span className="text-[10px] text-gray-500">Incidencia x Dominio</span>
+              </div>
+              <p className="text-[11px] text-gray-500 -mt-2">
+                Areas por gap real: peso ENAMED ponderado pelo dominio atual.
+                Clique nos temas quentes para ir ao Plano e comecar a estudar.
+              </p>
+              <div className="space-y-3">
+                {enamedIntelData.lista.map((item) => {
+                  const scMap = {
+                    critica: { border: "border-red-500/20", badge: "bg-red-500/10 text-red-400 border-red-500/20", label: "Critica", bar: "bg-red-500" },
+                    atencao: { border: "border-amber-500/15", badge: "bg-amber-500/10 text-amber-400 border-amber-500/20", label: "Atencao", bar: "bg-amber-500" },
+                    ok: { border: "border-emerald-500/10", badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", label: "OK", bar: "bg-emerald-500" },
+                    sem_dados: { border: "border-white/5", badge: "bg-white/5 text-gray-500 border-white/10", label: "Sem dados", bar: "bg-gray-600" },
+                  };
+                  const sc = scMap[item.status] || scMap.sem_dados;
+                  return (
+                    <div key={item.area} className={`rounded-2xl border bg-white/[0.015] p-4 space-y-3 ${sc.border}`}>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13px] font-black text-white">{item.area}</span>
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${sc.badge}`}>{sc.label}</span>
+                        </div>
+                        <div className="flex gap-3 text-[10px] text-gray-500">
+                          <span>Dom: <strong className="text-gray-300">{item.retencao != null ? `${item.retencao}%` : "---"}</strong></span>
+                          <span>Cob: <strong className="text-gray-300">{item.cobertura}%</strong></span>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[9px] text-gray-600 uppercase font-mono mb-0.5">
+                          <span>Gap</span><span>{item.gap}%</span>
+                        </div>
+                        <div className="bg-white/5 rounded-full h-1.5 overflow-hidden">
+                          <div className={`h-full rounded-full ${sc.bar}`} style={{ width: `${item.gap}%` }} />
+                        </div>
+                        <p className="text-[9px] text-gray-600 italic mt-0.5">{item.motivo}</p>
+                      </div>
+                      {item.hotTopicsPendentes.length > 0 && (
+                        <div>
+                          <p className="text-[9px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Estudar a seguir:</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {item.hotTopicsPendentes.map((hot) => (
+                              <button
+                                key={hot.subarea}
+                                type="button"
+                                onClick={() => setView && setView("crono")}
+                                className="flex items-center gap-1 text-[9.5px] bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 px-2 py-1 rounded-lg font-bold transition-colors cursor-pointer"
+                                title={`~${hot.pct}% das questoes ENAMED de ${item.area}`}
+                              >
+                                {hot.subarea}
+                                <span className="text-blue-400/60 text-[8px]">~{hot.pct}%</span>
+                                <ChevronRight size={10} className="text-blue-400/50" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {item.hotTopicsCobertos.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {item.hotTopicsCobertos.map((hot) => (
+                            <span key={hot.subarea} className="flex items-center gap-1 text-[9px] text-emerald-500/70 border border-emerald-500/10 px-1.5 py-0.5 rounded">
+                              <CheckCircle size={9} /> {hot.subarea}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
       {/* ── SECAO 5: REVISOES ──────────────────────────────────────────────── */}
       {currentSection === "revisoes" && (
