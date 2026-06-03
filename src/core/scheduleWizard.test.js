@@ -1,4 +1,5 @@
 import {
+  balanceTopicsByArea,
   buildSchedulePreview,
   calculateFeasibility,
   calculatePlanningHorizon,
@@ -247,6 +248,34 @@ describe("distributeTopics", () => {
 
   it("handles empty topics array", () => {
     expect(distributeTopics([], BASE_PLAN, START, TODAY)).toHaveLength(0);
+  });
+
+  it("balances same-priority topics across areas before filling a week", () => {
+    const topics = [
+      ...Array.from({ length: 6 }, (_, i) => makeTopic({ id: `cir-${i}`, esp: "Cirurgia", importancia: "ALTA" })),
+      ...Array.from({ length: 2 }, (_, i) => makeTopic({ id: `ped-${i}`, esp: "Pediatria", importancia: "ALTA" })),
+      ...Array.from({ length: 2 }, (_, i) => makeTopic({ id: `go-${i}`, esp: "GO", importancia: "ALTA" })),
+    ];
+
+    const result = distributeTopics(topics, BASE_PLAN, START, TODAY);
+    const firstWeekAreas = result
+      .filter((item) => item.scheduledWeek === "Semana 1")
+      .map((item) => item.area);
+
+    expect(new Set(firstWeekAreas).size).toBeGreaterThan(1);
+    expect(firstWeekAreas.slice(0, 4)).not.toEqual(["Cirurgia", "Cirurgia", "Cirurgia", "Cirurgia"]);
+    expect(result).toHaveLength(topics.length);
+  });
+
+  it("keeps higher priority topics before balancing lower priority topics", () => {
+    const topics = [
+      makeTopic({ id: "alta-1", esp: "Cirurgia", importancia: "ALTA" }),
+      makeTopic({ id: "alta-2", esp: "Cirurgia", importancia: "ALTA" }),
+      makeTopic({ id: "media-1", esp: "Pediatria", importancia: "MEDIA" }),
+      makeTopic({ id: "media-2", esp: "GO", importancia: "MEDIA" }),
+    ];
+
+    expect(balanceTopicsByArea(topics).map((topic) => topic.id).slice(0, 2)).toEqual(["alta-1", "alta-2"]);
   });
 });
 

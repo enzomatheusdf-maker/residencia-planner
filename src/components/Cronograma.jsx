@@ -260,13 +260,16 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
     if (planPriorityUi.userExpandedAt && planPriorityUi.userExpandedAt >= (planPriorityUi.userCollapsedAt || "")) return true;
     return Boolean(meta?.planSetup?.completedAt && !planPriorityUi.initialOpenedAt && meta.planSetup.completedAt >= todayStr());
   });
-  const [cronoTab, setCronoTab] = useState(() => getPlanTabFromTarget(navigationTarget, PLAN_TAB.PLAN)); // "plano" | "agenda"
+  const [bankQuery, setBankQuery] = useState("");
+  const [bankAreaFilter, setBankAreaFilter] = useState("TODAS");
+  const [cronoTab, setCronoTab] = useState(() => getPlanTabFromTarget(navigationTarget, PLAN_TAB.PLAN)); // "plano" | "agenda" | "banco"
   const devOnly = isDevOnlyEnabled();
   const scheduledTopics = useMemo(
     () => calendarProvider?.scheduledTopics || [],
     [calendarProvider?.scheduledTopics]
   );
   const simulados = useStore((s) => s[plat].simulados);
+  const temaStats = useStore((s) => s[plat]?.temaStats || s.temaStats || {});
 
   useEffect(() => {
     const nextTab = getPlanTabFromTarget(navigationTarget, null);
@@ -331,6 +334,64 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
   };
 
   const temaMap = new Map(temas.map((t) => [t.nome, t]));
+  const topicBankItems = useMemo(() => {
+    const byName = new Map();
+    displayCat.forEach((block) => {
+      (block.t || []).forEach((entry) => {
+        const { nome, esp, prio, subs } = parseCatalogEntry(entry);
+        const base = {
+          nome,
+          esp,
+          prio,
+          importancia: prioToImportancia(prio),
+          parentTopic: null,
+          blockName: block.nome || `Bloco ${block.b}`,
+          subCount: subs.length,
+        };
+        if (!byName.has(nome)) byName.set(nome, base);
+        subs.forEach((sub) => {
+          const subName = `${nome} — ${sub}`;
+          if (!byName.has(subName)) {
+            byName.set(subName, {
+              nome: subName,
+              shortName: sub,
+              esp,
+              prio,
+              importancia: prioToImportancia(prio),
+              parentTopic: nome,
+              blockName: block.nome || `Bloco ${block.b}`,
+              subCount: 0,
+            });
+          }
+        });
+      });
+    });
+    return [...byName.values()];
+  }, [displayCat]);
+  const topicBankAreas = useMemo(
+    () => ["TODAS", ...new Set(topicBankItems.map((item) => item.esp || "Outro"))],
+    [topicBankItems]
+  );
+  const filteredTopicBankItems = useMemo(() => {
+    const query = bankQuery.trim().toLowerCase();
+    return topicBankItems.filter((item) => {
+      if (bankAreaFilter !== "TODAS" && item.esp !== bankAreaFilter) return false;
+      if (!query) return true;
+      return (
+        item.nome.toLowerCase().includes(query) ||
+        item.blockName.toLowerCase().includes(query) ||
+        (item.parentTopic || "").toLowerCase().includes(query)
+      );
+    });
+  }, [bankAreaFilter, bankQuery, topicBankItems]);
+
+  const findTemaForBankItem = (item) => {
+    if (!item) return null;
+    return temas.find((tema) => (
+      tema.nome === item.nome ||
+      (item.parentTopic && tema.parentTopic === item.parentTopic && (tema.nome === item.nome || tema.nome === item.shortName))
+    )) || null;
+  };
 
   const beginDomainValidation = (payload) => {
     if (!payload) return;
@@ -403,9 +464,9 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
 
       {tourStep !== "crono" && (
         <>
-          {/* Tab bar — Plano | Agenda */}
+          {/* Tab bar — Plano | Agenda | Banco */}
           <div className="flex gap-1 bg-white/5 p-1 rounded-xl w-fit">
-            {[["plano", "Plano"], ["agenda", "Agenda"]].map(([id, label]) => (
+            {[["plano", "Plano"], ["agenda", "Agenda"], ["banco", "Banco de Temas"]].map(([id, label]) => (
               <button
                 key={id}
                 type="button"
@@ -428,6 +489,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
               scheduledTopics={scheduledTopics}
               simulados={simulados}
               planSetup={meta?.planSetup || {}}
+              temaStats={temaStats}
               plat={plat}
               onOpenPlan={() => setCronoTab("plano")}
               onStartTask={(item, target) => {
@@ -448,6 +510,147 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                 setCronoTab("plano");
               }}
             />
+          )}
+
+          {/* Aba Banco de Temas */}
+          {cronoTab === "banco" && (
+            <div className="space-y-4">
+              <div className="rounded-3xl border border-white/5 bg-[var(--surface-1)] p-4">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-[12px] font-black text-white uppercase tracking-wider">Banco de Temas</h4>
+                    <p className="mt-1 text-[10px] text-gray-500">
+                      {filteredTopicBankItems.length} de {topicBankItems.length} temas do plano ativo.
+                    </p>
+                  </div>
+                  <Input
+                    placeholder="Buscar no banco..."
+                    value={bankQuery}
+                    onChange={(e) => setBankQuery(e.target.value)}
+                    className="lg:max-w-[260px]"
+                  />
+                  <div className="flex gap-1 bg-[#0d0d10] border border-white/5 rounded-xl p-1 overflow-x-auto">
+                    {topicBankAreas.map((area) => (
+                      <button
+                        type="button"
+                        key={area}
+                        onClick={() => setBankAreaFilter(area)}
+                        className={`px-2.5 py-1.5 rounded-lg text-[10.5px] font-bold whitespace-nowrap ${
+                          bankAreaFilter === area ? "bg-blue-600 text-white" : "text-gray-500 hover:text-white"
+                        }`}
+                      >
+                        {area === "TODAS" ? "Todas" : area}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredTopicBankItems.map((item) => {
+                  const tema = findTemaForBankItem(item);
+                  const started = tema && !tema.unstarted;
+                  const enamedBadge = plat === "res" ? getEnamedContextBadge(item.esp, item.nome) : null;
+                  const imp = IMPORTANCIA[tema?.importancia || item.importancia];
+                  const history = tema ? (temaStats?.[tema.id] || tema?.rev?.reviewHistory || []) : [];
+                  const attemptsCount = Array.isArray(history) ? history.length : 0;
+
+                  return (
+                    <div key={item.nome} className="rounded-3xl border border-white/5 bg-[var(--surface-1)]/60 p-4 flex flex-col gap-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[9.5px] uppercase tracking-[0.22em] text-gray-500">{item.esp}</span>
+                            {imp && (
+                              <span
+                                className="text-[9px] px-1.5 py-0.5 rounded font-bold"
+                                style={{ backgroundColor: `${imp.color}15`, color: imp.color, border: `1px solid ${imp.color}25` }}
+                              >
+                                {imp.label}
+                              </span>
+                            )}
+                            {started && <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-bold">No plano</span>}
+                          </div>
+                          <h3 className="mt-1.5 text-[14px] font-black text-gray-100 leading-snug line-clamp-2">{item.shortName || item.nome}</h3>
+                          {item.parentTopic && <p className="mt-0.5 text-[10px] text-gray-500 truncate">{item.parentTopic}</p>}
+                        </div>
+                        {tema && (
+                          <button
+                            type="button"
+                            onClick={() => onEdit(tema)}
+                            className="w-8 h-8 rounded-lg border border-white/10 bg-black/20 hover:bg-white/10 flex items-center justify-center shrink-0"
+                            title="Editar"
+                          >
+                            <Edit2 size={13} className="text-gray-300" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-[10.5px]">
+                        <div className="rounded-xl bg-black/20 border border-white/5 px-3 py-2">
+                          <p className="text-gray-600 font-bold">Incidência</p>
+                          <p className="mt-0.5 text-gray-300 font-black">
+                            {enamedBadge ? `${enamedBadge.subarea} · ~${enamedBadge.questoes || 0}q` : "sem dado"}
+                          </p>
+                        </div>
+                        <div className="rounded-xl bg-black/20 border border-white/5 px-3 py-2">
+                          <p className="text-gray-600 font-bold">Histórico</p>
+                          <p className="mt-0.5 text-gray-300 font-black">
+                            {attemptsCount ? `${attemptsCount} registro${attemptsCount === 1 ? "" : "s"}` : "sem tentativas"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-auto flex flex-col sm:flex-row gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (started) {
+                              const next = getNextReviewForTema(tema);
+                              if (next?.stepKey) onStep(tema.id, next.stepKey);
+                              return;
+                            }
+                            onIniciarTema({
+                              nome: item.nome,
+                              esp: item.esp,
+                              prio: item.prio,
+                              importancia: item.importancia,
+                              parentTopic: item.parentTopic,
+                              obs: item.blockName,
+                            });
+                          }}
+                          className="flex-1 rounded-xl bg-blue-600/15 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/20 px-3 py-2 text-[11px] font-black transition-colors"
+                        >
+                          {started ? "Continuar" : "Iniciar"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => beginDomainValidation(tema || {
+                            nome: item.nome,
+                            esp: item.esp,
+                            prio: item.prio,
+                            importancia: item.importancia,
+                            parentTopic: item.parentTopic,
+                            obs: item.blockName,
+                          })}
+                          className="flex-1 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 px-3 py-2 text-[11px] font-black transition-colors"
+                        >
+                          Já domino
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {filteredTopicBankItems.length === 0 && (
+                <EmptyState
+                  icon={Calendar}
+                  title="Nenhum tema encontrado"
+                  description="Ajuste a busca ou o filtro de área do banco."
+                />
+              )}
+            </div>
           )}
 
           {/* Aba Plano (conteúdo original) */}

@@ -1,5 +1,5 @@
 import React from "react";
-import { Play } from "lucide-react";
+import { Info, Play } from "lucide-react";
 import { estimateTaskMinutes } from "../core/agendaEngine";
 import { getAgendaTaskLabel, getAgendaTaskTarget } from "../core/planExecution";
 
@@ -28,7 +28,7 @@ function StepBadge({ stepKey, phase }) {
   return <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide">{label}</span>;
 }
 
-export default function AgendaTaskItem({ item, onStartTask, onOpenPlan }) {
+export default function AgendaTaskItem({ item, onStartTask, onOpenPlan, onOpenDetails }) {
   const typeColor = TYPE_COLORS[item.type] || TYPE_COLORS.review;
   const typeLabel = TYPE_LABELS[item.type] || item.type;
   const mins = estimateTaskMinutes(item);
@@ -58,13 +58,26 @@ export default function AgendaTaskItem({ item, onStartTask, onOpenPlan }) {
           <p className="text-[10px] opacity-60">{mins} min</p>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={handleStart}
-        className="w-full rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-[11px] font-black text-white hover:bg-black/40 transition-colors flex items-center justify-center gap-1.5"
-      >
-        <Play size={12} /> {target?.action === "open_plan" ? "Ver plano" : label}
-      </button>
+      <div className="grid grid-cols-[1fr_auto] gap-2">
+        <button
+          type="button"
+          onClick={handleStart}
+          className="rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-[11px] font-black text-white hover:bg-black/40 transition-colors flex items-center justify-center gap-1.5"
+        >
+          <Play size={12} /> {target?.action === "open_plan" ? "Ver plano" : label}
+        </button>
+        {onOpenDetails && (
+          <button
+            type="button"
+            onClick={() => onOpenDetails(item)}
+            className="w-9 rounded-lg border border-white/10 bg-black/25 text-gray-200 hover:bg-black/40 hover:text-white transition-colors flex items-center justify-center"
+            title="Detalhes"
+            aria-label="Detalhes da tarefa"
+          >
+            <Info size={13} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

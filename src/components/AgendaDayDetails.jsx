@@ -1,11 +1,145 @@
 // src/components/AgendaDayDetails.jsx
-// Lista de itens de um dia de agenda — read-only.
+// Lista de itens de um dia de agenda.
 // Recebe um daySummary de getAgendaDaySummary (agendaEngine.js).
 
-import React from "react";
+import React, { useMemo, useState } from "react";
+import { Activity, BarChart3, CalendarDays, Clock, Target } from "lucide-react";
 import AgendaTaskItem from "./AgendaTaskItem";
+import { estimateTaskMinutes } from "../core/agendaEngine";
+import { getEnamedContextBadge } from "../core/enamedIntel";
+import { getRetrievability } from "../core/fsrs";
+import { getAgendaTaskLabel, getAgendaTaskTarget } from "../core/planExecution";
+import { Modal } from "./Primitives";
 
-export default function AgendaDayDetails({ daySummary, onStartTask, onOpenPlan }) {
+function formatPercent(value) {
+  if (value == null || Number.isNaN(Number(value))) return null;
+  const normalized = Number(value) <= 1 ? Number(value) * 100 : Number(value);
+  return `${Math.round(normalized)}%`;
+}
+
+function getTemaAttempts(tema = {}, stats = {}) {
+  const direct = stats?.[tema.id] || stats?.[tema.nome] || [];
+  const history = tema?.rev?.reviewHistory || tema?.reviewHistory || [];
+  if (Array.isArray(direct) && direct.length) return direct;
+  return Array.isArray(history) ? history : [];
+}
+
+function summarizeAttempts(attempts = []) {
+  const valid = attempts.filter((attempt) => attempt && (attempt.acerto != null || attempt.score != null));
+  if (!valid.length) return null;
+  const values = valid.map((attempt) => Number(attempt.acerto ?? attempt.score)).filter((value) => Number.isFinite(value));
+  if (!values.length) return null;
+  const avg = values.reduce((sum, value) => sum + (value <= 1 ? value * 100 : value), 0) / values.length;
+  return `${Math.round(avg)}% em ${values.length} registro${values.length === 1 ? "" : "s"}`;
+}
+
+function DetailMetric({ icon: Icon, label, value }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+        <Icon size={12} /> {label}
+      </div>
+      <p className="mt-1 text-[13px] font-black text-gray-100">{value || "Sem dado real"}</p>
+    </div>
+  );
+}
+
+function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, onOpenPlan }) {
+  const target = getAgendaTaskTarget(item);
+  const startLabel = getAgendaTaskLabel(item);
+  const review = item?.stepKey ? tema?.rev?.[item.stepKey] : null;
+  const attempts = getTemaAttempts(tema, temaStats).slice(-4).reverse();
+  const attemptsSummary = summarizeAttempts(attempts);
+  const enamedBadge = item?.area && item?.temaNome ? getEnamedContextBadge(item.area, item.temaNome) : null;
+  const retrievability = tema?.rev && item?.stepKey && item.stepKey !== "d0"
+    ? formatPercent(getRetrievability(tema, item.stepKey))
+    : null;
+
+  function handleStart() {
+    if (onStartTask) {
+      onStartTask(item, target);
+      onClose();
+      return;
+    }
+    if (onOpenPlan) onOpenPlan();
+    onClose();
+  }
+
+  return (
+    <Modal onClose={onClose} wide>
+      <div className="space-y-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.28em] text-gray-500">{item.area || "Agenda"}</p>
+            <h3 className="mt-1 text-xl font-black text-white leading-tight">{item.temaNome || "Tarefa da agenda"}</h3>
+            <p className="mt-2 text-[12px] text-gray-400">
+              {item.overdue ? "Reprogramada por atraso" : "Programada"} para {item.originalDate || item.date}
+              {item.originalDate && item.originalDate !== item.date ? `, exibida em ${item.date}` : ""}.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-bold text-gray-300 hover:bg-white/10"
+          >
+            Fechar
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <DetailMetric icon={Clock} label="Tempo" value={`${estimateTaskMinutes(item)} min`} />
+          <DetailMetric icon={CalendarDays} label="Etapa" value={item.stepKey ? item.stepKey.toUpperCase() : item.type} />
+          <DetailMetric icon={Activity} label="Retenção FSRS" value={retrievability} />
+          <DetailMetric icon={Target} label="Estabilidade/Dificuldade" value={review ? `S ${review.S ?? "-"} · D ${review.D ?? "-"}` : null} />
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+          <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-gray-300">
+            <BarChart3 size={14} className="text-blue-300" /> Incidência e desempenho
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px] text-gray-300">
+            <p>
+              <span className="text-gray-500">ENAMED: </span>
+              {enamedBadge
+                ? `${enamedBadge.subarea} · ${enamedBadge.pctAbsoluto}% da área · ~${enamedBadge.questoes || 0}q`
+                : "sem correspondência quantitativa"}
+            </p>
+            <p>
+              <span className="text-gray-500">Histórico: </span>
+              {attemptsSummary || "sem tentativas registradas"}
+            </p>
+          </div>
+          {attempts.length > 0 && (
+            <div className="space-y-2">
+              {attempts.map((attempt, index) => (
+                <div key={attempt.id || `${attempt.reviewedAt || attempt.date || index}-${index}`} className="flex items-center justify-between gap-3 rounded-xl bg-black/20 px-3 py-2 text-[11px]">
+                  <span className="text-gray-400 truncate">{attempt.stepKey || attempt.source || "registro"} · {attempt.reviewedAt || attempt.date || attempt.createdAt || "sem data"}</span>
+                  <span className="font-black text-gray-100">{formatPercent(attempt.acerto ?? attempt.score) || "-"}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleStart}
+          className="w-full rounded-xl bg-blue-600 px-4 py-3 text-[12px] font-black text-white hover:bg-blue-500 transition-colors"
+        >
+          {target?.action === "open_plan" ? "Ver plano" : startLabel}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+export default function AgendaDayDetails({ daySummary, temas = [], temaStats = {}, onStartTask, onOpenPlan }) {
+  const [selectedTask, setSelectedTask] = useState(null);
+  const temaById = useMemo(
+    () => new Map(temas.map((tema) => [String(tema.id), tema])),
+    [temas]
+  );
+
   if (!daySummary || daySummary.isEmpty) return null;
 
   const { date, items, totalMinutes, overdueCount, newCount } = daySummary;
@@ -33,13 +167,30 @@ export default function AgendaDayDetails({ daySummary, onStartTask, onOpenPlan }
       {/* Lista de itens */}
       <div className="space-y-2">
         {items.map((item) => (
-          <AgendaTaskItem key={item.id} item={item} onStartTask={onStartTask} onOpenPlan={onOpenPlan} />
+          <AgendaTaskItem
+            key={item.id}
+            item={item}
+            onStartTask={onStartTask}
+            onOpenPlan={onOpenPlan}
+            onOpenDetails={setSelectedTask}
+          />
         ))}
       </div>
 
       <p className="text-[10px] text-gray-600 text-center">
-        Use o botão de cada tarefa para abrir o alvo executável.
+        Use o botão de cada tarefa para abrir o alvo executável ou ver o contexto.
       </p>
+
+      {selectedTask && (
+        <AgendaTaskDetailsModal
+          item={selectedTask}
+          tema={temaById.get(String(selectedTask.temaId))}
+          temaStats={temaStats}
+          onClose={() => setSelectedTask(null)}
+          onStartTask={onStartTask}
+          onOpenPlan={onOpenPlan}
+        />
+      )}
     </div>
   );
 }

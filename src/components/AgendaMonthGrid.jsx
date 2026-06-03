@@ -34,6 +34,7 @@ export default function AgendaMonthGrid({
   scheduledTopics = [],
   simulados = [],
   planSetup = {},
+  temaStats = {},
   plat = "res",
   onStartTask,
   onOpenPlan,
@@ -140,7 +141,13 @@ export default function AgendaMonthGrid({
 
       {/* Detalhes do dia selecionado */}
       {selectedDayData && !selectedDayData.isEmpty && (
-        <AgendaDayDetails daySummary={selectedDayData} onStartTask={onStartTask} onOpenPlan={onOpenPlan} />
+        <AgendaDayDetails
+          daySummary={selectedDayData}
+          temas={temas}
+          temaStats={temaStats}
+          onStartTask={onStartTask}
+          onOpenPlan={onOpenPlan}
+        />
       )}
       {selectedDayData && selectedDayData.isEmpty && (
         <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center">

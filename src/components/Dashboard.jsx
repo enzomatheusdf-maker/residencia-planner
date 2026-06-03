@@ -1,6 +1,6 @@
 // src/components/Dashboard.jsx
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Flame, Calendar, AlertTriangle, X, Zap, Layers, Share2, Unlock, GraduationCap, BarChart3, ClipboardList, Target } from "lucide-react";
+import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Calendar, AlertTriangle, X, Zap, Layers, Unlock, GraduationCap, BarChart3 } from "lucide-react";
 import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection } from "../core/fsrs";
 import { calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
@@ -38,6 +38,7 @@ import WeeklyReview from "./WeeklyReview";
 import EmptyState from "./EmptyState";
 import VestibularStartTrail from "./VestibularStartTrail";
 import { isVestibularStartComplete } from "../core/vestibularOnboarding";
+import { Badge, Button as PremiumButton, Card, MetricRing } from "./ui";
 
 /* --- CARGA FUTURA WIDGET --- */
 function CargaFuturaWidget({ temas, maxRevisoesDia }) {
@@ -102,6 +103,7 @@ function CargaFuturaWidget({ temas, maxRevisoesDia }) {
   );
 }
 
+// eslint-disable-next-line no-unused-vars
 function getPreparoCalibration({ readinessData, trueRet, totalSessions, temasFiltrados, totalRevisoesFeitas }) {
   const startedCount = (temasFiltrados || []).filter((t) => !t.unstarted).length;
   const hasCoverage = (readinessData?.cobertura || 0) > 0 && startedCount >= 3;
@@ -600,6 +602,7 @@ function MetacognitiveChart({ doneReviews }) {
   );
 }
 
+// eslint-disable-next-line no-unused-vars
 function DashboardKpiCard({ label, value, tone = "text-white", children, action, tooltip, className = "", delayMs = 0, icon, accentColor }) {
   return (
     <div
@@ -685,6 +688,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const meta            = useStore((s) => s.meta);
   const enamedAnalises = useStore((s) => s.enamedAnalises || []);
   const sessionReflections = useStore((s) => s.sessionReflections || []);
+  const ankiLog = useStore((s) => s[plat]?.ankiLog || []);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
   const telemetryMeta = useStore((s) => s.meta);
   const calendarProvider = useStore((s) => s.calendarProvider || { activeId: "medcof" });
@@ -700,9 +704,15 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     }
     if (setView) setView("crono");
   }, [onOpenAjustes, setView]);
+
+  // "Ajustar plano" no dashboard abre o Cronograma/Plano onde fica o wizard de redistribuicao
+  const openPlanSetup = useCallback(() => {
+    if (setView) setView("crono");
+  }, [setView]);
   const openAgenda = useCallback(() => {
+    // "Ver agenda" abre Plano na subaba Agenda com a data de hoje
     if (onOpenAgenda) {
-      onOpenAgenda(todayStr());
+      onOpenAgenda(todayStr()); // App.js usa buildPlanAgendaTarget internamente
       return;
     }
     if (setView) setView("crono");
@@ -837,7 +847,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   }, [filaInteligente]);
 
   const exibidosHoje = useMemo(() => allPendingSorted.slice(0, cap), [allPendingSorted, cap]);
-  const naReserva = Math.max(0, allPendingSorted.length - cap);
 
   const overdue = useMemo(() => {
     return exibidosHoje.filter(item => item.overdue).map(item => {
@@ -910,6 +919,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     };
   }, [meta.prontidaoHist, prontidao]);
 
+  // eslint-disable-next-line no-unused-vars
   const sparklinePath = useMemo(() => {
     const hist = meta.prontidaoHist || [];
     if (hist.length < 2) return "";
@@ -1035,6 +1045,32 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     return rs.length ? Math.round(rs.reduce((a, r) => a + r.acerto, 0) / rs.length * 100) : null;
   }, [done]);
 
+  // Métricas de execução de hoje (questões + anki)
+  const questoesHoje = useMemo(() => {
+    const today = todayStr();
+    return done
+      .filter(r => r.date === today)
+      .reduce((sum, r) => sum + (r.questoes || 0), 0);
+  }, [done]);
+
+  const acertoHoje = useMemo(() => {
+    const today = todayStr();
+    const doneHoje = done.filter(r => r.date === today && r.acerto != null);
+    return doneHoje.length > 0
+      ? Math.round(doneHoje.reduce((s, r) => s + r.acerto, 0) / doneHoje.length * 100)
+      : null;
+  }, [done]);
+
+  const ankiSessaoHoje = useMemo(() => {
+    const today = todayStr();
+    const logHoje = ankiLog.filter(l => l.data === today);
+    return {
+      revisados: logHoje.reduce((s, l) => s + (l.revisados || 0), 0),
+      novos: logHoje.reduce((s, l) => s + (l.novos || 0), 0),
+      again: logHoje.reduce((s, l) => s + (l.again || 0), 0),
+    };
+  }, [ankiLog]);
+
   // ZONA 1 Target Foco
   const topFilaItem = useMemo(() => {
     // If we have items in the optimal FSRS retrievability window, prioritize them!
@@ -1076,15 +1112,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     return null;
   }, [filaInteligente, overdue, today_, temasFiltrados]);
 
-  const preparoCalibration = useMemo(() => {
-    return getPreparoCalibration({
-      readinessData,
-      trueRet,
-      totalSessions,
-      temasFiltrados,
-      totalRevisoesFeitas,
-    });
-  }, [readinessData, trueRet, totalSessions, temasFiltrados, totalRevisoesFeitas]);
 
   const mentorContext = useMemo(() => {
     const state = useStore.getState();
@@ -1166,6 +1193,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     return map[esp] || esp.slice(0, 2).toUpperCase();
   };
 
+  // eslint-disable-next-line no-unused-vars
   const exportarCartaoProntidao = () => {
     const canvas = document.createElement("canvas");
     canvas.width = 600;
@@ -1313,10 +1341,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   }, [done]);
   const dailyGoal = 3;
   const dailyProgress = Math.min(concluidosHoje, dailyGoal);
-  const pendingCountUp = useCountUp(pending, { duration: 600 });
   const readinessCountUp = useCountUp(readinessTrend.current, { duration: 600 });
   const acertoCountUp = useCountUp(acertoMedio ?? 0, { duration: 600 });
-  const streakCountUp = useCountUp(streakCurrent, { duration: 600 });
 
   const [hasTriggeredConfetti, setHasTriggeredConfetti] = useState(false);
 
@@ -1359,8 +1385,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       estimatedMinutes: todayLoadSignals.todayMinutes,
     },
   }), [meta, onboardingDone, overdue.length, pending, plat, todayLoadSignals.todayMinutes, tourStep, userName]);
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showMentorWhy, setShowMentorWhy] = useState(false);
+  const [showSessionClosureDialog, setShowSessionClosureDialog] = useState(false);
   const [acceptedPlanDate, setAcceptedPlanDate] = useState(null);
   const [showTodayPlan, setShowTodayPlan] = useState(false);
   const vestibularStartComplete = useMemo(() => {
@@ -1594,7 +1620,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             )}
 
             <div className="space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-blue-300">{comandoDoDia.eyebrow}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-blue-300 flex items-center gap-2 flex-wrap">
+                {comandoDoDia.eyebrow}
+                {daysToProva != null && (
+                  <span className={`font-black ${daysToProva <= 30 ? "text-red-400" : "text-blue-300"}`}>
+                    · Prova em {daysToProva <= 0 ? "hoje!" : `${daysToProva}d`}
+                  </span>
+                )}
+              </p>
               <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
                 {comandoDoDia.title}
               </h1>
@@ -1649,16 +1682,121 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       </section>
 
+      {/* Cards de execução do dia — questões, anki, saldo de ritmo, qualidade */}
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        {/* Card 1: Questões de hoje */}
+        <Card variant="elevated" className="med-animate-in" style={{ display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
+          <MetricRing
+            value={questoesHoje}
+            max={meta?.metaQuestoesDia || 50}
+            label="Q"
+            sublabel="hoje"
+            tone="blue"
+            size={72}
+          />
+          <div className="min-w-0">
+            <Badge tone={questoesHoje >= (meta?.metaQuestoesDia || 50) ? "green" : "blue"}>
+              {questoesHoje}/{meta?.metaQuestoesDia || 50}
+            </Badge>
+            <h2 className="mt-2 text-sm font-black text-white leading-tight">Questões hoje</h2>
+            <p className="mt-1 text-[11px] text-gray-400">
+              {acertoHoje != null ? `Acerto: ${acertoHoje}%` : "Nenhuma registrada"}
+            </p>
+          </div>
+        </Card>
+
+        {/* Card 2: Anki/Flashcards de hoje */}
+        <Card variant="elevated" className="med-animate-in" style={{ display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
+          <MetricRing
+            value={ankiSessaoHoje.revisados}
+            max={meta?.metaAnkiDia || 50}
+            label="A"
+            sublabel="hoje"
+            tone={ankiSessaoHoje.revisados >= (meta?.metaAnkiDia || 50) ? "green" : "cyan"}
+            size={72}
+          />
+          <div className="min-w-0">
+            <Badge tone={ankiSessaoHoje.revisados > 0 ? "cyan" : "neutral"}>
+              {ankiSessaoHoje.revisados > 0 ? "Anki feito" : "Anki pendente"}
+            </Badge>
+            <h2 className="mt-2 text-sm font-black text-white leading-tight">Flashcards hoje</h2>
+            <p className="mt-1 text-[11px] text-gray-400">
+              {ankiSessaoHoje.revisados > 0
+                ? `+${ankiSessaoHoje.novos} novos · ${ankiSessaoHoje.again} again`
+                : "Abra Anki Audit para registrar"}
+            </p>
+          </div>
+        </Card>
+
+        {/* Card 3: Saldo de ritmo */}
+        <Card variant="elevated" className="med-animate-in" style={{ padding: 16 }}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Badge tone={
+                readinessData?.saldoRitmoNorm == null ? "neutral"
+                : readinessData.saldoRitmoNorm >= 50 ? "green"
+                : readinessData.saldoRitmoNorm >= 30 ? "blue"
+                : "amber"
+              }>
+                Saldo de ritmo
+              </Badge>
+              <h2 className="mt-3 text-2xl font-black tabular-nums text-white">
+                {readinessData?.saldoRitmoNorm != null ? `${readinessCountUp}%` : "--"}
+              </h2>
+              <p className="mt-1 text-[11px] text-gray-400">
+                {readinessData?.saldoRitmoNorm == null
+                  ? "Coletando dados"
+                  : readinessData.saldoRitmoNorm >= 70
+                  ? "Atenção: carga pode ser exagerada"
+                  : readinessData.saldoRitmoNorm >= 50
+                  ? "Boa margem de segurança"
+                  : readinessData.saldoRitmoNorm >= 30
+                  ? "Dentro do esperado"
+                  : "Acumulando atraso"}
+              </p>
+            </div>
+            <InfoTooltip texto="Saldo de ritmo reflete se você está à frente ou atrás do plano. Abaixo de 30%: atraso crescendo. 30–50%: dentro do esperado. 50–70%: boa margem. Acima de 70%: verifique se a carga está muito alta." />
+          </div>
+        </Card>
+
+        {/* Card 4: Qualidade geral */}
+        <Card variant="elevated" className="med-animate-in" style={{ padding: 16 }}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Badge tone={acertoMedio == null ? "neutral" : acertoMedio >= 70 ? "green" : "red"}>
+                {acertoMedio == null ? "Coletando" : "Qualidade"}
+              </Badge>
+              <h2 className="mt-3 text-2xl font-black tabular-nums text-white">
+                {acertoMedio != null ? `${acertoCountUp}%` : "--"}
+              </h2>
+              <p className="mt-1 text-[11px] text-gray-400">
+                {trueRet != null ? `Retencao real ${trueRet}%` : "Aguardando historico suficiente"}
+              </p>
+            </div>
+            <CheckCircle size={24} className={acertoMedio != null && acertoMedio >= 70 ? "text-emerald-300" : "text-gray-500"} />
+          </div>
+        </Card>
+      </section>
+
       {plat === "vest" && !vestibularStartComplete && meta?.onboarding?.version !== 2 && (
         <VestibularStartTrail setView={setView} onOpenAjustes={onOpenAjustes} />
       )}
 
       <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} />
 
-      <section className="rounded-[var(--radius)] border border-blue-500/20 bg-blue-500/10 p-4 md:p-5 space-y-4">
+      <Card
+        as="section"
+        variant="elevated"
+        className="space-y-4"
+        style={{
+          padding: "20px",
+          background: "linear-gradient(180deg, rgba(59,130,246,.14), rgba(6,182,212,.06)), var(--med-surface-0)",
+          borderColor: "rgba(59,130,246,.22)",
+        }}
+      >
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Plano de hoje</p>
+            <Badge tone="blue">Plano de hoje</Badge>
             <h2 className="mt-1 text-lg font-black text-white">
               Hoje:{" "}
               {agendaTodaySummary && agendaTodaySummary.totalCount > 0
@@ -1675,60 +1813,66 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           </div>
           <div className="flex flex-wrap gap-2">
             {planExecution.state === "plan_ready_unaccepted" && agendaTodaySummary?.totalCount > 0 && (
-              <button
+              <PremiumButton
                 type="button"
                 onClick={() => {
                   setAcceptedPlanDate(todayStr());
                   setShowTodayPlan(true);
                 }}
-                className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white hover:bg-blue-500"
+                size="sm"
               >
                 Aceitar plano de hoje
-              </button>
+              </PremiumButton>
             )}
-            <button
+            <PremiumButton
               type="button"
               onClick={() => {
                 setShowTodayPlan((prev) => !prev);
                 if (agendaTodaySummary?.totalCount === 0 && setView) setView("crono");
               }}
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-[12px] font-black text-gray-200 hover:bg-white/10"
+              size="sm"
+              variant="secondary"
             >
               {showTodayPlan ? "Ocultar plano" : "Abrir plano"}
-            </button>
-            <button
+            </PremiumButton>
+            <PremiumButton
               type="button"
               onClick={openAgenda}
-              className="rounded-xl border border-blue-500/25 bg-blue-500/10 px-4 py-2 text-[12px] font-black text-blue-100 hover:bg-blue-500/20"
+              size="sm"
+              variant="soft"
             >
               Ver agenda
-            </button>
-            <button
+            </PremiumButton>
+            <PremiumButton
               type="button"
-              onClick={openSetupAjustes}
-              className="rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-[12px] font-black text-gray-300 hover:bg-black/30"
+              onClick={openPlanSetup}
+              size="sm"
+              variant="outline"
             >
               Ajustar plano
-            </button>
+            </PremiumButton>
           </div>
         </div>
 
         {showTodayPlan && todayPlanTasks.length > 0 && (
           <div className="grid gap-2 md:grid-cols-3">
             {todayPlanTasks.map((item) => (
-              <div key={item.id} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+              <Card key={item.id} variant="interactive" interactive style={{ padding: 12, background: "rgba(0,0,0,.18)" }}>
                 <p className="text-[11px] font-black text-white truncate">{item.temaNome || "Tarefa do plano"}</p>
                 <p className="mt-1 text-[10px] text-blue-100/70">
                   {item.type === "overdue" ? "Atrasada" : item.type === "new_topic" || item.type === "d0_critical" ? "Tema novo" : "Revisão"} · {item.estimatedMinutes || 50} min
                 </p>
-                <button
+                <PremiumButton
                   type="button"
                   onClick={() => startAgendaTask(item)}
-                  className="mt-3 w-full rounded-xl bg-white/10 px-3 py-2 text-[11px] font-black text-white hover:bg-white/15"
+                  className="mt-3"
+                  fullWidth
+                  size="sm"
+                  variant="secondary"
                 >
                   {getAgendaTaskLabel(item)}
-                </button>
-              </div>
+                </PremiumButton>
+              </Card>
             ))}
           </div>
         )}
@@ -1739,7 +1883,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             <p className="mt-1 text-[11px] text-gray-400">Abra o cronograma para criar ou redistribuir temas novos.</p>
           </div>
         )}
-      </section>
+      </Card>
 
       <MiniCronogramaWidget
         plat={plat}
@@ -1767,12 +1911,40 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           {hasPendingClosure && (
             <button
               type="button"
-              onClick={() => setView && setView("stats")}
+              onClick={() => setShowSessionClosureDialog(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-bold hover:bg-amber-500/20 transition-colors cursor-pointer"
             >
               <AlertTriangle size={12} />
               Sessão sem fechamento — registrar agora
             </button>
+          )}
+          {showSessionClosureDialog && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowSessionClosureDialog(false)}>
+              <div className="relative bg-[#16181c] border border-amber-500/30 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+                <button type="button" onClick={() => setShowSessionClosureDialog(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 border-none bg-transparent cursor-pointer"><X size={16} /></button>
+                <AlertTriangle size={20} className="text-amber-400 mb-3" />
+                <h3 className="text-sm font-black text-white mb-2">Sessão em aberto</h3>
+                <p className="text-[12px] text-gray-300 leading-relaxed mb-4">
+                  Você iniciou uma sessão de foco que não foi encerrada com reflexão. Registrar o fechamento ajuda o Mentor a calibrar as próximas recomendações.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setShowSessionClosureDialog(false); setView && setView("stats"); }}
+                    className="w-full py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/20 text-[12px] font-bold cursor-pointer transition-colors"
+                  >
+                    Registrar em Estatísticas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowSessionClosureDialog(false)}
+                    className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 border border-white/10 text-[12px] cursor-pointer transition-colors"
+                  >
+                    Fechar sem registrar
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
           {peakModeAtivo && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-bold">
@@ -1783,105 +1955,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       )}
 
-      <section className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-3">
-        <button
-          type="button"
-          onClick={() => setShowAdvanced((prev) => !prev)}
-          className="w-full text-left flex items-center justify-between px-2 py-1 rounded-lg text-[11px] font-black uppercase tracking-wider text-gray-300 hover:text-white cursor-pointer border-none bg-transparent"
-        >
-          <span>Avançado</span>
-          <span className="text-[10px] text-gray-500">{showAdvanced ? "ocultar" : "mostrar"}</span>
-        </button>
-      </section>
-
-      {showAdvanced && (
-        <>
-      {/* KPIs — 4 métricas primárias */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 select-none">
-        <DashboardKpiCard
-          label="Revisões de hoje"
-          icon={<ClipboardList size={13} className="text-amber-300" />}
-          accentColor={pending > 0 ? "#f59e0b" : "#10b981"}
-          value={String(pendingCountUp) + (naReserva > 0 ? " +" + naReserva : "")}
-          tone={pending > 0 ? "text-amber-400" : "text-emerald-400"}
-          tooltip="Revisões programadas para hoje. A reserva mostra itens fora do teto diário atual."
-          delayMs={0}
-        >
-          <p className="text-[9px] text-gray-500">
-            {naReserva > 0 ? `+${naReserva} na reserva` : "dentro do teto"}
-          </p>
-        </DashboardKpiCard>
-
-        <DashboardKpiCard
-          label="Preparo"
-          icon={<Target size={13} className="text-blue-300" />}
-          accentColor="#3b82f6"
-          value={String(readinessCountUp) + "%"}
-          tone="text-blue-400"
-          tooltip="Estimativa composta por cobertura, simulados, ritmo, Anki e retenção longa quando disponível."
-          delayMs={50}
-          action={(
-            <button
-              onClick={exportarCartaoProntidao}
-              title="Compartilhar cartão de preparo"
-              className="text-gray-500 hover:text-blue-400 transition-colors focus:outline-none relative z-10 p-0.5 cursor-pointer bg-transparent border-none"
-              aria-label="Compartilhar cartão de preparo"
-            >
-              <Share2 size={13} />
-            </button>
-          )}
-        >
-          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8.5px] font-bold border ${preparoCalibration.tone}`}>
-            {preparoCalibration.label}
-          </span>
-          {readinessTrend.delta7 !== undefined && readinessTrend.delta7 !== 0 && (
-            <span className={"text-[9.5px] font-bold block " + (readinessTrend.delta7 >= 0 ? "text-emerald-400" : "text-red-400")}>
-              {readinessTrend.delta7 >= 0 ? "▲ +" : "▼ "}{readinessTrend.delta7}% (7d)
-            </span>
-          )}
-          {sparklinePath && (
-            <svg viewBox="0 0 100 20" preserveAspectRatio="none" className="mt-1.5 h-4 w-full opacity-40">
-              <path d={sparklinePath} fill="none" stroke="#3b82f6" strokeWidth="1.5" />
-            </svg>
-          )}
-        </DashboardKpiCard>
-
-        <DashboardKpiCard
-          label="Acerto"
-          icon={<CheckCircle size={13} className="text-emerald-300" />}
-          accentColor={acertoMedio != null ? (acertoMedio >= 80 ? "#10b981" : acertoMedio >= 65 ? "#3b82f6" : "#ef4444") : "#6b7280"}
-          value={acertoMedio != null ? String(acertoCountUp) + "%" : "—"}
-          tone={acertoMedio != null ? (acertoMedio >= 80 ? "text-emerald-400" : acertoMedio >= 65 ? "text-blue-400" : "text-red-400") : "text-gray-500"}
-          tooltip="Qualidade recente baseada em questões e revisões concluídas."
-          delayMs={100}
-        >
-          <p className="text-[9px] text-gray-500">{acertoMedio != null ? "revisões concluídas" : "coletando dados"}</p>
-        </DashboardKpiCard>
-
-        <DashboardKpiCard
-          label="Streak"
-          icon={<Flame size={13} className="text-orange-300" />}
-          accentColor="#f97316"
-          value={String(streakCountUp) + "/7"}
-          tone="text-orange-400"
-          tooltip="Dias ativos de estudo nos últimos 7 dias."
-          delayMs={150}
-        >
-          <div className="flex gap-0.5 mt-1">
-            {Array.from({ length: 7 }, (_, i) => {
-              const d = new Date(); d.setDate(d.getDate() - 6 + i);
-              const dStr = d.toISOString().slice(0, 10);
-              const active = doneDays.has(dStr);
-              return (
-                <div key={i} className={"flex-1 h-1 rounded-full " + (active ? "bg-orange-400" : "bg-white/10")} />
-              );
-            })}
-          </div>
-          <p className="text-[9px] text-gray-500 mt-1">últimos 7 dias</p>
-        </DashboardKpiCard>
-      </section>
-
-      {/* Análise rápida — Gargalo + Próxima ação */}
+      {/* Análise rápida — Gargalo ENAMED + Raciocínio Clínico */}
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
           <div className="absolute -right-4 -top-4 w-12 h-12 rounded-full bg-blue-600/8 blur-xl pointer-events-none" />
@@ -1971,9 +2045,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           )}
         </div>
       </section>
-
-        </>
-      )}
 
       {/* ALERTAS CRÍTICOS DO MENTOR */}
       {criticalAlerts.map((alert, idx) => {
@@ -2184,7 +2255,10 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             />
           )}
 
-          <DicaContextual onNavigateToAcademia={() => setView && setView("academia")} />
+          <DicaContextual
+            onNavigateToAcademia={() => setView && setView("academia")}
+            onNavigate={(target) => setView && setView(target)}
+          />
 
           {/* NOTA PROJETADA — só para Vestibular */}
           {plat === "vest" && totalSessions > 0 && notaProjetada != null && (

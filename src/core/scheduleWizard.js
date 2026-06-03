@@ -160,6 +160,59 @@ export function selectTopicsByScope(topics = [], scopeMode = "essential") {
   });
 }
 
+const PRIORITY_ORDER = { CRITICA: 0, ALTA: 1, MEDIA: 2, BAIXA: 3 };
+
+function normalizeTopicArea(topic = {}) {
+  return topic.esp || topic.area || topic.areaCanonica || "Outro";
+}
+
+function getTopicPriorityRank(topic = {}) {
+  return PRIORITY_ORDER[(topic.importancia || topic.priority || "ALTA").toUpperCase()] ?? 2;
+}
+
+/**
+ * Ordena tópicos sem data explícita preservando prioridade e alternando áreas
+ * dentro do mesmo nível. Isso evita semanas monotemáticas sem rebaixar CRITICA/ALTA.
+ */
+export function balanceTopicsByArea(topics = []) {
+  const queuesByArea = new Map();
+
+  topics
+    .map((topic, index) => ({ topic, index }))
+    .sort((a, b) => {
+      const priorityDiff = getTopicPriorityRank(a.topic) - getTopicPriorityRank(b.topic);
+      if (priorityDiff !== 0) return priorityDiff;
+      return a.index - b.index;
+    })
+    .forEach((item) => {
+      const area = normalizeTopicArea(item.topic);
+      if (!queuesByArea.has(area)) queuesByArea.set(area, []);
+      queuesByArea.get(area).push(item);
+    });
+
+  const balanced = [];
+  let lastArea = null;
+
+  while ([...queuesByArea.values()].some((queue) => queue.length > 0)) {
+    const available = [...queuesByArea.entries()].filter(([, queue]) => queue.length > 0);
+    const bestPriority = Math.min(...available.map(([, queue]) => getTopicPriorityRank(queue[0].topic)));
+    const samePriority = available.filter(([, queue]) => getTopicPriorityRank(queue[0].topic) === bestPriority);
+    let preferred = samePriority[0];
+    for (const candidate of samePriority) {
+      if (candidate[0] !== lastArea) {
+        preferred = candidate;
+        break;
+      }
+    }
+    const [area, queue] = preferred;
+
+    balanced.push(queue.shift().topic);
+    lastArea = area;
+  }
+
+  return balanced;
+}
+
 // ─── distributeTopics ─────────────────────────────────────────────────────────
 
 /**
@@ -235,13 +288,7 @@ export function distributeTopics(topics = [], planSetup = {}, startDate, _today)
 
   let cursor = effectiveStart;
 
-  // Ordenar withoutDate por prioridade
-  const priorityOrder = { CRITICA: 0, ALTA: 1, MEDIA: 2, BAIXA: 3 };
-  const sorted = [...withoutDate].sort((a, b) => {
-    const pa = priorityOrder[(a.importancia || a.priority || "ALTA").toUpperCase()] ?? 2;
-    const pb = priorityOrder[(b.importancia || b.priority || "ALTA").toUpperCase()] ?? 2;
-    return pa - pb;
-  });
+  const sorted = balanceTopicsByArea(withoutDate);
 
   sorted.forEach((t) => {
     const slot = findNextSlot(cursor);
@@ -250,7 +297,7 @@ export function distributeTopics(topics = [], planSetup = {}, startDate, _today)
 
     result.push({
       temaId: t.id || t.temaId,
-      area: t.esp || t.area || t.areaCanonica || "Outro",
+      area: normalizeTopicArea(t),
       scheduledDate: slot,
       scheduledWeek: weekLabel(slot),
       distributionReason: scopeMode === "intensive" ? "intensive_pack" : "auto",
