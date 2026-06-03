@@ -130,7 +130,7 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema, plat = "res" })
                 </span>
               )}
             </div>
-            <p className="text-lg font-semibold text-gray-100 leading-tight line-clamp-2">{tema.nome}</p>
+            <p className="text-[13px] font-semibold text-gray-100 leading-tight line-clamp-2" title={tema.nome}>{tema.nome}</p>
           </div>
           <button type="button" onClick={(e) => { e.stopPropagation(); onEdit(tema); }}
             className="w-8 h-8 rounded-full border border-white/10 bg-black hover:border-white/30 transition-colors flex items-center justify-center shrink-0">
@@ -164,7 +164,17 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema, plat = "res" })
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <RetrievabilitySpark tema={tema} />
-            <span className={`text-[11px] font-semibold ${STATE_TW[nextState]}`}>RO: {nextMeta ? nextMeta.label : "Fixação"}</span>
+            <span className={`text-[11px] font-semibold ${STATE_TW[nextState]}`}>
+              {next ? (
+                next.key === "d0" ? "Iniciar estudo" :
+                next.key === "d1" ? `1ª revisão · ${nextMeta?.label || "D1"}` :
+                next.key === "d4" ? `2ª revisão · ${nextMeta?.label || "D4"}` :
+                next.key === "d7" ? `Diferencial · ${nextMeta?.label || "D7"}` :
+                next.key === "d21" ? `Mini-caso · ${nextMeta?.label || "D21"}` :
+                next.key === "manutencao" ? `Manutenção · ${nextMeta?.label || ""}` :
+                `Próxima: ${nextMeta?.label || next.key}`
+              ) : "Concluído"}
+            </span>
           </div>
         </div>
       </div>
@@ -385,6 +395,19 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
     });
   }, [bankAreaFilter, bankQuery, topicBankItems]);
 
+  // Agrupamento hierarquico: Area > Subarea > Temas
+  const groupedBankItems = useMemo(() => {
+    const byArea = {};
+    filteredTopicBankItems.forEach((item) => {
+      const area = item.esp || "Sem área";
+      const subarea = item.parentTopic || item.blockName || "Geral";
+      if (!byArea[area]) byArea[area] = {};
+      if (!byArea[area][subarea]) byArea[area][subarea] = [];
+      byArea[area][subarea].push(item);
+    });
+    return byArea;
+  }, [filteredTopicBankItems]);
+
   const findTemaForBankItem = (item) => {
     if (!item) return null;
     return temas.find((tema) => (
@@ -546,101 +569,101 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filteredTopicBankItems.map((item) => {
-                  const tema = findTemaForBankItem(item);
-                  const started = tema && !tema.unstarted;
-                  const enamedBadge = plat === "res" ? getEnamedContextBadge(item.esp, item.nome) : null;
-                  const imp = IMPORTANCIA[tema?.importancia || item.importancia];
-                  const history = tema ? (temaStats?.[tema.id] || tema?.rev?.reviewHistory || []) : [];
-                  const attemptsCount = Array.isArray(history) ? history.length : 0;
-
-                  return (
-                    <div key={item.nome} className="rounded-3xl border border-white/5 bg-[var(--surface-1)]/60 p-4 flex flex-col gap-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[9.5px] uppercase tracking-[0.22em] text-gray-500">{item.esp}</span>
-                            {imp && (
-                              <span
-                                className="text-[9px] px-1.5 py-0.5 rounded font-bold"
-                                style={{ backgroundColor: `${imp.color}15`, color: imp.color, border: `1px solid ${imp.color}25` }}
-                              >
-                                {imp.label}
-                              </span>
-                            )}
-                            {started && <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-bold">No plano</span>}
-                          </div>
-                          <h3 className="mt-1.5 text-[14px] font-black text-gray-100 leading-snug line-clamp-2">{item.shortName || item.nome}</h3>
-                          {item.parentTopic && <p className="mt-0.5 text-[10px] text-gray-500 truncate">{item.parentTopic}</p>}
-                        </div>
-                        {tema && (
-                          <button
-                            type="button"
-                            onClick={() => onEdit(tema)}
-                            className="w-8 h-8 rounded-lg border border-white/10 bg-black/20 hover:bg-white/10 flex items-center justify-center shrink-0"
-                            title="Editar"
-                          >
-                            <Edit2 size={13} className="text-gray-300" />
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 text-[10.5px]">
-                        <div className="rounded-xl bg-black/20 border border-white/5 px-3 py-2">
-                          <p className="text-gray-600 font-bold">Incidência</p>
-                          <p className="mt-0.5 text-gray-300 font-black">
-                            {enamedBadge ? `${enamedBadge.subarea} · ~${enamedBadge.questoes || 0}q` : "sem dado"}
-                          </p>
-                        </div>
-                        <div className="rounded-xl bg-black/20 border border-white/5 px-3 py-2">
-                          <p className="text-gray-600 font-bold">Histórico</p>
-                          <p className="mt-0.5 text-gray-300 font-black">
-                            {attemptsCount ? `${attemptsCount} registro${attemptsCount === 1 ? "" : "s"}` : "sem tentativas"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-auto flex flex-col sm:flex-row gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (started) {
-                              const next = getNextReviewForTema(tema);
-                              if (next?.stepKey) onStep(tema.id, next.stepKey);
-                              return;
-                            }
-                            onIniciarTema({
-                              nome: item.nome,
-                              esp: item.esp,
-                              prio: item.prio,
-                              importancia: item.importancia,
-                              parentTopic: item.parentTopic,
-                              obs: item.blockName,
-                            });
-                          }}
-                          className="flex-1 rounded-xl bg-blue-600/15 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/20 px-3 py-2 text-[11px] font-black transition-colors"
-                        >
-                          {started ? "Continuar" : "Iniciar"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => beginDomainValidation(tema || {
-                            nome: item.nome,
-                            esp: item.esp,
-                            prio: item.prio,
-                            importancia: item.importancia,
-                            parentTopic: item.parentTopic,
-                            obs: item.blockName,
-                          })}
-                          className="flex-1 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 px-3 py-2 text-[11px] font-black transition-colors"
-                        >
-                          Já domino
-                        </button>
-                      </div>
+              {/* Vista hierarquica: Area > Subarea > Temas */}
+              <div className="space-y-6">
+                {Object.entries(groupedBankItems).map(([area, subareas]) => (
+                  <div key={area} className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-px flex-1 bg-white/5" />
+                      <h3 className="text-[11px] font-black uppercase tracking-widest text-gray-400">{area}</h3>
+                      <div className="h-px flex-1 bg-white/5" />
                     </div>
-                  );
-                })}
+                    {Object.entries(subareas).map(([subarea, items]) => (
+                      <div key={subarea} className="space-y-2">
+                        {subarea !== "Geral" && (
+                          <p className="text-[10px] text-gray-600 font-bold uppercase tracking-wider pl-1">↳ {subarea}</p>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                          {items.map((item) => {
+                            const tema = findTemaForBankItem(item);
+                            const started = tema && !tema.unstarted;
+                            const enamedBadge = plat === "res" ? getEnamedContextBadge(item.esp, item.nome) : null;
+                            const imp = IMPORTANCIA[tema?.importancia || item.importancia];
+                            const history = tema ? (temaStats?.[tema.id] || tema?.rev?.reviewHistory || []) : [];
+                            const attemptsCount = Array.isArray(history) ? history.length : 0;
+
+                            return (
+                              <div key={item.nome} className="rounded-2xl border border-white/5 bg-[var(--surface-1)]/60 p-3 flex flex-col gap-2.5">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      {imp && (
+                                        <span
+                                          className="text-[8px] px-1.5 py-0.5 rounded font-bold"
+                                          style={{ backgroundColor: `${imp.color}15`, color: imp.color, border: `1px solid ${imp.color}25` }}
+                                        >
+                                          {imp.label}
+                                        </span>
+                                      )}
+                                      {started && <span className="text-[8px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-bold">No plano</span>}
+                                      {enamedBadge && (
+                                        <span className={`text-[8px] px-1 py-0.5 rounded font-bold ${
+                                          enamedBadge.nivel === "alto" ? "bg-orange-500/15 text-orange-400" : "bg-amber-500/10 text-amber-400"
+                                        }`}>
+                                          ~{enamedBadge.questoes || 0}q ENAMED
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h3 className="mt-1 text-[12px] font-bold text-gray-100 leading-snug" title={item.nome}>{item.shortName || item.nome}</h3>
+                                    {attemptsCount > 0 && (
+                                      <p className="mt-0.5 text-[10px] text-gray-500">{attemptsCount} revisão{attemptsCount === 1 ? "" : "ões"}</p>
+                                    )}
+                                  </div>
+                                  {tema && (
+                                    <button
+                                      type="button"
+                                      onClick={() => onEdit(tema)}
+                                      className="w-6 h-6 rounded-lg border border-white/10 bg-black/20 hover:bg-white/10 flex items-center justify-center shrink-0"
+                                      title="Editar"
+                                    >
+                                      <Edit2 size={11} className="text-gray-400" />
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="flex gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (started) {
+                                        const next = getNextReviewForTema(tema);
+                                        if (next?.stepKey) onStep(tema.id, next.stepKey);
+                                        return;
+                                      }
+                                      onIniciarTema({ nome: item.nome, esp: item.esp, prio: item.prio, importancia: item.importancia, parentTopic: item.parentTopic, obs: item.blockName });
+                                    }}
+                                    className="flex-1 rounded-xl bg-blue-600/15 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/20 px-2 py-1.5 text-[10px] font-black transition-colors"
+                                  >
+                                    {started ? "Continuar" : "Iniciar"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => beginDomainValidation(tema || { nome: item.nome, esp: item.esp, prio: item.prio, importancia: item.importancia, parentTopic: item.parentTopic, obs: item.blockName })}
+                                    className="flex-1 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 px-2 py-1.5 text-[10px] font-black transition-colors"
+                                  >
+                                    Já domino
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                {filteredTopicBankItems.length === 0 && (
+                  <p className="text-center py-12 text-gray-500 text-[12px]">Nenhum tema encontrado.</p>
+                )}
               </div>
 
               {filteredTopicBankItems.length === 0 && (

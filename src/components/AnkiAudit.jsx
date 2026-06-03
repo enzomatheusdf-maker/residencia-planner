@@ -101,6 +101,7 @@ export default function AnkiAudit() {
 
   const isOverloaded = newCardsThisWeek > 50;
 
+  // eslint-disable-next-line no-unused-vars
   const atomicityStats = useMemo(() => {
     const eligibleCards = cardsFromErrors.filter((c) => (c.anotacao || "").trim().length >= 8);
     if (eligibleCards.length === 0) {

@@ -44,6 +44,33 @@ function DetailMetric({ icon: Icon, label, value }) {
   );
 }
 
+function getAcaoRecomendada(item, review, enamedBadge, retrievability) {
+  if (!item) return null;
+  const R = parseFloat(retrievability) || null;
+  const isOverdue = item.overdue;
+  const isHotEnamed = enamedBadge?.nivel === "alto";
+  const step = item.stepKey || "";
+
+  if (isOverdue && isHotEnamed) return "Priorizar: tema atrasado com alta incidência ENAMED.";
+  if (isOverdue) return "Executar agora: revisão atrasada acumulando risco de perda.";
+  if (step === "d0") return "Estudo inicial: siga o fluxo D0 (pré-teste → leitura → brain dump → questões → flashcards).";
+  if (step === "d1") return "1ª revisão: tente reconstruir o tema de memória antes de consultar material.";
+  if (step === "d7") return "Revisão de diferencial: foque no que separa este tema dos diagnósticos próximos.";
+  if (step === "d21") return "Mini-caso: resolva um caso clínico ou questão integradora do tema.";
+  if (step === "manutencao") return "Manutenção: rápida revisão do illness script e dos achados-chave.";
+  if (R != null && R < 40) return "Alta prioridade: retenção baixa — risco real de perda de memória.";
+  if (isHotEnamed) return "Prioritário ENAMED: tema de alta incidência na prova.";
+  return "Executar conforme o plano: sem alertas ativos para este item.";
+}
+
+function getDesempenhoTema(tema) {
+  if (!tema?.rev) return null;
+  const revs = Object.values(tema.rev).filter(r => r?.done && r.acerto != null);
+  if (!revs.length) return null;
+  const avg = revs.reduce((s, r) => s + r.acerto, 0) / revs.length;
+  return Math.round(avg * 100);
+}
+
 function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, onOpenPlan }) {
   const target = getAgendaTaskTarget(item);
   const startLabel = getAgendaTaskLabel(item);
@@ -54,6 +81,8 @@ function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, o
   const retrievability = tema?.rev && item?.stepKey && item.stepKey !== "d0"
     ? formatPercent(getRetrievability(tema, item.stepKey))
     : null;
+  const acaoRecomendada = getAcaoRecomendada(item, review, enamedBadge, retrievability);
+  const desempenhoTema = getDesempenhoTema(tema);
 
   function handleStart() {
     if (onStartTask) {
@@ -120,6 +149,22 @@ function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, o
             </div>
           )}
         </div>
+
+        {acaoRecomendada && (
+          <div className="rounded-2xl border border-blue-500/20 bg-blue-500/8 p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-blue-400 mb-1">Ação recomendada</p>
+            <p className="text-[12px] text-gray-200 leading-relaxed">{acaoRecomendada}</p>
+          </div>
+        )}
+
+        {desempenhoTema != null && (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">Desempenho no tema</p>
+            <p className={`text-[13px] font-black ${desempenhoTema >= 70 ? "text-emerald-400" : desempenhoTema >= 50 ? "text-amber-400" : "text-red-400"}`}>
+              {desempenhoTema}% acerto médio ({Object.values(tema?.rev || {}).filter(r => r?.done && r.acerto != null).length} revisões)
+            </p>
+          </div>
+        )}
 
         <button
           type="button"
