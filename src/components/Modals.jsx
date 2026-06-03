@@ -1708,13 +1708,53 @@ export function AjustesModal({
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Meta diária de questões (0 = inativo)" info="Quantidade de questões resolvidas que você quer atingir por dia (utilizado para calcular o Saldo de Ritmo na aba de Preparo).">
-                  <Input type="number" min={0} value={meta.metaQuestoesDia ?? 0} onChange={(e) => saveMetaNumber("metaQuestoesDia", e.target.value, { min: 0 }, 0)} />
+                <Field
+                  label="Meta diária de questões (0 = inativo)"
+                  info="Quantidade de questões resolvidas que você quer atingir por dia. Se a data da prova estiver definida, o total é calculado automaticamente."
+                >
+                  <Input
+                    type="number"
+                    min={0}
+                    value={meta.metaQuestoesDia ?? 0}
+                    onChange={(e) => {
+                      const val = Math.max(0, parseInt(e.target.value, 10) || 0);
+                      const updates = { metaQuestoesDia: val, metaQuestoesFonte: "dia" };
+                      if (val > 0 && daysLeft != null && daysLeft > 0) {
+                        updates.metaQuestoesTotal = val * daysLeft;
+                      }
+                      saveMeta(updates);
+                    }}
+                  />
                 </Field>
-                <Field label="Meta total de questões (0 = inativo)" info="Quantidade total de questões resolvidas que você quer atingir ao final da preparação.">
-                  <Input type="number" min={0} value={meta.metaQuestoesTotal ?? 0} onChange={(e) => saveMetaNumber("metaQuestoesTotal", e.target.value, { min: 0 }, 0)} />
+                <Field
+                  label="Meta total de questões (0 = inativo)"
+                  info="Quantidade total de questões que você quer resolver até a prova. Se a data da prova estiver definida, a meta diária é calculada automaticamente."
+                >
+                  <Input
+                    type="number"
+                    min={0}
+                    value={meta.metaQuestoesTotal ?? 0}
+                    onChange={(e) => {
+                      const val = Math.max(0, parseInt(e.target.value, 10) || 0);
+                      const updates = { metaQuestoesTotal: val, metaQuestoesFonte: "total" };
+                      if (val > 0 && daysLeft != null && daysLeft > 0) {
+                        updates.metaQuestoesDia = Math.ceil(val / daysLeft);
+                      }
+                      saveMeta(updates);
+                    }}
+                  />
                 </Field>
               </div>
+              {daysLeft != null && daysLeft > 0 && (meta.metaQuestoesDia > 0 || meta.metaQuestoesTotal > 0) && (
+                <p className="text-[10px] text-blue-400/80 italic -mt-1">
+                  Auto-calculado com base em {daysLeft} dias restantes.
+                  {meta.metaQuestoesFonte === "dia"
+                    ? ` Total = ${meta.metaQuestoesDia} × ${daysLeft}d.`
+                    : meta.metaQuestoesFonte === "total"
+                    ? ` Diária = ${meta.metaQuestoesTotal} ÷ ${daysLeft}d.`
+                    : ""}
+                </p>
+              )}
 
               <Field label="Tom do Mentor" info="Ajuste a personalidade conversacional do seu Mentor. Gentil: tom de apoio e sem rigidez; Neutro: focado em dados e direto; Firme: disciplina rígida e focado na meta de aprovação.">
                 <Select value={meta.tomMentor || "gentil"} onChange={(e) => saveMeta({ tomMentor: e.target.value })}>
