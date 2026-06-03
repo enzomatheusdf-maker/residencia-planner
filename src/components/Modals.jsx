@@ -1,7 +1,7 @@
 // src/components/Modals.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  LayoutDashboard, Calendar, BarChart3, FileText, Zap, Target, BookOpen, 
+  LayoutDashboard, Calendar, FileText, Zap, Target, BookOpen, 
   TrendingUp, Award, Edit2, Trash2, Search, User, Settings, Lock
 } from "lucide-react";
 import { CATALOGO_RES, CATALOGO_VEST, getSubtopics } from "../constants/catalogos";
@@ -42,12 +42,12 @@ const PROVA_STATS = {
 export function HelpModal({ onClose }) {
   const [tab, setTab] = useState("secoes");
   const sections = [
-    { icon: LayoutDashboard, color: "#a78bfa", title: "Hoje", desc: "Painel central com fila cronológica, fila inteligente, heatmap de consistência 35 dias, retenção longa D21 e zonas de alerta por especialidade." },
-    { icon: Calendar, color: "#60a5fa", title: "Cronograma", desc: "Grade MEDCOF 2026 completa (26 blocos, 23 especialidades). Inicie ciclos direto de um tema ou monte cronogramas semanais com criação manual ou importação de PDF." },
-    { icon: BarChart3, color: "#34d399", title: "Banco de Dados", desc: "Tabela de todos os temas. Ordene por nome, progresso, questões ou acerto. Exporte em CSV para análise externa." },
-    { icon: FileText, color: "#f472b6", title: "Estatísticas", desc: "Análise de provas-alvo (ENAMED, USP-SP, UNIFESP) com incidência por área e tópicos de risco 2026. Inclui aba 'Meu Desempenho' com seus dados pessoais." },
-    { icon: Target, color: "#fb923c", title: "Simulados", desc: "Registre práticas e simulados. Acompanhe a evolução do percentual, gerencie correção D7 de erros, veja diagnóstico por área e métricas de elite (índice de descuido, taxa de conversão)." },
-    { icon: Zap, color: "#fbbf24", title: "Anki Audit", desc: "Monitore a calibração do Anki. Registre sessões e acompanhe a taxa de 'Again' — ideal abaixo de 15% para retenção de longo prazo." },
+    { icon: LayoutDashboard, color: "#a78bfa", title: "Hoje", desc: "Comando diário, métricas de execução de hoje, plano curto e próxima ação." },
+    { icon: Calendar, color: "#60a5fa", title: "Plano", desc: "Cronograma, agenda, temas, distribuição semanal, prioridades e ajustes." },
+    { icon: Target, color: "#fb923c", title: "Simulados", desc: "Estratégia de simulados, registro obrigatório, correção D7, diagnóstico por área e padrões de erro." },
+    { icon: Brain, color: "#2dd4bf", title: "Raciocínio Clínico", desc: "Casos, illness scripts, SCT, diferenciais e conduta educacional." },
+    { icon: Zap, color: "#fbbf24", title: "Anki Audit", desc: "Auditoria operacional diária do Anki, sessão registrada, adesão e carga de novos cards." },
+    { icon: FileText, color: "#f472b6", title: "Mais", desc: "Estatísticas, Banco de Temas, Perfil, Segurança, Academia, Guia e ferramentas complementares." },
   ];
   const workflow = [
     { step: "D0", icon: BookOpen, color: "#a78bfa", label: "Estudo Inicial", desc: "Leia o conteúdo, resolva questões e registre o acerto. A curva de revisão calcula automaticamente a data das próximas revisões." },
@@ -1617,12 +1617,12 @@ export function AjustesModal({
                 <Field label="Data da prova" info="Data em que será realizado o seu exame principal (utilizado para calcular o cronograma e as regressivas de estudo).">
                   <Input type="date" value={meta.dataProva} onChange={(e) => saveMeta({ dataProva: e.target.value })} />
                 </Field>
-                <Field label="Meta de acerto (%)" info="A porcentagem de acertos em simulados que você deseja atingir no final da preparação.">
+                <Field label="Meta de acerto da prova (%)" info="Meta de desempenho para simulados e acompanhamento. Não reorganiza o FSRS; quem regula a curva é a Retenção FSRS Desejada.">
                   <Input type="number" min={50} max={100} step={0.1} value={meta.acerto} onChange={(e) => saveMetaNumber("acerto", e.target.value, { allowDecimal: true, maxDecimals: 1, min: 50, max: 100 }, 85)} />
                 </Field>
               </div>
               <p className="text-[9.5px] text-gray-500 pl-1 -mt-2">
-                💡 Recomendação: manter a meta de acerto entre 85% e 90% para melhor retenção e estabilidade da curva no FSRS.
+                A meta de acerto é só alvo de prova. Para ajustar frequência de revisões, use Retenção FSRS Desejada.
               </p>
 
               <div className="grid grid-cols-2 gap-3">

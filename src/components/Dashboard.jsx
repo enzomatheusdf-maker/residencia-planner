@@ -6,6 +6,7 @@ import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getR
 import { calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
 import { getMentorDiagnosis, isExhaustionDetected } from "../core/mentor";
 import { buildMentorContext, getMentorNextAction, getMentorTodayPlan } from "../core/mentorAutopilot";
+import { buildPlanExecutionState, getAgendaTaskLabel, getAgendaTaskTarget } from "../core/planExecution";
 import { isPlanSetupComplete } from "../core/onboardingGate";
 import { getReadinessData } from "../core/readiness";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip, InfoTooltip } from "./Primitives";
@@ -23,6 +24,7 @@ import { CALENDAR_PROVIDERS, CALENDAR_PROVIDER_IDS } from "../constants/calendar
 import { getPeakModePolicy, getPeakPhase } from "../core/peakMode";
 import { parseCatalogEntry } from "../constants/catalogos";
 import { resolveCatalogo, getCronogramaById } from "../constants/cronogramas";
+import { calculateRedistributionSummary, normalizeWeeklyTopicLimit } from "../core/scheduleWizard";
 import { safeTrackEvent } from "../core/telemetry";
 import {
   buildDailyBriefing,
@@ -224,6 +226,7 @@ function MiniCronogramaWidget({
   const importedTopics = calendarProvider?.importedTopics;
   const customTopics = calendarProvider?.customTopics;
   const selectedPlanId = cronogramaSel?.[plat] || "res-medcof-2026";
+  const weeklyLimit = normalizeWeeklyTopicLimit(temasPerWeek || 6);
   const semanaBaseDate = estrategiaStartDate || todayStr();
   const diffDays = Math.max(0, Math.floor((new Date(todayStr()) - new Date(semanaBaseDate)) / (1000 * 60 * 60 * 24)));
   const semanaAtual = Math.floor(diffDays / 7) + 1;
@@ -233,14 +236,15 @@ function MiniCronogramaWidget({
 
     if (activeProvider === CALENDAR_PROVIDER_IDS.MEDCOF) {
       const medcofCatalog = resolveCatalogo("res", selectedPlanId) || [];
-      const idx = Math.min(Math.max(semanaAtual - 1, 0), Math.max(medcofCatalog.length - 1, 0));
-      const bloco = medcofCatalog[idx];
-      const topics = (bloco?.t || []).slice(0, temasPerWeek || 6).map((entry) => {
+      const allEntries = medcofCatalog.flatMap((bloco) => bloco?.t || []);
+      const summary = calculateRedistributionSummary(allEntries.length, weeklyLimit);
+      const start = Math.min(Math.max((semanaAtual - 1) * weeklyLimit, 0), Math.max(allEntries.length - weeklyLimit, 0));
+      const topics = allEntries.slice(start, start + weeklyLimit).map((entry) => {
         const parsed = parseCatalogEntry(entry);
         return { nome: parsed.nome, esp: parsed.esp };
       });
       return {
-        label: bloco?.nome || `MEDCOF · Semana ${semanaAtual}`,
+        label: `Semana ${Math.min(semanaAtual, summary.estimatedWeeks || 1)} de ${summary.estimatedWeeks || 1} · ${allEntries.length} temas`,
         topics,
       };
     }
@@ -248,28 +252,19 @@ function MiniCronogramaWidget({
     const sourceTopicsRaw = activeProvider === CALENDAR_PROVIDER_IDS.CUSTOM ? customTopics : importedTopics;
     const sourceTopics = Array.isArray(sourceTopicsRaw) ? sourceTopicsRaw : [];
     if (!sourceTopics.length) return { label: "Sem tópicos importados", topics: [] };
-    const weekMap = sourceTopics.reduce((acc, topic) => {
-      const weekLabel = topic?.semana || "Sem semana definida";
-      if (!acc[weekLabel]) acc[weekLabel] = [];
-      acc[weekLabel].push(topic);
-      return acc;
-    }, {});
-    const weekKeys = Object.keys(weekMap);
-    if (!weekKeys.length) return { label: "Sem semana definida", topics: [] };
-    const weekKey = weekKeys[Math.min(semanaAtual - 1, weekKeys.length - 1)];
-    const topics = (weekMap[weekKey] || [])
-      .sort((a, b) => (a?.ordem || 0) - (b?.ordem || 0))
-      .slice(0, temasPerWeek || 6)
-      .map((topic) => ({
+    const sortedSource = [...sourceTopics];
+    const summary = calculateRedistributionSummary(sortedSource.length, weeklyLimit);
+    const start = Math.min(Math.max((semanaAtual - 1) * weeklyLimit, 0), Math.max(sortedSource.length - weeklyLimit, 0));
+    const topics = sortedSource.slice(start, start + weeklyLimit).map((topic) => ({
         nome: topic.temaOriginal || topic.tema || "Tema importado",
         esp: topic.areaCanonica || topic.areaOriginal || topic.area || "Geral",
       }));
 
     return {
-      label: weekKey,
+      label: `Semana ${Math.min(semanaAtual, summary.estimatedWeeks || 1)} de ${summary.estimatedWeeks || 1} · ${sortedSource.length} temas`,
       topics,
     };
-  }, [plat, activeProvider, selectedPlanId, semanaAtual, temasPerWeek, importedTopics, customTopics]);
+  }, [plat, activeProvider, selectedPlanId, semanaAtual, weeklyLimit, importedTopics, customTopics]);
 
   const strategyName = useMemo(() => {
     if (activeProvider === CALENDAR_PROVIDER_IDS.USER_IMPORTED) return "Estratégia MED";
@@ -676,7 +671,7 @@ function DailyProgressRing({ value, goal }) {
   );
 }
 
-export default function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, setView, showToast, onOpenAjustes }) {
+export default function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, setView, showToast, onOpenAjustes, onOpenAgenda }) {
   const currentUid = auth.currentUser?.uid || null;
   const { plat, sprint, tourStep, setTourStep, setOnboardingDone, onboardingDone } = useStore();
   const showToastGlobal = useStore((s) => s.showToast);
@@ -705,6 +700,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     }
     if (setView) setView("crono");
   }, [onOpenAjustes, setView]);
+  const openAgenda = useCallback(() => {
+    if (onOpenAgenda) {
+      onOpenAgenda(todayStr());
+      return;
+    }
+    if (setView) setView("crono");
+  }, [onOpenAgenda, setView]);
 
   const handleMarkMastery = (item) => {
     if (!item?.nome) return;
@@ -1359,6 +1361,8 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   }), [meta, onboardingDone, overdue.length, pending, plat, todayLoadSignals.todayMinutes, tourStep, userName]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showMentorWhy, setShowMentorWhy] = useState(false);
+  const [acceptedPlanDate, setAcceptedPlanDate] = useState(null);
+  const [showTodayPlan, setShowTodayPlan] = useState(false);
   const vestibularStartComplete = useMemo(() => {
     if (plat !== "vest") return true;
     return isVestibularStartComplete(meta);
@@ -1391,6 +1395,27 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     }
   }, [streakCurrent, meta, showToast, showToastGlobal]);
 
+  const planExecution = useMemo(() => buildPlanExecutionState({
+    agendaTodaySummary,
+    planHealth: mentorContext?.planHealth,
+    mentorAction: mentorNextAction,
+    acceptedToday: acceptedPlanDate === todayStr(),
+  }), [acceptedPlanDate, agendaTodaySummary, mentorContext?.planHealth, mentorNextAction]);
+
+  const todayPlanTasks = useMemo(
+    () => (agendaTodaySummary?.items || []).slice(0, 3),
+    [agendaTodaySummary]
+  );
+
+  const startAgendaTask = useCallback((item) => {
+    const target = getAgendaTaskTarget(item);
+    if (target?.temaId && target?.stepKey && target.stepKey !== "d0" && onStudy) {
+      onStudy(target.temaId, target.stepKey);
+      return;
+    }
+    if (setView) setView(target?.view || "crono");
+  }, [onStudy, setView]);
+
   // ESTADO VAZIO: Mostrar apenas o CTA de onboarding se não houver temas cadastrados
   if (temasFiltrados.length === 0) {
     return (
@@ -1415,7 +1440,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             </p>
             <button
               type="button"
-              onClick={() => setView && setView("crono")}
+              onClick={openAgenda}
               className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[12px] font-bold border-none cursor-pointer"
             >
               Ver agenda
@@ -1629,6 +1654,92 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       )}
 
       <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} />
+
+      <section className="rounded-[var(--radius)] border border-blue-500/20 bg-blue-500/10 p-4 md:p-5 space-y-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Plano de hoje</p>
+            <h2 className="mt-1 text-lg font-black text-white">
+              Hoje:{" "}
+              {agendaTodaySummary && agendaTodaySummary.totalCount > 0
+                ? `${agendaTodaySummary.totalCount} tarefa${agendaTodaySummary.totalCount > 1 ? "s" : ""} · ${agendaTodaySummary.totalMinutes} min`
+                : "Nada pendente hoje"}
+            </h2>
+            <p className="mt-1 text-[12px] text-blue-100/75">
+              {agendaTodaySummary?.overdueCount > 0
+                ? `${agendaTodaySummary.overdueCount} atraso${agendaTodaySummary.overdueCount > 1 ? "s" : ""} entra primeiro.`
+                : agendaTodaySummary?.newTopicCount > 0
+                ? `${agendaTodaySummary.newTopicCount} tema${agendaTodaySummary.newTopicCount > 1 ? "s" : ""} novo${agendaTodaySummary.newTopicCount > 1 ? "s" : ""} planejado${agendaTodaySummary.newTopicCount > 1 ? "s" : ""}.`
+                : "Sem calendário mensal no Dashboard; a execução fica nesta fila curta."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {planExecution.state === "plan_ready_unaccepted" && agendaTodaySummary?.totalCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setAcceptedPlanDate(todayStr());
+                  setShowTodayPlan(true);
+                }}
+                className="rounded-xl bg-blue-600 px-4 py-2 text-[12px] font-black text-white hover:bg-blue-500"
+              >
+                Aceitar plano de hoje
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setShowTodayPlan((prev) => !prev);
+                if (agendaTodaySummary?.totalCount === 0 && setView) setView("crono");
+              }}
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-[12px] font-black text-gray-200 hover:bg-white/10"
+            >
+              {showTodayPlan ? "Ocultar plano" : "Abrir plano"}
+            </button>
+            <button
+              type="button"
+              onClick={openAgenda}
+              className="rounded-xl border border-blue-500/25 bg-blue-500/10 px-4 py-2 text-[12px] font-black text-blue-100 hover:bg-blue-500/20"
+            >
+              Ver agenda
+            </button>
+            <button
+              type="button"
+              onClick={openSetupAjustes}
+              className="rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-[12px] font-black text-gray-300 hover:bg-black/30"
+            >
+              Ajustar plano
+            </button>
+          </div>
+        </div>
+
+        {showTodayPlan && todayPlanTasks.length > 0 && (
+          <div className="grid gap-2 md:grid-cols-3">
+            {todayPlanTasks.map((item) => (
+              <div key={item.id} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                <p className="text-[11px] font-black text-white truncate">{item.temaNome || "Tarefa do plano"}</p>
+                <p className="mt-1 text-[10px] text-blue-100/70">
+                  {item.type === "overdue" ? "Atrasada" : item.type === "new_topic" || item.type === "d0_critical" ? "Tema novo" : "Revisão"} · {item.estimatedMinutes || 50} min
+                </p>
+                <button
+                  type="button"
+                  onClick={() => startAgendaTask(item)}
+                  className="mt-3 w-full rounded-xl bg-white/10 px-3 py-2 text-[11px] font-black text-white hover:bg-white/15"
+                >
+                  {getAgendaTaskLabel(item)}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showTodayPlan && todayPlanTasks.length === 0 && (
+          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <p className="text-[12px] font-bold text-white">Nada pendente hoje.</p>
+            <p className="mt-1 text-[11px] text-gray-400">Abra o cronograma para criar ou redistribuir temas novos.</p>
+          </div>
+        )}
+      </section>
 
       <MiniCronogramaWidget
         plat={plat}
@@ -2130,7 +2241,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             <BarChart3 size={16} className="text-blue-400" />
             <h3 className="text-[10px] font-black uppercase text-gray-300 tracking-wider mr-2">Análise de Desempenho</h3>
             <span className="text-[9px] font-black uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full">
-              {totalSessions < 7 ? "Fase 1: Calibração" : totalSessions < 30 ? "Fase 2: Ritmo" : "Fase 3: Elite"}
+              {totalSessions < 7 ? "Fase 1: Calibração" : totalSessions < 30 ? "Fase 2: Ritmo" : "Fase 3: Consolidação"}
             </span>
           </div>
           {diag.projection && (

@@ -27,13 +27,6 @@ const ICON_BY_VIEW = {
 function getMoreActionLabel(item) {
   if (item.view === NAV_VIEW.GUIDE) return "Abrir guia";
   if (item.view === NAV_VIEW.SETTINGS) return "Abrir ajustes";
-  if (
-    item.view === NAV_VIEW.DATA_SAFETY
-    || item.view === NAV_VIEW.WEEKLY_REVIEW
-    || item.view === NAV_VIEW.LAUNCH_CHECKLIST
-  ) {
-    return "Abrir Stats";
-  }
   return "Abrir";
 }
 
@@ -69,15 +62,6 @@ export default function BottomNav({ view, setView, onOpenAjustes, onOpenHelp }) 
     if (targetView === NAV_VIEW.SETTINGS) {
       if (onOpenAjustes) onOpenAjustes();
       else setView(NAV_VIEW.MORE);
-      setMoreOpen(false);
-      return;
-    }
-    if (
-      targetView === NAV_VIEW.DATA_SAFETY
-      || targetView === NAV_VIEW.WEEKLY_REVIEW
-      || targetView === NAV_VIEW.LAUNCH_CHECKLIST
-    ) {
-      setView(NAV_VIEW.STATS);
       setMoreOpen(false);
       return;
     }

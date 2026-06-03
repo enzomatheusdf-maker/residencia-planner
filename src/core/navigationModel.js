@@ -25,23 +25,25 @@ const PRIMARY_ITEMS = [
     view: "sims",
     label: COPY.views.sims,
     mobileLabel: COPY.views.sims,
-    description: "Fluxo principal de estudo e simulados.",
+    description: "Estrategia, registro e correcao de simulados.",
     desktop: true,
     mobile: true,
   },
   {
-    view: "stats",
-    label: COPY.views.stats,
-    mobileLabel: "Stats",
-    description: "Metricas e paineis de progresso.",
+    view: "raciocinio",
+    label: "Racioc\u00ednio Cl\u00ednico",
+    mobileLabel: "Cl\u00ednico",
+    description: "Treino de casos, illness scripts, SCT e conduta.",
+    onlyPlat: "res",
+    requiresFeature: "raciocinioClinico",
     desktop: true,
     mobile: true,
   },
   {
-    view: "banco",
-    label: COPY.views.banco,
-    mobileLabel: "Banco",
-    description: "Banco de dados e consultas.",
+    view: "anki",
+    label: "Anki Audit",
+    mobileLabel: "Anki",
+    description: "Auditoria operacional diaria do Anki.",
     desktop: true,
     mobile: false,
   },
@@ -57,16 +59,20 @@ const PRIMARY_ITEMS = [
 
 const MORE_ITEMS = [
   {
-    view: "raciocinio",
-    label: "Racioc\u00ednio Cl\u00ednico",
-    description: "Treine racioc\u00ednio diagn\u00f3stico, hip\u00f3teses e condutas simuladas.",
-    onlyPlat: "res",
-    requiresFeature: "raciocinioClinico",
-  },
-  {
     view: "anki",
     label: "Anki Audit",
-    description: "Auditoria de aderencia e consistencia no Anki.",
+    description: "Auditoria operacional diaria do Anki.",
+    mobileOnly: true,
+  },
+  {
+    view: "stats",
+    label: COPY.views.stats,
+    description: "Aprendizagem, provas, erros, revisoes e previsao.",
+  },
+  {
+    view: "banco",
+    label: COPY.views.banco,
+    description: "Banco de temas e consultas auxiliares.",
   },
   {
     view: "academia",
@@ -82,6 +88,16 @@ const MORE_ITEMS = [
     view: "data_safety",
     label: "Seguranca de Dados",
     description: "Backup, integridade e migracao dos seus dados.",
+  },
+  {
+    view: "guia",
+    label: "Guia de Uso",
+    description: "Como navegar por Hoje, Plano, Simulados, Clinico, Anki e Mais.",
+  },
+  {
+    view: "ajustes",
+    label: "Perfil e Configuracoes",
+    description: "Conta, estudos, mentor, seguranca e preferencias.",
   },
   {
     view: "launch_checklist",
@@ -153,6 +169,30 @@ export const NAV_VIEW = {
   LAUNCH_CHECKLIST: "launch_checklist",
 };
 
+export const PLAN_TAB = {
+  PLAN: "plano",
+  AGENDA: "agenda",
+};
+
+export function normalizePlanTab(tab, fallback = PLAN_TAB.PLAN) {
+  const value = String(tab || "").trim().toLowerCase();
+  return Object.values(PLAN_TAB).includes(value) ? value : fallback;
+}
+
+export function buildPlanAgendaTarget({ date } = {}) {
+  return {
+    view: NAV_VIEW.PLAN,
+    tab: PLAN_TAB.AGENDA,
+    date: date || null,
+  };
+}
+
+export function getPlanTabFromTarget(target, fallback = PLAN_TAB.PLAN) {
+  if (!target || typeof target !== "object") return fallback;
+  if (normalizeView(target.view) !== NAV_VIEW.PLAN) return fallback;
+  return normalizePlanTab(target.tab, fallback);
+}
+
 function normalizeKey(value) {
   return String(value || "")
     .trim()
@@ -169,6 +209,7 @@ function isRaciocinioEnabled(plat, features = {}) {
 
 function isItemAvailable(item, plat, features = {}) {
   if (item.devOnly && !IS_DEV) return false;
+  if (item.mobileOnly && features.mobile !== true) return false;
   if (item.onlyPlat && item.onlyPlat !== plat) return false;
   if (item.requiresFeature === "raciocinioClinico") {
     return isRaciocinioEnabled(plat, features);

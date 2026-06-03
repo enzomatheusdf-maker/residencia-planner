@@ -14,7 +14,7 @@ export default function AnkiAudit() {
 
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("errors");
-  const [f, setF] = useState({ data: todayStr(), revisados: "", again: "", novos: "" });
+  const [f, setF] = useState({ data: todayStr(), revisados: "", again: "", novos: "", tempoMin: "", deck: "", obs: "" });
 
   const hoje = todayStr();
   const ankiFeitoHoje = adesaoDatas.includes(hoje);
@@ -123,7 +123,7 @@ export default function AnkiAudit() {
         <div className="space-y-1">
           <p className="text-[10.5px] uppercase tracking-wider font-semibold text-gray-500">Adesão diária</p>
           <p className="text-[12px] text-gray-300">
-            Marque quando revisar seus cards. Esse check entra com peso leve no Preparo estimado.
+            Marque quando revisar seus cards. Esse check entra com peso leve na previsão de desempenho.
           </p>
         </div>
         <Btn onClick={marcarAnkiHoje} disabled={ankiFeitoHoje} className="gap-2 sm:shrink-0">
@@ -288,13 +288,18 @@ export default function AnkiAudit() {
 
       {open && (
         <Modal onClose={() => setOpen(false)}>
-          <h2 className="text-[15px] font-bold text-gray-100 mb-2">Auditar Estatísticas Anki</h2>
+          <h2 className="text-[15px] font-bold text-gray-100 mb-2">Registrar sessão Anki</h2>
           <Field label="Data" info="A data referente aos registros de revisão do Anki."><Input type="date" value={f.data} onChange={(e) => setF({ ...f, data: e.target.value })} /></Field>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <Field label="Revisados" info="Número total de cards revisados neste dia."><Input type="number" value={f.revisados} onChange={(e) => setF({ ...f, revisados: +e.target.value })} /></Field>
             <Field label='"Again"' info="Número de cards errados neste dia."><Input type="number" value={f.again} onChange={(e) => setF({ ...f, again: +e.target.value })} /></Field>
             <Field label="Novos" info="Número de novos cards inseridos neste dia."><Input type="number" value={f.novos} onChange={(e) => setF({ ...f, novos: +e.target.value })} /></Field>
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Field label="Tempo (min)" info="Tempo aproximado gasto na sessão."><Input type="number" value={f.tempoMin} onChange={(e) => setF({ ...f, tempoMin: e.target.value === "" ? "" : +e.target.value })} /></Field>
+            <Field label="Deck" info="Deck principal revisado."><Input value={f.deck} onChange={(e) => setF({ ...f, deck: e.target.value })} placeholder="ex: Residência / Pediatria" /></Field>
+          </div>
+          <Field label="Observação opcional" info="Use para registrar anomalias de carga, deck ou retenção."><Input value={f.obs} onChange={(e) => setF({ ...f, obs: e.target.value })} placeholder="ex: muitos cards de erro de simulado" /></Field>
           {f.revisados > 0 && (
             <p className="text-center text-xl font-black text-blue-400 tabular-nums my-2">
               {Math.round((f.again / f.revisados) * 100)}% de Erro Real
@@ -306,8 +311,9 @@ export default function AnkiAudit() {
               onClick={() => {
                 if (f.revisados) {
                   addAnki(plat, f);
+                  marcarAnkiHoje();
                   setOpen(false);
-                  setF({ data: todayStr(), revisados: "", again: "", novos: "" });
+                  setF({ data: todayStr(), revisados: "", again: "", novos: "", tempoMin: "", deck: "", obs: "" });
                 }
               }}
               disabled={!f.revisados}

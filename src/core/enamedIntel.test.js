@@ -5,6 +5,7 @@ import {
   topHotness,
   getEnamedAction,
   getEnamedBottleneckExplanation,
+  getEnamedTopicIntel,
 } from "./enamedIntel";
 
 const rev = (acerto) => ({ d0: { done: true, acerto } });
@@ -72,5 +73,19 @@ describe("enamedIntel", () => {
     expect(explanation.collecting).toBe(false);
     expect(explanation.area).toBeTruthy();
     expect(explanation.evidencias.length).toBeGreaterThan(0);
+  });
+
+  test("gera inteligência contextual por tema", () => {
+    const intel = getEnamedTopicIntel({ area: "Cirurgia", temaOriginal: "Apendicite aguda" });
+    expect(intel.area).toBe("Cirurgia");
+    expect(intel.topicName).toBe("Apendicite aguda");
+    expect(intel.collecting).toBe(false);
+    expect(intel.recommendation).toBeTruthy();
+  });
+
+  test("não inventa dado quando faltam área e tema", () => {
+    const intel = getEnamedTopicIntel({});
+    expect(intel.collecting).toBe(true);
+    expect(intel.incidenceLabel).toBe("dados insuficientes");
   });
 });

@@ -5,6 +5,7 @@ import {
   Eye, EyeOff, Settings,
   Brain, Layers, CalendarCheck, GraduationCap, ShieldCheck,
   Rocket, BookOpen, SlidersHorizontal, ArrowRight,
+  BarChart3, Database, Trophy, Timer, FileText,
 } from "lucide-react";
 
 // Camada Core & State
@@ -20,7 +21,7 @@ import { getAnonymousStorageKey, getOrCreateAnonymousSessionId, getUserScopedSto
 import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } from "./core/onboarding";
 import { shouldShowOnboardingV2 } from "./core/onboardingGate";
 import { featureEnabled } from "./core/platformFeatures";
-import { NAV_VIEW, getMoreNavItems } from "./core/navigationModel";
+import { NAV_VIEW, buildPlanAgendaTarget, getMoreNavItems } from "./core/navigationModel";
 
 // Camada de Hooks/Estatísticas
 import { useFilaInteligente } from "./hooks/useMetrics";
@@ -85,6 +86,8 @@ const MORE_TOOL_META = {
   raciocinio:       { icon: Brain,            color: "text-teal-300",    bg: "bg-teal-500/10",    ring: "border-teal-500/20",    glow: "group-hover:border-teal-400/40" },
   anki:             { icon: Layers,           color: "text-purple-300",  bg: "bg-purple-500/10",  ring: "border-purple-500/20",  glow: "group-hover:border-purple-400/40" },
   weekly_review:    { icon: CalendarCheck,    color: "text-blue-300",    bg: "bg-blue-500/10",    ring: "border-blue-500/20",    glow: "group-hover:border-blue-400/40" },
+  stats:            { icon: BarChart3,        color: "text-indigo-300",  bg: "bg-indigo-500/10", ring: "border-indigo-500/20", glow: "group-hover:border-indigo-400/40" },
+  banco:            { icon: Database,         color: "text-cyan-300",    bg: "bg-cyan-500/10",   ring: "border-cyan-500/20",   glow: "group-hover:border-cyan-400/40" },
   academia:         { icon: GraduationCap,    color: "text-amber-300",   bg: "bg-amber-500/10",   ring: "border-amber-500/20",   glow: "group-hover:border-amber-400/40" },
   data_safety:      { icon: ShieldCheck,      color: "text-emerald-300", bg: "bg-emerald-500/10", ring: "border-emerald-500/20", glow: "group-hover:border-emerald-400/40" },
   launch_checklist: { icon: Rocket,           color: "text-rose-300",    bg: "bg-rose-500/10",    ring: "border-rose-500/20",    glow: "group-hover:border-rose-400/40" },
@@ -95,6 +98,27 @@ const MORE_TOOL_META = {
 const DEFAULT_TOOL_META = { icon: SlidersHorizontal, color: "text-gray-300", bg: "bg-white/5", ring: "border-white/10", glow: "group-hover:border-white/25" };
 
 function MoreToolsHub({ items, onOpen }) {
+  const gamif = useStore((s) => s.gamif || {});
+  const plannedTools = [
+    {
+      title: "Conquistas",
+      description: `${gamif.badges?.length || 0}/${ACHIEVEMENTS.length} marcos desbloqueados. Timeline completa fica no Perfil por enquanto.`,
+      icon: Trophy,
+      tone: "text-amber-300 bg-amber-500/10 border-amber-500/20",
+    },
+    {
+      title: "Pomodoro",
+      description: "Bloco reservado para foco, pausas e associacao ao tema atual.",
+      icon: Timer,
+      tone: "text-rose-300 bg-rose-500/10 border-rose-500/20",
+    },
+    {
+      title: "Politicas do site",
+      description: "Atalho estrutural para conta, privacidade, backup e termos.",
+      icon: FileText,
+      tone: "text-gray-300 bg-white/5 border-white/10",
+    },
+  ];
   return (
     <section className="max-w-5xl mx-auto space-y-5">
       <div className="space-y-1">
@@ -127,6 +151,22 @@ function MoreToolsHub({ items, onOpen }) {
             </button>
           );
         })}
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-[10px] font-black uppercase tracking-wider text-gray-500">Blocos planejados</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {plannedTools.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.title} className={`rounded-2xl border p-4 ${item.tone}`}>
+                <Icon size={18} />
+                <p className="mt-2 text-[12px] font-black text-white">{item.title}</p>
+                <p className="mt-1 text-[11px] text-gray-400 leading-relaxed">{item.description}</p>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </section>
   );
@@ -189,6 +229,7 @@ export default function App() {
   const defaultAnonymousScopeRef = useRef(getAnonymousStorageKey(getOrCreateAnonymousSessionId()));
 
   const [view, setView] = useState("login");
+  const [planNavigationTarget, setPlanNavigationTarget] = useState(null);
   const [helpModal, setHelpModal] = useState(false);
 
   const [temaEdit, setTemaEdit] = useState(null);
@@ -241,6 +282,10 @@ export default function App() {
     }
     setView(targetView);
   }, [openAjustes]);
+  const openPlanAgenda = useCallback((date = todayStr()) => {
+    setPlanNavigationTarget(plat === "res" ? buildPlanAgendaTarget({ date }) : null);
+    setView(NAV_VIEW.PLAN);
+  }, [plat]);
 
   const exportBackupNow = useCallback(() => {
     try {
@@ -383,8 +428,7 @@ export default function App() {
 
       setAuthSession(buildAuthSession({ user, hydrated: false, scopeKey }));
 
-      resetStore();
-
+      resetStore({ touchUpdatedAt: false });
       if (useStore.persist?.setOptions) {
         useStore.persist.setOptions({ name: scopeKey });
       }
@@ -1144,6 +1188,7 @@ export default function App() {
                 setView={setView}
                 showToast={showToast}
                 onOpenAjustes={openAjustes}
+                onOpenAgenda={openPlanAgenda}
               />
             </ErrorBoundary>
           )}
@@ -1155,6 +1200,8 @@ export default function App() {
               <Cronograma
                 onStep={handleStudyTrigger}
                 onEdit={(t) => setTemaEdit(t)}
+                navigationTarget={planNavigationTarget}
+                onNavigationTargetConsumed={() => setPlanNavigationTarget(null)}
                 onIniciarTema={(temaConfig) => {
                   if (!checkWorkloadAndWarn()) return;
                   if (temaConfig.id) {

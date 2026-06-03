@@ -20,10 +20,10 @@ describe("copy glossary", () => {
   test("exports key PT-BR labels", () => {
     expect(COPY.views.dash).toBe("Hoje");
     expect(COPY.views.crono).toBe("Plano");
-    expect(COPY.metrics.readiness).toBe("Preparo estimado");
+    expect(COPY.metrics.readiness).toBe("Previsão de desempenho");
     expect(COPY.metrics.trueRetention).toBe("Retenção longa");
     expect(COPY.actions.jaDomino).toBe("Já domino");
-    expect(resolveViewCopy("sims")).toBe("Estudar");
+    expect(resolveViewCopy("sims")).toBe("Simulados");
   });
 
   test("forbidden visible copy is absent from primary UI files", () => {

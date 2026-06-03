@@ -1,5 +1,6 @@
 import { ENAMED_HOTNESS } from "../constants/enamedIncidencia";
 import { CALENDAR_PROVIDER_IDS, DEV_ESTRATEGIA_SAMPLE } from "../constants/calendarProviders";
+import { MEDREV_SAMPLE_CALENDAR } from "../constants/sampleCalendars";
 
 function normalizeText(value) {
   return String(value || "")
@@ -294,6 +295,23 @@ export function attachCalendarIntelligence(topic = {}) {
 }
 
 export function getProviderSeed(providerId) {
+  if (providerId === CALENDAR_PROVIDER_IDS.USER_IMPORTED) {
+    return MEDREV_SAMPLE_CALENDAR.map((item) =>
+      normalizeCalendarTopic(
+        {
+          ...item,
+          areaOriginal: item.area,
+          temaOriginal: item.tema,
+          sourceType: "medrev_sample",
+        },
+        providerId
+      )
+    );
+  }
+  return [];
+}
+
+export function getDevProviderSeed(providerId) {
   if (providerId === CALENDAR_PROVIDER_IDS.USER_IMPORTED) {
     return DEV_ESTRATEGIA_SAMPLE.map((item) =>
       normalizeCalendarTopic({ ...item, sourceType: "dev_seed" }, providerId)

@@ -31,12 +31,13 @@ const EnamedProvaAnalyzer = lazy(() => import("./EnamedProvaAnalyzer"));
 // ─── Secoes ───────────────────────────────────────────────────────────────────
 
 const SECTIONS = [
-  { id: "resumo",      label: "Resumo",     icon: BarChart3,     forPlat: ["res", "vest"] },
   { id: "aprendizagem",label: "Aprendizagem",icon: BookOpen,      forPlat: ["res", "vest"] },
-  { id: "erros",       label: "Erros",      icon: AlertCircle,   forPlat: ["res", "vest"] },
-  { id: "provas",      label: "Provas",     icon: Trophy,        forPlat: ["res", "vest"] },
+  { id: "provas",      label: "Provas/Simulados", icon: Trophy,   forPlat: ["res", "vest"] },
+  { id: "erros",       label: "Erros",      icon: AlertCircle,    forPlat: ["res", "vest"] },
+  { id: "revisoes",    label: "Revisoes",   icon: Flame,          forPlat: ["res", "vest"] },
   { id: "raciocinio",  label: "Raciocinio", icon: Brain,         forPlat: ["res"] },
   { id: "atividade",   label: "Atividade",  icon: Activity,      forPlat: ["res", "vest"] },
+  { id: "validacao",   label: "Validacao",  icon: BarChart3,     forPlat: ["res", "vest"] },
 ];
 
 // ─── Navegacao entre secoes ──────────────────────────────────────────────────
@@ -187,7 +188,7 @@ export default function StatsPanel({ setView = null }) {
   const casosProgresso = useStore((s) => s[plat]?.casosProgresso || {});
   const sessionReflections = useStore((s) => s.sessionReflections || []);
 
-  const [activeSection, setActiveSection] = useState("resumo");
+  const [activeSection, setActiveSection] = useState("aprendizagem");
   const lastReadinessTelemetryRef = useRef("");
 
   // Filtrar secoes para plataforma atual
@@ -198,7 +199,7 @@ export default function StatsPanel({ setView = null }) {
   // Garantir que secao ativa e valida para esta plataforma
   const currentSection = availableSections.find((s) => s.id === activeSection)
     ? activeSection
-    : availableSections[0]?.id || "resumo";
+    : availableSections[0]?.id || "aprendizagem";
 
   // ─── Calculos compartilhados ────────────────────────────────────────────────
 
@@ -417,6 +418,23 @@ export default function StatsPanel({ setView = null }) {
     };
   }, [startedTemas]);
 
+  const readinessSample = useMemo(() => {
+    const totalQuestions = personalStats?.totalQuestoes || 0;
+    const areasWithData = (personalStats?.espStats || []).filter((area) => area.questoes > 0 || area.acc != null).length;
+    const activeDays = doneDays.size;
+    const hasMinimum =
+      totalQuestions >= 300
+      && areasWithData >= 3
+      && simulados.length >= 1
+      && activeDays >= 14;
+    const missing = [];
+    if (totalQuestions < 300) missing.push(`${300 - totalQuestions} questoes`);
+    if (areasWithData < 3) missing.push(`${3 - areasWithData} areas com dados`);
+    if (simulados.length < 1) missing.push("1 simulado diagnostico");
+    if (activeDays < 14) missing.push(`${14 - activeDays} dias de uso`);
+    return { totalQuestions, areasWithData, activeDays, hasMinimum, missing };
+  }, [doneDays, personalStats, simulados.length]);
+
   // Raciocinio clinico — dados existentes sem calculo duplicado
   // P4-A: usa fonte canonica de clinicalReasoningScoring.js
   const raciocinioStats = useMemo(() => {
@@ -514,23 +532,25 @@ export default function StatsPanel({ setView = null }) {
         onChange={setActiveSection}
       />
 
-      {/* ── SECAO 1: RESUMO ─────────────────────────────────────────────────── */}
-      {currentSection === "resumo" && (
+      {/* ── SECAO 7: VALIDACAO DA PREVISAO ─────────────────────────────────── */}
+      {currentSection === "validacao" && (
         <div className="space-y-4">
-          <p className="text-[11px] text-gray-500">Diagnostico rapido: como voce esta de verdade agora.</p>
+          <p className="text-[11px] text-gray-500">Previsao de desempenho com amostra explicita e validacao por simulados.</p>
 
           {/* Preparo + KPIs */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {/* Preparo estimado — card especial com sparkline */}
+            {/* Previsao de desempenho — card especial com amostra minima */}
             <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 relative overflow-hidden flex flex-col justify-between min-h-[100px] sm:col-span-2">
-              <p className="text-[10px] text-gray-500 uppercase font-semibold mb-1">Preparo estimado</p>
+              <p className="text-[10px] text-gray-500 uppercase font-semibold mb-1">Previsao de desempenho</p>
               <div className="flex items-baseline gap-1.5">
                 <p className="text-3xl font-black tabular-nums text-blue-400">
-                  {readinessData.score != null ? `${readinessData.score}%` : "—"}
+                  {readinessSample.hasMinimum && readinessData.score != null ? `${readinessData.score}%` : "Coletando"}
                 </p>
               </div>
               <p className="text-[10px] text-gray-600 mt-1">
-                Score ponderado: retencao + simulados + cobertura + ritmo + Anki.
+                {readinessSample.hasMinimum
+                  ? `Amostra: ${readinessSample.totalQuestions} questoes, ${readinessSample.areasWithData} areas, ${simulados.length} simulado(s), ${readinessSample.activeDays} dias.`
+                  : `Complete ${readinessSample.missing.join(", ")} para liberar numero forte.`}
               </p>
               {sparklinePath && (
                 <div className="absolute bottom-0 left-0 right-0 h-5 opacity-40 pointer-events-none">
@@ -560,15 +580,15 @@ export default function StatsPanel({ setView = null }) {
           </div>
 
           <div className="rounded-2xl border border-white/5 bg-[#111113] p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Validação do preparo</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Validacao da previsao</p>
             <p className="mt-1 text-[12px] text-gray-300">
               {readinessValidation.status === "coletando"
-                ? "Ainda coletando validação. Registre simulados para comparar preparo estimado com resultado real."
+                ? "Ainda coletando validacao. Registre simulados para comparar previsao com resultado real."
                 : readinessValidation.status === "alinhado"
-                ? `Preparo estimado alinhado ao resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`
+                ? `Previsao alinhada ao resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`
                 : readinessValidation.status === "superestimado"
-                ? `Preparo estimado acima do resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`
-                : `Preparo estimado abaixo do resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`}
+                ? `Previsao acima do resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`
+                : `Previsao abaixo do resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`}
             </p>
           </div>
 
@@ -860,6 +880,77 @@ export default function StatsPanel({ setView = null }) {
               Nenhum simulado registrado ainda. Registre simulados para ver evolu\u00e7\u00e3o.
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── SECAO 5: REVISOES ──────────────────────────────────────────────── */}
+      {currentSection === "revisoes" && (
+        <div className="space-y-4">
+          <p className="text-[11px] text-gray-500">Retencao longa, vencidas, carga futura e aderencia Anki.</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <MetricCard
+              label={metricsEvaluated.trueRetention.label}
+              value={formatMetricValue("trueRetention", metricsEvaluated.trueRetention.value)}
+              status={metricsEvaluated.trueRetention.status}
+              description={metricsEvaluated.trueRetention.description}
+              emptyState={metricsEvaluated.trueRetention.emptyState}
+              action={metricsEvaluated.trueRetention.action}
+            />
+            <MetricCard
+              label={metricsEvaluated.overdueReviews.label}
+              value={formatMetricValue("overdueReviews", metricsEvaluated.overdueReviews.value)}
+              status={metricsEvaluated.overdueReviews.status}
+              description="Revisoes vencidas que devem entrar antes de tema novo."
+              emptyState="Nenhuma revisao vencida"
+              action={metricsEvaluated.overdueReviews.action}
+            />
+            <MetricCard
+              label={metricsEvaluated.relearningCount.label}
+              value={formatMetricValue("relearningCount", metricsEvaluated.relearningCount.value)}
+              status={metricsEvaluated.relearningCount.status}
+              description="Temas que precisam de reancoragem."
+              emptyState="Nenhum tema em relearning"
+              action={metricsEvaluated.relearningCount.action}
+            />
+            <MetricCard
+              label={metricsEvaluated.ankiAdherence.label}
+              value={formatMetricValue("ankiAdherence", metricsEvaluated.ankiAdherence.value)}
+              status={metricsEvaluated.ankiAdherence.status}
+              description="Dias com Anki registrado nos ultimos 7."
+              emptyState={metricsEvaluated.ankiAdherence.emptyState}
+              action={metricsEvaluated.ankiAdherence.action}
+            />
+          </div>
+
+          <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-3 shadow-lg">
+            <div>
+              <h3 className="text-[13px] font-bold text-white uppercase tracking-wider">Carga FSRS dos proximos 14 dias</h3>
+              <p className="text-[11px] text-gray-500 mt-0.5">Projecao operacional de revisoes reais ja agendadas.</p>
+            </div>
+            <div className="w-full overflow-x-auto select-none pt-2">
+              <div className="flex items-end justify-between gap-2.5 min-w-[500px] h-32 border-b border-white/5 pb-2 px-2">
+                {forecastData.map((d, idx) => {
+                  const maxCount = Math.max(...forecastData.map((x) => x.count), 1);
+                  const h = (d.count / maxCount) * 80;
+                  return (
+                    <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5 group">
+                      <span className="text-[9.5px] font-mono text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity select-none">{d.count}</span>
+                      <div
+                        style={{ height: `${Math.max(4, h)}px` }}
+                        className={`w-full rounded-t transition-all ${
+                          d.count === 0 ? "bg-white/5" : idx === 0 ? "bg-gradient-to-t from-blue-600 to-sky-500" : "bg-blue-500/60 group-hover:bg-blue-400"
+                        }`}
+                      />
+                      <span className={`text-[9px] font-mono font-bold mt-1 ${idx === 0 ? "text-sky-400 font-black" : "text-gray-600"}`}>
+                        {idx === 0 ? "Hoje" : d.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

@@ -1,5 +1,5 @@
 // src/components/Cronograma.jsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Edit2, Plus, Play, ChevronDown, ChevronUp, Calendar, BadgeCheck } from "lucide-react";
 import { useStore } from "../core/store";
 import { ESP_COLORS, STEPS, IMPORTANCIA, DEMO_TEMA_ID, todayStr } from "../core/fsrs";
@@ -7,7 +7,9 @@ import { parseCatalogEntry } from "../constants/catalogos";
 import { getCronogramasByPlat, getDefaultCronogramaId, resolveCatalogo } from "../constants/cronogramas";
 import { stepState, STATE_DOT, STATE_TW, Badge, SBadge, Btn, Input, TourBalloon, InfoTooltip } from "./Primitives";
 import { CALENDAR_PROVIDER_IDS } from "../constants/calendarProviders";
-import { attachCalendarIntelligence, getProviderSeed, matchMedcofTopic } from "../core/calendarProvider";
+import { attachCalendarIntelligence, getDevProviderSeed, getProviderSeed, matchMedcofTopic } from "../core/calendarProvider";
+import { isDevOnlyEnabled } from "../core/devFlags";
+import { calculateRedistributionSummary, normalizeWeeklyTopicLimit } from "../core/scheduleWizard";
 import {
   getDominioPrevioStatus,
   getNextReviewForTema,
@@ -19,9 +21,12 @@ import { ModalValidarDominio } from "./Modals";
 import RetrievabilitySpark from "./RetrievabilitySpark";
 import EmptyState from "./EmptyState";
 import AgendaMonthGrid from "./AgendaMonthGrid";
+import { getPlanTabFromTarget, PLAN_TAB } from "../core/navigationModel";
 
 const CalendarImportWizard = React.lazy(() => import("./CalendarImportWizard"));
 const CalendarMappingPanel = React.lazy(() => import("./CalendarMappingPanel"));
+const DEV_MAPPING_LABEL = ["Ver ", "mapeamento"].join("");
+const DEV_SAMPLE_LABEL = ["Usar amostra de ", "desenvolvimento"].join("");
 
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
@@ -38,6 +43,27 @@ function formatShortDate(date) {
   const [year, month, day] = String(date).split("-");
   if (!year || !month || !day) return date;
   return `${day}/${month}`;
+}
+
+function redistributeCatalogByWeeklyLimit(blocks = [], topicsPerWeek = 6) {
+  const weeklyLimit = normalizeWeeklyTopicLimit(topicsPerWeek);
+  const entries = [];
+  blocks.forEach((block) => {
+    (block.t || []).forEach((entry) => {
+      entries.push({ entry, sourceName: block.nome || `Bloco ${block.b}` });
+    });
+  });
+  const redistributed = [];
+  for (let index = 0; index < entries.length; index += weeklyLimit) {
+    const slice = entries.slice(index, index + weeklyLimit);
+    redistributed.push({
+      b: Math.floor(index / weeklyLimit) + 1,
+      nome: `Semana ${Math.floor(index / weeklyLimit) + 1} · ${slice.length} tema${slice.length > 1 ? "s" : ""}`,
+      originalBlocks: [...new Set(slice.map((item) => item.sourceName))],
+      t: slice.map((item) => item.entry),
+    });
+  }
+  return redistributed;
 }
 
 export function CronoCard({ tema, onStep, onEdit, onIniciarTema, plat = "res" }) {
@@ -146,7 +172,7 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema, plat = "res" })
   );
 }
 
-export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) {
+export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, navigationTarget, onNavigationTargetConsumed }) {
   const {
     plat,
     cronogramaSel,
@@ -213,19 +239,54 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
         }),
     }));
   }, [catalogo, plat, selId, activeProvider, providerTopics]);
+  const topicsPerWeek = normalizeWeeklyTopicLimit(meta?.temasPerWeek ?? 6);
+  const displayCat = useMemo(
+    () => redistributeCatalogByWeeklyLimit(cat, topicsPerWeek),
+    [cat, topicsPerWeek]
+  );
+  const scheduleSummary = useMemo(
+    () => calculateRedistributionSummary(cat.reduce((sum, block) => sum + (block.t || []).length, 0), topicsPerWeek),
+    [cat, topicsPerWeek]
+  );
   const showSelector = !catalogo && planos.length >= 1;
   const [q, setQ]         = useState("");
   const [filter, setFilter] = useState("todos");
   const [impFilter, setImpFilter] = useState("TODAS");
   const [openBlocks, setOpenBlocks] = useState({ 1: true });
   const [expandedTopics, setExpandedTopics] = useState({});
-  const [showPlanPanel, setShowPlanPanel] = useState(true);
-  const [cronoTab, setCronoTab] = useState("plano"); // "plano" | "agenda"
+  const planPriorityUi = useMemo(() => meta?.ui?.planPriorityExpanded || {}, [meta?.ui?.planPriorityExpanded]);
+  const [showPlanPanel, setShowPlanPanel] = useState(() => {
+    if (planPriorityUi.userCollapsedAt && !planPriorityUi.userExpandedAt) return false;
+    if (planPriorityUi.userExpandedAt && planPriorityUi.userExpandedAt >= (planPriorityUi.userCollapsedAt || "")) return true;
+    return Boolean(meta?.planSetup?.completedAt && !planPriorityUi.initialOpenedAt && meta.planSetup.completedAt >= todayStr());
+  });
+  const [cronoTab, setCronoTab] = useState(() => getPlanTabFromTarget(navigationTarget, PLAN_TAB.PLAN)); // "plano" | "agenda"
+  const devOnly = isDevOnlyEnabled();
   const scheduledTopics = useMemo(
     () => calendarProvider?.scheduledTopics || [],
     [calendarProvider?.scheduledTopics]
   );
   const simulados = useStore((s) => s[plat].simulados);
+
+  useEffect(() => {
+    const nextTab = getPlanTabFromTarget(navigationTarget, null);
+    if (!nextTab) return;
+    setCronoTab(nextTab);
+    if (onNavigationTargetConsumed) onNavigationTargetConsumed();
+  }, [navigationTarget, onNavigationTargetConsumed]);
+  useEffect(() => {
+    if (!showPlanPanel || planPriorityUi.initialOpenedAt || !meta?.planSetup?.completedAt) return;
+    setMeta({
+      ...meta,
+      ui: {
+        ...(meta.ui || {}),
+        planPriorityExpanded: {
+          ...planPriorityUi,
+          initialOpenedAt: todayStr(),
+        },
+      },
+    });
+  }, [meta, planPriorityUi, setMeta, showPlanPanel]);
   const medcofTemas = useMemo(
     () => (resolveCatalogo("res", getDefaultCronogramaId("res")) || []).flatMap((bl) =>
       (bl.t || []).map((entry) => ({ nome: parseCatalogEntry(entry).nome }))
@@ -253,6 +314,20 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
       ...prev,
       [blockId]: !prev[blockId],
     }));
+  };
+
+  const setPlanPanelExpanded = (expanded) => {
+    setShowPlanPanel(expanded);
+    setMeta({
+      ...meta,
+      ui: {
+        ...(meta.ui || {}),
+        planPriorityExpanded: {
+          ...(meta?.ui?.planPriorityExpanded || {}),
+          [expanded ? "userExpandedAt" : "userCollapsedAt"]: todayStr(),
+        },
+      },
+    });
   };
 
   const temaMap = new Map(temas.map((t) => [t.nome, t]));
@@ -354,6 +429,24 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
               simulados={simulados}
               planSetup={meta?.planSetup || {}}
               plat={plat}
+              onOpenPlan={() => setCronoTab("plano")}
+              onStartTask={(item, target) => {
+                if (target?.temaId && target?.stepKey && target.stepKey !== "d0") {
+                  onStep(target.temaId, target.stepKey);
+                  return;
+                }
+                if (item?.type === "new_topic" || item?.type === "d0_critical") {
+                  onIniciarTema({
+                    id: item.temaId,
+                    nome: item.temaNome,
+                    esp: item.area,
+                    importancia: item.priority,
+                    unstarted: true,
+                  });
+                  return;
+                }
+                setCronoTab("plano");
+              }}
             />
           )}
 
@@ -369,7 +462,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                   </h4>
                   <button
                     type="button"
-                    onClick={() => setShowPlanPanel((v) => !v)}
+                    onClick={() => setPlanPanelExpanded(!showPlanPanel)}
                     className="text-[10px] px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 flex items-center gap-1.5"
                   >
                     {showPlanPanel ? "Minimizar" : "Expandir"}
@@ -386,22 +479,30 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                           <p className="text-[11px] font-black text-white uppercase tracking-wider">Temas por semana</p>
                           <p className="text-[10px] text-gray-500 mt-0.5">Quantos tópicos você quer estudar por bloco semanal</p>
                         </div>
-                        <span className="text-2xl font-black text-blue-400 tabular-nums min-w-[2.5rem] text-right">{meta?.temasPerWeek ?? 6}</span>
+                        <div className="text-right">
+                          <span className="block text-2xl font-black text-blue-400 tabular-nums min-w-[2.5rem]">{topicsPerWeek}</span>
+                          <span className="block text-[9px] font-bold text-gray-500">
+                            ~{scheduleSummary.estimatedWeeks || 0} semana{scheduleSummary.estimatedWeeks === 1 ? "" : "s"}
+                          </span>
+                        </div>
                       </div>
                       <input
                         type="range"
                         min={1}
-                        max={12}
+                        max={30}
                         step={1}
-                        value={meta?.temasPerWeek ?? 6}
+                        value={topicsPerWeek}
                         onChange={(e) => setMeta({ ...meta, temasPerWeek: Number(e.target.value) })}
                         className="w-full accent-blue-500 cursor-pointer"
                       />
                       <div className="flex justify-between text-[9px] text-gray-600 font-mono select-none">
                         <span>1 — leve</span>
                         <span>6 — padrão</span>
-                        <span>12 — intensivo</span>
+                        <span>30 — máximo</span>
                       </div>
+                      <p className="text-[10px] text-gray-500">
+                        {scheduleSummary.totalTopics} temas serão redistribuídos em {scheduleSummary.estimatedWeeks || 0} semana{scheduleSummary.estimatedWeeks === 1 ? "" : "s"}, sem ocultar itens.
+                      </p>
                       {/* Data de início do cronograma */}
                       <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/5">
                         <div>
@@ -434,23 +535,25 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
                           onPlanChange={(id) => setCronogramaSel(plat, id)}
                         />
 
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setShowMappingPanel((v) => !v)}
-                            className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 text-[11px] font-bold"
-                            disabled={importedTopics.length === 0}
-                          >
-                            {showMappingPanel ? "Ocultar mapeamento" : "Ver mapeamento"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => saveImportedCalendarTopics(getProviderSeed(CALENDAR_PROVIDER_IDS.USER_IMPORTED))}
-                            className="px-3 py-2 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/25 text-[11px] font-bold"
-                          >
-                            Usar amostra de desenvolvimento
-                          </button>
-                        </div>
+                        {devOnly && (
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setShowMappingPanel((v) => !v)}
+                              className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 text-[11px] font-bold"
+                              disabled={importedTopics.length === 0}
+                            >
+                              {showMappingPanel ? "Ocultar mapeamento" : DEV_MAPPING_LABEL}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => saveImportedCalendarTopics(getDevProviderSeed(CALENDAR_PROVIDER_IDS.USER_IMPORTED))}
+                              className="px-3 py-2 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/25 text-[11px] font-bold"
+                            >
+                              {DEV_SAMPLE_LABEL}
+                            </button>
+                          </div>
+                        )}
 
                         <p className="text-[10px] text-gray-400">
                           {activeProvider === CALENDAR_PROVIDER_IDS.USER_IMPORTED
@@ -493,7 +596,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
             </div>
           </div>
 
-          {cat.map((bl) => {
+          {displayCat.map((bl) => {
             const blTemas = bl.t.filter((entry) => {
               const { nome, subs, prio: topPrio } = parseCatalogEntry(entry);
               const nameMatches = !q || nome.toLowerCase().includes(q.toLowerCase());
@@ -752,7 +855,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo }) 
               </div>
             );
           })}
-          {plat === "res" && !catalogo && activeProvider !== CALENDAR_PROVIDER_IDS.MEDCOF && cat.length === 0 && (
+          {plat === "res" && !catalogo && activeProvider !== CALENDAR_PROVIDER_IDS.MEDCOF && displayCat.length === 0 && (
             <EmptyState
               icon={Calendar}
               title="Nenhum cronograma ativo"

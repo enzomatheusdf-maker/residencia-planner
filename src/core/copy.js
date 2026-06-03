@@ -2,13 +2,13 @@ export const COPY = {
   views: {
     dash: "Hoje",
     crono: "Plano",
-    sims: "Estudar",
+    sims: "Simulados",
     stats: "Estatísticas",
     banco: "Banco",
     more: "Mais",
   },
   metrics: {
-    readiness: "Preparo estimado",
+    readiness: "Previsão de desempenho",
     trueRetention: "Retenção longa",
     workload: "Carga de hoje",
   },

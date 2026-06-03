@@ -1,9 +1,9 @@
 // src/components/RaciocinioClinico.jsx
 import React, { useMemo, useState } from "react";
-import { Brain, ClipboardList, MessageSquareText, Stethoscope, CheckCircle, Eye, CalendarDays, Pill, AlertTriangle } from "lucide-react";
+import { Brain, ClipboardList, MessageSquareText, Stethoscope, CheckCircle, Eye, CalendarDays, Pill, AlertTriangle, Plus, RefreshCw } from "lucide-react";
 import { CASOS_CLINICOS } from "../constants/casosClinicos";
 import { useStore } from "../core/store";
-import { Btn, Textarea, Tabs, InfoTooltip } from "./Primitives";
+import { Btn, Textarea, Tabs, InfoTooltip, Modal, Field, Input } from "./Primitives";
 import { fmtRelativo } from "../core/fsrs";
 import SessionClosureModal from "./SessionClosureModal";
 import EmptyState from "./EmptyState";
@@ -45,6 +45,8 @@ export default function RaciocinioClinico() {
   const addSessionReflection = useStore((s) => s.addSessionReflection);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
   const showToast = useStore((s) => s.showToast);
+  const meta = useStore((s) => s.meta);
+  const setMeta = useStore((s) => s.setMeta);
 
   const [activeCasoId, setActiveCasoId] = useState(CASOS_CLINICOS[0]?.id || "");
   const [activeFase, setActiveFase] = useState("script");
@@ -61,8 +63,20 @@ export default function RaciocinioClinico() {
   const [conductaAvisoAceito, setConductaAvisoAceito] = useState(false);
   const [conductaRespostas, setConductaRespostas] = useState({});
   const [conductaRevelada, setConductaRevelada] = useState(false);
+  const [showCreateCase, setShowCreateCase] = useState(false);
+  const [showWhy, setShowWhy] = useState(false);
+  const [caseDraft, setCaseDraft] = useState({
+    tema: "",
+    area: "",
+    subarea: "",
+    vinheta: "",
+    diagnostico: "",
+    conduta: "",
+  });
 
-  const caso = CASOS_CLINICOS.find((item) => item.id === activeCasoId) || CASOS_CLINICOS[0];
+  const customCases = useMemo(() => Array.isArray(meta?.clinicalCustomCases) ? meta.clinicalCustomCases : [], [meta?.clinicalCustomCases]);
+  const allCases = useMemo(() => [...CASOS_CLINICOS, ...customCases], [customCases]);
+  const caso = allCases.find((item) => item.id === activeCasoId) || allCases[0];
   const progresso = casosProgresso[caso?.id] || {};
   const raciocinioScore = useMemo(() => calculateClinicalReasoningScore(casosProgresso), [casosProgresso]);
   const casosFeitos = useMemo(
@@ -70,15 +84,58 @@ export default function RaciocinioClinico() {
     [casosProgresso]
   );
 
-  if (!CASOS_CLINICOS.length) {
+  if (!allCases.length) {
     return (
-      <div className="bg-[#111113] border border-white/5 rounded-2xl p-8 text-center text-gray-500">
-        Banco em construção — adicione casos em `casosClinicos.js`.
+      <div className="bg-[#111113] border border-white/5 rounded-2xl p-8 text-center text-gray-500 space-y-3">
+        <p>Banco em construção — crie um caso clínico manual para começar.</p>
+        <Btn onClick={() => setShowCreateCase(true)}><Plus size={15} /> Criar caso clínico</Btn>
       </div>
     );
   }
 
   const registrar = (payload) => registrarCaso(plat, caso.id, payload);
+
+  const saveCustomCase = () => {
+    if (!caseDraft.tema.trim() || !caseDraft.vinheta.trim()) return;
+    const nextCase = {
+      id: `custom-${Date.now()}`,
+      tema: caseDraft.tema.trim(),
+      area: caseDraft.area.trim() || "Custom",
+      subarea: caseDraft.subarea.trim() || "Caso criado",
+      dificuldade: "media",
+      vinheta: caseDraft.vinheta.trim(),
+      diagnosticoFinal: caseDraft.diagnostico.trim() || "Diagnostico a completar",
+      justificativa: "Caso criado manualmente para treino vinculado ao cronograma.",
+      workup: ["Definir exames iniciais", "Listar dados discriminantes"],
+      diferenciais: [
+        { dx: caseDraft.diagnostico.trim() || "Hipotese principal", plausibilidade: "principal", pista: "Compare com sinais discriminantes do caso." },
+      ],
+      script: {
+        predisponentes: "Definir contexto e fatores de risco.",
+        fisiopatologia: "Explicar mecanismo central.",
+        achados: "Separar achados positivos e negativos importantes.",
+        management: caseDraft.conduta.trim() || "Definir conduta educacional.",
+      },
+      sct: [
+        {
+          hipotese: caseDraft.diagnostico.trim() || "Hipotese principal",
+          novaInfo: "Nova informacao discriminante",
+          efeitoPainel: 0,
+          racional: "Edite o caso no futuro para detalhar o racional.",
+        },
+      ],
+      anamnese: {
+        queixa: "Queixa guia do caso",
+        roteiro: [{ bloco: "Dados discriminantes", perguntasChave: ["O que aumenta ou reduz a probabilidade da hipotese?"] }],
+        redFlags: ["Definir sinais de alarme"],
+      },
+    };
+    setMeta({ ...meta, clinicalCustomCases: [...customCases, nextCase] });
+    setActiveCasoId(nextCase.id);
+    setShowCreateCase(false);
+    setCaseDraft({ tema: "", area: "", subarea: "", vinheta: "", diagnostico: "", conduta: "" });
+    if (showToast) showToast("Caso clinico criado e vinculado ao treino.");
+  };
 
   const abrirFechamento = (payload) => {
     setClosureDraft({
@@ -88,6 +145,15 @@ export default function RaciocinioClinico() {
       ...payload,
     });
     setShowClosure(true);
+  };
+
+  const marcarPrecisoRelembrar = () => {
+    registrar({ precisaRelembrar: true, confianca: 1, acertou: false, nextAdjustment: "illness_script" });
+    abrirFechamento({
+      outcome: "medio",
+      mainIssue: "raciocinio",
+      nextAdjustment: "illness_script",
+    });
   };
 
   const registrarScript = (ok) => {
@@ -171,6 +237,10 @@ export default function RaciocinioClinico() {
           </div>
           <p className="text-[12px] text-gray-500 mt-1">Casos vistos: {Object.values(casosProgresso).filter((p) => p?.vistos > 0).length}</p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <Btn variant="ghost" onClick={() => setShowWhy(true)}>Por que usar?</Btn>
+          <Btn onClick={() => setShowCreateCase(true)}><Plus size={15} /> Criar caso clínico</Btn>
+        </div>
         <div className="bg-[#111113] border border-white/5 rounded-2xl p-3 min-w-[150px]">
           <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Raciocínio Clínico</p>
           <p className="text-3xl font-black text-blue-400 tabular-nums">{raciocinioScore != null ? `${raciocinioScore}%` : "—"}</p>
@@ -194,7 +264,7 @@ export default function RaciocinioClinico() {
           />
         )}
         <div className="flex flex-col gap-2">
-          {CASOS_CLINICOS.map((item) => {
+          {allCases.map((item) => {
             const ativo = item.id === caso.id;
             const p = casosProgresso[item.id];
             return (
@@ -239,6 +309,14 @@ export default function RaciocinioClinico() {
             </div>
             <h3 className="text-lg font-black text-white">{caso.tema}</h3>
             <p className="text-[13px] text-gray-300 leading-relaxed mt-2">{caso.vinheta}</p>
+            <button
+              type="button"
+              onClick={marcarPrecisoRelembrar}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-[11px] font-black text-amber-200 hover:bg-amber-500/20"
+            >
+              <RefreshCw size={13} />
+              Preciso relembrar
+            </button>
           </div>
 
           <Tabs items={FASES} active={activeFase} onChange={setActiveFase} />
@@ -507,6 +585,53 @@ export default function RaciocinioClinico() {
         onSkip={() => setShowClosure(false)}
         onClose={() => setShowClosure(false)}
       />
+      {showWhy && (
+        <Modal onClose={() => setShowWhy(false)} wide>
+          <div className="space-y-3 text-left">
+            <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Por que usar essa função?</p>
+            <h2 className="text-[16px] font-black text-white">Raciocínio clínico treina transferência, não só memória.</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                ["Illness scripts", "Organizam predisponentes, mecanismo, consequências e conduta para reduzir raciocínio solto."],
+                ["Casos variantes", "Forçam aplicar o mesmo tema em contexto novo, que é onde questões clínicas cobram discriminação."],
+                ["Diferenciais", "Treinam separar hipóteses parecidas pelos dados discriminantes."],
+                ["SCT e conduta", "Treinam decisão sob incerteza e justificativa educacional de manejo."],
+              ].map(([title, body]) => (
+                <div key={title} className="rounded-2xl border border-white/5 bg-white/[0.03] p-3">
+                  <p className="text-[12px] font-bold text-gray-100">{title}</p>
+                  <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Modal>
+      )}
+      {showCreateCase && (
+        <Modal onClose={() => setShowCreateCase(false)} wide>
+          <div className="space-y-4 text-left">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Criar caso clínico</p>
+              <h2 className="text-[16px] font-black text-white mt-1">Caso base vinculado a um tema</h2>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Tema" info="Tema do cronograma ou customizado."><Input value={caseDraft.tema} onChange={(e) => setCaseDraft({ ...caseDraft, tema: e.target.value })} /></Field>
+              <Field label="Área" info="Especialidade ou grande área."><Input value={caseDraft.area} onChange={(e) => setCaseDraft({ ...caseDraft, area: e.target.value })} /></Field>
+              <Field label="Subárea" info="Opcional, ajuda a buscar depois."><Input value={caseDraft.subarea} onChange={(e) => setCaseDraft({ ...caseDraft, subarea: e.target.value })} /></Field>
+              <Field label="Diagnóstico ou hipótese central" info="Pode ficar amplo nesta versão."><Input value={caseDraft.diagnostico} onChange={(e) => setCaseDraft({ ...caseDraft, diagnostico: e.target.value })} /></Field>
+            </div>
+            <Field label="Vinheta clínica" info="Queixa, contexto, achados positivos e negativos importantes.">
+              <Textarea rows={4} value={caseDraft.vinheta} onChange={(e) => setCaseDraft({ ...caseDraft, vinheta: e.target.value })} />
+            </Field>
+            <Field label="Conduta educacional" info="Exames iniciais, manejo, red flags e contraindicações.">
+              <Textarea rows={3} value={caseDraft.conduta} onChange={(e) => setCaseDraft({ ...caseDraft, conduta: e.target.value })} />
+            </Field>
+            <div className="flex gap-2">
+              <Btn className="flex-1" onClick={saveCustomCase} disabled={!caseDraft.tema.trim() || !caseDraft.vinheta.trim()}>Salvar caso</Btn>
+              <Btn variant="ghost" className="flex-1" onClick={() => setShowCreateCase(false)}>Cancelar</Btn>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

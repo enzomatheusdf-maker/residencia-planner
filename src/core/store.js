@@ -81,7 +81,25 @@ const timestampMiddleware = (config) => (set, get, api) => {
     const nextState = typeof entropy === "function" ? entropy(current) : entropy;
 
     const hasDataKeys = nextState && Object.keys(nextState).some((key) =>
-      ["res", "vest", "meta", "userName", "onboardingDone", "brainDumpD1Data", "temaStats", "vistos", "cronogramaSel", "gamif"].includes(key)
+      [
+        "res",
+        "vest",
+        "meta",
+        "userName",
+        "userEmail",
+        "onboardingDone",
+        "brainDumpD1Data",
+        "temaStats",
+        "vistos",
+        "cronogramaSel",
+        "calendarProvider",
+        "gamif",
+        "enamedAnalises",
+        "actionInboxState",
+        "sessionReflections",
+        "weeklyReviews",
+        "sprint",
+      ].includes(key)
     );
 
     if (hasDataKeys && (!nextState || !nextState.hasOwnProperty("updatedAt"))) {
@@ -1295,7 +1313,7 @@ export const useStore = create(
           return { [platKey]: { ...s[platKey], cronogramas: list } };
         }),
 
-      resetStore: () =>
+      resetStore: (options = {}) =>
         set({
           plat: "res",
           cronogramaSel: { res: "res-medcof-2026", vest: "vest-base" },
@@ -1327,7 +1345,7 @@ export const useStore = create(
           toast: null,
           confirmDialog: null,
           tourStep: null,
-          updatedAt: Date.now(),
+          updatedAt: options.touchUpdatedAt === false ? 0 : Date.now(),
           gamif: {
             xp: 0,
             level: 1,
@@ -1404,6 +1422,7 @@ export const useStore = create(
               ...persisted.calendarProvider,
               importedTopics: persisted.calendarProvider.importedTopics || [],
               customTopics: persisted.calendarProvider.customTopics || [],
+              scheduledTopics: persisted.calendarProvider.scheduledTopics || [],
             }
             : initial.calendarProvider,
           meta: persisted.meta ? {

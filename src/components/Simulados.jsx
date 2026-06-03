@@ -51,28 +51,72 @@ function incLabel(inc) {
   return "Baixa";
 }
 
+const SIM_ERROR_TYPES = [
+  { value: "lacuna", label: "Lacuna de conteúdo" },
+  { value: "raciocinio", label: "Raciocínio" },
+  { value: "interpretacao", label: "Interpretação" },
+  { value: "distractor", label: "Distrator" },
+  { value: "descuido", label: "Descuido" },
+  { value: "tempo", label: "Tempo" },
+  { value: "confianca_mal_calibrada", label: "Confiança/calibração" },
+  { value: "nao_visto", label: "Não visto" },
+  { value: "conduta", label: "Conduta/prescrição" },
+];
+
 export function SimRegistroModal({ onClose, onSave, platKey }) {
   const [page, setPage] = useState(1);
   const esps = platKey === "res" ? ESPS_RES : ESPS_VEST;
-  const [f, setF] = useState({ data: todayStr(), total: 100, acertos: "", tempoMin: "", ansiedade: "Normal", cansaco: "Normal" });
+  const [f, setF] = useState({
+    tipo: "simulado",
+    nome: "",
+    instituicao: "",
+    ano: "",
+    data: todayStr(),
+    total: 100,
+    acertos: "",
+    tempoMin: "",
+    modo: "cronometrado",
+    areasIncluidas: [],
+    metaAcerto: "",
+    ansiedade: "Normal",
+    cansaco: "Normal",
+  });
   
   // Controle de erros da página 2
   const [erradas, setErradas] = useState([]);
-  const [newError, setNewError] = useState({ num: "", esp: esps[0], tipoErro: "lacuna", desc: "", virouCard: false });
+  const [newError, setNewError] = useState({ num: "", esp: esps[0], tema: "", tipoErro: "lacuna", desc: "", virouCard: false });
+  const realErrors = Math.max(0, Number(f.total || 0) - Number(f.acertos || 0));
+  const pageOneValid =
+    f.tipo
+    && String(f.nome || "").trim()
+    && String(f.instituicao || "").trim()
+    && f.data
+    && Number(f.total) > 0
+    && f.acertos !== ""
+    && Number(f.acertos) >= 0
+    && Number(f.acertos) <= Number(f.total)
+    && Number(f.tempoMin) > 0
+    && f.modo
+    && f.areasIncluidas.length > 0
+    && Number(f.metaAcerto) > 0;
+  const errorMapComplete = erradas.length === realErrors;
 
   const addErrorToList = () => {
+    if (erradas.length >= realErrors) return;
     if (!newError.num) return;
     setErradas([...erradas, { ...newError, id: Date.now(), corrigidaD7: null }]);
-    setNewError({ num: "", esp: esps[0], tipoErro: "lacuna", desc: "", virouCard: false });
+    setNewError({ num: "", esp: esps[0], tema: "", tipoErro: "lacuna", desc: "", virouCard: false });
   };
 
   const handleSaveAll = () => {
+    if (!errorMapComplete) return;
     const pct = f.total > 0 ? Math.round((+f.acertos / +f.total) * 100) : 0;
     onSave({
       ...f,
       pct,
       questoesErradas: erradas,
-      statusCorrecao: erradas.length > 0 ? "parcial" : "concluida"
+      errosReais: realErrors,
+      statusCorrecao: "concluida"
     });
   };
 
@@ -85,12 +129,53 @@ export function SimRegistroModal({ onClose, onSave, platKey }) {
 
       {page === 1 ? (
         <div className="flex flex-col gap-3">
-          <Field label="Data de Realização" info="A data em que você realizou a prova do simulado."><Input type="date" value={f.data} onChange={e => setF({...f, data: e.target.value})} /></Field>
-          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field label="Tipo" info="Classifica o registro para estatísticas futuras."><Select value={f.tipo} onChange={e => setF({ ...f, tipo: e.target.value })}>
+              <option value="simulado">Simulado</option>
+              <option value="prova_antiga">Prova antiga</option>
+              <option value="bloco_area">Bloco por área</option>
+            </Select></Field>
+            <Field label="Nome da prova" info="Identifique a prova ou simulado realizado."><Input value={f.nome} onChange={e => setF({ ...f, nome: e.target.value })} placeholder="ex: ENAMED diagnóstico" /></Field>
+            <Field label="Instituição/banca" info="Banca, instituição ou origem do simulado."><Input value={f.instituicao} onChange={e => setF({ ...f, instituicao: e.target.value })} placeholder="ex: ENAMED, USP-SP" /></Field>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <Field label="Ano" info="Obrigatório apenas para prova antiga; opcional nos demais tipos."><Input type="number" value={f.ano} onChange={e => setF({ ...f, ano: e.target.value })} placeholder="2025" /></Field>
+            <Field label="Modo" info="Define se a prova foi feita em tempo real."><Select value={f.modo} onChange={e => setF({ ...f, modo: e.target.value })}>
+              <option value="cronometrado">Cronometrado</option>
+              <option value="sem_tempo">Sem tempo</option>
+            </Select></Field>
+            <Field label="Meta de acerto (%)" info="Meta usada para cor e recompensa do resultado."><Input type="number" value={f.metaAcerto} onChange={e => setF({ ...f, metaAcerto: e.target.value === "" ? "" : +e.target.value })} placeholder="75" /></Field>
+            <Field label="Data de Realização" info="A data em que você realizou a prova do simulado."><Input type="date" value={f.data} onChange={e => setF({...f, data: e.target.value})} /></Field>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Total Questões" info="O número total de questões contidas na prova deste simulado."><Input type="number" value={f.total} onChange={e => setF({...f, total: e.target.value === "" ? "" : +e.target.value})} /></Field>
             <Field label="Total Acertos" info="O número de questões que você acertou no simulado."><Input type="number" value={f.acertos} onChange={e => setF({...f, acertos: e.target.value === "" ? "" : +e.target.value})} /></Field>
           </div>
+
+          <Field label="Áreas incluídas" info="Selecione ao menos uma área para alimentar estatísticas por prova.">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mt-1.5 max-h-36 overflow-y-auto">
+              {esps.map((esp) => {
+                const checked = f.areasIncluidas.includes(esp);
+                return (
+                  <label key={esp} className={`min-h-10 rounded-xl border px-2 py-1.5 text-[10.5px] font-bold cursor-pointer flex items-center gap-1.5 ${checked ? "bg-blue-500/10 border-blue-500/30 text-blue-200" : "bg-white/5 border-white/10 text-gray-400"}`}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        setF((prev) => ({
+                          ...prev,
+                          areasIncluidas: e.target.checked
+                            ? [...prev.areasIncluidas, esp]
+                            : prev.areasIncluidas.filter((item) => item !== esp),
+                        }));
+                      }}
+                    />
+                    <span className="truncate">{esp}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </Field>
 
           {f.acertos > f.total && (
             <p className="text-red-400 text-xs font-bold mt-1 bg-red-500/10 border border-red-500/25 p-2 rounded-xl">
@@ -152,13 +237,21 @@ export function SimRegistroModal({ onClose, onSave, platKey }) {
           <Btn 
             className="w-full mt-2" 
             onClick={() => setPage(2)} 
-            disabled={!f.total || f.acertos === "" || f.acertos > f.total}
+            disabled={!pageOneValid}
           >
-            Próxima Etapa (Mapear Erros)
+            Próxima Etapa ({realErrors} erro{realErrors === 1 ? "" : "s"} para diagnosticar)
           </Btn>
         </div>
       ) : (
         <div className="flex flex-col gap-4 text-left">
+          <div className={`rounded-xl border p-3 ${errorMapComplete ? "border-emerald-500/20 bg-emerald-500/10" : "border-amber-500/25 bg-amber-500/10"}`}>
+            <p className="text-[11px] font-black uppercase tracking-wider text-gray-200">
+              Erros diagnosticados: {erradas.length}/{realErrors}
+            </p>
+            <p className="text-[10.5px] text-gray-400 mt-0.5">
+              Para salvar, a quantidade de erros mapeados precisa bater com total - acertos.
+            </p>
+          </div>
           <div className="bg-white/5 p-3 rounded-xl border border-white/5 space-y-2">
             <p className="text-[11px] font-bold text-blue-400 uppercase tracking-wider mb-1">Mapeamento de Questões Erradas</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -167,15 +260,13 @@ export function SimRegistroModal({ onClose, onSave, platKey }) {
                 {esps.map(e => <option key={e}>{e}</option>)}
               </Select>
               <Select value={newError.tipoErro} onChange={e => setNewError({...newError, tipoErro: e.target.value})}>
-                <option value="lacuna">Lacuna de Conteúdo</option>
-                <option value="raciocinio">Erro Raciocínio</option>
-                <option value="distractor">Caiu Distrator</option>
-                <option value="descuido">Descuido/Atenção</option>
-                <option value="nao_visto">Não Visto</option>
-                {platKey === "vest" && <option value="interpretacao">Erro de Interpretação</option>}
+                {SIM_ERROR_TYPES.filter((item) => platKey === "res" || item.value !== "conduta").map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
               </Select>
             </div>
             <div className="flex gap-2 items-center">
+              <Input type="text" placeholder="Tema vinculado" value={newError.tema || ""} onChange={e => setNewError({...newError, tema: e.target.value})} className="flex-1" />
               <Input type="text" placeholder="Fato atômico / Anotação do erro" value={newError.desc || ""} onChange={e => setNewError({...newError, desc: e.target.value})} className="flex-1" />
               <label className="flex items-center gap-1.5 text-[11px] text-gray-300 cursor-pointer shrink-0 select-none">
                 <input
@@ -191,7 +282,7 @@ export function SimRegistroModal({ onClose, onSave, platKey }) {
           </div>
 
           <div className="max-h-40 overflow-y-auto border border-white/5 rounded-xl divide-y divide-white/5">
-            {erradas.length === 0 && <p className="text-center py-4 text-[11px] text-gray-600 italic">Nenhum erro inserido. Salvar como 100% corrigido.</p>}
+            {erradas.length === 0 && <p className="text-center py-4 text-[11px] text-gray-600 italic">{realErrors === 0 ? "Nenhum erro real. Pode salvar como corrigido." : "Insira os erros reais para liberar o salvamento."}</p>}
             {erradas.map((err, idx) => (
               <div key={idx} className="p-2 text-[12px] flex items-center justify-between bg-black/20 gap-2">
                 <span className="font-mono text-red-400 font-bold shrink-0">Q-{err.num}</span>
@@ -205,7 +296,7 @@ export function SimRegistroModal({ onClose, onSave, platKey }) {
 
           <div className="flex gap-2">
             <Btn variant="ghost" onClick={() => setPage(1)}>Voltar</Btn>
-            <Btn className="flex-1" onClick={handleSaveAll}>Finalizar Registro</Btn>
+            <Btn className="flex-1" onClick={handleSaveAll} disabled={!errorMapComplete}>Finalizar Registro</Btn>
           </div>
         </div>
       )}
@@ -224,6 +315,7 @@ export default function Simulados({ onStudy, setView }) {
 
   const [activeTab, setActiveTab] = useState("painel"); // painel | correcao | area | metricas
   const [modalOpen, setModalOpen] = useState(false);
+  const [howToOpen, setHowToOpen] = useState(false);
 
   // Core calculations and readiness score
   const targetProva = useMemo(() => pickTargetProva(meta?.provasAlvo, plat), [meta?.provasAlvo, plat]);
@@ -255,10 +347,10 @@ export default function Simulados({ onStudy, setView }) {
   }, [todosErros]);
 
   const tabs = [
-    { k: "painel", label: "Preparo", icon: Target },
+    { k: "painel", label: "Estratégia", icon: Target },
     { k: "correcao", label: "Revisão D7", icon: Award },
     { k: "area", label: "Por Área", icon: BarChart3 },
-    { k: "metricas", label: "Elite", icon: ShieldAlert }
+    { k: "metricas", label: "Erros avançados", icon: ShieldAlert }
   ];
 
   // Rhythm/Pace calculation
@@ -273,6 +365,7 @@ export default function Simulados({ onStudy, setView }) {
   const priorityList = readiness.priorityList || [];
   const topPrioridade = priorityList[0] || null;
   const hasProvaSelecionada = (meta?.provasAlvo || []).length > 0;
+  const canShowStrongReadiness = totalQuestoesFeitas(temas) >= 300 && simulados.length >= 1;
 
   const handleAdicionarFila = (esp) => {
     const unstartedTemas = temas.filter(t => t.unstarted && matchesArea(t.esp, esp));
@@ -372,9 +465,12 @@ export default function Simulados({ onStudy, setView }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-2">
         <div className="flex items-center gap-2">
           <Target size={20} className="text-orange-400" />
-          <h2 className="text-[15px] font-bold text-gray-100">Preparo e Simulados</h2>
+          <h2 className="text-[15px] font-bold text-gray-100">Simulados</h2>
         </div>
-        <Btn onClick={() => setModalOpen(true)} className="gap-1.5"><Plus size={16} /> Registrar Simulado</Btn>
+        <div className="flex flex-wrap gap-2">
+          <Btn variant="ghost" onClick={() => setHowToOpen(true)} className="gap-1.5"><BookOpen size={16} /> Como fazer</Btn>
+          <Btn onClick={() => setModalOpen(true)} className="gap-1.5"><Plus size={16} /> Registrar Simulado</Btn>
+        </div>
       </div>
 
       {/* Tabs Menu */}
@@ -426,45 +522,26 @@ export default function Simulados({ onStudy, setView }) {
             );
           })()}
 
-          {/* CARD: COMO FAZER ESTE SIMULADO */}
-          {(() => {
-            const protocolo = getSimuladoProtocolo(simRecommendation.tipo);
-            return (
-              <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4">
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-black mb-3 flex items-center gap-1.5">
-                  <BookOpen size={12} className="text-blue-400" />
-                  Como fazer este simulado
-                </p>
-                <div className="flex flex-col gap-3">
-                  {protocolo.map((passo, i) => (
-                    <div key={i} className="flex gap-3">
-                      <span className="text-[10px] font-black text-gray-600 font-mono mt-0.5 shrink-0 w-4">{i + 1}.</span>
-                      <div>
-                        <p className="text-[11.5px] font-bold text-gray-200">{passo.t}</p>
-                        <p className="text-[10.5px] text-gray-500 leading-relaxed mt-0.5">{passo.d}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[9.5px] text-gray-600 mt-3 italic">
-                  Correlação simulado↔prova é parcial (r≈0,6–0,7). Use como bússola, não como nota final.
-                </p>
-              </div>
-            );
-          })()}
+          <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-gray-400 font-black">Protocolo de execução</p>
+              <p className="text-[11px] text-gray-500 mt-1">Guia de cronometro, mistura de areas, classificacao de erros e revisao 48-72h.</p>
+            </div>
+            <Btn variant="ghost" onClick={() => setHowToOpen(true)} className="sm:shrink-0"><BookOpen size={15} /> Como fazer</Btn>
+          </div>
           {/* BLOCK 1: PRONTIDÃO GERAL (KPIs & Volume & Ritmo) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Preparo estimado */}
+            {/* Previsao de desempenho */}
             <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col justify-between shadow-lg relative overflow-hidden">
               <div className="absolute -right-8 -bottom-8 w-20 h-20 rounded-full bg-blue-600/5 blur-2xl pointer-events-none" />
               <div>
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
-                  Preparo estimado
+                  Previsão de desempenho
                   <Info size={11} className="text-gray-600 cursor-help" title="Cálculo combinado: acertos simulados (média móvel 4 últimos), retenção longa D21+, cobertura e ritmo. Componentes sem dados ainda (simulados, retenção D21) não entram no cálculo e são incluídos automaticamente quando houver histórico." />
                 </p>
                 <div className="flex items-baseline gap-2 mt-2">
                   <p className={`text-4xl font-black tabular-nums ${readiness.score !== null ? (readiness.score >= 75 ? "text-emerald-400" : readiness.score >= 60 ? "text-blue-400" : "text-amber-400") : "text-gray-600"}`}>
-                    {readiness.score !== null ? `${readiness.score}/100` : "—"}
+                    {canShowStrongReadiness && readiness.score !== null ? `${readiness.score}/100` : "Coletando"}
                   </p>
                 </div>
                 {readiness.range && (
@@ -479,7 +556,9 @@ export default function Simulados({ onStudy, setView }) {
                 )}
               </div>
               <p className="text-[9.5px] text-gray-600 mt-3 leading-relaxed">
-                Calcula a faixa real de probabilidade de desempenho no exame alvo ({targetProva}).
+                {canShowStrongReadiness
+                  ? `Calcula a faixa real de probabilidade de desempenho no exame alvo (${targetProva}).`
+                  : "Libera número forte depois de volume mínimo e pelo menos 1 simulado diagnóstico."}
               </p>
             </div>
 
@@ -537,7 +616,7 @@ export default function Simulados({ onStudy, setView }) {
                 ) : (
                   <div className="mt-2 space-y-2">
                     <p className="text-xl font-bold text-gray-500">—</p>
-                    <p className="text-[10px] text-gray-500 italic">Meta diária não configurada. Defina nos Ajustes para ativar o Equilíbrio de Ritmo e o Preparo estimado completo.</p>
+                    <p className="text-[10px] text-gray-500 italic">Meta diária não configurada. Defina nos Ajustes para ativar o Equilíbrio de Ritmo e a previsão completa.</p>
                     <button
                       type="button"
                       onClick={() => setView && setView("ajustes")}
@@ -942,7 +1021,7 @@ export default function Simulados({ onStudy, setView }) {
         </div>
       )}
 
-      {/* Conteúdo Aba 4: Métricas de Elite */}
+      {/* Conteudo Aba 4: Erros avancados */}
       {activeTab === "metricas" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-2">
@@ -966,6 +1045,33 @@ export default function Simulados({ onStudy, setView }) {
             </div>
           )}
         </div>
+      )}
+
+      {howToOpen && (
+        <Modal onClose={() => setHowToOpen(false)} wide>
+          <div className="space-y-4 text-left">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Como fazer este simulado</p>
+              <h2 className="text-[16px] font-black text-white mt-1">{simRecommendation.titulo}</h2>
+              <p className="text-[12px] text-gray-400 mt-1">Use como checklist operacional antes de registrar a sessão.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {getSimuladoProtocolo(simRecommendation.tipo).map((passo, i) => (
+                <div key={i} className="rounded-2xl border border-white/5 bg-white/[0.03] p-3">
+                  <p className="text-[10px] font-black text-blue-300 uppercase tracking-wider">Passo {i + 1}</p>
+                  <p className="text-[12px] font-bold text-gray-100 mt-1">{passo.t}</p>
+                  <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{passo.d}</p>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3">
+              <p className="text-[11px] font-bold text-amber-200">Regra de produto</p>
+              <p className="text-[11px] text-gray-300 mt-1">
+                Cronometre, misture areas quando fizer prova completa, classifique todos os erros, revise o racional das erradas e refaca pontos criticos em 48-72h.
+              </p>
+            </div>
+          </div>
+        </Modal>
       )}
 
       {modalOpen && (

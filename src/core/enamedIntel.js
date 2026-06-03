@@ -249,6 +249,67 @@ export function getEnamedContextBadge(area, temaName) {
   };
 }
 
+export function getEnamedTopicIntel(topic = {}, context = {}) {
+  const topicName = topic.temaNormalizado || topic.temaOriginal || topic.temaNome || topic.nome || topic.tema || "";
+  const area = canonicalArea(topic.areaCanonica || topic.area || topic.esp || context.area || "");
+  if (area === "Outro" || !topicName) {
+    return {
+      area: area === "Outro" ? null : area,
+      subarea: null,
+      topicName,
+      incidenceLabel: "dados insuficientes",
+      priorityScore: 0,
+      evidence: ["Sem área ou tema suficiente para cruzar com ENAMED."],
+      recommendation: "Coletando dados para contextualizar este tema.",
+      confidence: "baixa",
+      collecting: true,
+    };
+  }
+
+  const match = findHotnessSubarea(area, topicName);
+  if (!match) {
+    const areaWeight = ENAMED_BLUEPRINT[area] ?? null;
+    return {
+      area,
+      subarea: null,
+      topicName,
+      incidenceLabel: areaWeight ? `${Math.round(areaWeight * 100)}% macroarea` : "dados insuficientes",
+      priorityScore: areaWeight ? Math.round(areaWeight * 100) : 0,
+      evidence: areaWeight
+        ? [`Match por área: ${area}. Sem subtópico específico encontrado.`]
+        : ["Sem match por tema, subárea ou área."],
+      recommendation: areaWeight
+        ? `Use como prioridade de ${area}, mas confirme a subárea no cronograma.`
+        : "Coletando dados para contextualizar este tema.",
+      confidence: areaWeight ? "baixa" : "baixa",
+      collecting: !areaWeight,
+    };
+  }
+
+  const totalArea = ENAMED_MACRO_QUESTOES[match.area] ?? null;
+  const estimatedQuestions = totalArea ? Math.round(match.peso * totalArea) : null;
+  const pct = Math.round(match.peso * 100);
+  const normalized = Math.round(match.normalizado * 100);
+  return {
+    area: match.area,
+    subarea: match.subarea,
+    topicName,
+    incidenceLabel: estimatedQuestions ? `~${estimatedQuestions} questões` : `${pct}% da área`,
+    priorityScore: normalized,
+    evidence: [
+      `Match ${match.match} com ${match.subarea}.`,
+      estimatedQuestions ? `Estimativa: ${estimatedQuestions} questões na macroárea.` : `Peso relativo: ${pct}% da área.`,
+    ],
+    recommendation: normalized >= 70
+      ? `Alta incidência: priorize ${topicName} no próximo bloco.`
+      : normalized >= 35
+      ? `Subárea relevante: mantenha ${topicName} no plano.`
+      : `Incidência menor: estude ${topicName} conforme o cronograma.`,
+    confidence: match.match === "exact" ? "alta" : "media",
+    collecting: false,
+  };
+}
+
 export function getEnamedAction(intel) {
   const gargalo = intel?.gargalo;
   if (!gargalo) {

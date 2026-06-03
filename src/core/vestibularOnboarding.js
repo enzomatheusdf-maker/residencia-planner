@@ -55,7 +55,7 @@ export function recommendVestibularFirstAction({
       key: "registrar_simulado",
       title: "Registrar simulado diagnóstico",
       description: "Você escolheu começar com baseline. Registre um simulado recente para o Mentor priorizar a matéria fraca.",
-      cta: "Abrir Estudar",
+      cta: "Abrir Simulados",
       view: "sims",
     };
   }
