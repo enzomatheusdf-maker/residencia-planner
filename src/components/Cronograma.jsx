@@ -7,8 +7,7 @@ import { parseCatalogEntry } from "../constants/catalogos";
 import { getCronogramasByPlat, getDefaultCronogramaId, resolveCatalogo } from "../constants/cronogramas";
 import { stepState, STATE_DOT, STATE_TW, Badge, SBadge, Btn, Input, TourBalloon, InfoTooltip } from "./Primitives";
 import { CALENDAR_PROVIDER_IDS } from "../constants/calendarProviders";
-import { attachCalendarIntelligence, getDevProviderSeed, getProviderSeed, matchMedcofTopic } from "../core/calendarProvider";
-import { isDevOnlyEnabled } from "../core/devFlags";
+import { attachCalendarIntelligence, getProviderSeed, matchMedcofTopic } from "../core/calendarProvider";
 import { calculateRedistributionSummary, normalizeWeeklyTopicLimit } from "../core/scheduleWizard";
 import {
   getDominioPrevioStatus,
@@ -24,9 +23,6 @@ import AgendaMonthGrid from "./AgendaMonthGrid";
 import { getPlanTabFromTarget, PLAN_TAB } from "../core/navigationModel";
 
 const CalendarImportWizard = React.lazy(() => import("./CalendarImportWizard"));
-const CalendarMappingPanel = React.lazy(() => import("./CalendarMappingPanel"));
-const DEV_MAPPING_LABEL = ["Ver ", "mapeamento"].join("");
-const DEV_SAMPLE_LABEL = ["Usar amostra de ", "desenvolvimento"].join("");
 
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
@@ -222,7 +218,6 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
     [activeProvider, importedTopics, customTopics]
   );
   const [showImportWizard, setShowImportWizard] = useState(false);
-  const [showMappingPanel, setShowMappingPanel] = useState(false);
   const [temaValidando, setTemaValidando] = useState(null);
   const cat = useMemo(() => {
     if (catalogo) return catalogo;
@@ -273,7 +268,6 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
   const [bankQuery, setBankQuery] = useState("");
   const [bankAreaFilter, setBankAreaFilter] = useState("TODAS");
   const [cronoTab, setCronoTab] = useState(() => getPlanTabFromTarget(navigationTarget, PLAN_TAB.PLAN)); // "plano" | "agenda" | "banco"
-  const devOnly = isDevOnlyEnabled();
   const scheduledTopics = useMemo(
     () => calendarProvider?.scheduledTopics || [],
     [calendarProvider?.scheduledTopics]
@@ -761,25 +755,6 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                           onPlanChange={(id) => setCronogramaSel(plat, id)}
                         />
 
-                        {devOnly && (
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setShowMappingPanel((v) => !v)}
-                              className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 border border-white/10 text-[11px] font-bold"
-                              disabled={importedTopics.length === 0}
-                            >
-                              {showMappingPanel ? "Ocultar mapeamento" : DEV_MAPPING_LABEL}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => saveImportedCalendarTopics(getDevProviderSeed(CALENDAR_PROVIDER_IDS.USER_IMPORTED))}
-                              className="px-3 py-2 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-300 border border-emerald-500/25 text-[11px] font-bold"
-                            >
-                              {DEV_SAMPLE_LABEL}
-                            </button>
-                          </div>
-                        )}
 
                         <p className="text-[10px] text-gray-400">
                           {activeProvider === CALENDAR_PROVIDER_IDS.USER_IMPORTED
@@ -789,11 +764,6 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                               : "Cronogramas prontos — catálogo oficial do app."}
                         </p>
 
-                        {showMappingPanel && importedTopics.length > 0 && (
-                          <React.Suspense fallback={<div className="text-[11px] text-gray-500">Carregando mapeamento...</div>}>
-                            <CalendarMappingPanel importedTopics={importedTopics} medcofTemas={medcofTemas} />
-                          </React.Suspense>
-                        )}
                       </>
                     )}
                   </div>
