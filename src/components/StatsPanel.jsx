@@ -18,6 +18,7 @@ import {
   evaluateMetric, formatMetricValue, METRIC_STATUS,
 } from "../core/metricsRegistry";
 import { compareReadinessToSimulado, createReadinessSnapshot } from "../core/readinessValidation";
+import { calcPrevisaoDesempenho, CONFIDENCE_LABEL } from "../core/forecast";
 import { safeTrackEvent } from "../core/telemetry";
 import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
 import { calculateClinicalReasoningScoreDetailed } from "../core/clinicalReasoningScoring";
@@ -236,7 +237,8 @@ export default function StatsPanel({ setView = null }) {
     lastReadinessTelemetryRef.current = key;
   }, [meta, plat, readinessData.confidence, readinessData.score, readinessValidation.absoluteError, readinessValidation.status]);
 
-  // Sparkline de prontidao
+  // Sparkline de prontidao (kept for potential future use)
+  // eslint-disable-next-line no-unused-vars
   const sparklinePath = useMemo(() => {
     const hist = meta.prontidaoHist || [];
     if (hist.length < 2) return "";
@@ -435,6 +437,52 @@ export default function StatsPanel({ setView = null }) {
     return { totalQuestions, areasWithData, activeDays, hasMinimum, missing };
   }, [doneDays, personalStats, simulados.length]);
 
+  // Nova previsao de desempenho — ancorada em simulados/provas (v1)
+  const previsaoForecast = useMemo(() => {
+    const acertoGeral = personalStats?.espStats?.length
+      ? Math.round(personalStats.espStats.filter(e => e.acc != null).reduce((s, e) => s + e.acc, 0) /
+        (personalStats.espStats.filter(e => e.acc != null).length || 1))
+      : null;
+    const cobertura = temas.length > 0
+      ? Math.round((startedTemas.length / temas.length) * 100)
+      : null;
+    const indiceDescuido = (() => {
+      const allErros = simulados.flatMap(s => s.questoesErradas || []);
+      const descuidos = allErros.filter(e => e.tipoErro === "descuido" || e.tipoErro === "distracao").length;
+      return allErros.length > 0 ? Math.round((descuidos / allErros.length) * 100) : null;
+    })();
+
+    return calcPrevisaoDesempenho({
+      simulados,
+      acertoQuestoes: acertoGeral,
+      cobertura,
+      saldoRitmoNorm: readinessData?.saldoRitmoNorm ?? null,
+      indiceDescuido,
+    });
+  }, [simulados, personalStats, startedTemas.length, temas.length, readinessData]);
+
+  // Métricas de metas para o card de progresso
+  const metasProgresso = useMemo(() => {
+    const metaDia = meta?.metaQuestoesDia || meta?.metaDiaria || 0;
+    const metaTotal = meta?.metaQuestoesTotal || (
+      metaDia > 0 && meta?.dataProva
+        ? (() => {
+            const days = Math.ceil((new Date(meta.dataProva + "T12:00:00") - new Date()) / (1000 * 60 * 60 * 24));
+            return days > 0 ? metaDia * days : 0;
+          })()
+        : 0
+    );
+    const totalFeitas = personalStats?.totalQuestoes || 0;
+    const progresso = metaTotal > 0 ? Math.min(100, Math.round((totalFeitas / metaTotal) * 100)) : null;
+    const daysToProva = meta?.dataProva
+      ? Math.ceil((new Date(meta.dataProva + "T12:00:00") - new Date()) / (1000 * 60 * 60 * 24))
+      : null;
+    const ritmoNecessario = (daysToProva != null && daysToProva > 0 && metaTotal > totalFeitas)
+      ? Math.ceil((metaTotal - totalFeitas) / daysToProva)
+      : null;
+    return { metaDia, metaTotal, totalFeitas, progresso, daysToProva, ritmoNecessario };
+  }, [meta, personalStats]);
+
   // Raciocinio clinico — dados existentes sem calculo duplicado
   // P4-A: usa fonte canonica de clinicalReasoningScoring.js
   const raciocinioStats = useMemo(() => {
@@ -535,63 +583,106 @@ export default function StatsPanel({ setView = null }) {
       {/* ── SECAO 7: VALIDACAO DA PREVISAO ─────────────────────────────────── */}
       {currentSection === "validacao" && (
         <div className="space-y-4">
-          <p className="text-[11px] text-gray-500">Previsao de desempenho com amostra explicita e validacao por simulados.</p>
+          <p className="text-[11px] text-gray-500">Previsao ancorada em simulados/provas. A banda de confianca estreita com mais registros espaçados.</p>
 
-          {/* Preparo + KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {/* Previsao de desempenho — card especial com amostra minima */}
-            <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 relative overflow-hidden flex flex-col justify-between min-h-[100px] sm:col-span-2">
-              <p className="text-[10px] text-gray-500 uppercase font-semibold mb-1">Previsao de desempenho</p>
-              <div className="flex items-baseline gap-1.5">
-                <p className="text-3xl font-black tabular-nums text-blue-400">
-                  {readinessSample.hasMinimum && readinessData.score != null ? `${readinessData.score}%` : "Coletando"}
+          {/* Nova previsão de desempenho v1 */}
+          <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] text-gray-500 uppercase font-semibold mb-1">Previsão de desempenho</p>
+                {previsaoForecast.score != null && readinessSample.hasMinimum ? (
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-4xl font-black tabular-nums text-blue-400">{previsaoForecast.score}%</p>
+                    <p className="text-[11px] text-gray-500">[{previsaoForecast.bandMin}–{previsaoForecast.bandMax}%]</p>
+                  </div>
+                ) : (
+                  <p className="text-3xl font-black text-gray-500">Coletando</p>
+                )}
+                <p className="text-[10px] text-gray-600 mt-1">
+                  {readinessSample.hasMinimum && previsaoForecast.score != null
+                    ? `${previsaoForecast.amostra}`
+                    : `Complete: ${readinessSample.missing.join(", ")}.`}
                 </p>
               </div>
-              <p className="text-[10px] text-gray-600 mt-1">
-                {readinessSample.hasMinimum
-                  ? `Amostra: ${readinessSample.totalQuestions} questoes, ${readinessSample.areasWithData} areas, ${simulados.length} simulado(s), ${readinessSample.activeDays} dias.`
-                  : `Complete ${readinessSample.missing.join(", ")} para liberar numero forte.`}
-              </p>
-              {sparklinePath && (
-                <div className="absolute bottom-0 left-0 right-0 h-5 opacity-40 pointer-events-none">
-                  <svg viewBox="0 0 100 20" preserveAspectRatio="none" className="w-full h-full">
-                    <path d={sparklinePath} fill="none" stroke="#8b5cf6" strokeWidth="1.5" />
-                  </svg>
-                </div>
-              )}
+              <div className="text-right shrink-0">
+                <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                  previsaoForecast.confidence === "alta" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                  previsaoForecast.confidence === "media" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                  "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                }`}>
+                  {previsaoForecast.confidence === "alta" ? "Alta confiança" :
+                   previsaoForecast.confidence === "media" ? "Moderada" :
+                   previsaoForecast.nSimulados === 0 ? "Sem simulados" : "Baixa confiança"}
+                </span>
+                <p className="text-[9px] text-gray-600 mt-1">{previsaoForecast.nSimulados} simulado{previsaoForecast.nSimulados !== 1 ? "s" : ""}</p>
+              </div>
             </div>
 
-            <MetricCard
-              label={metricsEvaluated.trueRetention.label}
-              value={formatMetricValue("trueRetention", metricsEvaluated.trueRetention.value)}
-              status={metricsEvaluated.trueRetention.status}
-              description={metricsEvaluated.trueRetention.description}
-              emptyState={metricsEvaluated.trueRetention.emptyState}
-              action={metricsEvaluated.trueRetention.action}
-            />
-            <MetricCard
-              label={metricsEvaluated.overdueReviews.label}
-              value={formatMetricValue("overdueReviews", metricsEvaluated.overdueReviews.value)}
-              status={metricsEvaluated.overdueReviews.status}
-              description="Revisoes com data passada nao feitas."
-              emptyState="Nenhuma revisao vencida"
-              action={metricsEvaluated.overdueReviews.action}
-            />
-          </div>
+            {/* Barra de banda de confiança */}
+            {previsaoForecast.score != null && (
+              <div className="space-y-1">
+                <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="absolute h-full bg-blue-500/30 rounded-full"
+                    style={{ left: `${previsaoForecast.bandMin}%`, width: `${previsaoForecast.bandMax - previsaoForecast.bandMin}%` }}
+                  />
+                  <div
+                    className="absolute h-full w-0.5 bg-blue-400"
+                    style={{ left: `${previsaoForecast.score}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-[9px] text-gray-600">
+                  <span>0%</span>
+                  <span>Intervalo: ±{previsaoForecast.banda}pts</span>
+                  <span>100%</span>
+                </div>
+              </div>
+            )}
 
-          <div className="rounded-2xl border border-white/5 bg-[#111113] p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Validacao da previsao</p>
-            <p className="mt-1 text-[12px] text-gray-300">
-              {readinessValidation.status === "coletando"
-                ? "Ainda coletando validacao. Registre simulados para comparar previsao com resultado real."
-                : readinessValidation.status === "alinhado"
-                ? `Previsao alinhada ao resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`
-                : readinessValidation.status === "superestimado"
-                ? `Previsao acima do resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`
-                : `Previsao abaixo do resultado real (erro absoluto ${readinessValidation.absoluteError} pts).`}
+            <p className="text-[10px] text-gray-500 border-t border-white/5 pt-2">
+              {CONFIDENCE_LABEL[previsaoForecast.confidence] || ""}. Âncora: simulados/provas (45%) + questões por área (25%) + cobertura (15%) + ritmo (10%) + calibração (5%).
             </p>
           </div>
 
+          {/* Gráfico de evolução dos simulados como proxy da previsão */}
+          {simulados.length >= 2 && (
+            <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 space-y-2">
+              <p className="text-[11px] font-black uppercase tracking-wider text-gray-300">Evolução dos simulados</p>
+              <div className="flex items-end gap-1.5 h-16">
+                {simulados.map((s, i) => {
+                  const metaAcerto = s.metaAcerto || 0;
+                  const hitsMeta = metaAcerto > 0 && s.pct >= metaAcerto;
+                  const col = hitsMeta ? "bg-blue-700" : s.pct >= 80 ? "bg-emerald-500" : s.pct >= 65 ? "bg-blue-500" : s.pct >= 50 ? "bg-amber-500" : "bg-red-400";
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      <span className="text-[9px] text-gray-600 tabular-nums">{s.pct}%</span>
+                      <div className={`w-full rounded-t-sm ${col} opacity-80`} style={{ height: `${Math.max(4, (s.pct / 100) * 44)}px` }} title={`${s.nome || "Simulado"} · ${s.pct}%`} />
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-between text-[9px] text-gray-700">
+                <span>1º simulado</span>
+                <span>mais recente</span>
+              </div>
+            </div>
+          )}
+
+          {/* Validação forecast vs resultado real */}
+          <div className="rounded-2xl border border-white/5 bg-[#111113] p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Validacao da previsao vs resultado real</p>
+            <p className="mt-1 text-[12px] text-gray-300">
+              {readinessValidation.status === "coletando"
+                ? "Registre simulados para comparar previsao com resultado real."
+                : readinessValidation.status === "alinhado"
+                ? `Previsao alinhada ao resultado real (erro ${readinessValidation.absoluteError} pts).`
+                : readinessValidation.status === "superestimado"
+                ? `Previsao acima do resultado real — erro de ${readinessValidation.absoluteError} pts. Aumente a frequência de simulados.`
+                : `Previsao abaixo do resultado real — erro de ${readinessValidation.absoluteError} pts. Bom sinal de crescimento.`}
+            </p>
+          </div>
+
+          {/* KPIs adicionais */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <MetricCard
               label={metricsEvaluated.relearningCount.label}
@@ -668,6 +759,54 @@ export default function StatsPanel({ setView = null }) {
               </div>
             ))}
           </div>
+
+          {/* Card de metas com progresso */}
+          {(metasProgresso.metaDia > 0 || metasProgresso.metaTotal > 0) && (
+            <div className="bg-[#111113] border border-blue-500/20 rounded-2xl p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-[12px] font-black uppercase tracking-wider text-gray-200">Progresso em relação às metas</h3>
+                {metasProgresso.daysToProva != null && metasProgresso.daysToProva > 0 && (
+                  <span className="text-[10px] font-bold text-gray-500">{metasProgresso.daysToProva}d até a prova</span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-[11px]">
+                <div className="rounded-xl bg-black/20 border border-white/5 px-3 py-2">
+                  <p className="text-gray-500 font-bold uppercase text-[9px]">Meta diária</p>
+                  <p className="text-white font-black text-lg">{metasProgresso.metaDia > 0 ? `${metasProgresso.metaDia}/dia` : "—"}</p>
+                </div>
+                <div className="rounded-xl bg-black/20 border border-white/5 px-3 py-2">
+                  <p className="text-gray-500 font-bold uppercase text-[9px]">Total feitas</p>
+                  <p className="text-blue-400 font-black text-lg">{metasProgresso.totalFeitas}</p>
+                </div>
+                <div className="rounded-xl bg-black/20 border border-white/5 px-3 py-2">
+                  <p className="text-gray-500 font-bold uppercase text-[9px]">Meta total</p>
+                  <p className="text-gray-200 font-black text-lg">{metasProgresso.metaTotal > 0 ? metasProgresso.metaTotal : "—"}</p>
+                </div>
+                {metasProgresso.ritmoNecessario != null && (
+                  <div className="rounded-xl bg-black/20 border border-white/5 px-3 py-2">
+                    <p className="text-gray-500 font-bold uppercase text-[9px]">Ritmo necessário</p>
+                    <p className={`font-black text-lg ${metasProgresso.ritmoNecessario > (metasProgresso.metaDia || 0) ? "text-amber-400" : "text-emerald-400"}`}>
+                      {metasProgresso.ritmoNecessario}/dia
+                    </p>
+                  </div>
+                )}
+                {metasProgresso.progresso != null && (
+                  <div className="sm:col-span-2 rounded-xl bg-black/20 border border-white/5 px-3 py-2">
+                    <p className="text-gray-500 font-bold uppercase text-[9px] mb-1">Progresso total</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-sky-500 rounded-full"
+                          style={{ width: `${metasProgresso.progresso}%` }}
+                        />
+                      </div>
+                      <span className="text-white font-black text-[12px]">{metasProgresso.progresso}%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Cobertura */}
           <MetricCard
