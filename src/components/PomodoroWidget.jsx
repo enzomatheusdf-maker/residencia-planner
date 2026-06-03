@@ -81,7 +81,7 @@ export default function PomodoroWidget() {
       <button
         type="button"
         onClick={() => setVisible(true)}
-        className="fixed bottom-20 left-4 z-40 w-11 h-11 rounded-2xl bg-[#111113] border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:border-white/25 transition-all shadow-xl cursor-pointer"
+        className="fixed bottom-4 right-4 z-40 w-11 h-11 rounded-2xl bg-[#111113] border border-white/10 flex items-center justify-center text-gray-500 hover:text-white hover:border-white/25 transition-all shadow-xl cursor-pointer"
         title="Abrir Pomodoro"
       >
         <Timer size={18} />
@@ -95,7 +95,7 @@ export default function PomodoroWidget() {
 
   return (
     <>
-      <div className="fixed bottom-20 left-4 z-40 bg-[#111113] border border-white/10 rounded-2xl p-3 shadow-2xl w-52 select-none">
+      <div className="fixed bottom-4 right-4 z-40 bg-[#111113] border border-white/10 rounded-2xl p-3 shadow-2xl w-52 select-none">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">

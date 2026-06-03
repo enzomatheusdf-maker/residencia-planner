@@ -6,7 +6,6 @@ import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getR
 import { calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
 import { getMentorDiagnosis, isExhaustionDetected } from "../core/mentor";
 import { buildMentorContext, getMentorNextAction, getMentorTodayPlan } from "../core/mentorAutopilot";
-import { buildPlanExecutionState, getAgendaTaskLabel, getAgendaTaskTarget } from "../core/planExecution";
 import { isPlanSetupComplete } from "../core/onboardingGate";
 import { getReadinessData } from "../core/readiness";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip, InfoTooltip } from "./Primitives";
@@ -38,7 +37,7 @@ import WeeklyReview from "./WeeklyReview";
 import EmptyState from "./EmptyState";
 import VestibularStartTrail from "./VestibularStartTrail";
 import { isVestibularStartComplete } from "../core/vestibularOnboarding";
-import { Badge, Button as PremiumButton, Card, MetricRing } from "./ui";
+import { Badge, Card, MetricRing } from "./ui";
 
 /* --- CARGA FUTURA WIDGET --- */
 function CargaFuturaWidget({ temas, maxRevisoesDia }) {
@@ -707,10 +706,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     if (setView) setView("crono");
   }, [onOpenAjustes, setView]);
 
-  // "Ajustar plano" no dashboard abre o Cronograma/Plano onde fica o wizard de redistribuicao
-  const openPlanSetup = useCallback(() => {
-    if (setView) setView("crono");
-  }, [setView]);
   const openAgenda = useCallback(() => {
     // "Ver agenda" abre Plano na subaba Agenda com a data de hoje
     if (onOpenAgenda) {
@@ -1407,8 +1402,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   }), [meta, onboardingDone, overdue.length, pending, plat, todayLoadSignals.todayMinutes, tourStep, userName]);
   const [showMentorWhy, setShowMentorWhy] = useState(false);
   const [showSessionClosureDialog, setShowSessionClosureDialog] = useState(false);
-  const [acceptedPlanDate, setAcceptedPlanDate] = useState(null);
-  const [showTodayPlan, setShowTodayPlan] = useState(false);
   const vestibularStartComplete = useMemo(() => {
     if (plat !== "vest") return true;
     return isVestibularStartComplete(meta);
@@ -1440,27 +1433,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       useStore.setState({ meta: { ...meta, streakMaxAvisado: true } });
     }
   }, [streakCurrent, meta, showToast, showToastGlobal]);
-
-  const planExecution = useMemo(() => buildPlanExecutionState({
-    agendaTodaySummary,
-    planHealth: mentorContext?.planHealth,
-    mentorAction: mentorNextAction,
-    acceptedToday: acceptedPlanDate === todayStr(),
-  }), [acceptedPlanDate, agendaTodaySummary, mentorContext?.planHealth, mentorNextAction]);
-
-  const todayPlanTasks = useMemo(
-    () => (agendaTodaySummary?.items || []).slice(0, 3),
-    [agendaTodaySummary]
-  );
-
-  const startAgendaTask = useCallback((item) => {
-    const target = getAgendaTaskTarget(item);
-    if (target?.temaId && target?.stepKey && target.stepKey !== "d0" && onStudy) {
-      onStudy(target.temaId, target.stepKey);
-      return;
-    }
-    if (setView) setView(target?.view || "crono");
-  }, [onStudy, setView]);
 
   // ESTADO VAZIO: Mostrar apenas o CTA de onboarding se não houver temas cadastrados
   if (temasFiltrados.length === 0) {
@@ -1823,107 +1795,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       )}
 
       <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} />
-
-      <Card
-        as="section"
-        variant="elevated"
-        className="space-y-4"
-        style={{
-          padding: "20px",
-          background: "linear-gradient(180deg, rgba(59,130,246,.14), rgba(6,182,212,.06)), var(--med-surface-0)",
-          borderColor: "rgba(59,130,246,.22)",
-        }}
-      >
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <Badge tone="blue">Plano de hoje</Badge>
-            <h2 className="mt-1 text-lg font-black text-white">
-              Hoje:{" "}
-              {agendaTodaySummary && agendaTodaySummary.totalCount > 0
-                ? `${agendaTodaySummary.totalCount} tarefa${agendaTodaySummary.totalCount > 1 ? "s" : ""} · ${agendaTodaySummary.totalMinutes} min`
-                : "Nada pendente hoje"}
-            </h2>
-            <p className="mt-1 text-[12px] text-blue-100/75">
-              {agendaTodaySummary?.overdueCount > 0
-                ? `${agendaTodaySummary.overdueCount} atraso${agendaTodaySummary.overdueCount > 1 ? "s" : ""} entra primeiro.`
-                : agendaTodaySummary?.newTopicCount > 0
-                ? `${agendaTodaySummary.newTopicCount} tema${agendaTodaySummary.newTopicCount > 1 ? "s" : ""} novo${agendaTodaySummary.newTopicCount > 1 ? "s" : ""} planejado${agendaTodaySummary.newTopicCount > 1 ? "s" : ""}.`
-                : "Sem calendário mensal no Dashboard; a execução fica nesta fila curta."}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {planExecution.state === "plan_ready_unaccepted" && agendaTodaySummary?.totalCount > 0 && (
-              <PremiumButton
-                type="button"
-                onClick={() => {
-                  setAcceptedPlanDate(todayStr());
-                  setShowTodayPlan(true);
-                }}
-                size="sm"
-              >
-                Aceitar plano de hoje
-              </PremiumButton>
-            )}
-            <PremiumButton
-              type="button"
-              onClick={() => {
-                setShowTodayPlan((prev) => !prev);
-                if (agendaTodaySummary?.totalCount === 0 && setView) setView("crono");
-              }}
-              size="sm"
-              variant="secondary"
-            >
-              {showTodayPlan ? "Ocultar plano" : "Abrir plano"}
-            </PremiumButton>
-            <PremiumButton
-              type="button"
-              onClick={openAgenda}
-              size="sm"
-              variant="soft"
-            >
-              Ver agenda
-            </PremiumButton>
-            <PremiumButton
-              type="button"
-              onClick={openPlanSetup}
-              size="sm"
-              variant="outline"
-            >
-              Ajustar plano
-            </PremiumButton>
-          </div>
-        </div>
-
-        {showTodayPlan && todayPlanTasks.length > 0 && (
-          <div className="grid gap-2 md:grid-cols-3">
-            {todayPlanTasks.map((item) => (
-              <Card key={item.id} variant="interactive" interactive style={{ padding: 12, background: "rgba(0,0,0,.18)" }}>
-                <p className="text-[11px] font-black text-white truncate">{item.temaNome || "Tarefa do plano"}</p>
-                <p className="mt-1 text-[10px] text-blue-100/70">
-                  {item.type === "overdue" ? "Atrasada" : item.type === "new_topic" || item.type === "d0_critical" ? "Tema novo" : "Revisão"} · {item.estimatedMinutes || 50} min
-                </p>
-                <PremiumButton
-                  type="button"
-                  onClick={() => startAgendaTask(item)}
-                  className="mt-3"
-                  fullWidth
-                  size="sm"
-                  variant="secondary"
-                >
-                  {getAgendaTaskLabel(item)}
-                </PremiumButton>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {showTodayPlan && todayPlanTasks.length === 0 && (
-          <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <p className="text-[12px] font-bold text-white">Nada pendente hoje.</p>
-            <p className="mt-1 text-[11px] text-gray-400">Abra o cronograma para criar ou redistribuir temas novos.</p>
-          </div>
-        )}
-      </Card>
 
       <MiniCronogramaWidget
         plat={plat}
@@ -2583,53 +2454,12 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               </div>
             )}
 
-            {/* Fila Inteligente — apenas Residência (vest usa Top 3 acima) */}
-            {!modoSimples && totalSessions >= 30 && plat !== "vest" && (
-              <ProgressiveTooltip
-                tooltipId="priority_queue"
-                text="Mentor: Esta é a Fila Inteligente. Ordenamos seus temas com base em um cálculo dinâmico de urgência, importância e pesos de prova para maximizar sua retenção diária (INEP 2009–2024: CM 28% / GO 21% / Cir 19% / Ped 19% / Prev 12%)."
-              >
-                <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-3 shadow-sm w-full">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp size={15} className="text-cyan-400" />
-                    <h3 className="text-xs font-bold text-white uppercase tracking-wider">Fila de Prioridade Inteligente</h3>
-                  </div>
-                  {filaInteligente.length === 0 ? (
-                    <p className="text-[10.5px] text-gray-500 italic py-4 text-center leading-relaxed">
-                      "Fila inteligente limpa. Seu planejamento está em dia. Aproveite para descansar!"
-                    </p>
-                  ) : (
-                    <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
-                      {filaInteligente.slice(0, 5).map((item, index) => (
-                        <div key={index} className="flex items-center justify-between p-2.5 bg-white/[0.01] border border-white/5 rounded-xl hover:border-white/10 transition-colors">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[9px] font-mono bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded">Score: {item.score}</span>
-                              <p className="text-xs font-bold text-gray-200 truncate">{item.temaNome}</p>
-                            </div>
-                            <p className="text-[10px] text-gray-500 mt-0.5">{item.esp} · Etapa {item.step.label}</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => onStudy(item.temaId, item.stepKey)}
-                            className="px-3 py-1.5 rounded-lg bg-cyan-600/90 hover:bg-cyan-500 text-white text-[10.5px] font-bold transition-all shrink-0 active:scale-95"
-                          >
-                            Focar
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </ProgressiveTooltip>
-            )}
-
-            {/* Fila Cronológica */}
+            {/* Acoes de hoje — ordenadas por importancia pelo calcFilaInteligente */}
             <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-5 flex flex-col gap-3 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Calendar size={15} className="text-blue-400" />
-                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">Fila Cronológica</h3>
+                  <TrendingUp size={15} className="text-blue-400" />
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider">Ações de hoje</h3>
                 </div>
                 <span className="text-[10px] bg-white/5 text-gray-400 border border-white/5 px-2 py-0.5 rounded-full font-bold">
                   {pending} pendentes
