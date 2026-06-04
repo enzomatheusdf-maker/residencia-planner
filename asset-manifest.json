@@ -1,19 +1,19 @@
 {
   "files": {
     "main.css": "/residencia-planner/static/css/main.f5a9a96a.css",
-    "main.js": "/residencia-planner/static/js/main.ba64db73.js",
+    "main.js": "/residencia-planner/static/js/main.d94e57b7.js",
     "static/js/795.48632b8c.chunk.js": "/residencia-planner/static/js/795.48632b8c.chunk.js",
     "static/js/242.60638c7a.chunk.js": "/residencia-planner/static/js/242.60638c7a.chunk.js",
     "static/js/74.45c5fe3d.chunk.js": "/residencia-planner/static/js/74.45c5fe3d.chunk.js",
     "index.html": "/residencia-planner/index.html",
     "main.f5a9a96a.css.map": "/residencia-planner/static/css/main.f5a9a96a.css.map",
-    "main.ba64db73.js.map": "/residencia-planner/static/js/main.ba64db73.js.map",
+    "main.d94e57b7.js.map": "/residencia-planner/static/js/main.d94e57b7.js.map",
     "795.48632b8c.chunk.js.map": "/residencia-planner/static/js/795.48632b8c.chunk.js.map",
     "242.60638c7a.chunk.js.map": "/residencia-planner/static/js/242.60638c7a.chunk.js.map",
     "74.45c5fe3d.chunk.js.map": "/residencia-planner/static/js/74.45c5fe3d.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.f5a9a96a.css",
-    "static/js/main.ba64db73.js"
+    "static/js/main.d94e57b7.js"
   ]
 }
