@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Calendar, AlertTriangle, X, Zap, Layers, GraduationCap, BarChart3 } from "lucide-react";
 import { useStore } from "../core/store";
-import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection } from "../core/fsrs";
+import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection, getEstimatedMinutesForStep } from "../core/fsrs";
 import { calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
 import { getMentorDiagnosis, isExhaustionDetected } from "../core/mentor";
 import { buildMentorContext, getMentorNextAction, getMentorTodayPlan } from "../core/mentorAutopilot";
@@ -845,6 +845,16 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
   const exibidosHoje = useMemo(() => allPendingSorted.slice(0, cap), [allPendingSorted, cap]);
 
+  const exibidosHojeMinutes = useMemo(() => {
+    return exibidosHoje.reduce((sum, item) => {
+      const tema = temasFiltrados.find(t => t.id === item.temaId);
+      if (!tema) return sum;
+      const r = tema.rev?.[item.stepKey] || {};
+      const minutes = getEstimatedMinutesForStep(item.stepKey, r);
+      return sum + minutes;
+    }, 0);
+  }, [exibidosHoje, temasFiltrados]);
+
   const overdue = useMemo(() => {
     return exibidosHoje.filter(item => item.overdue).map(item => {
       const tema = temasFiltrados.find(t => t.id === item.temaId);
@@ -1026,12 +1036,12 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       context: {
         pendingCount: pending,
         overdueCount: overdue.length,
-        estimatedMinutes: pending * 12,
+        estimatedMinutes: exibidosHojeMinutes,
       },
       uid: currentUid,
     });
     setShowWelcome(shouldShow);
-  }, [currentUid, meta, onboardingDone, overdue.length, pending, plat, tourStep, userName]);
+  }, [currentUid, meta, onboardingDone, overdue.length, pending, plat, tourStep, userName, exibidosHojeMinutes]);
 
   const acertoMedio = useMemo(() => {
     const rs = done.filter(r => r.acerto != null);
@@ -1370,13 +1380,15 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   }, [streakCurrent]);
   const todayLoadSignals = useMemo(() => {
     const scheduler = mentorContext?.scheduler || {};
+    const minutes = exibidosHojeMinutes;
+    const overloadLevelToday = minutes > 120 ? "high" : minutes > 60 ? "moderate" : "ok";
     return {
-      dueTodayCount: Number(scheduler.dueTodayCount ?? pending ?? 0),
-      todayMinutes: Number(scheduler.todayMinutes ?? 0),
-      overloadLevelToday: scheduler.overloadLevelToday || "ok",
+      dueTodayCount: pending,
+      todayMinutes: minutes,
+      overloadLevelToday,
       relearningCount: Number(scheduler.relearningCount ?? 0),
     };
-  }, [mentorContext, pending]);
+  }, [mentorContext, pending, exibidosHojeMinutes]);
   const todayLoadSummary = useMemo(() => {
     const loadLabel = {
       high: "alta",
@@ -1792,25 +1804,29 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
       <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} />
 
-      <MiniCronogramaWidget
-        plat={plat}
-        setView={setView}
-        onStudy={onStudy}
-        onMarkMastery={handleMarkMastery}
-        overdue={overdue}
-        today_={today_}
-        temas={temasFiltrados}
-        calendarProvider={calendarProvider}
-        cronogramaSel={cronogramaSel}
-        temasPerWeek={meta?.temasPerWeek}
-        estrategiaStartDate={meta?.estrategiaStartDate}
-        onAdjustWeeklyTopics={handleAdjustWeeklyTopics}
-      />
+      {!modoSimples && (
+        <>
+          <MiniCronogramaWidget
+            plat={plat}
+            setView={setView}
+            onStudy={onStudy}
+            onMarkMastery={handleMarkMastery}
+            overdue={overdue}
+            today_={today_}
+            temas={temasFiltrados}
+            calendarProvider={calendarProvider}
+            cronogramaSel={cronogramaSel}
+            temasPerWeek={meta?.temasPerWeek}
+            estrategiaStartDate={meta?.estrategiaStartDate}
+            onAdjustWeeklyTopics={handleAdjustWeeklyTopics}
+          />
 
-      <WeeklyReview
-        onAdjust={() => setView && setView("crono")}
-        onAction={(action) => handleInsightAction(action)}
-      />
+          <WeeklyReview
+            onAdjust={() => setView && setView("crono")}
+            onAction={(action) => handleInsightAction(action)}
+          />
+        </>
+      )}
 
       {/* Alertas compactos inline */}
       {(hasPendingClosure || peakModeAtivo) && (
@@ -1862,96 +1878,97 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       )}
 
-      {/* Análise rápida — Gargalo ENAMED + Raciocínio Clínico */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-12 h-12 rounded-full bg-blue-600/8 blur-xl pointer-events-none" />
-          <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
-            <TrendingDown size={11} className="text-red-400" />
-            {plat === "vest" ? "Frente prioritária" : "Gargalo ENAMED"}
-          </p>
-          {plat === "vest" && readinessData?.priorityList?.[0] ? (
-            <>
-              <div>
-                <p className="text-sm font-black text-white leading-tight">{readinessData.priorityList[0].area}</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">
-                  cobertura {Math.round(readinessData.priorityList[0].coverage || 0)}%
-                  {readinessData.priorityList[0].retention != null ? ` · acerto ${Math.round(readinessData.priorityList[0].retention)}%` : " · acerto coletando"}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setView && setView("stats")}
-                className="self-start px-2.5 py-1.5 rounded-xl bg-blue-600/15 hover:bg-blue-600/30 text-blue-400 border border-blue-500/20 text-[10px] font-bold cursor-pointer transition-colors"
-              >
-                Ver mapa completo →
-              </button>
-            </>
-          ) : plat === "res" && enamedBottleneck ? (
-            <>
-              <div>
-                <p className="text-sm font-black text-white leading-tight">{enamedBottleneck.area || "Ainda coletando gargalos"}</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">{enamedBottleneck.motivo}</p>
-              </div>
-              <div className="space-y-1">
-                {enamedBottleneck.evidencias.slice(0, 2).map((item) => (
-                  <p key={item} className="text-[10px] text-gray-500">• {item}</p>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => setView && setView(enamedBottleneck.target?.view || "stats")}
-                className="self-start px-2.5 py-1.5 rounded-xl bg-blue-600/15 hover:bg-blue-600/30 text-blue-400 border border-blue-500/20 text-[10px] font-bold cursor-pointer transition-colors"
-              >
-                {enamedBottleneck.actionLabel} →
-              </button>
-            </>
-          ) : (
-            <p className="text-[11px] text-gray-500 leading-relaxed">Complete revisões e simulados para gerar o mapa de prioridades.</p>
-          )}
-        </div>
+      {!modoSimples && (
+        <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
+            <div className="absolute -right-4 -top-4 w-12 h-12 rounded-full bg-blue-600/8 blur-xl pointer-events-none" />
+            <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+              <TrendingDown size={11} className="text-red-400" />
+              {plat === "vest" ? "Frente prioritária" : "Gargalo ENAMED"}
+            </p>
+            {plat === "vest" && readinessData?.priorityList?.[0] ? (
+              <>
+                <div>
+                  <p className="text-sm font-black text-white leading-tight">{readinessData.priorityList[0].area}</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    cobertura {Math.round(readinessData.priorityList[0].coverage || 0)}%
+                    {readinessData.priorityList[0].retention != null ? ` · acerto ${Math.round(readinessData.priorityList[0].retention)}%` : " · acerto coletando"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setView && setView("stats")}
+                  className="self-start px-2.5 py-1.5 rounded-xl bg-blue-600/15 hover:bg-blue-600/30 text-blue-400 border border-blue-500/20 text-[10px] font-bold cursor-pointer transition-colors"
+                >
+                  Ver mapa completo →
+                </button>
+              </>
+            ) : plat === "res" && enamedBottleneck ? (
+              <>
+                <div>
+                  <p className="text-sm font-black text-white leading-tight">{enamedBottleneck.area || "Ainda coletando gargalos"}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">{enamedBottleneck.motivo}</p>
+                </div>
+                <div className="space-y-1">
+                  {enamedBottleneck.evidencias.slice(0, 2).map((item) => (
+                    <p key={item} className="text-[10px] text-gray-500">• {item}</p>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setView && setView(enamedBottleneck.target?.view || "stats")}
+                  className="self-start px-2.5 py-1.5 rounded-xl bg-blue-600/15 hover:bg-blue-600/30 text-blue-400 border border-blue-500/20 text-[10px] font-bold cursor-pointer transition-colors"
+                >
+                  {enamedBottleneck.actionLabel} →
+                </button>
+              </>
+            ) : (
+              <p className="text-[11px] text-gray-500 leading-relaxed">Complete revisões e simulados para gerar o mapa de prioridades.</p>
+            )}
+          </div>
 
-        <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
-          <div className="absolute -right-4 -top-4 w-12 h-12 rounded-full bg-emerald-600/8 blur-xl pointer-events-none" />
-          {plat === "vest" ? (
-            <>
-              <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
-                <Layers size={11} className="text-sky-400" /> Matéria urgente
-              </p>
-              <p className="text-sm font-black text-white leading-tight">
-                {filaInteligente[0]?.esp || "Fila zerada"}
-              </p>
-              <p className="text-[10px] text-gray-500">{filaInteligente[0]?.esp ? "maior urgência hoje" : "revise ou avance temas novos"}</p>
-              <button type="button" onClick={() => setView && setView("crono")}
-                className="self-start px-2.5 py-1.5 rounded-xl bg-sky-600/15 hover:bg-sky-600/30 text-sky-400 border border-sky-500/20 text-[10px] font-bold cursor-pointer transition-colors">
-                Abrir cronograma →
-              </button>
-            </>
-          ) : meta.modulos?.raciocinioClinico ? (
-            <>
-              <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
-                <Brain size={11} className="text-emerald-400" /> Raciocínio clínico
-              </p>
-              <p className="text-sm font-black text-white leading-tight">Casos clínicos ativos</p>
-              <button type="button" onClick={() => setView && setView("raciocinio")}
-                className="self-start px-2.5 py-1.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold cursor-pointer transition-colors">
-                Treinar caso →
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
-                <Brain size={11} className="text-gray-500" /> Casos clínicos
-              </p>
-              <p className="text-[11px] text-gray-400 leading-relaxed">Ative o treino por casos para complementar questões com raciocínio.</p>
-              <button type="button" onClick={openSetupAjustes}
-                className="self-start px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 text-[10px] font-bold cursor-pointer transition-colors">
-                Ativar em ajustes →
-              </button>
-            </>
-          )}
-        </div>
-      </section>
+          <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
+            <div className="absolute -right-4 -top-4 w-12 h-12 rounded-full bg-emerald-600/8 blur-xl pointer-events-none" />
+            {plat === "vest" ? (
+              <>
+                <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+                  <Layers size={11} className="text-sky-400" /> Matéria urgente
+                </p>
+                <p className="text-sm font-black text-white leading-tight">
+                  {filaInteligente[0]?.esp || "Fila zerada"}
+                </p>
+                <p className="text-[10px] text-gray-500">{filaInteligente[0]?.esp ? "maior urgência hoje" : "revise ou avance temas novos"}</p>
+                <button type="button" onClick={() => setView && setView("crono")}
+                  className="self-start px-2.5 py-1.5 rounded-xl bg-sky-600/15 hover:bg-sky-600/30 text-sky-400 border border-sky-500/20 text-[10px] font-bold cursor-pointer transition-colors">
+                  Abrir cronograma →
+                </button>
+              </>
+            ) : meta.modulos?.raciocinioClinico ? (
+              <>
+                <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+                  <Brain size={11} className="text-emerald-400" /> Raciocínio clínico
+                </p>
+                <p className="text-sm font-black text-white leading-tight">Casos clínicos ativos</p>
+                <button type="button" onClick={() => setView && setView("raciocinio")}
+                  className="self-start px-2.5 py-1.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold cursor-pointer transition-colors">
+                  Treinar caso →
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+                  <Brain size={11} className="text-gray-500" /> Casos clínicos
+                </p>
+                <p className="text-[11px] text-gray-400 leading-relaxed">Ative o treino por casos para complementar questões com raciocínio.</p>
+                <button type="button" onClick={openSetupAjustes}
+                  className="self-start px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 text-[10px] font-bold cursor-pointer transition-colors">
+                  Ativar em ajustes →
+                </button>
+              </>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* ALERTAS CRÍTICOS DO MENTOR */}
       {criticalAlerts.map((alert, idx) => {
@@ -2076,7 +2093,9 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       )}
 
       {/* Camada terciaria: carga e detalhes */}
-      <CargaFuturaWidget temas={temas} maxRevisoesDia={meta.maxRevisoesDia || 30} />
+      {!modoSimples && (
+        <CargaFuturaWidget temas={temas} maxRevisoesDia={meta.maxRevisoesDia || 30} />
+      )}
 
       {/* DICA P5: retenção alta demais → sobrecarga */}
       {(() => {
@@ -2151,6 +2170,122 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               Abrir Estatísticas
             </button>
           </div>
+
+          {modoSimples && (
+            <>
+              <MiniCronogramaWidget
+                plat={plat}
+                setView={setView}
+                onStudy={onStudy}
+                onMarkMastery={handleMarkMastery}
+                overdue={overdue}
+                today_={today_}
+                temas={temasFiltrados}
+                calendarProvider={calendarProvider}
+                cronogramaSel={cronogramaSel}
+                temasPerWeek={meta?.temasPerWeek}
+                estrategiaStartDate={meta?.estrategiaStartDate}
+                onAdjustWeeklyTopics={handleAdjustWeeklyTopics}
+              />
+
+              <WeeklyReview
+                onAdjust={() => setView && setView("crono")}
+                onAction={(action) => handleInsightAction(action)}
+              />
+
+              <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
+                  <div className="absolute -right-4 -top-4 w-12 h-12 rounded-full bg-blue-600/8 blur-xl pointer-events-none" />
+                  <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+                    <TrendingDown size={11} className="text-red-400" />
+                    {plat === "vest" ? "Frente prioritária" : "Gargalo ENAMED"}
+                  </p>
+                  {plat === "vest" && readinessData?.priorityList?.[0] ? (
+                    <>
+                      <div>
+                        <p className="text-sm font-black text-white leading-tight">{readinessData.priorityList[0].area}</p>
+                        <p className="text-[10px] text-gray-500 mt-0.5">
+                          cobertura {Math.round(readinessData.priorityList[0].coverage || 0)}%
+                          {readinessData.priorityList[0].retention != null ? ` · acerto ${Math.round(readinessData.priorityList[0].retention)}%` : " · acerto coletando"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setView && setView("stats")}
+                        className="self-start px-2.5 py-1.5 rounded-xl bg-blue-600/15 hover:bg-blue-600/30 text-blue-400 border border-blue-500/20 text-[10px] font-bold cursor-pointer transition-colors"
+                      >
+                        Ver mapa completo →
+                      </button>
+                    </>
+                  ) : plat === "res" && enamedBottleneck ? (
+                    <>
+                      <div>
+                        <p className="text-sm font-black text-white leading-tight">{enamedBottleneck.area || "Ainda coletando gargalos"}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{enamedBottleneck.motivo}</p>
+                      </div>
+                      <div className="space-y-1">
+                        {enamedBottleneck.evidencias.slice(0, 2).map((item) => (
+                          <p key={item} className="text-[10px] text-gray-500">• {item}</p>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setView && setView(enamedBottleneck.target?.view || "stats")}
+                        className="self-start px-2.5 py-1.5 rounded-xl bg-blue-600/15 hover:bg-blue-600/30 text-blue-400 border border-blue-500/20 text-[10px] font-bold cursor-pointer transition-colors"
+                      >
+                        {enamedBottleneck.actionLabel} →
+                      </button>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-gray-500 leading-relaxed">Complete revisões e simulados para gerar o mapa de prioridades.</p>
+                  )}
+                </div>
+
+                <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
+                  <div className="absolute -right-4 -top-4 w-12 h-12 rounded-full bg-emerald-600/8 blur-xl pointer-events-none" />
+                  {plat === "vest" ? (
+                    <>
+                      <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+                        <Layers size={11} className="text-sky-400" /> Matéria urgente
+                      </p>
+                      <p className="text-sm font-black text-white leading-tight">
+                        {filaInteligente[0]?.esp || "Fila zerada"}
+                      </p>
+                      <p className="text-[10px] text-gray-500">{filaInteligente[0]?.esp ? "maior urgência hoje" : "revise ou avance temas novos"}</p>
+                      <button type="button" onClick={() => setView && setView("crono")}
+                        className="self-start px-2.5 py-1.5 rounded-xl bg-sky-600/15 hover:bg-sky-600/30 text-sky-400 border border-sky-500/20 text-[10px] font-bold cursor-pointer transition-colors">
+                        Abrir cronograma →
+                      </button>
+                    </>
+                  ) : meta.modulos?.raciocinioClinico ? (
+                    <>
+                      <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+                        <Brain size={11} className="text-emerald-400" /> Raciocínio clínico
+                      </p>
+                      <p className="text-sm font-black text-white leading-tight">Casos clínicos ativos</p>
+                      <button type="button" onClick={() => setView && setView("raciocinio")}
+                        className="self-start px-2.5 py-1.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold cursor-pointer transition-colors">
+                        Treinar caso →
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+                        <Brain size={11} className="text-gray-500" /> Casos clínicos
+                      </p>
+                      <p className="text-[11px] text-gray-400 leading-relaxed">Ative o treino por casos para complementar questões com raciocínio.</p>
+                      <button type="button" onClick={openSetupAjustes}
+                        className="self-start px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 text-[10px] font-bold cursor-pointer transition-colors">
+                        Ativar em ajustes →
+                      </button>
+                    </>
+                  )}
+                </div>
+              </section>
+
+              <CargaFuturaWidget temas={temas} maxRevisoesDia={meta.maxRevisoesDia || 30} />
+            </>
+          )}
 
           {!modoSimples && (
             <TrilhaJornada

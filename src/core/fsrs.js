@@ -75,7 +75,7 @@ function clearOperationalStepState(step = {}, extra = {}) {
   };
 }
 
-function getEstimatedMinutesForStep(stepKey, step = {}) {
+export function getEstimatedMinutesForStep(stepKey, step = {}) {
   if (step?.phase === "relearning") return STEP_ESTIMATED_MINUTES.relearning;
   if (stepKey === "manutencao") return STEP_ESTIMATED_MINUTES.manutencao;
   return STEP_ESTIMATED_MINUTES[stepKey] || STEP_ESTIMATED_MINUTES.d4;
