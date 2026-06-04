@@ -3,7 +3,8 @@ import React, { useMemo, useState } from "react";
 import { Brain, ClipboardList, MessageSquareText, Stethoscope, CheckCircle, Eye, CalendarDays, Pill, AlertTriangle, Plus, RefreshCw } from "lucide-react";
 import { CASOS_CLINICOS } from "../constants/casosClinicos";
 import { useStore } from "../core/store";
-import { Btn, Textarea, Tabs, InfoTooltip, Modal, Field, Input } from "./Primitives";
+import { Textarea, Field, Input } from "./Primitives";
+import { Badge, Button as PremiumButton, Card, Dialog, MetricRing, SegmentedControl, Tooltip } from "./ui";
 import { fmtRelativo } from "../core/fsrs";
 import SessionClosureModal from "./SessionClosureModal";
 import EmptyState from "./EmptyState";
@@ -88,10 +89,12 @@ export default function RaciocinioClinico() {
 
   if (!allCases.length) {
     return (
-      <div className="bg-[#111113] border border-white/5 rounded-2xl p-8 text-center text-gray-500 space-y-3">
+      <Card className="text-center text-gray-500" style={{ padding: 28 }}>
         <p>Banco em construção — crie um caso clínico manual para começar.</p>
-        <Btn onClick={() => setShowCreateCase(true)}><Plus size={15} /> Criar caso clínico</Btn>
-      </div>
+        <PremiumButton className="mt-3" onClick={() => setShowCreateCase(true)}>
+          <Plus size={15} /> Criar caso clínico
+        </PremiumButton>
+      </Card>
     );
   }
 
@@ -231,25 +234,45 @@ export default function RaciocinioClinico() {
   };
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-up text-left">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+    <div className="flex flex-col gap-4 med-animate-in text-left">
+      <Card
+        variant="elevated"
+        className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        style={{ background: "linear-gradient(180deg, rgba(147,51,234,.1), rgba(59,130,246,.045)), var(--med-surface-0)" }}
+      >
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <Stethoscope size={20} className="text-blue-400" />
-            <h2 className="text-[15px] font-bold text-gray-100">Raciocínio Clínico</h2>
-            <InfoTooltip texto="Treino faseado com illness scripts, casos estruturados, Script Concordance e anamnese dirigida." />
+            <span className="grid h-10 w-10 place-items-center rounded-xl border border-purple-500/20 bg-purple-500/10 text-purple-200">
+              <Stethoscope size={20} />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge tone="purple">P4 clínico</Badge>
+                <Tooltip content="Treino faseado com illness scripts, casos estruturados, Script Concordance e anamnese dirigida.">
+                  <span className="grid h-6 w-6 cursor-help place-items-center rounded-full border border-white/10 bg-white/5 text-[10px] font-black text-gray-400">i</span>
+                </Tooltip>
+              </div>
+              <h2 className="mt-2 text-xl font-black tracking-tight text-white">Raciocínio Clínico</h2>
+            </div>
           </div>
-          <p className="text-[12px] text-gray-500 mt-1">Casos vistos: {Object.values(casosProgresso).filter((p) => p?.vistos > 0).length}</p>
+          <p className="mt-3 max-w-2xl text-[12px] leading-relaxed text-gray-400">
+            Treine transferência clínica com scripts, diferenciais, SCT, anamnese dirigida e conduta educacional.
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Btn variant="ghost" onClick={() => setShowWhy(true)}>Por que usar?</Btn>
-          <Btn onClick={() => setShowCreateCase(true)}><Plus size={15} /> Criar caso clínico</Btn>
+        <div className="flex flex-col gap-3 sm:items-end">
+          <div className="flex flex-wrap justify-end gap-2">
+            <PremiumButton variant="secondary" onClick={() => setShowWhy(true)}>Por que usar?</PremiumButton>
+            <PremiumButton onClick={() => setShowCreateCase(true)}><Plus size={15} /> Criar caso clínico</PremiumButton>
+          </div>
+          <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+            <MetricRing value={raciocinioScore || 0} label="score" tone="purple" size={62} />
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Casos vistos</p>
+              <p className="text-2xl font-black text-white tabular-nums">{casosFeitos}</p>
+            </div>
+          </div>
         </div>
-        <div className="bg-[#111113] border border-white/5 rounded-2xl p-3 min-w-[150px]">
-          <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Raciocínio Clínico</p>
-          <p className="text-3xl font-black text-blue-400 tabular-nums">{raciocinioScore != null ? `${raciocinioScore}%` : "—"}</p>
-        </div>
-      </div>
+      </Card>
 
       <div className="grid gap-3 lg:grid-cols-[260px_1fr]">
         {casosFeitos === 0 && (
@@ -285,31 +308,34 @@ export default function RaciocinioClinico() {
                   setConductaRespostas({});
                   setConductaAvisoAceito(false);
                 }}
-                className={`text-left rounded-2xl border p-3 transition-all ${ativo ? "bg-blue-500/10 border-blue-500/30" : "bg-[#111113] border-white/5 hover:border-white/10"}`}
+                className="w-full text-left transition-all"
+                style={{ background: "transparent", border: 0, padding: 0 }}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[12px] font-black text-gray-100">{item.tema}</span>
-                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${dificuldadeClass(item.dificuldade)}`}>
-                    {item.dificuldade}
-                  </span>
-                </div>
-                <p className="text-[10.5px] text-gray-500 mt-1">{item.area} · {item.subarea}</p>
-                {p?.proximaData && (
-                  <p className="text-[10px] text-blue-300 mt-2 flex items-center gap-1">
-                    <CalendarDays size={11} /> reencontro {fmtRelativo(p.proximaData)}
-                  </p>
-                )}
+                <Card interactive selected={ativo} style={{ padding: 12 }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] font-black text-gray-100">{item.tema}</span>
+                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${dificuldadeClass(item.dificuldade)}`}>
+                      {item.dificuldade}
+                    </span>
+                  </div>
+                  <p className="text-[10.5px] text-gray-500 mt-1">{item.area} · {item.subarea}</p>
+                  {p?.proximaData && (
+                    <p className="text-[10px] text-blue-300 mt-2 flex items-center gap-1">
+                      <CalendarDays size={11} /> reencontro {fmtRelativo(p.proximaData)}
+                    </p>
+                  )}
+                </Card>
               </button>
             );
           })}
         </div>
 
-        <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col gap-4">
+        <Card className="flex flex-col gap-4" style={{ padding: 18 }}>
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="text-[10px] font-black uppercase tracking-wider text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded">{caso.area}</span>
+              <Badge tone="blue">{caso.area}</Badge>
               <span className="text-[10px] text-gray-500 font-mono">{caso.id}</span>
-              {progresso.vistos > 0 && <span className="text-[10px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded">{progresso.vistos} encontro(s)</span>}
+              {progresso.vistos > 0 && <Badge tone="green">{progresso.vistos} encontro(s)</Badge>}
             </div>
             <h3 className="text-lg font-black text-white">{caso.tema}</h3>
             <p className="text-[13px] text-gray-300 leading-relaxed mt-2">{caso.vinheta}</p>
@@ -323,25 +349,31 @@ export default function RaciocinioClinico() {
             </button>
           </div>
 
-          <Tabs items={FASES} active={activeFase} onChange={setActiveFase} />
+          <SegmentedControl
+            ariaLabel="Fases do treino clínico"
+            className="max-w-full overflow-x-auto"
+            onChange={setActiveFase}
+            options={FASES.map((fase) => ({ value: fase.k, label: fase.label }))}
+            value={activeFase}
+          />
 
           {activeFase === "script" && (
             <div className="space-y-3">
               <p className="text-[12px] text-gray-400">Recupere de memória: condições predisponentes, fisiopatologia, achados e conduta. Depois revele o script.</p>
-              <Btn onClick={() => setScriptAberto((v) => !v)} className="gap-2"><Eye size={15} /> {scriptAberto ? "Ocultar script" : "Revelar script"}</Btn>
+              <PremiumButton onClick={() => setScriptAberto((v) => !v)}><Eye size={15} /> {scriptAberto ? "Ocultar script" : "Revelar script"}</PremiumButton>
               {scriptAberto && (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {Object.entries(caso.script).map(([key, value]) => (
-                    <div key={key} className="bg-black/30 border border-white/5 rounded-xl p-3">
+                    <Card key={key} style={{ padding: 12, background: "rgba(0,0,0,.22)" }}>
                       <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{key}</p>
                       <p className="text-[12px] text-gray-200 mt-1 leading-relaxed">{value}</p>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
               <div className="flex flex-wrap gap-2">
-                <Btn onClick={() => registrarScript(true)}><CheckCircle size={15} /> Recuperei bem</Btn>
-                <Btn variant="ghost" onClick={() => registrarScript(false)}>Preciso reencontrar em 2 dias</Btn>
+                <PremiumButton onClick={() => registrarScript(true)}><CheckCircle size={15} /> Recuperei bem</PremiumButton>
+                <PremiumButton variant="secondary" onClick={() => registrarScript(false)}>Preciso reencontrar em 2 dias</PremiumButton>
               </div>
             </div>
           )}
@@ -350,18 +382,18 @@ export default function RaciocinioClinico() {
             <div className="space-y-3">
               <Textarea rows={4} value={diferenciaisLivres} onChange={(e) => setDiferenciaisLivres(e.target.value)} placeholder="Liste seus diferenciais, exames e conduta antes de revelar o painel." />
               <div className="flex flex-wrap gap-2">
-                <Btn onClick={() => setCasoRevelado(true)}>Revelar painel</Btn>
-                <Btn variant="ghost" onClick={() => registrarCasoEstruturado(true)}>Acertei o diagnóstico</Btn>
-                <Btn variant="ghost" onClick={() => registrarCasoEstruturado(false)}>Errei / incompleto</Btn>
+                <PremiumButton onClick={() => setCasoRevelado(true)}>Revelar painel</PremiumButton>
+                <PremiumButton variant="secondary" onClick={() => registrarCasoEstruturado(true)}>Acertei o diagnóstico</PremiumButton>
+                <PremiumButton variant="secondary" onClick={() => registrarCasoEstruturado(false)}>Errei / incompleto</PremiumButton>
               </div>
               {casoRevelado && (
                 <div className="space-y-3">
                   <div className="grid gap-2">
                     {caso.diferenciais.map((d) => (
-                      <div key={d.dx} className="bg-black/30 border border-white/5 rounded-xl p-3">
+                      <Card key={d.dx} style={{ padding: 12, background: "rgba(0,0,0,.22)" }}>
                         <p className="text-[12px] font-black text-gray-100">{d.dx} <span className="text-[10px] text-gray-500">({d.plausibilidade})</span></p>
                         <p className="text-[12px] text-gray-400 mt-1">{d.pista}</p>
-                      </div>
+                      </Card>
                     ))}
                   </div>
                   <p className="text-[12px] text-gray-300"><strong className="text-white">Workup:</strong> {caso.workup.join(", ")}</p>
@@ -374,7 +406,7 @@ export default function RaciocinioClinico() {
           {activeFase === "sct" && (
             <div className="space-y-3">
               {caso.sct.map((item, idx) => (
-                <div key={`${item.hipotese}-${idx}`} className="bg-black/30 border border-white/5 rounded-xl p-3">
+                <Card key={`${item.hipotese}-${idx}`} style={{ padding: 12, background: "rgba(0,0,0,.22)" }}>
                   <p className="text-[12px] text-gray-200"><strong>Hipótese:</strong> {item.hipotese}</p>
                   <p className="text-[12px] text-gray-400 mt-1"><strong>Nova informação:</strong> {item.novaInfo}</p>
                   <div className="flex flex-wrap gap-1.5 mt-3">
@@ -394,9 +426,9 @@ export default function RaciocinioClinico() {
                       Painel: <strong className="text-white">{item.efeitoPainel > 0 ? `+${item.efeitoPainel}` : item.efeitoPainel}</strong>. {item.racional}
                     </p>
                   )}
-                </div>
+                </Card>
               ))}
-              <Btn onClick={revelarSct}>Comparar com painel</Btn>
+              <PremiumButton onClick={revelarSct}>Comparar com painel</PremiumButton>
             </div>
           )}
 
@@ -404,7 +436,7 @@ export default function RaciocinioClinico() {
             <div className="space-y-3">
               <p className="text-[12px] text-gray-400">Queixa-guia: <strong className="text-gray-100">{caso.anamnese.queixa}</strong></p>
               {caso.anamnese.roteiro.map((bloco) => (
-                <div key={bloco.bloco} className="bg-black/30 border border-white/5 rounded-xl p-3">
+                <Card key={bloco.bloco} style={{ padding: 12, background: "rgba(0,0,0,.22)" }}>
                   <p className="text-[12px] font-black text-gray-100 mb-2">{bloco.bloco}</p>
                   <div className="grid gap-2">
                     {bloco.perguntasChave.map((pergunta) => (
@@ -418,9 +450,9 @@ export default function RaciocinioClinico() {
                       </label>
                     ))}
                   </div>
-                </div>
+                </Card>
               ))}
-              <Btn onClick={revelarAnamnese}>Revelar roteiro e red flags</Btn>
+              <PremiumButton onClick={revelarAnamnese}>Revelar roteiro e red flags</PremiumButton>
               {anamneseRevelada && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
                   <p className="text-[10px] uppercase tracking-wider text-red-300 font-black">Red flags</p>
@@ -518,15 +550,15 @@ export default function RaciocinioClinico() {
                   })()}
 
                   {!conductaRevelada && (
-                    <Btn onClick={revelarConduta}>
+                    <PremiumButton onClick={revelarConduta}>
                       <Eye size={14} /> Revelar gabarito de conduta
-                    </Btn>
+                    </PremiumButton>
                   )}
 
                   {/* Gabarito pos-revelacao */}
                   {conductaRevelada && (
                     <div className="space-y-3">
-                      <div className="bg-black/30 border border-white/5 rounded-2xl p-4 space-y-3">
+                      <Card className="space-y-3" style={{ padding: 16, background: "rgba(0,0,0,.22)" }}>
                         <p className="text-[10px] uppercase tracking-wider text-blue-300 font-bold">Gabarito educacional</p>
                         <div className="grid gap-2 sm:grid-cols-2">
                           <div>
@@ -550,7 +582,7 @@ export default function RaciocinioClinico() {
                             <p className="text-[12px] text-gray-200">{caso.anamnese.redFlags.join(", ")}</p>
                           </div>
                         )}
-                      </div>
+                      </Card>
                       {/* Score de cobertura */}
                       {(() => {
                         const preenchidos = CONDUTA_FIELDS.filter(
@@ -558,12 +590,12 @@ export default function RaciocinioClinico() {
                         ).length;
                         const pct = Math.round((preenchidos / CONDUTA_FIELDS.length) * 100);
                         return (
-                          <div className="flex items-center gap-3 bg-[#111113] border border-white/5 rounded-xl px-4 py-3">
+                          <Card className="flex items-center gap-3" style={{ padding: "12px 16px" }}>
                             <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">Cobertura da conduta</p>
                             <p className={`text-xl font-black tabular-nums ml-auto ${pct >= 80 ? "text-emerald-400" : pct >= 60 ? "text-amber-400" : "text-red-400"}`}>
                               {pct}%
                             </p>
-                          </div>
+                          </Card>
                         );
                       })()}
                     </div>
@@ -572,7 +604,7 @@ export default function RaciocinioClinico() {
               )}
             </div>
           )}
-        </div>
+        </Card>
       </div>
       <SessionClosureModal
         open={showClosure}
@@ -589,27 +621,27 @@ export default function RaciocinioClinico() {
         onSkip={() => setShowClosure(false)}
         onClose={() => setShowClosure(false)}
       />
-      {showWhy && (
-        <Modal onClose={() => setShowWhy(false)} wide>
-          <div className="space-y-3 text-left">
-            <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Por que usar essa função?</p>
-            <h2 className="text-[16px] font-black text-white">Raciocínio clínico treina transferência, não só memória.</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                ["Illness scripts", "Organizam predisponentes, mecanismo, consequências e conduta para reduzir raciocínio solto."],
-                ["Casos variantes", "Forçam aplicar o mesmo tema em contexto novo, que é onde questões clínicas cobram discriminação."],
-                ["Diferenciais", "Treinam separar hipóteses parecidas pelos dados discriminantes."],
-                ["SCT e conduta", "Treinam decisão sob incerteza e justificativa educacional de manejo."],
-              ].map(([title, body]) => (
-                <div key={title} className="rounded-2xl border border-white/5 bg-white/[0.03] p-3">
-                  <p className="text-[12px] font-bold text-gray-100">{title}</p>
-                  <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Modal>
-      )}
+      <Dialog
+        open={showWhy}
+        onClose={() => setShowWhy(false)}
+        title="Por que usar essa função?"
+        description="Raciocínio clínico treina transferência, não só memória."
+        wide
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            ["Illness scripts", "Organizam predisponentes, mecanismo, consequências e conduta para reduzir raciocínio solto."],
+            ["Casos variantes", "Forçam aplicar o mesmo tema em contexto novo, que é onde questões clínicas cobram discriminação."],
+            ["Diferenciais", "Treinam separar hipóteses parecidas pelos dados discriminantes."],
+            ["SCT e conduta", "Treinam decisão sob incerteza e justificativa educacional de manejo."],
+          ].map(([title, body]) => (
+            <Card key={title} style={{ padding: 12 }}>
+              <p className="text-[12px] font-bold text-gray-100">{title}</p>
+              <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{body}</p>
+            </Card>
+          ))}
+        </div>
+      </Dialog>
       {showCreateCase && (() => {
         const filteredTemas = (() => {
           const q = temaQuery.trim().toLowerCase();
@@ -634,14 +666,16 @@ export default function RaciocinioClinico() {
         ][wizardStep - 1];
 
         return (
-          <Modal onClose={() => { setShowCreateCase(false); setWizardStep(1); }} wide>
+          <Dialog
+            open={showCreateCase}
+            onClose={() => { setShowCreateCase(false); setWizardStep(1); }}
+            title={STEPS_WIZARD[wizardStep - 1]}
+            description={`Criar caso clínico · Passo ${wizardStep}/${STEPS_WIZARD.length}`}
+            wide
+          >
             <div className="space-y-4 text-left">
               {/* Header */}
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">Criar caso clínico · Passo {wizardStep}/{STEPS_WIZARD.length}</p>
-                  <h2 className="text-[15px] font-black text-white mt-0.5">{STEPS_WIZARD[wizardStep - 1]}</h2>
-                </div>
                 <div className="flex gap-1">
                   {STEPS_WIZARD.map((_, i) => (
                     <div key={i} className={`h-1.5 w-6 rounded-full transition-all ${i < wizardStep ? "bg-blue-500" : "bg-white/10"}`} />
@@ -732,19 +766,19 @@ export default function RaciocinioClinico() {
 
               {/* Botões de navegação */}
               <div className="flex gap-2 pt-2">
-                {wizardStep > 1 && <Btn variant="ghost" onClick={() => setWizardStep(s => s - 1)}>Anterior</Btn>}
+                {wizardStep > 1 && <PremiumButton variant="secondary" onClick={() => setWizardStep(s => s - 1)}>Anterior</PremiumButton>}
                 {wizardStep < STEPS_WIZARD.length ? (
-                  <Btn className="flex-1" onClick={() => setWizardStep(s => s + 1)} disabled={!canAdvance}>
+                  <PremiumButton fullWidth onClick={() => setWizardStep(s => s + 1)} disabled={!canAdvance}>
                     Próximo →
-                  </Btn>
+                  </PremiumButton>
                 ) : (
-                  <Btn className="flex-1" onClick={saveCustomCase} disabled={!caseDraft.tema.trim() || !caseDraft.vinheta.trim() || !caseDraft.diagnostico.trim()}>
+                  <PremiumButton fullWidth onClick={saveCustomCase} disabled={!caseDraft.tema.trim() || !caseDraft.vinheta.trim() || !caseDraft.diagnostico.trim()}>
                     Salvar e vincular ao plano
-                  </Btn>
+                  </PremiumButton>
                 )}
               </div>
             </div>
-          </Modal>
+          </Dialog>
         );
       })()}
     </div>

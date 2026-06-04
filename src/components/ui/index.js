@@ -1,8 +1,13 @@
 export { Badge } from "./Badge";
 export { Button } from "./Button";
 export { Card } from "./Card";
+export { Dialog, DialogFooter } from "./Dialog";
 export { EmptyState } from "./EmptyState";
 export { MetricRing } from "./MetricRing";
+export { OverlayProvider } from "./OverlayProvider";
 export { SegmentedControl } from "./SegmentedControl";
+export { Sheet } from "./Sheet";
 export { Skeleton } from "./Skeleton";
 export { Tabs } from "./Tabs";
+export { Toast } from "./Toast";
+export { Tooltip } from "./Tooltip";

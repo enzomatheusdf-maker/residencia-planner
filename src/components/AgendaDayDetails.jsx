@@ -9,7 +9,7 @@ import { estimateTaskMinutes } from "../core/agendaEngine";
 import { getEnamedContextBadge } from "../core/enamedIntel";
 import { getRetrievability } from "../core/fsrs";
 import { getAgendaTaskLabel, getAgendaTaskTarget } from "../core/planExecution";
-import { Modal } from "./Primitives";
+import { Badge, Button, Card, Dialog } from "./ui";
 
 function formatPercent(value) {
   if (value == null || Number.isNaN(Number(value))) return null;
@@ -35,12 +35,12 @@ function summarizeAttempts(attempts = []) {
 
 function DetailMetric({ icon: Icon, label, value }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+    <Card style={{ padding: 12 }}>
       <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">
         <Icon size={12} /> {label}
       </div>
       <p className="mt-1 text-[13px] font-black text-gray-100">{value || "Sem dado real"}</p>
-    </div>
+    </Card>
   );
 }
 
@@ -95,7 +95,19 @@ function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, o
   }
 
   return (
-    <Modal onClose={onClose} wide>
+    <Dialog
+      open
+      title="Detalhes da tarefa"
+      description="Contexto executável do item selecionado na agenda."
+      onClose={onClose}
+      wide
+      mobileSheet
+      footer={(
+        <Button fullWidth onClick={handleStart} variant={target?.action === "open_plan" ? "secondary" : "primary"}>
+          {target?.action === "open_plan" ? "Ver plano" : startLabel}
+        </Button>
+      )}
+    >
       <div className="space-y-5">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -106,13 +118,14 @@ function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, o
               {item.originalDate && item.originalDate !== item.date ? `, exibida em ${item.date}` : ""}.
             </p>
           </div>
-          <button
+          <Button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-bold text-gray-300 hover:bg-white/10"
+            size="sm"
+            variant="secondary"
           >
             Fechar
-          </button>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -122,7 +135,7 @@ function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, o
           <DetailMetric icon={Target} label="Estabilidade/Dificuldade" value={review ? `S ${review.S ?? "-"} · D ${review.D ?? "-"}` : null} />
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+        <Card className="space-y-3" style={{ padding: 16 }}>
           <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-gray-300">
             <BarChart3 size={14} className="text-blue-300" /> Incidência e desempenho
           </div>
@@ -148,33 +161,25 @@ function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, o
               ))}
             </div>
           )}
-        </div>
+        </Card>
 
         {acaoRecomendada && (
-          <div className="rounded-2xl border border-blue-500/20 bg-blue-500/8 p-4">
-            <p className="text-[10px] font-black uppercase tracking-wider text-blue-400 mb-1">Ação recomendada</p>
+          <Card style={{ padding: 16, borderColor: "rgba(59,130,246,.22)", background: "var(--med-blue-soft)" }}>
+            <Badge tone="blue">Ação recomendada</Badge>
             <p className="text-[12px] text-gray-200 leading-relaxed">{acaoRecomendada}</p>
-          </div>
+          </Card>
         )}
 
         {desempenhoTema != null && (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <Card style={{ padding: 16 }}>
             <p className="text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1">Desempenho no tema</p>
             <p className={`text-[13px] font-black ${desempenhoTema >= 70 ? "text-emerald-400" : desempenhoTema >= 50 ? "text-amber-400" : "text-red-400"}`}>
               {desempenhoTema}% acerto médio ({Object.values(tema?.rev || {}).filter(r => r?.done && r.acerto != null).length} revisões)
             </p>
-          </div>
+          </Card>
         )}
-
-        <button
-          type="button"
-          onClick={handleStart}
-          className="w-full rounded-xl bg-blue-600 px-4 py-3 text-[12px] font-black text-white hover:bg-blue-500 transition-colors"
-        >
-          {target?.action === "open_plan" ? "Ver plano" : startLabel}
-        </button>
       </div>
-    </Modal>
+    </Dialog>
   );
 }
 
@@ -192,20 +197,21 @@ export default function AgendaDayDetails({ daySummary, temas = [], temaStats = {
   const dateLabel = date ? `${d}/${m}` : "";
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0f0f19] p-4 space-y-3">
+    <Card className="space-y-3" style={{ padding: 16, background: "linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025)), var(--med-surface-solid)" }}>
       {/* Cabeçalho do dia */}
       <div className="flex items-center justify-between">
-        <h4 className="text-[12px] font-black text-white">
-          Agenda — {dateLabel}
-        </h4>
-        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+        <div>
+          <Badge tone="blue">Agenda</Badge>
+          <h4 className="mt-2 text-[12px] font-black text-white">{dateLabel}</h4>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2 text-[10px] text-gray-500">
           {overdueCount > 0 && (
-            <span className="text-red-400 font-bold">{overdueCount} atrasado{overdueCount > 1 ? "s" : ""}</span>
+            <Badge tone="red">{overdueCount} atrasado{overdueCount > 1 ? "s" : ""}</Badge>
           )}
           {newCount > 0 && (
-            <span className="text-green-400 font-bold">{newCount} novo{newCount > 1 ? "s" : ""}</span>
+            <Badge tone="green">{newCount} novo{newCount > 1 ? "s" : ""}</Badge>
           )}
-          <span>{totalMinutes} min</span>
+          <Badge tone="neutral">{totalMinutes} min</Badge>
         </div>
       </div>
 
@@ -236,6 +242,6 @@ export default function AgendaDayDetails({ daySummary, temas = [], temaStats = {
           onOpenPlan={onOpenPlan}
         />
       )}
-    </div>
+    </Card>
   );
 }

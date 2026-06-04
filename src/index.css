@@ -216,6 +216,14 @@ input[type=date] { color-scheme: dark; }
   animation: medScaleIn var(--med-duration-base) var(--med-ease-out) both;
 }
 
+.med-route-enter {
+  animation: medFadeUp var(--med-duration-slow) var(--med-ease-out) both;
+}
+
+.med-card-enter {
+  animation: medFadeUp var(--med-duration-base) var(--med-ease-out) both;
+}
+
 .med-surface {
   border: 1px solid var(--med-border-subtle);
   background: var(--med-surface-1);
@@ -232,7 +240,9 @@ input[type=date] { color-scheme: dark; }
   .med-card-interactive,
   .med-pressable,
   .med-animate-in,
-  .med-animate-scale {
+  .med-animate-scale,
+  .med-route-enter,
+  .med-card-enter {
     animation: none !important;
     transition: none !important;
     transform: none !important;

@@ -4,34 +4,40 @@
 import React from "react";
 import { AlertTriangle, Info, TrendingUp, TrendingDown } from "lucide-react";
 import { METRIC_STATUS } from "../core/metricsRegistry";
+import { Badge, Card } from "./ui";
 
 const STATUS_STYLE = {
   [METRIC_STATUS.COLLECTING]: {
     badge: "bg-gray-700/60 text-gray-400 border-gray-600/30",
+    tone: "neutral",
     label: "Coletando",
     icon: Info,
     valueColor: "text-gray-500",
   },
   [METRIC_STATUS.LOW_CONFIDENCE]: {
     badge: "bg-yellow-900/30 text-yellow-400 border-yellow-600/20",
+    tone: "amber",
     label: "Baixa amostra",
     icon: Info,
     valueColor: "text-yellow-400",
   },
   [METRIC_STATUS.OK]: {
     badge: "bg-emerald-900/30 text-emerald-400 border-emerald-600/20",
+    tone: "green",
     label: "OK",
     icon: null,
     valueColor: "text-emerald-400",
   },
   [METRIC_STATUS.WARNING]: {
     badge: "bg-amber-900/30 text-amber-400 border-amber-600/20",
+    tone: "amber",
     label: "Atencao",
     icon: AlertTriangle,
     valueColor: "text-amber-400",
   },
   [METRIC_STATUS.CRITICAL]: {
     badge: "bg-red-900/30 text-red-400 border-red-600/20",
+    tone: "red",
     label: "Critico",
     icon: AlertTriangle,
     valueColor: "text-red-400",
@@ -66,18 +72,17 @@ export default function MetricCard({
   const isCollecting = status === METRIC_STATUS.COLLECTING || status === METRIC_STATUS.LOW_CONFIDENCE;
 
   return (
-    <div
-      className={`bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col justify-between gap-2 min-h-[100px] ${className}`}
+    <Card
+      className={`flex min-h-[100px] flex-col justify-between gap-2 ${className}`}
+      style={{ padding: 16, background: "var(--med-surface-0)" }}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <p className="text-[10px] text-gray-500 uppercase font-semibold leading-tight flex-1">{label}</p>
-        <span
-          className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border flex items-center gap-1 shrink-0 ${style.badge}`}
-        >
+        <Badge tone={style.tone} className="shrink-0">
           {StatusIcon && <StatusIcon size={9} />}
           {style.label}
-        </span>
+        </Badge>
       </div>
 
       {/* Valor */}
@@ -114,6 +119,6 @@ export default function MetricCard({
           {action}
         </p>
       )}
-    </div>
+    </Card>
   );
 }

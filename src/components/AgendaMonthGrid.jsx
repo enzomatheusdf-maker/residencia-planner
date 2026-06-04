@@ -6,6 +6,7 @@ import React, { useMemo, useState } from "react";
 import { buildAgendaMonth } from "../core/agendaEngine";
 import { todayStr } from "../core/fsrs";
 import AgendaDayDetails from "./AgendaDayDetails";
+import { Badge, Button, Card } from "./ui";
 
 const MONTH_LABELS = [
   "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
@@ -68,25 +69,32 @@ export default function AgendaMonthGrid({
   return (
     <div className="space-y-4">
       {/* Navegação de mês */}
-      <div className="flex items-center justify-between">
-        <button
+      <Card variant="elevated" style={{ padding: 14 }}>
+        <div className="flex items-center justify-between gap-3">
+        <Button
           type="button"
           onClick={() => setCurrentMonth(monthOffset(currentMonth, -1))}
-          className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-[11px] font-bold hover:bg-white/10 cursor-pointer"
+          size="sm"
+          variant="secondary"
         >
           Anterior
-        </button>
-        <h4 className="text-sm font-black text-white">
-          {MONTH_LABELS[month - 1]} {year}
-        </h4>
-        <button
+        </Button>
+        <div className="text-center">
+          <Badge tone="blue">Agenda mensal</Badge>
+          <h4 className="mt-2 text-sm font-black text-white">
+            {MONTH_LABELS[month - 1]} {year}
+          </h4>
+        </div>
+        <Button
           type="button"
           onClick={() => setCurrentMonth(monthOffset(currentMonth, 1))}
-          className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 text-[11px] font-bold hover:bg-white/10 cursor-pointer"
+          size="sm"
+          variant="secondary"
         >
           Próximo
-        </button>
-      </div>
+        </Button>
+        </div>
+      </Card>
 
       {/* Cabeçalhos dos dias da semana */}
       <div className="grid grid-cols-7 gap-1 text-center">
@@ -96,6 +104,7 @@ export default function AgendaMonthGrid({
       </div>
 
       {/* Grid de dias */}
+      <Card variant="default" style={{ padding: 10 }}>
       <div className="grid grid-cols-7 gap-1">
         {cells.map((day, i) => {
           if (!day) {
@@ -111,14 +120,14 @@ export default function AgendaMonthGrid({
               key={day.date}
               type="button"
               onClick={() => setSelectedDate(day.date)}
-              className={`relative flex flex-col items-center justify-center rounded-xl py-2 text-[11px] font-bold transition-colors cursor-pointer ${
+              className={`med-pressable med-focus-ring relative flex min-h-[42px] flex-col items-center justify-center rounded-xl py-2 text-[11px] font-bold transition-colors cursor-pointer border ${
                 isSelected
-                  ? "bg-blue-600 text-white"
+                  ? "bg-blue-600 text-white border-blue-400/50"
                   : isToday
                   ? "bg-blue-500/20 border border-blue-500/40 text-blue-200"
                   : day.totalCount > 0
                   ? "bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10"
-                  : "text-gray-600 hover:text-gray-400"
+                  : "border-transparent text-gray-600 hover:text-gray-400"
               }`}
             >
               {dd}
@@ -132,11 +141,12 @@ export default function AgendaMonthGrid({
           );
         })}
       </div>
+      </Card>
 
       {/* Resumo mensal */}
-      <div className="flex items-center gap-4 text-[11px] text-gray-500">
-        <span>{monthData.totalItems} itens no mês</span>
-        <span>{Math.round(monthData.totalMinutes / 60)}h estimadas</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge tone="neutral">{monthData.totalItems} itens no mes</Badge>
+        <Badge tone="cyan">{Math.round(monthData.totalMinutes / 60)}h estimadas</Badge>
       </div>
 
       {/* Detalhes do dia selecionado */}
@@ -150,9 +160,9 @@ export default function AgendaMonthGrid({
         />
       )}
       {selectedDayData && selectedDayData.isEmpty && (
-        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 text-center">
+        <Card style={{ padding: 18, textAlign: "center" }}>
           <p className="text-[12px] text-gray-500">Nenhuma tarefa agendada para este dia.</p>
-        </div>
+        </Card>
       )}
     </div>
   );
