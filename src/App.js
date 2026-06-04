@@ -953,7 +953,7 @@ export default function App() {
         }, 1500);
       }
     },
-    [plat, pushUndo, setBrainDumpD1, addTemaStats, markStep, updateTema, showToast, meta.metaDiaria, concluidosHoje, addXp, updateGamifStreak, userName, totalFilaHoje, usuarioLogado?.uid]
+    [plat, pushUndo, setBrainDumpD1, addTemaStats, markStep, updateTema, showToast, meta.metaDiaria, concluidosHoje, addXp, updateGamifStreak, userName, totalFilaHoje]
   );
 
   const handleSaveTema = useCallback(
