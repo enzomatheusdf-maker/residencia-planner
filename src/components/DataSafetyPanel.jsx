@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { Download, HardDrive, ShieldCheck, Upload, Database, RefreshCcw } from "lucide-react";
+import { Download, HardDrive, ShieldCheck, Upload, Database, RefreshCcw, Activity } from "lucide-react";
 import { exportMedrevBackup, importMedrevBackup, validateMedrevBackup } from "../core/backup";
 import { validateStateIntegrity } from "../core/dataIntegrity";
+import { FSRS_CANONICAL_SHADOW_ENABLED, isDevOnlyEnabled } from "../core/devFlags";
+import { buildFsrsShadowReport } from "../core/fsrsShadowReport";
 import {
   backupLegacyGlobalStore,
   detectLegacyGlobalStore,
@@ -33,6 +35,8 @@ function readPersistedPayload(storageKey) {
 export default function DataSafetyPanel() {
   const showToast = useStore((s) => s.showToast);
   const openConfirm = useStore((s) => s.openConfirm);
+  const activePlat = useStore((s) => s.plat || "res");
+  const temas = useStore((s) => s[activePlat]?.temas || []);
   const [validation, setValidation] = useState(null);
   const [importCandidate, setImportCandidate] = useState(null);
   const [importValidation, setImportValidation] = useState(null);
@@ -46,6 +50,11 @@ export default function DataSafetyPanel() {
     const raw = localStorage.getItem(storageKey);
     return raw ? new Blob([raw]).size : 0;
   }, [storageKey]);
+  const showFsrsShadowReport = FSRS_CANONICAL_SHADOW_ENABLED && isDevOnlyEnabled();
+  const fsrsShadowReport = useMemo(
+    () => (showFsrsShadowReport ? buildFsrsShadowReport(temas) : null),
+    [showFsrsShadowReport, temas]
+  );
 
   const handleExport = () => {
     const backup = exportMedrevBackup(useStore.getState(), {
@@ -257,6 +266,45 @@ export default function DataSafetyPanel() {
           </p>
           {validation.warnings?.length > 0 && (
             <p className="mt-1 text-yellow-200">{validation.warnings.join(" | ")}</p>
+          )}
+        </div>
+      )}
+
+      {showFsrsShadowReport && fsrsShadowReport && (
+        <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Activity size={13} className="text-cyan-300" />
+              <p className="text-[10px] font-black uppercase tracking-wider text-gray-300">DEV FSRS canonical shadow</p>
+            </div>
+            <span className="text-[10px] text-gray-500">{activePlat}</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3 text-[10px]">
+            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
+              <p className="text-gray-500">Eventos shadow</p>
+              <p className="text-gray-100 font-black">{fsrsShadowReport.shadowEvents}/{fsrsShadowReport.totalEvents}</p>
+            </div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
+              <p className="text-gray-500">Media |delta|</p>
+              <p className="text-gray-100 font-black">{fsrsShadowReport.averageAbsDiffDays}d</p>
+            </div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
+              <p className="text-gray-500">Mediana / p90</p>
+              <p className="text-gray-100 font-black">{fsrsShadowReport.medianAbsDiffDays}d / {fsrsShadowReport.p90AbsDiffDays}d</p>
+            </div>
+            <div className="rounded-lg border border-white/5 bg-white/[0.03] p-2">
+              <p className="text-gray-500">|delta| &gt; 3d</p>
+              <p className="text-gray-100 font-black">{fsrsShadowReport.percentAbsDiffOver3Days}%</p>
+            </div>
+          </div>
+          {fsrsShadowReport.topDivergences.length > 0 && (
+            <div className="mt-3 space-y-1">
+              {fsrsShadowReport.topDivergences.slice(0, 3).map((item) => (
+                <p key={`${item.temaId || "tema"}-${item.reviewedAt}-${item.stepKey}`} className="text-[10px] text-gray-400">
+                  {item.temaNome || item.temaId || "Tema"} · {item.stepKey} · {item.diffDays ?? "?"}d
+                </p>
+              ))}
+            </div>
           )}
         </div>
       )}

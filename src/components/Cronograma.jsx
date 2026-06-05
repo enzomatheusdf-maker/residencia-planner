@@ -15,6 +15,7 @@ import {
   getReviewDisplayMeta,
 } from "../core/domainValidation";
 import { getEnamedContextBadge } from "../core/enamedIntel";
+import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
 import CalendarProviderSelector from "./CalendarProviderSelector";
 import { ModalValidarDominio } from "./Modals";
 import RetrievabilitySpark from "./RetrievabilitySpark";
@@ -274,7 +275,12 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
     [calendarProvider?.scheduledTopics]
   );
   const simulados = useStore((s) => s[plat].simulados);
-  const temaStats = useStore((s) => s[plat]?.temaStats || s.temaStats || {});
+  const learningEvents = useStore((s) => s.learningEvents || []);
+  const legacyTemaStats = useStore((s) => s.temaStats || {});
+  const temaStats = useMemo(
+    () => getTemaStatsFromLearningEvents(learningEvents, { plat, fallbackTemaStats: legacyTemaStats }),
+    [learningEvents, plat, legacyTemaStats]
+  );
 
   useEffect(() => {
     const nextTab = getPlanTabFromTarget(navigationTarget, null);

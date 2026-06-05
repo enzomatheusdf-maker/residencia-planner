@@ -1,5 +1,13 @@
-import { createLearningEvent, appendLearningEvent, summarizeLearningEvents } from "./learningEvent";
-import { useStore } from "./store";
+import {
+  appendLearningEvent,
+  createLearningEvent,
+  getEventsByTema,
+  getLearningEventStatsList,
+  getTemaStatsFromLearningEvents,
+  summarizeByArea,
+  summarizeLearningEvents,
+} from "./learningEvent";
+import { migrateTemaStatsToLearningEventsState, TEMA_STATS_MIGRATION_FLAG, useStore } from "./store";
 
 describe("learningEvent core rules", () => {
   test("createLearningEvent normaliza campos", () => {
@@ -107,6 +115,157 @@ describe("learningEvent core rules", () => {
     expect(summary.ratingCounts).toEqual({ good: 1, hard: 1, easy: 1 });
     expect(summary.platCounts).toEqual({ res: 3 });
     expect(summary.topError).toBe("interpretacao");
+  });
+
+  test("seletores derivam o shape antigo de temaStats a partir de learningEvents", () => {
+    const events = [
+      createLearningEvent({
+        id: "ev_1",
+        topicId: 101,
+        topicName: "Arritmias",
+        area: "Clinica",
+        plat: "res",
+        stepKey: "d1",
+        acerto: 0.8,
+        previsao: 0.7,
+        questoes: 10,
+        completedAt: "2026-06-01T10:00:00.000Z",
+      }),
+      createLearningEvent({
+        id: "ev_2",
+        topicId: 101,
+        topicName: "Arritmias",
+        area: "Clinica",
+        plat: "res",
+        stepKey: "d4",
+        acerto: 0.6,
+        questoes: 5,
+        completedAt: "2026-06-02T10:00:00.000Z",
+      }),
+      createLearningEvent({
+        id: "ev_obs",
+        topicId: 101,
+        topicName: "Arritmias",
+        area: "Clinica",
+        plat: "res",
+        source: "session_reflection",
+        officialSchedulingImpact: false,
+      }),
+      createLearningEvent({
+        id: "ev_vest",
+        topicId: 202,
+        area: "Exatas",
+        plat: "vest",
+        stepKey: "d1",
+        acerto: 1,
+      }),
+    ];
+
+    expect(getEventsByTema(events, 101)).toHaveLength(3);
+
+    const temaStats = getTemaStatsFromLearningEvents(events, { plat: "res" });
+    expect(Object.keys(temaStats)).toEqual(["101"]);
+    expect(temaStats["101"]).toHaveLength(2);
+    expect(temaStats["101"][0]).toMatchObject({
+      topicId: 101,
+      stepKey: "d1",
+      acerto: 0.8,
+      previsao: 0.7,
+      questoes: 10,
+      completedAt: "2026-06-01T10:00:00.000Z",
+    });
+
+    const flatStats = getLearningEventStatsList(events, { plat: "res" });
+    expect(flatStats.map((stat) => stat.stepKey)).toEqual(["d1", "d4"]);
+
+    const byArea = summarizeByArea(events, "res");
+    expect(byArea.Clinica).toMatchObject({
+      total: 2,
+      questoes: 15,
+      topicCount: 1,
+      acertoMedio: 0.7,
+    });
+  });
+
+  test("migra temaStats legado para learningEvents de forma idempotente", () => {
+    const legacyState = {
+      plat: "res",
+      meta: {},
+      learningEvents: [],
+      temaStats: {
+        101: [
+          {
+            stepKey: "d1",
+            acerto: 0.8,
+            previsao: 0.7,
+            questoes: 10,
+            confianca: "media",
+            completedAt: "2026-06-01T10:00:00.000Z",
+          },
+          {
+            stepKey: "d4",
+            acerto: 0.6,
+            questoes: 5,
+            motivosErro: ["memoria"],
+            completedAt: "2026-06-02T10:00:00.000Z",
+          },
+        ],
+      },
+      res: { temas: [{ id: 101, nome: "Arritmias", esp: "Clinica" }] },
+      vest: { temas: [] },
+    };
+
+    const migrated = migrateTemaStatsToLearningEventsState(legacyState);
+    expect(migrated.meta[TEMA_STATS_MIGRATION_FLAG]).toBe(true);
+    expect(migrated.learningEvents).toHaveLength(2);
+    expect(migrated.learningEvents[0]).toMatchObject({
+      source: "review",
+      topicId: "101",
+      topicName: "Arritmias",
+      area: "Clinica",
+      plat: "res",
+      stepKey: "d1",
+      acerto: 0.8,
+      previsao: 0.7,
+      questoes: 10,
+      officialSchedulingImpact: true,
+    });
+
+    const migratedAgain = migrateTemaStatsToLearningEventsState(migrated);
+    expect(migratedAgain.learningEvents).toEqual(migrated.learningEvents);
+  });
+
+  test("migração preserva paridade dos agregados basicos de temaStats", () => {
+    const legacyTemaStats = {
+      101: [
+        { stepKey: "d1", acerto: 0.8, questoes: 10, completedAt: "2026-06-01T10:00:00.000Z" },
+        { stepKey: "d4", acerto: 0.6, questoes: 5, completedAt: "2026-06-02T10:00:00.000Z" },
+      ],
+      102: [
+        { stepKey: "d1", acerto: 1, questoes: 8, completedAt: "2026-06-03T10:00:00.000Z" },
+      ],
+    };
+    const migrated = migrateTemaStatsToLearningEventsState({
+      plat: "res",
+      meta: {},
+      learningEvents: [],
+      temaStats: legacyTemaStats,
+      res: {
+        temas: [
+          { id: 101, nome: "Arritmias", esp: "Clinica" },
+          { id: 102, nome: "Apendicite", esp: "Cirurgia" },
+        ],
+      },
+      vest: { temas: [] },
+    });
+
+    const legacyFlat = Object.values(legacyTemaStats).flat();
+    const migratedFlat = getLearningEventStatsList(migrated.learningEvents, { plat: "res" });
+    const sum = (list, key) => list.reduce((acc, item) => acc + Number(item[key] || 0), 0);
+
+    expect(migratedFlat).toHaveLength(legacyFlat.length);
+    expect(sum(migratedFlat, "questoes")).toBe(sum(legacyFlat, "questoes"));
+    expect(sum(migratedFlat, "acerto")).toBeCloseTo(sum(legacyFlat, "acerto"));
   });
 });
 

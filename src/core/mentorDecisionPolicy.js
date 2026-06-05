@@ -107,6 +107,15 @@ function canSuggestNewTopic(context = {}) {
   return true;
 }
 
+function canSuggestInterleavingBlock(context = {}) {
+  const flags = context.operationalMode?.flags || {};
+  const scheduler = context.scheduler || {};
+  return flags.canStartNewTopic === true
+    && Number(scheduler.dueTodayCount || 0) === 0
+    && Number(scheduler.overdueCount || 0) === 0
+    && Number(context.consolidatedCorpus || 0) >= 2;
+}
+
 function collectingSuffix(context = {}) {
   return context?.scheduler?.trueRetentionCollecting
     ? "Retenção longa ainda coletando; priorizo carga, atrasos e desempenho recente."
@@ -390,6 +399,28 @@ export function decideMentorAction(context = {}) {
     const area = plat === "res"
       ? pickMasteryIncidenceArea(context, areaCritica || context.readinessData?.priorityList?.[0]?.area || null)
       : pickMasteryIncidenceArea(context, weakSubject || null);
+
+    if (canSuggestInterleavingBlock(context)) {
+      return buildAction({
+        type: "interleaving_block",
+        priority: 67,
+        title: area ? `Intercalar bloco em ${area}` : "Intercalar bloco consolidado",
+        subtitle: "Fila vazia; ha corpus suficiente para contraste ativo.",
+        reason: "Com duas ou mais areas consolidadas, interleaving ajuda a treinar discriminacao sem abrir cobertura nova.",
+        explain: [
+          "Fila do dia e vencidas estao zeradas.",
+          `${context.consolidatedCorpus || 0} areas ja tem corpus consolidado.`,
+          "Prioridade combina menor maestria com maior incidencia.",
+        ],
+        cta: "Abrir foco",
+        ctaView: "focus",
+        estimatedMinutes: 35,
+        confidence: 0.72,
+        safety: "ok",
+        target: { area, providerId, action: "interleaving_block" },
+      });
+    }
+
     const providerName = providerId ? ` (${providerId})` : "";
     return buildAction({
       type: "new_topic",

@@ -105,6 +105,7 @@ export const criarConta = async (email, senha, nome, manterConectado = true) => 
       vest: { temas: [], simulados: [], ankiLog: [], cronogramas: [] },
       focusMode: false,
       modoSimples: true,
+      learningEvents: [],
       brainDumpD1Data: {},
       temaStats: {},
       onboardingDone: false,

@@ -25,6 +25,7 @@ import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
 import { saldoRitmo } from "../core/volume";
 import { getEnamedIntel } from "../core/enamedIntel";
 import { calculateClinicalReasoningScoreDetailed } from "../core/clinicalReasoningScoring";
+import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
 import EnamedMapa from "./EnamedMapa";
 import AdvancedSection from "./AdvancedSection";
 import MetricCard from "./MetricCard";
@@ -168,13 +169,19 @@ function AccuracyChart({ data }) {
 // ─── StatsPanel principal ─────────────────────────────────────────────────────
 
 export default function StatsPanel({ setView = null }) {
-  const { plat, temaStats, userName, meta } = useStore();
+  const { plat, userName, meta } = useStore();
   const temas = useStore((s) => s[plat]?.temas || []);
   const simulados = useStore((s) => s[plat]?.simulados || []);
   const weeklyReviews = useStore((s) => s.weeklyReviews || []);
   const enamedAnalises = useStore((s) => s.enamedAnalises || []);
   const casosProgresso = useStore((s) => s[plat]?.casosProgresso || {});
   const sessionReflections = useStore((s) => s.sessionReflections || []);
+  const learningEvents = useStore((s) => s.learningEvents || []);
+  const legacyTemaStats = useStore((s) => s.temaStats || {});
+  const temaStats = useMemo(
+    () => getTemaStatsFromLearningEvents(learningEvents, { plat, fallbackTemaStats: legacyTemaStats }),
+    [learningEvents, plat, legacyTemaStats]
+  );
 
   const [activeSection, setActiveSection] = useState("aprendizagem");
   const lastReadinessTelemetryRef = useRef("");
@@ -198,8 +205,8 @@ export default function StatsPanel({ setView = null }) {
 
   // Readiness
   const readinessData = useMemo(
-    () => getReadinessData({ temas, simulados, meta, plat, casosProgresso }),
-    [temas, simulados, meta, plat, casosProgresso]
+    () => getReadinessData({ temas, simulados, meta, plat, casosProgresso, temaStats }),
+    [temas, simulados, meta, plat, casosProgresso, temaStats]
   );
   const readinessValidation = useMemo(() => {
     const latestSimulado = simulados[simulados.length - 1] || null;

@@ -69,7 +69,12 @@ describe("fsrsShadowReport", () => {
     expect(report.failedEvents).toBe(1);
     expect(report.highDivergenceEvents).toBe(1);
     expect(report.averageAbsDiffDays).toBe(8.5);
+    expect(report.medianAbsDiffDays).toBe(8.5);
+    expect(report.p90AbsDiffDays).toBe(16);
+    expect(report.percentAbsDiffOver3Days).toBe(50);
     expect(report.byStep.d1.averageAbsDiffDays).toBe(1);
+    expect(report.byStep.d7.p90AbsDiffDays).toBe(16);
+    expect(report.byStep.d7.percentAbsDiffOver3Days).toBe(100);
     expect(report.byStep.d7.high).toBe(1);
     expect(report.byDirection.canonical_later).toBe(2);
     expect(report.topDivergences[0]).toMatchObject({

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 // Camada Core & State
-import { useStore } from "./core/store";
+import { migrateTemaStatsToLearningEventsState, useStore } from "./core/store";
 import { STEPS, isOverdue, todayStr, normalizeTema, getWorkloadProjection } from "./core/fsrs";
 import { xpForReview } from "./core/gamif";
 import { ACHIEVEMENTS } from "./core/achievements";
@@ -22,6 +22,7 @@ import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } fr
 import { shouldShowOnboardingV2 } from "./core/onboardingGate";
 import { featureEnabled } from "./core/platformFeatures";
 import { NAV_VIEW, buildPlanAgendaTarget, getMoreNavItems } from "./core/navigationModel";
+import { getLearningEventStatsList, getTemaStatsFromLearningEvents } from "./core/learningEvent";
 
 // Camada de Hooks/Estatísticas
 import { useFilaInteligente } from "./hooks/useMetrics";
@@ -330,6 +331,7 @@ export default function App() {
     actionInboxState: state.actionInboxState,
     sessionReflections: state.sessionReflections,
     weeklyReviews: state.weeklyReviews,
+    learningEvents: state.learningEvents,
     brainDumpD1Data: state.brainDumpD1Data,
     temaStats: state.temaStats,
     vistos: state.vistos || [],
@@ -388,12 +390,17 @@ export default function App() {
     const currentPlat = currentState.plat;
     const currentTemas = currentState[currentPlat]?.temas || [];
     const currentSims = currentState[currentPlat]?.simulados || [];
+    const currentTemaStats = getTemaStatsFromLearningEvents(currentState.learningEvents || [], {
+      plat: currentPlat,
+      fallbackTemaStats: currentState.temaStats || {},
+    });
     
     const readiness = getReadinessData({
       temas: currentTemas,
       simulados: currentSims,
       meta: currentMeta,
-      plat: currentPlat
+      plat: currentPlat,
+      temaStats: currentTemaStats
     });
     const score = readiness.score || 0;
     
@@ -494,7 +501,7 @@ export default function App() {
               ? firebaseVest
               : { ...currentState.vest, ...(firebaseVest || {}), temas: currentState.vest.temas };
 
-            useStore.setState({
+            const nextRemoteState = migrateTemaStatsToLearningEventsState({
               plat: dados.plat || "res",
               cronogramaSel: dados.cronogramaSel || currentState.cronogramaSel,
               calendarProvider: dados.calendarProvider || currentState.calendarProvider,
@@ -516,6 +523,7 @@ export default function App() {
               actionInboxState: dados.actionInboxState || currentState.actionInboxState,
               sessionReflections: dados.sessionReflections || [],
               weeklyReviews: dados.weeklyReviews || [],
+              learningEvents: dados.learningEvents || [],
               brainDumpD1Data: dados.brainDumpD1Data || {},
               temaStats: dados.temaStats || {},
               vistos: dados.vistos || [],
@@ -523,6 +531,7 @@ export default function App() {
               ownerUid: uid,
               updatedAt: remoteTime,
             });
+            useStore.setState(nextRemoteState);
           } else {
             const stateToSave = buildStateToSync(currentState, uid);
             await sincronizarComFirebase(uid, stateToSave).catch((err) => {
@@ -924,7 +933,11 @@ export default function App() {
       }, 250);
 
       // Milestone check
-      const allDone = Object.values(useStore.getState().temaStats).flat().length + 1;
+      const currentStateForMilestone = useStore.getState();
+      const allDone = getLearningEventStatsList(currentStateForMilestone.learningEvents || [], {
+        plat,
+        fallbackTemaStats: currentStateForMilestone.temaStats || {},
+      }).length;
       if ([7, 14, 30, 100, 200].includes(allDone)) {
         setTimeout(() => showToast(`🎯 Marco de ${allDone} revisões concluídas!`), 1500);
       }

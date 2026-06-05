@@ -1,5 +1,11 @@
 import { Rating } from "ts-fsrs";
 import {
+  addDays,
+  buildRev,
+  recalcAfterMark,
+  todayStr,
+} from "./fsrs";
+import {
   buildFsrsCanonicalShadow,
   compareLiteVsCanonical,
   mapLiteRatingToCanonical,
@@ -61,5 +67,82 @@ describe("fsrsCanonicalShadow", () => {
     expect(shadow.comparison.liteIntervalAfter).toBe(4);
     expect(shadow.warnings).toContain("topic_as_card_adapter_not_authoritative");
     expect(() => JSON.stringify(shadow)).not.toThrow();
+  });
+
+  test("replays official history deterministically through one canonical card", () => {
+    const tema = {
+      id: "tema-replay",
+      nome: "Choque",
+      rev: {
+        reviewHistory: [
+          {
+            stepKey: "d1",
+            reviewedAt: "2026-06-01",
+            scheduledAt: "2026-06-01",
+            rating: "good",
+            effectiveRating: "good",
+            intervalAfter: 3,
+            official: true,
+          },
+          {
+            stepKey: "d4-shadow-only",
+            reviewedAt: "2026-06-02",
+            scheduledAt: "2026-06-02",
+            rating: "again",
+            effectiveRating: "again",
+            intervalAfter: 1,
+            official: false,
+          },
+        ],
+      },
+    };
+    const input = {
+      tema,
+      stepKey: "d4",
+      acerto: 0.86,
+      ratingLite: "good",
+      effectiveRating: "good",
+      scheduledAt: "2026-06-04",
+      reviewedAt: "2026-06-04",
+      atrasoDias: 0,
+      phaseBefore: "learning",
+      liteIntervalAfter: 4,
+    };
+
+    const first = buildFsrsCanonicalShadow(input);
+    const second = buildFsrsCanonicalShadow(input);
+
+    expect(first).toEqual(second);
+    expect(first.input.replayEventCount).toBe(2);
+    expect(first.replay).toMatchObject({
+      eventCount: 2,
+      firstReviewedAt: "2026-06-01",
+      latestReviewedAt: "2026-06-04",
+      latestStepKey: "d4",
+    });
+    expect(first.officialPolicy).toBe("observer_only_never_writes_official_schedule");
+    expect(first.output.scheduledDays).not.toBeNull();
+  });
+
+  test("shadow replay remains observational and does not change official Lite dates", () => {
+    const today = todayStr();
+    const initialRev = buildRev(today, "GO");
+    initialRev.d1 = {
+      ...initialRev.d1,
+      done: true,
+      reviewedAt: today,
+      scheduledAt: today,
+      date: today,
+    };
+
+    const updated = recalcAfterMark(initialRev, "d1", 0.9, 0.90, 180, "GO", {
+      tema: { id: "tema-shadow-replay", nome: "Tema Shadow Replay", rev: initialRev },
+    });
+    const lastHist = updated.reviewHistory[updated.reviewHistory.length - 1];
+
+    expect(lastHist.fsrsCanonicalShadow).toBeTruthy();
+    expect(lastHist.fsrsCanonicalShadow.replay.eventCount).toBe(1);
+    expect(updated.d4.date).toBe(addDays(today, lastHist.intervalAfter));
+    expect(updated.d4.date).toBe(updated.d4.scheduledAt);
   });
 });

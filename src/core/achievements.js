@@ -1,4 +1,6 @@
 // src/core/achievements.js
+import { getLearningEventStatsList } from "./learningEvent";
+
 export const ACHIEVEMENTS = [
   {
     id: "streak_7",
@@ -31,7 +33,10 @@ export const ACHIEVEMENTS = [
     icon: "📚",
     xpReward: 30,
     criterio: (s) => {
-      const statsList = Object.values(s.temaStats || {}).flat();
+      const statsList = getLearningEventStatsList(s.learningEvents || [], {
+        plat: s.plat || "res",
+        fallbackTemaStats: s.temaStats || {},
+      });
       return statsList.length >= 7;
     },
   },
@@ -42,7 +47,10 @@ export const ACHIEVEMENTS = [
     icon: "🎯",
     xpReward: 100,
     criterio: (s) => {
-      const statsList = Object.values(s.temaStats || {}).flat();
+      const statsList = getLearningEventStatsList(s.learningEvents || [], {
+        plat: s.plat || "res",
+        fallbackTemaStats: s.temaStats || {},
+      });
       return statsList.length >= 30;
     },
   },
@@ -53,7 +61,10 @@ export const ACHIEVEMENTS = [
     icon: "🧠",
     xpReward: 300,
     criterio: (s) => {
-      const statsList = Object.values(s.temaStats || {}).flat();
+      const statsList = getLearningEventStatsList(s.learningEvents || [], {
+        plat: s.plat || "res",
+        fallbackTemaStats: s.temaStats || {},
+      });
       return statsList.length >= 100;
     },
   },

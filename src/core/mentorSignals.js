@@ -7,6 +7,7 @@ import { getCorrectiveAction } from "./errorActionMap";
 import { getReviewDisplayLabel } from "./domainValidation";
 import { deriveOperationalMode } from "./operationalMode";
 import { estimateStudentMastery } from "./mastery";
+import { getTemaStatsFromLearningEvents } from "./learningEvent";
 
 function getStepEntries(rev = {}) {
   const entries = [];
@@ -53,6 +54,18 @@ function collectClinicalCaseSignals(casosProgresso = {}, today = todayStr()) {
     dueCount: due.length,
     dueItems: due.slice(0, 20),
   };
+}
+
+function countConsolidatedCorpusAreas(temas = []) {
+  const areas = new Set();
+  for (const tema of temas) {
+    if (!tema || tema.unstarted) continue;
+    const rev = tema.rev || {};
+    const isConsolidated = Boolean(rev.d21?.done || rev.manutencao);
+    const area = tema.esp || tema.area || tema.materia || null;
+    if (isConsolidated && area) areas.add(String(area).trim());
+  }
+  return areas.size;
 }
 
 function workloadLevelByMinutes(minutes = 0) {
@@ -236,7 +249,10 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
   const temas = extras.temas || platState.temas || [];
   const simulados = extras.simulados || platState.simulados || [];
   const meta = extras.meta || state.meta || {};
-  const temaStats = extras.temaStats || platState.temaStats || state.temaStats || {};
+  const temaStats = extras.temaStats || getTemaStatsFromLearningEvents(state.learningEvents || [], {
+    plat,
+    fallbackTemaStats: platState.temaStats || state.temaStats || {},
+  });
   const scheduler = collectMentorSchedulerSignals(temas, {
     today,
     projectionDays: extras.projectionDays || 14,
@@ -269,6 +285,7 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
   });
   const pendingExamAnalysis = Boolean(simulados.length > 0 && !latestEnamed);
   const errorSignal = collectDominantErrorSignal(temas, simulados, plat);
+  const consolidatedCorpus = countConsolidatedCorpusAreas(temas);
 
   // ── Onboarding v2 signals ──────────────────────────────────────────────────
   const planSetup = meta?.planSetup || null;
@@ -290,6 +307,7 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     actionInbox: state.actionInbox || [],
     sessionReflections: state.sessionReflections || [],
     scheduler,
+    consolidatedCorpus,
     operationalMode,
     mastery,
     enamed: latestEnamed,

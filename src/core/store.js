@@ -9,7 +9,7 @@ import { createAction, sortActions } from "./actionInbox";
 import { createSessionReflection } from "./sessionReflection";
 import { getPeakPhase } from "./peakMode";
 import { buildActionInboxFromDecisionCore, buildDecisionCoreSnapshot } from "./decisionCore";
-import { appendLearningEvent } from "./learningEvent";
+import { appendLearningEvent, createLearningEvent, getTemaStatsFromLearningEvents } from "./learningEvent";
 import { dominantErrorType } from "./errorTaxonomy";
 import { getReadinessData } from "./readiness";
 import { isExhaustionDetected } from "./mentor";
@@ -80,6 +80,97 @@ const initialVestibularPlat = () => {
   return { temas, simulados: [], ankiLog: [], cronogramas: [], casosProgresso: {} };
 };
 
+export const TEMA_STATS_MIGRATION_FLAG = "migratedTemaStats";
+
+function hasTemaStatsEntries(temaStats = {}) {
+  return Object.values(temaStats || {}).some((logs) => Array.isArray(logs) && logs.length > 0);
+}
+
+function buildTemaLookup(state = {}) {
+  const lookup = new Map();
+  ["res", "vest"].forEach((platKey) => {
+    (state[platKey]?.temas || []).forEach((tema) => {
+      lookup.set(String(tema.id), { tema, plat: platKey });
+    });
+  });
+  return lookup;
+}
+
+function stableMigrationEventId(topicId, index, stat = {}) {
+  const stamp = stat.completedAt || stat.reviewedAt || stat.timestamp || stat.date || "sem-data";
+  return `le_temaStats_${String(topicId).replace(/[^a-zA-Z0-9_-]/g, "_")}_${index}_${String(stamp).replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 32)}`;
+}
+
+export function migrateTemaStatsToLearningEventsState(state = {}) {
+  const existingEvents = Array.isArray(state.learningEvents) ? state.learningEvents : [];
+  const meta = { ...(state.meta || {}) };
+  const shouldMigrate = existingEvents.length === 0
+    && meta[TEMA_STATS_MIGRATION_FLAG] !== true
+    && hasTemaStatsEntries(state.temaStats);
+
+  if (!shouldMigrate) {
+    return { ...state, learningEvents: existingEvents, meta };
+  }
+
+  const lookup = buildTemaLookup(state);
+  const fallbackPlat = state.plat || "res";
+  const migratedEvents = [];
+
+  Object.entries(state.temaStats || {}).forEach(([topicId, logs]) => {
+    if (!Array.isArray(logs)) return;
+    const found = lookup.get(String(topicId)) || {};
+    logs.forEach((stat, index) => {
+      if (!stat || typeof stat !== "object") return;
+      migratedEvents.push(createLearningEvent({
+        id: stableMigrationEventId(topicId, index, stat),
+        source: "review",
+        topicId,
+        topicName: found.tema?.nome || stat.topicName || "",
+        area: found.tema?.esp || found.tema?.area || stat.area || "",
+        plat: stat.plat || found.plat || fallbackPlat,
+        stepKey: stat.stepKey || stat.key || stat.step || null,
+        date: stat.date || stat.completedAt?.slice?.(0, 10) || stat.reviewedAt?.slice?.(0, 10),
+        timestamp: stat.completedAt || stat.reviewedAt || stat.timestamp || stat.date,
+        officialSchedulingImpact: stat.officialSchedulingImpact !== false,
+        performance: {
+          acerto: stat.acerto ?? stat.accuracy ?? null,
+          previsao: stat.previsao ?? null,
+          questoes: stat.questoes ?? stat.questions ?? null,
+          rating: stat.rating ?? null,
+        },
+        regulation: {
+          confianca: stat.confianca ?? null,
+          ansiedade: stat.ansiedade ?? null,
+          cansaco: stat.cansaco ?? null,
+          foco: stat.foco ?? null,
+          tempoMin: stat.tempoMin ?? null,
+        },
+        errors: {
+          motivosErro: Array.isArray(stat.motivosErro) ? stat.motivosErro : [],
+          dominantError: stat.dominantError ?? dominantErrorType(stat.erros || stat.motivosErro || []) ?? null,
+        },
+        tags: ["migrated_temaStats"],
+        meta: {
+          migratedFrom: "temaStats",
+          legacyIndex: index,
+          legacyCompletedAt: stat.completedAt || null,
+          S: stat.S ?? stat.stability ?? null,
+          D: stat.D ?? stat.difficulty ?? null,
+        },
+      }));
+    });
+  });
+
+  return {
+    ...state,
+    learningEvents: migratedEvents.slice(-1000),
+    meta: {
+      ...meta,
+      [TEMA_STATS_MIGRATION_FLAG]: true,
+    },
+  };
+}
+
 const timestampMiddleware = (config) => (set, get, api) => {
   const newSet = (entropy, replace) => {
     const current = get();
@@ -146,12 +237,19 @@ function hasLowEnergySignal(state = {}) {
     return true;
   }
 
-  const recentStat = Object.values(state.temaStats || {})
+  const recentStat = Object.values(getLearningTemaStats(state))
     .flat()
     .filter((stat) => stat?.completedAt)
     .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))[0];
 
   return String(recentStat?.cansaco || "").toLowerCase().startsWith("alt");
+}
+
+function getLearningTemaStats(state = {}, plat = state.plat || "res") {
+  return getTemaStatsFromLearningEvents(state.learningEvents || [], {
+    plat,
+    fallbackTemaStats: state.temaStats || {},
+  });
 }
 
 function buildDecisionSnapshotOptions(state = {}, today = todayStr()) {
@@ -168,9 +266,15 @@ function buildDecisionSnapshotOptions(state = {}, today = todayStr()) {
 
   return {
     today,
-    readinessData: getReadinessData({ temas: readinessTemas, simulados, meta, plat }),
+    readinessData: getReadinessData({
+      temas: readinessTemas,
+      simulados,
+      meta,
+      plat,
+      temaStats: getLearningTemaStats(state, plat),
+    }),
     lowEnergy: hasLowEnergySignal(state),
-    exhaustionDetected: isExhaustionDetected(state.temaStats || {}, doneReviews),
+    exhaustionDetected: isExhaustionDetected(getLearningTemaStats(state, plat), doneReviews),
   };
 }
 
@@ -718,13 +822,8 @@ export const useStore = create(
           },
         })),
 
-      addTemaStats: (temaId, stats) =>
-        set((state) => ({
-          temaStats: {
-            ...state.temaStats,
-            [temaId]: [...(state.temaStats[temaId] || []), { ...stats, completedAt: new Date().toISOString() }],
-          },
-        })),
+      // DEPRECATED: temaStats e mantido apenas para leitura/migracao legada.
+      addTemaStats: () => undefined,
       setSprint: (s) => set({ sprint: s }),
 
       exportKey: () => {
@@ -1425,6 +1524,18 @@ export const useStore = create(
         const mergedRes = normalizePlatTemas({ ...initial.res, ...(persisted.res || {}) });
         const mergedVest = normalizePlatTemas(resolvedVest);
 
+        const preMigrationState = {
+          ...persisted,
+          plat: persisted.plat ?? initial.plat,
+          meta: migratedMeta,
+          res: mergedRes,
+          vest: mergedVest,
+          learningEvents: persisted.learningEvents ?? initial.learningEvents,
+          temaStats: persisted.temaStats ?? initial.temaStats,
+        };
+        const migratedState = migrateTemaStatsToLearningEventsState(preMigrationState);
+        const finalMigratedMeta = migratedState.meta || migratedMeta;
+
         return {
           ...initial,
           ...persisted,
@@ -1438,13 +1549,13 @@ export const useStore = create(
               scheduledTopics: persisted.calendarProvider.scheduledTopics || [],
             }
             : initial.calendarProvider,
-          meta: persisted.meta ? {
+          meta: (persisted.meta || finalMigratedMeta[TEMA_STATS_MIGRATION_FLAG] === true) ? {
             ...initial.meta,
-            ...migratedMeta,
-            modulos: { ...initial.meta.modulos, ...(migratedMeta.modulos || {}) },
-            ankiAdesao: { ...initial.meta.ankiAdesao, ...(migratedMeta.ankiAdesao || {}) },
+            ...finalMigratedMeta,
+            modulos: { ...initial.meta.modulos, ...(finalMigratedMeta.modulos || {}) },
+            ankiAdesao: { ...initial.meta.ankiAdesao, ...(finalMigratedMeta.ankiAdesao || {}) },
             onboarding: applyOnboardingChoice(
-              { ...initial.meta, ...migratedMeta, onboarding: getOnboardingDefaults(migratedMeta) },
+              { ...initial.meta, ...finalMigratedMeta, onboarding: getOnboardingDefaults(finalMigratedMeta) },
               persisted.onboardingDone ? { completed: true } : {}
             ),
           } : initial.meta,
@@ -1459,7 +1570,7 @@ export const useStore = create(
           actionInboxState: persisted.actionInboxState ?? initial.actionInboxState,
           sessionReflections: persisted.sessionReflections ?? initial.sessionReflections,
           weeklyReviews: persisted.weeklyReviews ?? initial.weeklyReviews,
-          learningEvents: persisted.learningEvents ?? initial.learningEvents,
+          learningEvents: migratedState.learningEvents ?? initial.learningEvents,
           brainDumpD1Data: persisted.brainDumpD1Data ?? initial.brainDumpD1Data,
           temaStats: persisted.temaStats ?? initial.temaStats,
           vistos: persisted.vistos ?? initial.vistos,

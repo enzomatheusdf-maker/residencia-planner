@@ -3,7 +3,10 @@
  * @param {Object} input - Dados de entrada do evento.
  */
 export function createLearningEvent(input = {}) {
-  const timestamp = input.timestamp || new Date().toISOString();
+  const rawTimestamp = input.timestamp || input.completedAt || new Date().toISOString();
+  const timestamp = typeof rawTimestamp === "number"
+    ? new Date(rawTimestamp).toISOString()
+    : String(rawTimestamp);
   const date = input.date || timestamp.slice(0, 10);
   const performance = {
     acerto: input.performance?.acerto ?? input.acerto,
@@ -146,4 +149,142 @@ export function summarizeLearningEvents(events = []) {
     sourceCounts,
     topError,
   };
+}
+
+function sameTemaId(a, b) {
+  if (a == null || b == null) return false;
+  return String(a) === String(b);
+}
+
+function isOfficialTopicEvent(ev = {}) {
+  return !!ev
+    && ev.officialSchedulingImpact !== false
+    && ev.topicId !== null
+    && ev.topicId !== undefined;
+}
+
+function toTemaStat(ev = {}) {
+  const completedAt = ev.completedAt || ev.reviewedAt || ev.timestamp || ev.date || null;
+  const meta = ev.meta && typeof ev.meta === "object" ? ev.meta : {};
+  return {
+    id: ev.id,
+    source: ev.source || "review",
+    topicId: ev.topicId ?? null,
+    topicName: ev.topicName || "",
+    area: ev.area || "",
+    plat: ev.plat || "res",
+    stepKey: ev.stepKey || null,
+    step: ev.stepKey || null,
+    key: ev.stepKey || null,
+    acerto: ev.performance?.acerto ?? ev.acerto ?? null,
+    previsao: ev.performance?.previsao ?? ev.previsao ?? null,
+    questoes: ev.performance?.questoes ?? ev.questoes ?? null,
+    rating: ev.performance?.rating ?? ev.rating ?? null,
+    confianca: ev.regulation?.confianca ?? ev.confianca ?? null,
+    ansiedade: ev.regulation?.ansiedade ?? ev.ansiedade ?? null,
+    cansaco: ev.regulation?.cansaco ?? ev.cansaco ?? null,
+    foco: ev.regulation?.foco ?? ev.foco ?? null,
+    tempoMin: ev.regulation?.tempoMin ?? ev.tempoMin ?? null,
+    motivosErro: ev.errors?.motivosErro ?? ev.motivosErro ?? [],
+    dominantError: ev.errors?.dominantError ?? ev.dominantError ?? null,
+    completedAt,
+    reviewedAt: completedAt,
+    date: ev.date || (completedAt ? String(completedAt).slice(0, 10) : null),
+    timestamp: ev.timestamp || completedAt,
+    S: meta.S ?? meta.stability ?? ev.S ?? ev.stability ?? null,
+    D: meta.D ?? meta.difficulty ?? ev.D ?? ev.difficulty ?? null,
+    officialSchedulingImpact: ev.officialSchedulingImpact !== false,
+    meta,
+  };
+}
+
+function sortStatsByTime(a, b) {
+  const aTime = Date.parse(a.completedAt || a.timestamp || a.date || "") || 0;
+  const bTime = Date.parse(b.completedAt || b.timestamp || b.date || "") || 0;
+  return aTime - bTime;
+}
+
+export function getEventsByTema(events = [], temaId) {
+  const list = Array.isArray(events) ? events : [];
+  return list.filter((ev) => sameTemaId(ev?.topicId, temaId));
+}
+
+export function getTemaStatsFromLearningEvents(events = [], options = {}) {
+  const list = Array.isArray(events) ? events : [];
+  const plat = options.plat || null;
+  const fallbackTemaStats = options.fallbackTemaStats || null;
+  const grouped = {};
+
+  list
+    .filter(isOfficialTopicEvent)
+    .filter((ev) => !plat || !ev.plat || ev.plat === plat)
+    .forEach((ev) => {
+      const key = String(ev.topicId);
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(toTemaStat(ev));
+    });
+
+  Object.keys(grouped).forEach((key) => {
+    grouped[key].sort(sortStatsByTime);
+  });
+
+  if (Object.keys(grouped).length > 0 || !fallbackTemaStats) {
+    return grouped;
+  }
+
+  return fallbackTemaStats && typeof fallbackTemaStats === "object" ? fallbackTemaStats : {};
+}
+
+export function getLearningEventStatsList(events = [], options = {}) {
+  return Object.values(getTemaStatsFromLearningEvents(events, options)).flat();
+}
+
+export function summarizeByArea(events = [], plat = null) {
+  const stats = getLearningEventStatsList(events, { plat });
+  const grouped = {};
+
+  stats.forEach((stat) => {
+    const area = stat.area || "Sem area";
+    if (!grouped[area]) {
+      grouped[area] = {
+        area,
+        total: 0,
+        questoes: 0,
+        acertoSum: 0,
+        acertoCount: 0,
+        topics: new Set(),
+        errorCounts: {},
+        lastCompletedAt: null,
+      };
+    }
+    const bucket = grouped[area];
+    bucket.total += 1;
+    bucket.topics.add(String(stat.topicId ?? stat.topicName ?? ""));
+    if (Number.isFinite(Number(stat.questoes))) bucket.questoes += Number(stat.questoes);
+    if (stat.acerto !== null && stat.acerto !== undefined && Number.isFinite(Number(stat.acerto))) {
+      bucket.acertoSum += Number(stat.acerto);
+      bucket.acertoCount += 1;
+    }
+    if (stat.dominantError) {
+      bucket.errorCounts[stat.dominantError] = (bucket.errorCounts[stat.dominantError] || 0) + 1;
+    }
+    if (stat.completedAt && (!bucket.lastCompletedAt || String(stat.completedAt) > bucket.lastCompletedAt)) {
+      bucket.lastCompletedAt = String(stat.completedAt);
+    }
+  });
+
+  return Object.fromEntries(Object.entries(grouped).map(([area, bucket]) => {
+    const topError = Object.entries(bucket.errorCounts)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || null;
+    return [area, {
+      area,
+      total: bucket.total,
+      questoes: bucket.questoes,
+      acertoMedio: bucket.acertoCount > 0 ? bucket.acertoSum / bucket.acertoCount : null,
+      averageAcerto: bucket.acertoCount > 0 ? bucket.acertoSum / bucket.acertoCount : null,
+      topicCount: bucket.topics.size,
+      topError,
+      lastCompletedAt: bucket.lastCompletedAt,
+    }];
+  }));
 }

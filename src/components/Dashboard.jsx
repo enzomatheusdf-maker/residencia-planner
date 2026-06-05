@@ -31,6 +31,7 @@ import {
   getDailyBriefingStorageKey,
 } from "../core/dailyBriefing";
 import { getEnamedBottleneckExplanation, getEnamedIntel } from "../core/enamedIntel";
+import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
 import ActionInbox from "./ActionInbox";
 import WeeklyReview from "./WeeklyReview";
 import EmptyState from "./EmptyState";
@@ -623,7 +624,12 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const addTema = useStore((s) => s.addTema);
   const gamif           = useStore((s) => s.gamif);
   const temas           = useStore((s) => s[plat]?.temas || []);
-  const temaStats       = useStore((s) => s.temaStats || {});
+  const learningEvents = useStore((s) => s.learningEvents || []);
+  const legacyTemaStats = useStore((s) => s.temaStats || {});
+  const temaStats = useMemo(
+    () => getTemaStatsFromLearningEvents(learningEvents, { plat, fallbackTemaStats: legacyTemaStats }),
+    [learningEvents, plat, legacyTemaStats]
+  );
   const meta            = useStore((s) => s.meta);
   const enamedAnalises = useStore((s) => s.enamedAnalises || []);
   const sessionReflections = useStore((s) => s.sessionReflections || []);
@@ -831,14 +837,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const prontidao = useMemo(() => {
     const state = useStore.getState();
     const simulados = state[plat]?.simulados || [];
-    const readiness = getReadinessData({ temas: temasFiltrados, simulados, meta, plat });
+    const readiness = getReadinessData({ temas: temasFiltrados, simulados, meta, plat, temaStats });
     return readiness.score || 0;
-  }, [temasFiltrados, plat, meta]);
+  }, [temasFiltrados, plat, meta, temaStats]);
   const readinessData = useMemo(() => {
     const state = useStore.getState();
     const simulados = state[plat]?.simulados || [];
-    return getReadinessData({ temas: temasFiltrados, simulados, meta, plat });
-  }, [temasFiltrados, plat, meta]);
+    return getReadinessData({ temas: temasFiltrados, simulados, meta, plat, temaStats });
+  }, [temasFiltrados, plat, meta, temaStats]);
 
   const readinessTrend = useMemo(() => {
     const hist = meta.prontidaoHist || [];

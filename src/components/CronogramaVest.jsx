@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Check, BookOpen, Trash2, Plus, 
 import { useStore } from "../core/store";
 import { todayStr, fmtDate, STEPS } from "../core/fsrs";
 import { getEstadoDominio } from "../core/mastery";
+import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
 import { canUseMultipleSchedules } from "../core/entitlements";
 import { CATALOGO_VEST, parseCatalogEntry } from "../constants/catalogos";
 import { Btn, Input, Textarea, Modal, Field } from "./Primitives";
@@ -126,7 +127,10 @@ export function gerarCronogramaInteligente(titulo, dataInicio, numSemanas, horas
   const state = useStore.getState();
   const plat = state.plat;
   const temas = state[plat]?.temas || [];
-  const temaStats = state.temaStats || {};
+  const temaStats = getTemaStatsFromLearningEvents(state.learningEvents || [], {
+    plat,
+    fallbackTemaStats: state.temaStats || {},
+  });
 
   const targetSubjects = materiasAlvo && materiasAlvo.length > 0
     ? CATALOGO_VEST.filter(x => materiasAlvo.includes(x.nome))

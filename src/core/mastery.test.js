@@ -4,6 +4,7 @@ import {
   MASTERY_LEVELS,
   collectMasteryEvidence,
   estimateAreaMastery,
+  estimateMastery,
   estimateStudentMastery,
   estimateTopicMastery,
   getEstadoDominio,
@@ -72,6 +73,7 @@ describe("mastery public contract", () => {
     expect(DEFAULT_MASTERY_PARAMS.prior).toBeGreaterThan(0);
     expect(typeof updateBayesianMastery).toBe("function");
     expect(typeof collectMasteryEvidence).toBe("function");
+    expect(typeof estimateMastery).toBe("function");
     expect(typeof estimateTopicMastery).toBe("function");
     expect(typeof estimateAreaMastery).toBe("function");
     expect(typeof estimateStudentMastery).toBe("function");
@@ -136,6 +138,88 @@ describe("mastery BKT-like update", () => {
   test("updateBayesianMastery nao lanca com input invalido", () => {
     expect(() => updateBayesianMastery("x", null)).not.toThrow();
     expect(updateBayesianMastery(0.42, null)).toBeCloseTo(0.42);
+  });
+});
+
+describe("estimateMastery subtopic BKT/PFA", () => {
+  const cardiologyEvents = [
+    { tema: "Hipertensao arterial", area: "Clinica Medica", step: "d0", acerto: 0.82, questoes: 10, confianca: "media" },
+    { tema: "Hipertensao arterial", area: "Clinica Medica", step: "d1", acerto: 0.86, questoes: 12, confianca: "alta" },
+    { tema: "Hipertensao arterial", area: "Clinica Medica", step: "d4", acerto: 0.90, questoes: 15, confianca: "alta" },
+    { tema: "Hipertensao arterial", area: "Clinica Medica", step: "d7", acerto: 0.88, questoes: 15, confianca: "alta" },
+  ];
+
+  test("acertos espacados sobem pKnown por subtopico canonico", () => {
+    const result = estimateMastery(cardiologyEvents, { unit: "subtopic" });
+    expect(result.Cardiologia).toEqual(expect.objectContaining({
+      area: "Clínica Médica",
+      pKnown: expect.any(Number),
+      confidence: expect.any(String),
+      sampleQuality: expect.objectContaining({
+        spacedEvidenceCount: 3,
+        status: expect.stringMatching(/media|alta/),
+      }),
+      params: expect.objectContaining({
+        slip: expect.any(Number),
+        guess: expect.any(Number),
+        learn: expect.any(Number),
+        prior: expect.any(Number),
+      }),
+    }));
+    expect(result.Cardiologia.pKnown).toBeGreaterThan(0.75);
+  });
+
+  test("chute quase nao sobe pKnown e aumenta guess interpretavel", () => {
+    const result = estimateMastery([
+      { tema: "Infarto agudo do miocardio", area: "Clinica Medica", step: "d1", acerto: 1, questoes: 1, confianca: "baixa" },
+    ], { unit: "subtopic" });
+
+    expect(result.Cardiologia.pKnown).toBeLessThan(0.45);
+    expect(result.Cardiologia.params.guess).toBeGreaterThan(DEFAULT_MASTERY_PARAMS.guess);
+    expect(result.Cardiologia.sampleQuality.performanceFactors.guesses).toBe(1);
+  });
+
+  test("slip por erro com alta confianca derruba pouco", () => {
+    const baseline = estimateMastery(cardiologyEvents, { unit: "subtopic" }).Cardiologia;
+    const slipped = estimateMastery([
+      ...cardiologyEvents,
+      { tema: "Hipertensao arterial", area: "Clinica Medica", step: "d21", acerto: 0, questoes: 10, confianca: "alta" },
+    ], { unit: "subtopic" }).Cardiologia;
+
+    expect(slipped.params.slip).toBeGreaterThan(DEFAULT_MASTERY_PARAMS.slip);
+    expect(slipped.sampleQuality.performanceFactors.slips).toBe(1);
+    expect(baseline.pKnown - slipped.pKnown).toBeLessThan(0.18);
+    expect(slipped.pKnown).toBeGreaterThan(0.65);
+  });
+
+  test("D0 100 isolado fica baixo e insuficiente", () => {
+    const result = estimateMastery([
+      { tema: "Apendicite aguda", area: "Cirurgia", step: "d0", acerto: 1, questoes: 20, confianca: "alta" },
+    ], { unit: "subtopic" });
+
+    expect(result["Cirurgia Geral"].pKnown).toBeLessThanOrEqual(0.55);
+    expect(result["Cirurgia Geral"].sampleQuality.status).toBe("insuficiente");
+    expect(result["Cirurgia Geral"].warnings).toContain("no_spaced_evidence");
+  });
+
+  test("compat com estado antigo baseado em temas/rev", () => {
+    const oldState = {
+      res: {
+        temas: [{
+          id: "old-cardio",
+          nome: "Hipertensao arterial",
+          esp: "Clinica Medica",
+          rev: {
+            d1: { done: true, acerto: 0.80, questoes: 12 },
+            d4: { done: true, acerto: 0.84, questoes: 14 },
+          },
+        }],
+      },
+    };
+
+    const result = estimateMastery(oldState, { unit: "subtopic" });
+    expect(result.Cardiologia.evidenceCount).toBe(2);
+    expect(result.Cardiologia.sampleQuality.spacedEvidenceCount).toBe(2);
   });
 });
 

@@ -19,6 +19,7 @@ import { CASOS_CLINICOS } from "../constants/casosClinicos";
 import { buildReviewPreview } from "../core/reviewOutcome";
 import { buildInterleavingPlan } from "../core/interleavingPlanner";
 import RetrievabilitySpark from "./RetrievabilitySpark";
+import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
 
 const STEP_ICONS = { pretest: FileText, leitura: BookOpen, esqueleto: Layers, braindump: Brain, questoes: PenTool, anki: Zap };
 
@@ -57,7 +58,12 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const iniciarValidacaoDominioPrevio = useStore((s) => s.iniciarValidacaoDominioPrevio);
   const showToast = useStore((s) => s.showToast);
   const updateGamifStreak = useStore((s) => s.updateGamifStreak);
-  const temaStats = useStore((s) => s.temaStats || {});
+  const learningEvents = useStore((s) => s.learningEvents || []);
+  const legacyTemaStats = useStore((s) => s.temaStats || {});
+  const temaStats = useMemo(
+    () => getTemaStatsFromLearningEvents(learningEvents, { plat, fallbackTemaStats: legacyTemaStats }),
+    [learningEvents, plat, legacyTemaStats]
+  );
   const addSessionReflection = useStore((s) => s.addSessionReflection);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
   const casosProgresso = useStore((s) => s[plat]?.casosProgresso || {});

@@ -94,6 +94,47 @@ describe("mentorDecisionPolicy", () => {
     expect(action.target.providerId).toBe("custom_provider");
   });
 
+  test("fila vazia com duas areas consolidadas gera interleaving_block", () => {
+    const action = decideMentorAction(baseContext({
+      consolidatedCorpus: 2,
+      operationalMode: {
+        mode: "normal",
+        flags: { canStartNewTopic: true },
+        policy: { newTopicBias: 0 },
+      },
+      readinessData: {
+        priorityList: [
+          { area: "Clinica Medica", incidence: 1.4, prioridade: 1.2 },
+          { area: "Cirurgia", incidence: 0.8, prioridade: 0.7 },
+        ],
+      },
+      mastery: {
+        byArea: {
+          "Clinica Medica": { area: "Clinica Medica", pMastery: 0.3 },
+          Cirurgia: { area: "Cirurgia", pMastery: 0.2 },
+        },
+      },
+    }));
+
+    expect(action.type).toBe("interleaving_block");
+    expect(action.ctaView).toBe("focus");
+    expect(action.target.action).toBe("interleaving_block");
+    expect(action.target.area).toBe("Clinica Medica");
+  });
+
+  test("fila vazia sem corpus consolidado mantem tema novo", () => {
+    const action = decideMentorAction(baseContext({
+      consolidatedCorpus: 0,
+      operationalMode: {
+        mode: "normal",
+        flags: { canStartNewTopic: true },
+        policy: { newTopicBias: 0 },
+      },
+    }));
+
+    expect(action.type).toBe("new_topic");
+  });
+
   test("ação de prova pendente aparece quando fila está segura", () => {
     const action = decideMentorAction(baseContext({
       pendingExamAnalysis: true,

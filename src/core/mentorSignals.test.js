@@ -103,6 +103,50 @@ describe("mentorSignals", () => {
     expect(context.weakSubject).toBe("Matemática");
   });
 
+  test("buildMentorContext conta areas com corpus consolidado", () => {
+    const today = todayStr();
+    const state = {
+      plat: "res",
+      meta: {},
+      calendarProvider: { activeId: "medcof" },
+      res: {
+        temas: [
+          {
+            id: 1,
+            nome: "Tema A",
+            esp: "Clinica Medica",
+            rev: { d21: { done: true, reviewedAt: today } },
+          },
+          {
+            id: 2,
+            nome: "Tema B",
+            esp: "Clinica Medica",
+            rev: { manutencao: { done: true, reviewedAt: today } },
+          },
+          {
+            id: 3,
+            nome: "Tema C",
+            esp: "Cirurgia",
+            rev: { d21: { done: true, reviewedAt: today } },
+          },
+          {
+            id: 4,
+            nome: "Tema D",
+            esp: "Pediatria",
+            rev: { d21: { done: false, date: today } },
+          },
+        ],
+        simulados: [],
+        casosProgresso: {},
+      },
+      enamedAnalises: [],
+    };
+
+    const context = buildMentorContext(state, "res", { today });
+
+    expect(context.consolidatedCorpus).toBe(2);
+  });
+
   test("buildMentorContext expoe operationalMode derivado", () => {
     const today = "2026-06-04";
     const state = {
