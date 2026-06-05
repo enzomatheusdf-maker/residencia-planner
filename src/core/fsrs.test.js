@@ -19,7 +19,8 @@ import {
   appendReviewHistory,
   relapseSeedStability,
   MATURE_LAPSE_THRESHOLD,
-  isMatureStep
+  isMatureStep,
+  getAdaptiveLearningInterval
 } from "./fsrs";
 
 describe("FSRS Core Logic Test Suite", () => {
@@ -137,7 +138,7 @@ describe("FSRS Core Logic Test Suite", () => {
     expect(nextInterval(10, 1, 0.90, 180, 0.5)).toBe(1);
   });
 
-  test("recalcAfterMark keeps D7 near fixed offset after D4 performance", () => {
+  test("recalcAfterMark keeps D7 near fixed offset after D4 performance (adaptive transition)", () => {
     const today = todayStr();
     const initialRev = {
       d4: { date: today, done: true, S: 4, D: 0.55 },
@@ -146,11 +147,14 @@ describe("FSRS Core Logic Test Suite", () => {
 
     const high = recalcAfterMark(initialRev, "d4", 1.0, 0.90, 180, "GO");
     const highInterval = diffDays(today, high.d7.date);
-    expect(highInterval).toBeGreaterThanOrEqual(6);
-    expect(highInterval).toBeLessThanOrEqual(8);
+    expect(highInterval).toBeGreaterThanOrEqual(2);
+    expect(highInterval).toBeLessThanOrEqual(6);
 
     const low = recalcAfterMark(initialRev, "d4", 0.60, 0.90, 180, "GO");
-    expect(diffDays(today, low.d7.date)).toBe(6);
+    const lowInterval = diffDays(today, low.d7.date);
+    expect(lowInterval).toBeGreaterThanOrEqual(2);
+    expect(lowInterval).toBeLessThanOrEqual(6);
+    expect(lowInterval).toBeLessThanOrEqual(highInterval);
   });
 
   test("getRetencaoArea raises Preventiva target retention slightly", () => {
@@ -510,5 +514,193 @@ describe("FSRS Core Logic Test Suite", () => {
     expect(out.length).toBe(3);
     expect(out[0].id).toBe("x_1");
     expect(out[2].id).toBe("x_3");
+  });
+
+  test("adaptive learning keeps D0 to D1 fixed at 1", () => {
+    expect(getAdaptiveLearningInterval({
+      doneKey: "d0",
+      S: 10,
+      D: 0.2,
+      acerto: 1,
+      rating: "easy",
+      questoes: 40,
+    })).toBe(1);
+  });
+
+  test("adaptive learning bounds D1 inside [2, 5] and D1 hard <= easy", () => {
+    const hard = getAdaptiveLearningInterval({
+      doneKey: "d1",
+      S: 2,
+      D: 0.8,
+      acerto: 0.6,
+      rating: "hard",
+      questoes: 10,
+    });
+
+    const easy = getAdaptiveLearningInterval({
+      doneKey: "d1",
+      S: 12,
+      D: 0.2,
+      acerto: 0.95,
+      rating: "easy",
+      questoes: 25,
+    });
+
+    expect(hard).toBeGreaterThanOrEqual(2);
+    expect(easy).toBeLessThanOrEqual(5);
+    expect(hard).toBeLessThanOrEqual(easy);
+  });
+
+  test("adaptive learning bounds D4 inside [2, 6]", () => {
+    const minD4 = getAdaptiveLearningInterval({
+      doneKey: "d4",
+      S: 1,
+      D: 0.9,
+      acerto: 0.5,
+      rating: "hard",
+      questoes: 1,
+    });
+
+    const maxD4 = getAdaptiveLearningInterval({
+      doneKey: "d4",
+      S: 20,
+      D: 0.1,
+      acerto: 1.0,
+      rating: "easy",
+      questoes: 40,
+    });
+
+    expect(minD4).toBeGreaterThanOrEqual(2);
+    expect(maxD4).toBeLessThanOrEqual(6);
+  });
+
+  test("adaptive learning bounds D7 inside [10, 21]", () => {
+    const minD7 = getAdaptiveLearningInterval({
+      doneKey: "d7",
+      S: 3,
+      D: 0.9,
+      acerto: 0.5,
+      rating: "hard",
+      questoes: 2,
+    });
+
+    const maxD7 = getAdaptiveLearningInterval({
+      doneKey: "d7",
+      S: 100,
+      D: 0.1,
+      acerto: 1.0,
+      rating: "easy",
+      questoes: 50,
+    });
+
+    expect(minD7).toBeGreaterThanOrEqual(10);
+    expect(maxD7).toBeLessThanOrEqual(21);
+  });
+
+  test("low questions reduces interval via trust multiplier", () => {
+    const withManyQuestions = getAdaptiveLearningInterval({
+      doneKey: "d1",
+      S: 5,
+      D: 0.4,
+      acerto: 0.9,
+      rating: "good",
+      questoes: 20,
+    });
+
+    const withFewQuestions = getAdaptiveLearningInterval({
+      doneKey: "d1",
+      S: 5,
+      D: 0.4,
+      acerto: 0.9,
+      rating: "good",
+      questoes: 2,
+    });
+
+    expect(withFewQuestions).toBeLessThanOrEqual(withManyQuestions);
+  });
+
+  test("overconfidence encurta intervalo", () => {
+    const overconfident = getAdaptiveLearningInterval({
+      doneKey: "d1",
+      S: 5,
+      D: 0.4,
+      acerto: 0.7,
+      rating: "good",
+      questoes: 20,
+      previsao: 1.0,
+    });
+
+    const calibrated = getAdaptiveLearningInterval({
+      doneKey: "d1",
+      S: 5,
+      D: 0.4,
+      acerto: 0.7,
+      rating: "good",
+      questoes: 20,
+      previsao: 0.7,
+    });
+
+    expect(overconfident).toBeLessThanOrEqual(calibrated);
+  });
+
+  test("recalcAfterMark integrates adaptive interval and persists interleaved details in history", () => {
+    const today = todayStr();
+    const initialRev = buildRev(today, "GO");
+    initialRev.d1.interleaved = true;
+    initialRev.d1.interleavingStatus = "near_due_only";
+    initialRev.d1.interleavingCandidateIds = ["t2", "t3"];
+
+    const updated = recalcAfterMark(initialRev, "d1", 0.9);
+    expect(updated.reviewHistory.length).toBeGreaterThan(0);
+    const lastHist = updated.reviewHistory[updated.reviewHistory.length - 1];
+    expect(lastHist.interleaved).toBe(true);
+    expect(lastHist.interleavingStatus).toBe("near_due_only");
+    expect(lastHist.interleavingCandidateIds).toContain("t2");
+  });
+
+  test("recalcAfterMark stores canonical shadow without changing official Lite date", () => {
+    const today = todayStr();
+    const initialRev = buildRev(today, "GO");
+    initialRev.d1 = {
+      ...initialRev.d1,
+      done: true,
+      reviewedAt: today,
+      scheduledAt: today,
+      date: today,
+    };
+
+    const updated = recalcAfterMark(initialRev, "d1", 0.9, 0.90, 180, "GO", {
+      tema: { id: "tema-shadow", nome: "Tema Shadow" },
+    });
+    const lastHist = updated.reviewHistory[updated.reviewHistory.length - 1];
+
+    expect(lastHist.fsrsCanonicalShadow).toBeTruthy();
+    expect(lastHist.fsrsCanonicalShadow.enabled).toBe(true);
+    expect(lastHist.fsrsCanonicalShadow.input.temaId).toBe("tema-shadow");
+    expect(updated.d4.date).toBe(addDays(today, lastHist.intervalAfter));
+    expect(updated.d4.date).toBe(updated.d4.scheduledAt);
+  });
+
+  test("recalcAfterMark keeps official review when canonical shadow fails", () => {
+    const today = todayStr();
+    const initialRev = buildRev(today, "GO");
+    initialRev.d1 = {
+      ...initialRev.d1,
+      done: true,
+      reviewedAt: today,
+      scheduledAt: today,
+      date: today,
+    };
+
+    const updated = recalcAfterMark(initialRev, "d1", 0.9, 0.90, 180, "GO", {
+      buildFsrsCanonicalShadow: () => {
+        throw new Error("shadow unavailable");
+      },
+    });
+    const lastHist = updated.reviewHistory[updated.reviewHistory.length - 1];
+
+    expect(updated.d4.date).toBe(addDays(today, lastHist.intervalAfter));
+    expect(lastHist.fsrsCanonicalShadow.failed).toBe(true);
+    expect(lastHist.fsrsCanonicalShadow.error).toContain("shadow unavailable");
   });
 });

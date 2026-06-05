@@ -128,16 +128,14 @@ export default function BancoDados() {
           </table>
         </div>
 
-        {modoSimples && (
-          <div className="flex gap-2 justify-center mt-6 pb-4">
-            <button
-              type="button"
-              onClick={toggleModoSimples}
-              className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-xl text-[12px] font-bold transition-all">
-              ▼ Ver modo avançado
-            </button>
-          </div>
-        )}
+        <div className="flex gap-2 justify-center mt-6 pb-4">
+          <button
+            type="button"
+            onClick={toggleModoSimples}
+            className="px-4 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-600/30 rounded-xl text-[12px] font-bold transition-all">
+            {modoSimples ? "▼ Ver modo avançado" : "▲ Voltar para o modo simples"}
+          </button>
+        </div>
       </div>
     </div>
   );

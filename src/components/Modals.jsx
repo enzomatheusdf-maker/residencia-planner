@@ -1280,7 +1280,7 @@ export function AjustesModal({
   authScope = null,
   syncStatus = "saved",
 }) {
-  const { meta, setMeta, plat, setPlat, optimize, sprint, setSprint, userName, setUserName, userEmail, setUserEmail, gamif, toggleModulo } = useStore();
+  const { meta, setMeta, plat, setPlat, optimize, sprint, setSprint, userName, setUserName, userEmail, setUserEmail, gamif, toggleModulo, modoSimples, toggleModoSimples } = useStore();
   const showToast = useStore((s) => s.showToast);
   const openConfirm = useStore((s) => s.openConfirm);
   const temas = useStore((s) => s[plat]?.temas || []);
@@ -1657,7 +1657,32 @@ export function AjustesModal({
                   <Input type="date" value={meta.dataProva} onChange={(e) => saveMeta({ dataProva: e.target.value })} />
                 </Field>
                 <Field label="Meta de acerto da prova (%)" info="Meta de desempenho para simulados e acompanhamento. Não reorganiza o FSRS; quem regula a curva é a Retenção FSRS Desejada.">
-                  <Input type="number" min={50} max={100} step={0.1} value={meta.acerto} onChange={(e) => saveMetaNumber("acerto", e.target.value, { allowDecimal: true, maxDecimals: 1, min: 50, max: 100 }, 85)} />
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    step={0.1}
+                    value={meta.acerto ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        saveMeta({ acerto: "" });
+                        return;
+                      }
+                      const num = parseFloat(val);
+                      if (!isNaN(num)) {
+                        saveMeta({ acerto: Math.min(100, Math.max(0, num)) });
+                      }
+                    }}
+                    onBlur={() => {
+                      const currentVal = parseFloat(meta.acerto);
+                      if (isNaN(currentVal)) {
+                        saveMeta({ acerto: 85 });
+                      } else if (currentVal < 1) {
+                        saveMeta({ acerto: 1 });
+                      }
+                    }}
+                  />
                 </Field>
               </div>
               <p className="text-[9.5px] text-gray-500 pl-1 -mt-2">
@@ -1666,10 +1691,58 @@ export function AjustesModal({
 
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Teto diário de revisões" info="O número máximo de cards de revisão exibidos no Dashboard por dia. Excessos são movidos de forma inteligente para a fila reserva para amanhã, aliviando a carga mental.">
-                  <Input type="number" min={5} max={500} value={meta.maxRevisoesDia ?? 30} onChange={(e) => saveMetaNumber("maxRevisoesDia", e.target.value, { min: 5, max: 500 }, 30)} />
+                  <Input
+                    type="number"
+                    min={5}
+                    max={500}
+                    value={meta.maxRevisoesDia ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        saveMeta({ maxRevisoesDia: "" });
+                        return;
+                      }
+                      const num = parseInt(val, 10);
+                      if (!isNaN(num)) {
+                        saveMeta({ maxRevisoesDia: Math.min(500, Math.max(0, num)) });
+                      }
+                    }}
+                    onBlur={() => {
+                      const currentVal = parseInt(meta.maxRevisoesDia, 10);
+                      if (isNaN(currentVal)) {
+                        saveMeta({ maxRevisoesDia: 30 });
+                      } else if (currentVal < 5) {
+                        saveMeta({ maxRevisoesDia: 5 });
+                      }
+                    }}
+                  />
                 </Field>
                 <Field label="Intervalo Máximo (Dias)" info="O limite máximo de dias para o agendamento de uma revisão. Garante que você revise todos os temas consolidados pelo menos uma vez a cada N dias.">
-                  <Input type="number" min={30} max={365} value={meta.intervaloMaxDias ?? 180} onChange={(e) => saveMetaNumber("intervaloMaxDias", e.target.value, { min: 30, max: 365 }, 180)} />
+                  <Input
+                    type="number"
+                    min={30}
+                    max={365}
+                    value={meta.intervaloMaxDias ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        saveMeta({ intervaloMaxDias: "" });
+                        return;
+                      }
+                      const num = parseInt(val, 10);
+                      if (!isNaN(num)) {
+                        saveMeta({ intervaloMaxDias: Math.min(365, Math.max(0, num)) });
+                      }
+                    }}
+                    onBlur={() => {
+                      const currentVal = parseInt(meta.intervaloMaxDias, 10);
+                      if (isNaN(currentVal)) {
+                        saveMeta({ intervaloMaxDias: 180 });
+                      } else if (currentVal < 30) {
+                        saveMeta({ intervaloMaxDias: 30 });
+                      }
+                    }}
+                  />
                 </Field>
               </div>
 
@@ -1689,7 +1762,29 @@ export function AjustesModal({
 
               <Field label="Meta diária de revisões (0 = ilimitada)" info="Número de revisões que você se compromete a fazer diariamente como meta pessoal (não confunda com o Teto Diário do FSRS).">
                 <div className="flex gap-2">
-                  <Input type="number" min={0} value={meta.metaDiaria ?? 0} onChange={(e) => saveMetaNumber("metaDiaria", e.target.value, { min: 0 }, 0)} className="flex-1" />
+                  <Input
+                    type="number"
+                    min={0}
+                    value={meta.metaDiaria ?? ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        saveMeta({ metaDiaria: "" });
+                        return;
+                      }
+                      const num = parseInt(val, 10);
+                      if (!isNaN(num)) {
+                        saveMeta({ metaDiaria: Math.max(0, num) });
+                      }
+                    }}
+                    onBlur={() => {
+                      const currentVal = parseInt(meta.metaDiaria, 10);
+                      if (isNaN(currentVal)) {
+                        saveMeta({ metaDiaria: 0 });
+                      }
+                    }}
+                    className="flex-1"
+                  />
                   <button
                     type="button"
                     onClick={() => {
@@ -1762,6 +1857,22 @@ export function AjustesModal({
                   <option value="neutro">Neutro</option>
                   <option value="firme">Firme</option>
                 </Select>
+              </Field>
+
+              <Field label="Modo de Exibição (Dashboard)" info="Mentor (Simples): Interface focada e limpa. Oculta painéis analíticos secundários para menor carga mental. Completo (Avançado): Dashboard tradicional com todas as métricas, cronogramas e gráficos abertos.">
+                <div className="flex items-center justify-between gap-3 bg-white/5 border border-white/10 rounded-xl p-3">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-bold text-white">{modoSimples ? "Modo Mentor (Simples)" : "Modo Completo (Avançado)"}</span>
+                    <span className="text-[10px] text-gray-500">{modoSimples ? "Interface simplificada ativa" : "Interface completa ativa"}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={toggleModoSimples}
+                    className="px-3 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/20 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    Alternar
+                  </button>
+                </div>
               </Field>
 
               {daysLeft != null && (

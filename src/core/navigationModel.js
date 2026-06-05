@@ -80,11 +80,6 @@ const MORE_ITEMS = [
     description: "Fundamentos do m\u00e9todo e guias de estudo.",
   },
   {
-    view: "weekly_review",
-    label: "Weekly Review",
-    description: "Revisao executiva da semana com acoes sugeridas.",
-  },
-  {
     view: "data_safety",
     label: "Seguranca de Dados",
     description: "Backup, integridade e migracao dos seus dados.",
@@ -95,21 +90,10 @@ const MORE_ITEMS = [
     description: "Como navegar por Hoje, Plano, Simulados, Clinico, Anki e Mais.",
   },
   {
-    view: "ajustes",
-    label: "Perfil e Configuracoes",
-    description: "Conta, estudos, mentor, seguranca e preferencias.",
-  },
-  {
     view: "conquistas",
     label: "Conquistas",
     description: "Realizacoes desbloqueadas com base no seu progresso.",
-  },
-  {
-    view: "launch_checklist",
-    label: "Checklist",
-    description: "Itens de prontidao e verificacoes do app.",
-    devOnly: true,
-  },
+  }
 ];
 
 const LEGACY_VIEW_MAP = {

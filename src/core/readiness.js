@@ -4,6 +4,7 @@ import { saldoRitmo, scoreProntidao } from "./volume";
 import { calcTrueRetention, calcTrend } from "../hooks/useMetrics";
 import { getEnamedIntel, calcPreparoEnamed } from "./enamedIntel";
 import { calculateClinicalReasoningScore } from "./clinicalReasoningScoring";
+import { estimateReadinessForecast } from "./forecast";
 
 export function pickTargetProva(provasAlvo, plat) {
   const list = plat === "res" ? PROVAS_RES : PROVAS_VEST;
@@ -26,7 +27,16 @@ export function matchesArea(studentEsp, examAreaName) {
 // Removido: calcRaciocinioScore local substituida por calculateClinicalReasoningScore
 // de clinicalReasoningScoring.js (fonte canonica unica — P4-A)
 
-export function getReadinessData({ temas, simulados, meta, plat, casosProgresso = {} }) {
+export function getReadinessData({
+  temas = [],
+  simulados = [],
+  meta = {},
+  plat = "res",
+  casosProgresso = {},
+  temaStats = {},
+  operationalMode = null,
+  calibration = null,
+}) {
   const startedTemas = temas.filter(t => !t.unstarted);
   const today = todayStr();
   
@@ -85,6 +95,16 @@ export function getReadinessData({ temas, simulados, meta, plat, casosProgresso 
   const raciocinioScore = meta?.modulos?.raciocinioClinico
     ? calculateClinicalReasoningScore(casosProgresso)
     : null;
+  const forecast = estimateReadinessForecast({
+    temas,
+    temaStats,
+    simulados,
+    meta,
+    plat,
+    today,
+    operationalMode,
+    calibration,
+  });
 
   // 6. Confidence range (e.g. +/- 6 points, bounded by 0-100)
   const rangeMin = score !== null ? Math.max(0, score - 6) : null;
@@ -197,6 +217,7 @@ export function getReadinessData({ temas, simulados, meta, plat, casosProgresso 
     saldoRitmoNorm,
     adesaoAnkiNorm,
     raciocinioScore,
+    forecast,
     targetProva,
     examData,
     areaRetention,

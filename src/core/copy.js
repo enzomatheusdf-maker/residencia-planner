@@ -8,7 +8,7 @@ export const COPY = {
     more: "Mais",
   },
   metrics: {
-    readiness: "Previsão de desempenho",
+    readiness: "Preparo estimado do plano",
     trueRetention: "Retenção longa",
     workload: "Carga de hoje",
   },

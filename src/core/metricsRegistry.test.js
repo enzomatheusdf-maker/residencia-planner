@@ -18,6 +18,7 @@ describe("metricsRegistry — definicoes obrigatorias", () => {
     "overdueReviews",
     "relearningCount",
     "coverageByArea",
+    "confidenceCalibration",
     "simuladoAccuracy",
     "enamedGap",
     "dominantError",
@@ -48,6 +49,38 @@ describe("metricsRegistry — definicoes obrigatorias", () => {
 
   test("getMetricDefinition retorna null para id desconhecido", () => {
     expect(getMetricDefinition("metricaInexistente")).toBeNull();
+  });
+});
+
+describe("confidenceCalibration - governanca", () => {
+  test("existe no registry", () => {
+    const def = getMetricDefinition("confidenceCalibration");
+    expect(def).not.toBeNull();
+    expect(def.section).toBe("aprendizagem");
+    expect(def.platforms).toContain("res");
+    expect(def.platforms).toContain("vest");
+  });
+
+  test("fica LOW_CONFIDENCE com n < 10", () => {
+    const result = evaluateMetric("confidenceCalibration", 82, { n: 7 });
+    expect(result.status).toBe(METRIC_STATUS.LOW_CONFIDENCE);
+    expect(result.confident).toBe(false);
+  });
+
+  test("fica OK com n >= 10 e score bom", () => {
+    const result = evaluateMetric("confidenceCalibration", 85, { n: 10 });
+    expect(result.status).toBe(METRIC_STATUS.OK);
+    expect(result.confident).toBe(true);
+  });
+
+  test("fica WARNING abaixo de 75", () => {
+    const result = evaluateMetric("confidenceCalibration", 70, { n: 12 });
+    expect(result.status).toBe(METRIC_STATUS.WARNING);
+  });
+
+  test("fica CRITICAL abaixo de 60", () => {
+    const result = evaluateMetric("confidenceCalibration", 55, { n: 12 });
+    expect(result.status).toBe(METRIC_STATUS.CRITICAL);
   });
 });
 

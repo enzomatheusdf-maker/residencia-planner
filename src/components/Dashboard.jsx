@@ -1,11 +1,10 @@
 // src/components/Dashboard.jsx
 import React, { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import { Edit2, Info, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Calendar, AlertTriangle, X, Zap, Layers, GraduationCap, BarChart3 } from "lucide-react";
+import { Edit2, TrendingUp, TrendingDown, CheckCircle, ChevronDown, ChevronUp, Brain, Calendar, AlertTriangle, X, Zap, Layers, GraduationCap } from "lucide-react";
 import { useStore } from "../core/store";
-import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection, getEstimatedMinutesForStep } from "../core/fsrs";
+import { STEPS, ESP_COLORS, isOverdue, todayStr, addDays, fmtDate, fmtFull, getRetrievability, getWorkloadProjection, getEstimatedMinutesForStep, diffDays } from "../core/fsrs";
 import { calcTrueRetention, calcBleedingScore, useFilaInteligente, PESOS_PROVA_VEST } from "../hooks/useMetrics";
-import { getMentorDiagnosis, isExhaustionDetected } from "../core/mentor";
-import { buildMentorContext, getMentorNextAction, getMentorTodayPlan } from "../core/mentorAutopilot";
+import { getMentorDiagnosis } from "../core/mentor";
 import { isPlanSetupComplete } from "../core/onboardingGate";
 import { getReadinessData } from "../core/readiness";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip, InfoTooltip } from "./Primitives";
@@ -19,7 +18,7 @@ import DicaContextual from "./DicaContextual";
 import TrilhaJornada from "./TrilhaJornada";
 import useCountUp from "../hooks/useCountUp";
 import { auth } from "../services/firebase";
-import { CALENDAR_PROVIDERS, CALENDAR_PROVIDER_IDS } from "../constants/calendarProviders";
+import { CALENDAR_PROVIDER_IDS } from "../constants/calendarProviders";
 import { getPeakModePolicy, getPeakPhase } from "../core/peakMode";
 import { parseCatalogEntry } from "../constants/catalogos";
 import { resolveCatalogo, getCronogramaById } from "../constants/cronogramas";
@@ -38,69 +37,10 @@ import EmptyState from "./EmptyState";
 import VestibularStartTrail from "./VestibularStartTrail";
 import { isVestibularStartComplete } from "../core/vestibularOnboarding";
 import { Badge, Card, MetricRing } from "./ui";
+import SessionClosureModal from "./SessionClosureModal";
+import { createSessionReflection } from "../core/sessionReflection";
 
-/* --- CARGA FUTURA WIDGET --- */
-function CargaFuturaWidget({ temas, maxRevisoesDia }) {
-  const proj = getWorkloadProjection(temas, 14);
-  const dayEntries = Object.values(proj);
-  const dates = dayEntries.map((entry) => entry.date);
-  const maxCount = Math.max(...dayEntries.map((entry) => entry?.count || 0), maxRevisoesDia, 1);
-  const diasSobrecarga = dayEntries.filter((entry) => (entry?.count || 0) > maxRevisoesDia).length;
-  
-  return (
-    <div className="medrev-card medrev-card-hover p-5 select-none animate-fade-in">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-[12px] font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-          <BarChart3 size={13} className="text-blue-400" />
-          Carga de Revisões (Próximos 14 dias)
-          <InfoTooltip texto="Projeção das revisões pendentes agendadas para os próximos 14 dias com base na curva de revisão." />
-        </h4>
-        <span className="text-[10px] text-gray-500 font-mono">Teto: {maxRevisoesDia}/dia · {diasSobrecarga} dias acima do teto</span>
-      </div>
-      
-      <div className="flex items-end justify-between h-24 gap-1.5 pt-4">
-        {dates.map((date) => {
-          const entry = proj[date] || { count: 0, estimatedMinutes: 0 };
-          const count = entry.count || 0;
-          const minutes = entry.estimatedMinutes || 0;
-          const pct = (count / maxCount) * 100;
-          const exceeds = count > maxRevisoesDia;
-          const today = date === todayStr();
-          
-          return (
-            <div key={date} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
-              <div className="relative w-full flex justify-center">
-                <span className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black border border-white/10 text-[9px] text-gray-300 rounded px-1.5 py-0.5 whitespace-nowrap z-50 pointer-events-none font-mono">
-                  {count} revs · {minutes} min
-                </span>
-              </div>
-              <div 
-                className={`w-full rounded-t transition-all duration-500 ${
-                  exceeds 
-                    ? "bg-gradient-to-t from-red-600 to-red-400" 
-                    : today 
-                    ? "bg-gradient-to-t from-blue-600 to-sky-500" 
-                    : "bg-white/10 hover:bg-white/20"
-                }`}
-                style={{ height: `${Math.max(pct, 5)}%` }}
-              />
-              <span className={`text-[8px] font-bold ${today ? "text-sky-400 font-black" : "text-gray-600"}`}>
-                {fmtDate(date)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      <p className={`mt-3 text-[10px] font-semibold ${diasSobrecarga >= 3 ? "text-amber-300" : "text-emerald-300"}`}>
-        {diasSobrecarga >= 3
-          ? "Ação: não iniciar tema novo até reduzir a sobrecarga."
-          : diasSobrecarga === 0
-          ? "Carga controlada para os próximos 14 dias."
-          : "Monitorando sobrecarga leve para manter o ritmo."}
-      </p>
-    </div>
-  );
-}
+
 
 // eslint-disable-next-line no-unused-vars
 function getPreparoCalibration({ readinessData, trueRet, totalSessions, temasFiltrados, totalRevisoesFeitas }) {
@@ -689,15 +629,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const sessionReflections = useStore((s) => s.sessionReflections || []);
   const ankiLog = useStore((s) => s[plat]?.ankiLog || []);
   const marcarAnkiHoje = useStore((s) => s.marcarAnkiHoje);
+  const addSessionReflection = useStore((s) => s.addSessionReflection);
   const ankiAdesaoDatas = useStore((s) => s.meta?.ankiAdesao?.datas || []);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
+  const decisionSnapshot = useStore((s) => s.decisionSnapshot);
   const telemetryMeta = useStore((s) => s.meta);
   const calendarProvider = useStore((s) => s.calendarProvider || { activeId: "medcof" });
   const cronogramaSel = useStore((s) => s.cronogramaSel);
-  const providerAtivoLabel = useMemo(() => {
-    const found = CALENDAR_PROVIDERS.find((p) => p.id === calendarProvider.activeId);
-    return found?.label || "MEDCOF";
-  }, [calendarProvider.activeId]);
   const openSetupAjustes = useCallback(() => {
     if (onOpenAjustes) {
       onOpenAjustes({ initialTab: "ajustes" });
@@ -788,7 +726,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const [showWelcome, setShowWelcome] = useState(false);
   const [showCompleto, setShowCompleto] = useState(!modoSimples);
   const [showSetupFlow, setShowSetupFlow] = useState(false);
-  const [showHeroMeta, setShowHeroMeta] = useState(false);
   const [temaValidando, setTemaValidando] = useState(null);
   const lastMentorSeenRef = useRef("");
 
@@ -948,7 +885,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     return diag.insights.filter(ins => ins.type === "alerta" || ins.type === "vies_excesso" || ins.type === "vies_inseguranca");
   }, [diag]);
 
-  const hasExhaustionNow = useMemo(() => isExhaustionDetected(temaStats, done), [temaStats, done]);
   const totalSessions = useMemo(() => {
     return temas
       .flatMap((t) => [
@@ -1006,17 +942,23 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
   const daysToProva = useMemo(() => {
     if (!meta?.dataProva) return null;
-    const provaDate = new Date(meta.dataProva + "T12:00:00");
-    return Math.ceil((provaDate - new Date()) / (1000 * 60 * 60 * 24));
+    return diffDays(todayStr(), meta.dataProva);
   }, [meta?.dataProva]);
   const peakPhase = useMemo(() => getPeakPhase({ examDate: meta?.dataProva, today: todayStr() }), [meta?.dataProva]);
   const peakPolicy = useMemo(() => getPeakModePolicy(peakPhase), [peakPhase]);
   const peakModeAtivo = peakPhase !== "base";
+  const [showSessionClosureModal, setShowSessionClosureModal] = useState(false);
+  const pendingTheme = useMemo(() => {
+    const themeId = meta?.lastFocusThemeId;
+    if (!themeId) return null;
+    return temas.find(t => t.id === themeId) || null;
+  }, [meta?.lastFocusThemeId, temas]);
   const hasPendingClosure = useMemo(() => {
     if (!meta?.lastFocusSessionAt) return false;
+    if (!pendingTheme) return false;
     if (!meta?.lastReflectionAt) return true;
     return meta.lastReflectionAt < meta.lastFocusSessionAt;
-  }, [meta?.lastFocusSessionAt, meta?.lastReflectionAt]);
+  }, [meta?.lastFocusSessionAt, meta?.lastReflectionAt, pendingTheme]);
   const semanaDeProva = daysToProva != null && daysToProva >= 0 && daysToProva <= 7;
 
   useEffect(() => {
@@ -1134,20 +1076,26 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   }, [filaInteligente, overdue, today_, temasFiltrados]);
 
 
-  const mentorContext = useMemo(() => {
-    const state = useStore.getState();
-    return buildMentorContext(state, plat, {
-      readinessData,
-      lowEnergy: hasExhaustionNow,
-      exhaustionDetected: hasExhaustionNow,
-    });
-  }, [plat, readinessData, hasExhaustionNow]);
-
-  const mentorNextAction = useMemo(() => getMentorNextAction(mentorContext), [mentorContext]);
-  const mentorTodayPlan = useMemo(() => getMentorTodayPlan(mentorContext), [mentorContext]);
-  const agendaTodaySummary = mentorContext?.agendaTodaySummary || null;
+  const mentorNextAction = decisionSnapshot?.primaryAction || null;
+  const mentorTodayPlan = useMemo(
+    () => (Array.isArray(decisionSnapshot?.todayPlan) ? decisionSnapshot.todayPlan : []),
+    [decisionSnapshot?.todayPlan]
+  );
+  const decisionContext = decisionSnapshot?.context || null;
+  const agendaTodaySummary = decisionSnapshot?.context?.agendaTodaySummary || null;
 
   const comandoDoDia = useMemo(() => {
+    if (hasPendingClosure) {
+      return {
+        eyebrow: "Alerta do Mentor",
+        title: "Sessão sem fechamento",
+        subtitle: "Uma sessão de estudos foi interrompida no meio sem o registro adequado e/ou finalização com reflexão.",
+        primaryLabel: "Registrar fechamento",
+        secondaryLabel: "Dispensar alerta",
+        tone: "amber",
+        action: { type: "pending_closure" },
+      };
+    }
     const action = mentorNextAction || {};
     const tone = action.safety === "critical"
       ? "red"
@@ -1168,9 +1116,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       tone,
       action,
     };
-  }, [mentorNextAction, mentorTodayPlan]);
+  }, [hasPendingClosure, mentorNextAction, mentorTodayPlan]);
 
   const runMentorPrimaryAction = useCallback(() => {
+    if (hasPendingClosure) {
+      setShowSessionClosureModal(true);
+      return;
+    }
     const action = mentorNextAction || {};
     const target = action.target || {};
     const actionType = action.type || target.view || action.ctaView || "mentor";
@@ -1202,7 +1154,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     // 3. Demais comandos: navega para a tela correspondente.
     if (setView) setView(view);
     safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
-  }, [mentorNextAction, onStudy, plat, setView, telemetryMeta, topFilaItem]);
+  }, [hasPendingClosure, mentorNextAction, onStudy, plat, setView, telemetryMeta, topFilaItem]);
 
   const days = Array.from({ length: 35 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - 34 + i);
@@ -1267,7 +1219,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     // 5. Main Title & Readiness metric
     ctx.fillStyle = "#a1a1aa"; // zinc-400
     ctx.font = "bold 11px system-ui, -apple-system, sans-serif";
-    ctx.fillText("ÍNDICE DE PREPARO ESTIMADO", 45, 140);
+    ctx.fillText("PREPARO ESTIMADO DO PLANO", 45, 140);
 
     // Big score
     ctx.fillStyle = "#ffffff";
@@ -1379,7 +1331,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     return streakCurrent > 0 && (streakCurrent === 7 || streakCurrent === 30 || streakCurrent === 100);
   }, [streakCurrent]);
   const todayLoadSignals = useMemo(() => {
-    const scheduler = mentorContext?.scheduler || {};
+    const scheduler = decisionContext?.scheduler || {};
     const minutes = exibidosHojeMinutes;
     const overloadLevelToday = minutes > 120 ? "high" : minutes > 60 ? "moderate" : "ok";
     return {
@@ -1388,7 +1340,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       overloadLevelToday,
       relearningCount: Number(scheduler.relearningCount ?? 0),
     };
-  }, [mentorContext, pending, exibidosHojeMinutes]);
+  }, [decisionContext, pending, exibidosHojeMinutes]);
   const todayLoadSummary = useMemo(() => {
     const loadLabel = {
       high: "alta",
@@ -1409,7 +1361,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     },
   }), [meta, onboardingDone, overdue.length, pending, plat, todayLoadSignals.todayMinutes, tourStep, userName]);
   const [showMentorWhy, setShowMentorWhy] = useState(false);
-  const [showSessionClosureDialog, setShowSessionClosureDialog] = useState(false);
   const vestibularStartComplete = useMemo(() => {
     if (plat !== "vest") return true;
     return isVestibularStartComplete(meta);
@@ -1535,37 +1486,27 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       >
         <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0 flex-1 space-y-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-center gap-2">
-                <p className="truncate text-sm font-semibold text-[var(--text-2)]">{greeting}, {userName}.</p>
-                <button type="button" onClick={onEditName} className="text-gray-500 hover:text-gray-300 transition-colors border-none p-1 bg-transparent cursor-pointer" aria-label="Editar nome">
-                  <Edit2 size={14} />
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
+                  {greeting}, {userName}.
+                </h1>
+                <button type="button" onClick={onEditName} className="text-gray-400 hover:text-white transition-colors border-none p-1.5 bg-white/5 hover:bg-white/10 rounded-xl cursor-pointer flex items-center justify-center shrink-0" aria-label="Editar nome">
+                  <Edit2 size={16} />
                 </button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setShowHeroMeta((prev) => !prev)}
-                  className="md:hidden rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-gray-300"
+                  onClick={toggleModoSimples}
+                  className={`text-[9px] uppercase tracking-wider font-bold rounded-lg px-2.5 py-1.5 cursor-pointer transition-all ${
+                    modoSimples
+                      ? "text-blue-300 border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20"
+                      : "text-amber-400 border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
+                  }`}
                 >
-                  {showHeroMeta ? "Ocultar detalhes" : "Ver detalhes"}
+                  {modoSimples ? "Modo Simples (Ativo)" : "Ativar Modo Simples"}
                 </button>
-              </div>
-              <div className={`${showHeroMeta ? "flex" : "hidden"} md:flex flex-wrap items-center gap-2.5`}>
-                {plat === "res" && (
-                  <>
-                    <span className="text-[9px] uppercase tracking-wider font-bold text-blue-300 border border-blue-500/30 bg-blue-500/10 rounded-lg px-2 py-1">
-                      Provider: {providerAtivoLabel}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleInsightAction({ type: "import_calendar" })}
-                      className="text-[9px] uppercase tracking-wider font-bold text-emerald-300 border border-emerald-500/30 bg-emerald-500/10 rounded-lg px-2 py-1 hover:bg-emerald-500/20 cursor-pointer"
-                    >
-                      Importar
-                    </button>
-                  </>
-                )}
                 <div className="flex items-center gap-1 rounded-xl border border-white/5 bg-black/25 px-2.5 py-1.5">
                   <span className="text-[8.5px] font-bold text-gray-500 uppercase tracking-wider mr-1 select-none flex items-center gap-1">
                     Consistencia
@@ -1622,11 +1563,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             <div className="space-y-3">
               <p className="text-[10px] font-bold uppercase tracking-wide text-blue-300 flex items-center gap-2 flex-wrap">
                 {comandoDoDia.eyebrow}
-                {daysToProva != null && (
-                  <span className={`font-black ${daysToProva <= 30 ? "text-red-400" : "text-blue-300"}`}>
-                    · Prova em {daysToProva <= 0 ? "hoje!" : `${daysToProva}d`}
-                  </span>
-                )}
               </p>
               <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
                 {comandoDoDia.title}
@@ -1657,7 +1593,18 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               </button>
               <button
                 type="button"
-                onClick={() => setShowMentorWhy((prev) => !prev)}
+                onClick={() => {
+                  if (hasPendingClosure) {
+                    useStore.setState((state) => ({
+                      meta: {
+                        ...state.meta,
+                        lastReflectionAt: new Date().toISOString(),
+                      },
+                    }));
+                  } else {
+                    setShowMentorWhy((prev) => !prev);
+                  }
+                }}
                 className="min-h-[44px] rounded-xl px-4 py-3 text-sm font-bold text-gray-200 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
               >
                 {comandoDoDia.secondaryLabel}
@@ -1748,34 +1695,32 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           </div>
         </Card>
 
-        {/* Card 3: Saldo de ritmo */}
+        {/* Card 3: Sinal de prontidão */}
         <Card variant="elevated" className="med-animate-in" style={{ padding: 16 }}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <Badge tone={
-                readinessData?.saldoRitmoNorm == null ? "neutral"
-                : readinessData.saldoRitmoNorm >= 50 ? "green"
-                : readinessData.saldoRitmoNorm >= 30 ? "blue"
+                readinessData?.score == null ? "neutral"
+                : readinessData.score >= 75 ? "green"
+                : readinessData.score >= 60 ? "blue"
                 : "amber"
               }>
-                Saldo de ritmo
+                Sinal de prontidão
               </Badge>
               <h2 className="mt-3 text-2xl font-black tabular-nums text-white">
-                {readinessData?.saldoRitmoNorm != null ? `${readinessCountUp}%` : "--"}
+                {readinessData?.score != null ? `${readinessCountUp}%` : "--"}
               </h2>
               <p className="mt-1 text-[11px] text-gray-400">
-                {readinessData?.saldoRitmoNorm == null
+                {readinessData?.score == null
                   ? "Coletando dados"
-                  : readinessData.saldoRitmoNorm >= 70
-                  ? "Atenção: carga pode ser exagerada"
-                  : readinessData.saldoRitmoNorm >= 50
-                  ? "Boa margem de segurança"
-                  : readinessData.saldoRitmoNorm >= 30
-                  ? "Dentro do esperado"
-                  : "Acumulando atraso"}
+                  : readinessData.score >= 75
+                  ? "Preparo avançado"
+                  : readinessData.score >= 60
+                  ? "Preparo adequado"
+                  : "Foco em consistência"}
               </p>
             </div>
-            <InfoTooltip texto="Saldo de ritmo reflete se você está à frente ou atrás do plano. Abaixo de 30%: atraso crescendo. 30–50%: dentro do esperado. 50–70%: boa margem. Acima de 70%: verifique se a carga está muito alta." />
+            <InfoTooltip texto="Estimativa interna baseada em revisões, desempenho registrado e cobertura. Não representa nota TRI oficial ou aprovação oficial." />
           </div>
         </Card>
 
@@ -1829,53 +1774,46 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       )}
 
       {/* Alertas compactos inline */}
-      {(hasPendingClosure || peakModeAtivo) && (
+      {peakModeAtivo && (
         <div className="flex flex-wrap gap-2">
-          {hasPendingClosure && (
-            <button
-              type="button"
-              onClick={() => setShowSessionClosureDialog(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] font-bold hover:bg-amber-500/20 transition-colors cursor-pointer"
-            >
-              <AlertTriangle size={12} />
-              Sessão sem fechamento — registrar agora
-            </button>
-          )}
-          {showSessionClosureDialog && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowSessionClosureDialog(false)}>
-              <div className="relative bg-[#16181c] border border-amber-500/30 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl" onClick={e => e.stopPropagation()}>
-                <button type="button" onClick={() => setShowSessionClosureDialog(false)} className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 border-none bg-transparent cursor-pointer"><X size={16} /></button>
-                <AlertTriangle size={20} className="text-amber-400 mb-3" />
-                <h3 className="text-sm font-black text-white mb-2">Sessão em aberto</h3>
-                <p className="text-[12px] text-gray-300 leading-relaxed mb-4">
-                  Você iniciou uma sessão de foco que não foi encerrada com reflexão. Registrar o fechamento ajuda o Mentor a calibrar as próximas recomendações.
-                </p>
-                <div className="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { setShowSessionClosureDialog(false); setView && setView("stats"); }}
-                    className="w-full py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/20 text-[12px] font-bold cursor-pointer transition-colors"
-                  >
-                    Registrar em Estatísticas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowSessionClosureDialog(false)}
-                    className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 border border-white/10 text-[12px] cursor-pointer transition-colors"
-                  >
-                    Fechar sem registrar
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          {peakModeAtivo && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-bold">
-              <Zap size={12} />
-              Reta final ativa · {peakPolicy.maxNewTopicsPerWeek == null ? "sem limite" : peakPolicy.maxNewTopicsPerWeek} temas/semana · viés +{peakPolicy.reviewBias}
-            </div>
-          )}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-bold">
+            <Zap size={12} />
+            Reta final ativa · {peakPolicy.maxNewTopicsPerWeek == null ? "sem limite" : peakPolicy.maxNewTopicsPerWeek} temas/semana · viés +{peakPolicy.reviewBias}
+          </div>
         </div>
+      )}
+
+      {showSessionClosureModal && pendingTheme && (
+        <SessionClosureModal
+          open={showSessionClosureModal}
+          source="focus"
+          tema={pendingTheme.nome}
+          area={pendingTheme.esp || ""}
+          initial={{
+            outcome: "medio",
+            mainIssue: "nenhum",
+            nextAdjustment: "revisar",
+            confidence: "media",
+            note: ""
+          }}
+          onSave={(payload) => {
+            const reflection = createSessionReflection(payload);
+            addSessionReflection(reflection);
+            setShowSessionClosureModal(false);
+            if (rebuildActionInboxForToday) rebuildActionInboxForToday();
+            if (showToast) showToast("Fechamento salvo e adicionado na Caixa de Acoes.");
+          }}
+          onSkip={() => {
+            useStore.setState((state) => ({
+              meta: {
+                ...state.meta,
+                lastReflectionAt: new Date().toISOString(),
+              },
+            }));
+            setShowSessionClosureModal(false);
+          }}
+          onClose={() => setShowSessionClosureModal(false)}
+        />
       )}
 
       {!modoSimples && (
@@ -2092,10 +2030,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </div>
       )}
 
-      {/* Camada terciaria: carga e detalhes */}
-      {!modoSimples && (
-        <CargaFuturaWidget temas={temas} maxRevisoesDia={meta.maxRevisoesDia || 30} />
-      )}
+
 
       {/* DICA P5: retenção alta demais → sobrecarga */}
       {(() => {
@@ -2160,16 +2095,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
       {showCompleto && (
         <div className="space-y-5 flex flex-col gap-5">
-          <div className="flex items-center justify-between gap-3 bg-[var(--surface-1)] border border-white/5 rounded-2xl p-3">
-            <p className="text-[11px] text-gray-400">Análises avançadas e contexto de aprendizado.</p>
-            <button
-              type="button"
-              onClick={() => setView && setView("stats")}
-              className="px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/35 text-blue-300 border border-blue-500/20 text-[11px] font-bold cursor-pointer"
-            >
-              Abrir Estatísticas
-            </button>
-          </div>
+
 
           {modoSimples && (
             <>
@@ -2283,7 +2209,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 </div>
               </section>
 
-              <CargaFuturaWidget temas={temas} maxRevisoesDia={meta.maxRevisoesDia || 30} />
+
             </>
           )}
 
@@ -2350,90 +2276,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
 
 
-      {/* ZONA 3 — Métricas (Grid 3 colunas) — só exibe após a primeira sessão */}
-      {totalSessions > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Acerto Médio */}
-          <div className="bg-white/5 border border-white/5 rounded-2xl p-4 relative group">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5 cursor-help">
-              Acerto Médio
-              <Info size={13} className="text-gray-600 hover:text-gray-400 transition-colors" />
-            </p>
-            {acertoMedio != null ? (
-              <p className={`text-2xl font-black tabular-nums ${acertoMedio >= 80 ? "text-emerald-400" : acertoMedio >= 65 ? "text-blue-400" : "text-red-400"}`}>
-                {acertoMedio}%
-              </p>
-            ) : (
-              <button onClick={() => setView && setView("crono")} className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors mt-1 block text-left">
-                Iniciar tema →
-              </button>
-            )}
-            <div className="absolute bottom-full left-0 mb-2 w-[min(13rem,calc(100vw-2rem))] bg-[#141417] border border-white/10 rounded-xl p-3 text-[10px] text-gray-400 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none leading-relaxed">
-              Média de precisão combinada das suas sessões de estudo. A recomendação padrão é manter acima de 80%.
-            </div>
-          </div>
 
-          {/* Temas Dominados */}
-          <div className="bg-white/5 border border-white/5 rounded-2xl p-4 relative group">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5 cursor-help">
-              Dominados (D21)
-              <Info size={13} className="text-gray-600 hover:text-gray-400 transition-colors" />
-            </p>
-            {temasFiltrados.length > 0 ? (
-              <p className="text-2xl font-black text-emerald-400">
-                {temasFiltrados.filter(t => STEPS.every(s => t.rev[s.key].done)).length}/{temasFiltrados.length}
-              </p>
-            ) : (
-              <span className="text-[10px] text-gray-500 block mt-1">Nenhum tema ativo</span>
-            )}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-[min(13rem,calc(100vw-2rem))] bg-[#141417] border border-white/10 rounded-xl p-3 text-[10px] text-gray-400 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none leading-relaxed">
-              Número de temas cadastrados que completaram com sucesso todas as etapas da curva de revisão (D0 até o D21).
-            </div>
-          </div>
-
-          {/* Retenção longa */}
-          <ProgressiveTooltip
-            tooltipId="true_retention"
-            text="Mentor: Retenção longa mede a taxa de acerto nas revisões de longo prazo (D21+). Manter esse índice acima de 80% indica retenção sólida de conteúdo."
-          >
-            <div className="bg-white/5 border border-white/5 rounded-2xl p-4 relative group w-full">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5 cursor-help">
-                Retenção longa
-                <Info size={13} className="text-gray-600 hover:text-gray-400 transition-colors" />
-              </p>
-              {trueRet != null ? (
-                <p className={`text-2xl font-black tabular-nums ${trueRet >= 80 ? "text-emerald-400" : trueRet >= 65 ? "text-blue-400" : "text-red-400"}`}>
-                  {trueRet}%
-                </p>
-              ) : (
-                <span className="text-[10px] text-gray-500 block mt-1">Requer D21+ concluído</span>
-              )}
-              <div className="absolute bottom-full right-0 mb-2 w-[min(13rem,calc(100vw-2rem))] bg-[#141417] border border-white/10 rounded-xl p-3 text-[10px] text-gray-400 shadow-2xl z-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none leading-relaxed">
-                Rendimento em revisões feitas em intervalos maiores (D21+). Mede o verdadeiro aprendizado de longo prazo.
-              </div>
-            </div>
-          </ProgressiveTooltip>
-        </div>
-      ) : (
-        /* Estado Vazio Inteligente: temas cadastrados mas nenhuma sessão iniciada */
-        <div className="bg-gradient-to-br from-blue-600/8 via-transparent to-sky-600/5 border border-blue-500/15 rounded-2xl p-5 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-sky-500 flex items-center justify-center text-xl shrink-0 shadow-lg shadow-indigo-900/30">
-            🚀
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-black text-white mb-0.5">Pronto para começar!</p>
-            <p className="text-[11px] text-gray-400 leading-relaxed">
-              Suas métricas vão aparecer aqui após a primeira sessão de estudo.
-            </p>
-          </div>
-          <button
-            onClick={() => setView && setView("crono")}
-            className="shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white font-bold text-[11.5px] transition-all hover:scale-[1.02] active:scale-95 shadow-md shadow-indigo-900/20"
-          >
-            Iniciar tema →
-          </button>
-        </div>
-      )}
 
 
       {/* ZONA 4 — Detalhe (Filas & Colapsável de Estatísticas) */}

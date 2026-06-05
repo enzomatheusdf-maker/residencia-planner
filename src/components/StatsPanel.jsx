@@ -8,7 +8,7 @@ import {
   Target, ChevronRight, CheckCircle,
 } from "lucide-react";
 import { useStore } from "../core/store";
-import { STEPS, ESP_COLORS, todayStr, addDays, fmtDate } from "../core/fsrs";
+import { STEPS, ESP_COLORS, todayStr, addDays, fmtDate, diffDays } from "../core/fsrs";
 import { calcCalibration } from "../core/calibration";
 import { getMentorPhrase, getMentorDiagnosis } from "../core/mentor";
 import { getReadinessData } from "../core/readiness";
@@ -282,15 +282,20 @@ export default function StatsPanel({ setView = null }) {
     return calcCalibration(flatStats);
   }, [temaStats]);
 
+  const calibrationMetric = useMemo(() => {
+    return evaluateMetric("confidenceCalibration", calibrationData?.score ?? null, {
+      n: calibrationData?.n || 0,
+    });
+  }, [calibrationData]);
+
   const calibrationMentorPhrase = useMemo(() => {
-    if (!calibrationData || calibrationData.status === "coletando") {
-      const remaining = 5 - (calibrationData?.n || 0);
-      return `Ainda reunindo dados. Faltam mais ${remaining} ${remaining === 1 ? "revisao" : "revisoes"} com previsao preenchida.`;
+    if (!calibrationData || calibrationData.status !== "ok") {
+      return calibrationData?.action || calibrationMetric?.action || "Continue registrando previsao antes das revisoes.";
     }
     const key = `calibracao_${calibrationData.tendencia}`;
     const phraseObj = getMentorPhrase(key, { userName: userName || "Estudante" }, [], plat);
-    return phraseObj.text;
-  }, [calibrationData, userName, plat]);
+    return calibrationData.action || phraseObj.text;
+  }, [calibrationData, calibrationMetric, userName, plat]);
 
   // Analise de Desempenho (migrada do Dashboard)
   const doneForDiag = useMemo(() => {
@@ -528,19 +533,16 @@ export default function StatsPanel({ setView = null }) {
   // Métricas de metas para o card de progresso
   const metasProgresso = useMemo(() => {
     const metaDia = meta?.metaQuestoesDia || meta?.metaDiaria || 0;
+    const daysToProva = meta?.dataProva
+      ? diffDays(todayStr(), meta.dataProva)
+      : null;
     const metaTotal = meta?.metaQuestoesTotal || (
-      metaDia > 0 && meta?.dataProva
-        ? (() => {
-            const days = Math.ceil((new Date(meta.dataProva + "T12:00:00") - new Date()) / (1000 * 60 * 60 * 24));
-            return days > 0 ? metaDia * days : 0;
-          })()
+      metaDia > 0 && daysToProva != null && daysToProva > 0
+        ? metaDia * daysToProva
         : 0
     );
     const totalFeitas = personalStats?.totalQuestoes || 0;
     const progresso = metaTotal > 0 ? Math.min(100, Math.round((totalFeitas / metaTotal) * 100)) : null;
-    const daysToProva = meta?.dataProva
-      ? Math.ceil((new Date(meta.dataProva + "T12:00:00") - new Date()) / (1000 * 60 * 60 * 24))
-      : null;
     const ritmoNecessario = (daysToProva != null && daysToProva > 0 && metaTotal > totalFeitas)
       ? Math.ceil((metaTotal - totalFeitas) / daysToProva)
       : null;
@@ -606,13 +608,14 @@ export default function StatsPanel({ setView = null }) {
     dominantError: evaluateMetric("dominantError", errorAnalytics.dominant, { total: errorAnalytics.total }),
     simuladoAccuracy: evaluateMetric("simuladoAccuracy", readinessData.acertoSimulado, { n: simulados.length }),
     clinicalReasoningScore: evaluateMetric("clinicalReasoningScore", raciocinioStats.score, { n: raciocinioStats.n }),
+    confidenceCalibration: evaluateMetric("confidenceCalibration", calibrationData?.score ?? null, { n: calibrationData?.n || 0 }),
     ankiAdherence: evaluateMetric("ankiAdherence", ankiAdherencePct, { days: (meta?.ankiAdesao?.datas || []).length }),
     weeklyConsistency: evaluateMetric("weeklyConsistency", activeLastWeek, { totalDays: 7 }),
     coverageByArea: evaluateMetric("coverageByArea", readinessData.cobertura, { total: temas.length }),
     enamedGap: evaluateMetric("enamedGap", null, { hasAnalise: enamedAnalises.length > 0 }),
   }), [
     retentionDetailed, overdueCount, relearningCount, errorAnalytics,
-    readinessData, simulados, raciocinioStats, ankiAdherencePct, meta,
+    readinessData, simulados, raciocinioStats, calibrationData, ankiAdherencePct, meta,
     activeLastWeek, temas, enamedAnalises,
   ]);
 
@@ -654,16 +657,16 @@ export default function StatsPanel({ setView = null }) {
         onChange={setActiveSection}
       />
 
-      {/* ── SECAO 7: VALIDACAO DA PREVISAO ─────────────────────────────────── */}
+      {/* ── SECAO 7: VALIDACAO DO PREPARO ─────────────────────────────────── */}
       {currentSection === "validacao" && (
         <div className="space-y-4">
-          <p className="text-[11px] text-gray-500">Previsao ancorada em simulados/provas. A banda de confianca estreita com mais registros espaçados.</p>
+          <p className="text-[11px] text-gray-500">Preparo estimado ancorado em simulados/provas. A banda de confianca estreita com mais registros espaçados.</p>
 
-          {/* Nova previsão de desempenho v1 */}
+          {/* Novo preparo estimado do plano v1 */}
           <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] text-gray-500 uppercase font-semibold mb-1">Previsão de desempenho</p>
+                <p className="text-[10px] text-gray-500 uppercase font-semibold mb-1">Preparo estimado do plano</p>
                 {previsaoForecast.score != null && readinessSample.hasMinimum ? (
                   <div className="flex items-baseline gap-2">
                     <p className="text-4xl font-black tabular-nums text-blue-400">{previsaoForecast.score}%</p>
@@ -697,8 +700,8 @@ export default function StatsPanel({ setView = null }) {
               <div className="space-y-1">
                 <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
                   <div
-                    className="absolute h-full bg-blue-500/30 rounded-full"
-                    style={{ left: `${previsaoForecast.bandMin}%`, width: `${previsaoForecast.bandMax - previsaoForecast.bandMin}%` }}
+                     className="absolute h-full bg-blue-500/30 rounded-full"
+                     style={{ left: `${previsaoForecast.bandMin}%`, width: `${previsaoForecast.bandMax - previsaoForecast.bandMin}%` }}
                   />
                   <div
                     className="absolute h-full w-0.5 bg-blue-400"
@@ -718,7 +721,7 @@ export default function StatsPanel({ setView = null }) {
             </p>
           </div>
 
-          {/* Gráfico de evolução dos simulados como proxy da previsão */}
+          {/* Gráfico de evolução dos simulados como proxy do preparo estimado */}
           {simulados.length >= 2 && (
             <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 space-y-2">
               <p className="text-[11px] font-black uppercase tracking-wider text-gray-300">Evolução dos simulados</p>
@@ -742,17 +745,17 @@ export default function StatsPanel({ setView = null }) {
             </div>
           )}
 
-          {/* Validação forecast vs resultado real */}
+          {/* Validação do preparo estimado vs resultado real */}
           <div className="rounded-2xl border border-white/5 bg-[#111113] p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Validacao da previsao vs resultado real</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Validacao do preparo estimado vs resultado real</p>
             <p className="mt-1 text-[12px] text-gray-300">
               {readinessValidation.status === "coletando"
-                ? "Registre simulados para comparar previsao com resultado real."
+                ? "Registre simulados para comparar o preparo estimado com o resultado real."
                 : readinessValidation.status === "alinhado"
-                ? `Previsao alinhada ao resultado real (erro ${readinessValidation.absoluteError} pts).`
+                ? `Preparo estimado alinhado ao resultado real (erro ${readinessValidation.absoluteError} pts).`
                 : readinessValidation.status === "superestimado"
-                ? `Previsao acima do resultado real — erro de ${readinessValidation.absoluteError} pts. Aumente a frequência de simulados.`
-                : `Previsao abaixo do resultado real — erro de ${readinessValidation.absoluteError} pts. Bom sinal de crescimento.`}
+                ? `Preparo estimado acima do resultado real — erro de ${readinessValidation.absoluteError} pts. Aumente a frequência de simulados.`
+                : `Preparo estimado abaixo do resultado real — erro de ${readinessValidation.absoluteError} pts. Bom sinal de crescimento.`}
             </p>
           </div>
 
@@ -981,33 +984,36 @@ export default function StatsPanel({ setView = null }) {
                 </span>
               )}
             </div>
-            {calibrationData.status === "coletando" ? (
+            {calibrationData.status !== "ok" ? (
               <div className="bg-black/25 border border-white/5 p-4 rounded-xl text-center space-y-1.5">
                 <p className="text-[11px] text-gray-400">
-                  Coletando dados — faltam {5 - calibrationData.n} revisoes com previsao preenchida.
+                  {calibrationData.status === "coletando"
+                    ? `Coletando dados — faltam ${Math.max(0, (calibrationData.minPreview || 5) - calibrationData.n)} sessoes para o primeiro sinal.`
+                    : `Sinal inicial — faltam ${Math.max(0, (calibrationData.minRequired || 10) - calibrationData.n)} sessoes para analise confiavel.`}
                 </p>
                 <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-blue-600 h-full transition-all" style={{ width: `${(calibrationData.n / 5) * 100}%` }} />
+                  <div className="bg-blue-600 h-full transition-all" style={{ width: `${Math.min(100, ((calibrationData?.n || 0) / (calibrationData?.minRequired || 10)) * 100)}%` }} />
                 </div>
+                <p className="text-[10px] text-blue-300/80 leading-relaxed">{calibrationMentorPhrase}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-black/40 border border-white/5 rounded-xl p-4 text-center flex flex-col justify-center">
                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Precisao de Previsao</span>
-                  <span className="text-3xl font-black font-mono text-blue-400">{calibrationData.precisao}%</span>
+                  <span className="text-3xl font-black font-mono text-blue-400">{calibrationData.score ?? calibrationData.precisao}%</span>
                   <span className="text-[9px] text-gray-600 mt-1">Proximidade com o resultado real</span>
                 </div>
                 <div className="bg-black/40 border border-white/5 rounded-xl p-4 text-center flex flex-col justify-center">
                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">Vies de Confianca</span>
-                  <span className={`text-3xl font-black font-mono ${calibrationData.vies > 0 ? "text-amber-400" : calibrationData.vies < 0 ? "text-blue-400" : "text-emerald-400"}`}>
-                    {calibrationData.vies > 0 ? `+${calibrationData.vies}%` : `${calibrationData.vies}%`}
+                  <span className={`text-3xl font-black font-mono ${(calibrationData.biasPct ?? calibrationData.vies) > 0 ? "text-amber-400" : (calibrationData.biasPct ?? calibrationData.vies) < 0 ? "text-blue-400" : "text-emerald-400"}`}>
+                    {(calibrationData.biasPct ?? calibrationData.vies) > 0 ? `+${calibrationData.biasPct ?? calibrationData.vies}%` : `${calibrationData.biasPct ?? calibrationData.vies}%`}
                   </span>
                   <span className="text-[9px] text-gray-600 mt-1">
-                    {calibrationData.vies > 0 ? "Otimista" : calibrationData.vies < 0 ? "Pessimista" : "Alinhado"}
+                    {(calibrationData.biasPct ?? calibrationData.vies) > 0 ? "Excesso de confianca" : (calibrationData.biasPct ?? calibrationData.vies) < 0 ? "Subestimacao" : "Alinhado"}
                   </span>
                 </div>
                 <div className="bg-blue-950/20 border border-blue-500/10 rounded-xl p-4 flex flex-col justify-center text-left">
-                  <span className="text-[9.5px] font-bold text-blue-300 uppercase tracking-wider block mb-1">Mentor Metacognitivo</span>
+                  <span className="text-[9.5px] font-bold text-blue-300 uppercase tracking-wider block mb-1">{metricsEvaluated.confidenceCalibration.confident ? "Acao recomendada" : "Sinal em coleta"}</span>
                   <p className="text-[11.5px] text-gray-400 leading-relaxed mt-0.5 italic">"{calibrationMentorPhrase}"</p>
                 </div>
               </div>
@@ -1213,12 +1219,12 @@ export default function StatsPanel({ setView = null }) {
       )}
 
 
-          {/* Previsao de desempenho */}
+          {/* Preparo estimado do plano */}
           <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <Target size={15} className="text-cyan-400" />
-                <h3 className="text-[12px] font-black uppercase tracking-wider text-gray-200">Previsao de Desempenho</h3>
+                <h3 className="text-[12px] font-black uppercase tracking-wider text-gray-200">Preparo estimado do plano</h3>
               </div>
               {readinessData.score != null && (
                 <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border ${

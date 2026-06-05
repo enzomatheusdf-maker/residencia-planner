@@ -1,3 +1,5 @@
+import { OPERATIONAL_MODE } from "./operationalMode";
+
 function buildAction(partial = {}) {
   const type = partial.type || "manutencao";
   const target = partial.target || {};
@@ -25,7 +27,75 @@ function buildAction(partial = {}) {
   };
 }
 
+function normalizeAreaKey(area) {
+  return String(area || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function getMasteryAreaEntries(mastery = {}) {
+  const byArea = mastery?.byArea;
+  if (!byArea || typeof byArea !== "object") return [];
+  return Object.values(byArea)
+    .filter((area) => area?.area && Number.isFinite(Number(area.pMastery)))
+    .map((area) => ({
+      ...area,
+      pMastery: Number(area.pMastery),
+    }));
+}
+
+function findAreaPriority(area, context = {}) {
+  const key = normalizeAreaKey(area);
+  if (!key) return null;
+  const list = Array.isArray(context.readinessData?.priorityList)
+    ? context.readinessData.priorityList
+    : [];
+  return list.find((item) => normalizeAreaKey(item?.area) === key) || null;
+}
+
+function incidenceForArea(area, context = {}) {
+  const priority = findAreaPriority(area, context);
+  const incidence = Number(priority?.incidence);
+  if (Number.isFinite(incidence) && incidence > 0) return incidence;
+  const priorityScore = Number(priority?.prioridade);
+  if (Number.isFinite(priorityScore) && priorityScore > 0) return priorityScore;
+  if (normalizeAreaKey(area) === normalizeAreaKey(context.enamed?.resumo?.areaCritica)) return 1.2;
+  if (normalizeAreaKey(area) === normalizeAreaKey(context.weakSubject)) return 1.1;
+  return 1;
+}
+
+function pickMasteryIncidenceArea(context = {}, fallbackArea = null) {
+  const masteryAreas = getMasteryAreaEntries(context.mastery);
+  if (masteryAreas.length === 0) return fallbackArea;
+
+  return masteryAreas
+    .map((area) => {
+      const priority = findAreaPriority(area.area, context);
+      const incidence = incidenceForArea(area.area, context);
+      const masteryGap = 1 - Math.min(1, Math.max(0, area.pMastery));
+      return {
+        area: priority?.area || area.area,
+        pMastery: area.pMastery,
+        incidence,
+        score: masteryGap * incidence,
+      };
+    })
+    .sort((a, b) =>
+      b.score - a.score
+      || a.pMastery - b.pMastery
+      || b.incidence - a.incidence
+      || a.area.localeCompare(b.area)
+    )[0]?.area || fallbackArea;
+}
+
 function canSuggestNewTopic(context = {}) {
+  const mode = context.operationalMode;
+  if (mode?.flags?.canStartNewTopic === false) return false;
+  if (mode && mode.mode !== OPERATIONAL_MODE.NORMAL && mode.mode !== OPERATIONAL_MODE.EXAM_NEAR) {
+    return mode.flags?.canStartNewTopic === true;
+  }
   const scheduler = context.scheduler || {};
   const available = Number(context.userAvailableMinutes || 0);
   if (scheduler.overloadLevelToday === "high") return false;
@@ -46,12 +116,18 @@ function collectingSuffix(context = {}) {
 export function decideMentorAction(context = {}) {
   const plat = context.plat || "res";
   const scheduler = context.scheduler || {};
-  const areaCritica = context.enamed?.resumo?.areaCritica || null;
-  const weakSubject = context.weakSubject || null;
+  const operationalMode = context.operationalMode || null;
+  const rawAreaCritica = context.enamed?.resumo?.areaCritica || null;
+  const rawWeakSubject = context.weakSubject || null;
+  const areaCritica = rawAreaCritica ? pickMasteryIncidenceArea(context, rawAreaCritica) : null;
+  const weakSubject = rawWeakSubject ? pickMasteryIncidenceArea(context, rawWeakSubject) : null;
   const providerId = context.calendarProvider?.activeId || "medcof";
   const collectingNote = collectingSuffix(context);
 
-  if (Number(scheduler.missingRatingWarnings || 0) > 0 || Number(scheduler.missingReviewedAtCount || 0) > 0) {
+  const hasDataIssue = operationalMode
+    ? operationalMode.mode === OPERATIONAL_MODE.DATA_ISSUE
+    : Number(scheduler.missingRatingWarnings || 0) > 0 || Number(scheduler.missingReviewedAtCount || 0) > 0;
+  if (hasDataIssue) {
     return buildAction({
       type: "scheduler_warning",
       priority: 100,
@@ -72,7 +148,14 @@ export function decideMentorAction(context = {}) {
     });
   }
 
-  if (scheduler.overloadLevelToday === "high" || Number(scheduler.overloadDays || 0) >= 2) {
+  const schedulerOverloadSignal = scheduler.overloadLevelToday === "high"
+    || (scheduler.overloadLevelToday === "moderate" && Number(scheduler.overloadDays || 0) >= 1)
+    || Number(scheduler.overloadDays || 0) >= 2
+    || Number(scheduler.todayMinutes || 0) > 120;
+  const hasOverload = operationalMode
+    ? operationalMode.mode === OPERATIONAL_MODE.OVERLOAD || schedulerOverloadSignal
+    : schedulerOverloadSignal;
+  if (hasOverload) {
     return buildAction({
       type: "workload_relief",
       priority: 95,
@@ -93,7 +176,11 @@ export function decideMentorAction(context = {}) {
     });
   }
 
-  if (Number(scheduler.relearningCount || 0) > 0) {
+  const shouldRecover = operationalMode
+    ? operationalMode.mode === OPERATIONAL_MODE.RECOVERY || operationalMode.flags?.shouldPreferRecovery
+    : Number(scheduler.relearningCount || 0) > 0 || Number(scheduler.overdueCount || 0) > 0;
+
+  if (shouldRecover && Number(scheduler.relearningCount || 0) > 0) {
     const item = scheduler.relearningItems?.[0] || {};
     return buildAction({
       type: "relearning",
@@ -120,7 +207,7 @@ export function decideMentorAction(context = {}) {
     });
   }
 
-  if (Number(scheduler.overdueCount || 0) > 0) {
+  if (shouldRecover && Number(scheduler.overdueCount || 0) > 0) {
     const due = scheduler.nextDueItem || {};
     return buildAction({
       type: "revisao_vencida",
@@ -277,7 +364,7 @@ export function decideMentorAction(context = {}) {
   }
 
   // firstAction: novo usuário com planSetup mas ainda sem temas iniciados
-  if (context.firstAction && !context.firstAction.isUpcoming) {
+  if (context.firstAction && !context.firstAction.isUpcoming && canSuggestNewTopic(context)) {
     return buildAction({
       type: "new_topic",
       priority: 80,
@@ -301,8 +388,8 @@ export function decideMentorAction(context = {}) {
 
   if (canSuggestNewTopic(context)) {
     const area = plat === "res"
-      ? (areaCritica || context.readinessData?.priorityList?.[0]?.area || null)
-      : (weakSubject || null);
+      ? pickMasteryIncidenceArea(context, areaCritica || context.readinessData?.priorityList?.[0]?.area || null)
+      : pickMasteryIncidenceArea(context, weakSubject || null);
     const providerName = providerId ? ` (${providerId})` : "";
     return buildAction({
       type: "new_topic",

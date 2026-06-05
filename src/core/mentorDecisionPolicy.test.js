@@ -100,4 +100,48 @@ describe("mentorDecisionPolicy", () => {
     }));
     expect(action.type).toBe("exam_analysis");
   });
+
+  test("operationalMode de sobrecarga nunca retorna tema novo", () => {
+    const action = decideMentorAction(baseContext({
+      scheduler: { overloadLevelToday: "ok", overloadDays: 0, todayMinutes: 20 },
+      operationalMode: {
+        mode: "sobrecarga",
+        flags: {
+          canStartNewTopic: false,
+          shouldPreferReview: true,
+          shouldPreferRecovery: false,
+          shouldReduceVolume: true,
+        },
+        policy: { newTopicBias: -50 },
+      },
+    }));
+
+    expect(action.type).toBe("workload_relief");
+    expect(action.type).not.toBe("new_topic");
+  });
+
+  test("tema novo escolhe area de baixa maestria e alta incidencia", () => {
+    const action = decideMentorAction(baseContext({
+      operationalMode: {
+        mode: "normal",
+        flags: { canStartNewTopic: true },
+        policy: { newTopicBias: 0 },
+      },
+      readinessData: {
+        priorityList: [
+          { area: "Clinica Medica", incidence: 1.4, prioridade: 1.2 },
+          { area: "Cirurgia", incidence: 0.6, prioridade: 0.8 },
+        ],
+      },
+      mastery: {
+        byArea: {
+          "Clinica Medica": { area: "Clinica Medica", pMastery: 0.25 },
+          Cirurgia: { area: "Cirurgia", pMastery: 0.4 },
+        },
+      },
+    }));
+
+    expect(action.type).toBe("new_topic");
+    expect(action.target.area).toBe("Clinica Medica");
+  });
 });

@@ -40,13 +40,11 @@ test("raciocinio is not available for vestibular", () => {
   expect(isViewAvailable("raciocinio", "vest", { raciocinioClinico: true })).toBe(false);
 });
 
-test("stats/database/guide/settings and safety tools are exposed in more", () => {
+test("stats/database/guide and safety tools are exposed in more", () => {
   const views = getMoreNavItems("res").map((item) => item.view);
   expect(views).toContain(NAV_VIEW.STATS);
   expect(views).toContain(NAV_VIEW.DATABASE);
   expect(views).toContain(NAV_VIEW.GUIDE);
-  expect(views).toContain(NAV_VIEW.SETTINGS);
-  expect(views).toContain(NAV_VIEW.WEEKLY_REVIEW);
   expect(views).toContain(NAV_VIEW.DATA_SAFETY);
   expect(views).not.toContain(NAV_VIEW.LAUNCH_CHECKLIST);
 });

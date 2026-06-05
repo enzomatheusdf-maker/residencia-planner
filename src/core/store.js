@@ -3,11 +3,16 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { buildRev, recalcAfterMark, STEPS, S_BASE, todayStr, addDays, normalizeTema, diffDays, getAreaPrior, getRetencaoArea } from "./fsrs";
+import { buildRev, recalcAfterMark, STEPS, S_BASE, todayStr, addDays, normalizeTema, diffDays, getAreaPrior, getRetencaoArea, toRating } from "./fsrs";
 import { computeStreakOnStudy, recoverStreak } from "./gamif";
-import { buildActionInbox, createAction, sortActions } from "./actionInbox";
-import { createSessionReflection, reflectionToAction } from "./sessionReflection";
-import { adjustActionForPeakMode, getPeakModePolicy, getPeakPhase } from "./peakMode";
+import { createAction, sortActions } from "./actionInbox";
+import { createSessionReflection } from "./sessionReflection";
+import { getPeakPhase } from "./peakMode";
+import { buildActionInboxFromDecisionCore, buildDecisionCoreSnapshot } from "./decisionCore";
+import { appendLearningEvent } from "./learningEvent";
+import { dominantErrorType } from "./errorTaxonomy";
+import { getReadinessData } from "./readiness";
+import { isExhaustionDetected } from "./mentor";
 import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } from "./onboarding";
 import { getAnonymousStorageKey, getOrCreateAnonymousSessionId } from "./userScope";
 import {
@@ -99,6 +104,8 @@ const timestampMiddleware = (config) => (set, get, api) => {
         "sessionReflections",
         "weeklyReviews",
         "sprint",
+        "learningEvents",
+        "decisionSnapshot",
       ].includes(key)
     );
 
@@ -111,118 +118,59 @@ const timestampMiddleware = (config) => (set, get, api) => {
   return config(newSet, get, api);
 };
 
-function getQueueSnapshot(temas = [], today = todayStr()) {
-  let pending = 0;
-  let overdue = 0;
-  for (const tema of temas) {
-    if (!tema || tema.unstarted) continue;
-    for (const step of STEPS) {
-      const rev = tema.rev?.[step.key];
-      if (!rev || rev.done || !rev.date) continue;
-      if (rev.date < today) overdue += 1;
-      if (rev.date === today) pending += 1;
-    }
-  }
-  return { pending, overdue };
+function getDoneReviewsForMentor(temas = []) {
+  return temas
+    .flatMap((tema) => STEPS.map((step) => {
+      const review = tema.rev?.[step.key];
+      if (!review) return null;
+      return {
+        ...review,
+        esp: tema.esp,
+        step,
+        temaNome: tema.nome,
+        temaId: tema.id,
+      };
+    }))
+    .filter((review) =>
+      review?.done
+      && !review.skipped
+      && review.skipReason !== "dominio_previo"
+      && !review.skippeadoPorDominio
+    );
 }
 
-function buildActionCandidatesFromState(state, today) {
-  const platKey = state.plat;
-  const temas = state[platKey]?.temas || [];
-  const casos = state[platKey]?.casosProgresso || {};
-  const latestEnamed = (state.enamedAnalises || []).slice(-1)[0];
-  const { pending, overdue } = getQueueSnapshot(temas, today);
-  const started = temas.filter((tema) => !tema.unstarted).length;
-  const coverage = temas.length > 0 ? Math.round((started / temas.length) * 100) : 0;
-  const phase = getPeakPhase({ examDate: state.meta?.dataProva, today });
-  const policy = getPeakModePolicy(phase);
-
-  const candidates = [];
-
-  if (overdue > 0) {
-    candidates.push({
-      type: "review",
-      title: "Resolver revisoes vencidas",
-      reason: "Atrasos na fila reduzem retencao e previsibilidade do plano.",
-      priority: 100,
-      source: "mentor",
-      dueDate: today,
-      target: { tema: "fila_vencida" },
-    });
+function hasLowEnergySignal(state = {}) {
+  const recentReflection = [...(state.sessionReflections || [])].reverse()
+    .find((reflection) => reflection?.date);
+  if (recentReflection?.mainIssue === "energia" || recentReflection?.nextAdjustment === "descanso") {
+    return true;
   }
 
-  if (pending > 0) {
-    candidates.push({
-      type: "review",
-      title: "Fechar revisoes de hoje",
-      reason: "Fechar a fila diaria protege ritmo e reduz ansiedade acumulada.",
-      priority: 90,
-      source: "mentor",
-      dueDate: today,
-      target: { tema: "fila_do_dia" },
-    });
-  }
+  const recentStat = Object.values(state.temaStats || {})
+    .flat()
+    .filter((stat) => stat?.completedAt)
+    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))[0];
 
-  if (latestEnamed?.resumo?.areaCritica) {
-    candidates.push({
-      type: "exam_analysis",
-      title: `Atacar lacuna em ${latestEnamed.resumo.areaCritica}`,
-      reason: "Maior gargalo recente detectado na analise ENAMED.",
-      priority: 84,
-      source: "enamed",
-      dueDate: today,
-      target: { area: latestEnamed.resumo.areaCritica },
-    });
-  }
+  return String(recentStat?.cansaco || "").toLowerCase().startsWith("alt");
+}
 
-  const pendingDomainValidation = temas.find((tema) => tema?.dominioPrevio?.status === "validacao_pendente");
-  if (pendingDomainValidation) {
-    candidates.push({
-      type: "domain_validation",
-      title: `Validar dominio de ${pendingDomainValidation.nome}`,
-      reason: "Tema marcado como 'Ja domino' ainda sem validacao objetiva.",
-      priority: 76,
-      source: "manual",
-      dueDate: today,
-      target: { tema: pendingDomainValidation.nome, temaId: pendingDomainValidation.id },
-    });
-  }
-
-  const dueClinicalCase = Object.entries(casos).find(([, progresso]) => progresso?.proximaData && progresso.proximaData <= today);
-  if (dueClinicalCase) {
-    const [casoId] = dueClinicalCase;
-    candidates.push({
-      type: "clinical_case",
-      title: "Treinar caso clinico pendente",
-      reason: "Reencontro de raciocinio clinico ja venceu o prazo sugerido.",
-      priority: 72,
-      source: "raciocinio",
-      dueDate: today,
-      target: { casoId },
-    });
-  }
-
-  if (pending === 0 && overdue === 0 && coverage < 90) {
-    candidates.push({
-      type: "new_topic",
-      title: "Abrir tema novo de alta incidencia",
-      reason: "Fila limpa. Melhor uso do tempo e ampliar cobertura em tema estrategico.",
-      priority: 62,
-      source: "mentor",
-      dueDate: today,
-      target: { area: latestEnamed?.resumo?.areaCritica || "" },
-    });
-  }
-
-  const adjusted = candidates.map((candidate) => adjustActionForPeakMode(candidate, policy));
+function buildDecisionSnapshotOptions(state = {}, today = todayStr()) {
+  const plat = state.plat || "res";
+  const platState = state[plat] || {};
+  const temas = platState.temas || [];
+  const simulados = platState.simulados || [];
+  const meta = state.meta || {};
+  const doneReviews = getDoneReviewsForMentor(temas);
+  const readinessTemas = temas.map((tema) => ({
+    ...tema,
+    esp: tema.esp || tema.area || "",
+  }));
 
   return {
-    pending,
-    overdue,
-    coverage,
-    phase,
-    policy,
-    candidates: adjusted,
+    today,
+    readinessData: getReadinessData({ temas: readinessTemas, simulados, meta, plat }),
+    lowEnergy: hasLowEnergySignal(state),
+    exhaustionDetected: isExhaustionDetected(state.temaStats || {}, doneReviews),
   };
 }
 
@@ -270,8 +218,10 @@ export const useStore = create(
       enamedAnalises: [],
       actionInbox: [],
       actionInboxState: initialActionInboxState(),
+      decisionSnapshot: null,
       sessionReflections: [],
       weeklyReviews: [],
+      learningEvents: [],
       brainDumpD1Data: {},
       temaStats: {},
       vistos: [],
@@ -428,15 +378,39 @@ export const useStore = create(
         set((s) => {
           const normalized = createSessionReflection(input);
           const nextReflections = [...(s.sessionReflections || []), normalized].slice(-400);
-          const generatedAction = createAction(reflectionToAction(normalized));
-          const nextInbox = buildActionInbox({
-            actions: [...(s.actionInbox || []), generatedAction],
-            actionInboxState: s.actionInboxState || initialActionInboxState(),
-          });
+          const nextEvents = appendLearningEvent(s.learningEvents || [], {
+            source: "session_reflection",
+            topicName: normalized.tema || null,
+            area: normalized.area || null,
+            plat: s.plat || "res",
+            date: normalized.date,
+            officialSchedulingImpact: false,
+            confianca: normalized.confidence,
+            dominantError: normalized.mainIssue === "nenhum" ? null : normalized.mainIssue,
+            tags: [normalized.outcome, normalized.nextAdjustment].filter(Boolean),
+            meta: {
+              reflectionId: normalized.id,
+              outcome: normalized.outcome,
+              mainIssue: normalized.mainIssue,
+              nextAdjustment: normalized.nextAdjustment,
+              note: normalized.note,
+            },
+          }, 1000);
+          const today = todayStr();
+          const decisionState = {
+            ...s,
+            sessionReflections: nextReflections,
+            learningEvents: nextEvents,
+          };
+          const decisionOptions = buildDecisionSnapshotOptions(decisionState, today);
+          const decisionSnapshot = buildDecisionCoreSnapshot(decisionState, decisionOptions);
+          const nextInbox = buildActionInboxFromDecisionCore(decisionState, { ...decisionOptions, snapshot: decisionSnapshot });
 
           return {
             sessionReflections: nextReflections,
+            learningEvents: nextEvents,
             actionInbox: nextInbox,
+            decisionSnapshot,
             meta: {
               ...s.meta,
               lastReflectionAt: normalized.date,
@@ -456,29 +430,26 @@ export const useStore = create(
       rebuildActionInboxForToday: () =>
         set((s) => {
           const today = todayStr();
-          const snapshot = buildActionCandidatesFromState(s, today);
-          const reflectionActions = (s.sessionReflections || [])
-            .filter((reflection) => reflection?.date && reflection.date >= addDays(today, -7))
-            .map((reflection) => reflectionToAction(reflection));
-          const shouldRest = (s.sessionReflections || [])
-            .filter((reflection) => reflection?.date && reflection.date >= addDays(today, -3))
-            .some((reflection) => reflection.mainIssue === "energia" || reflection.outcome === "ruim");
-
-          const nextInbox = buildActionInbox({
-            today,
-            actions: snapshot.candidates,
-            reflectionActions,
-            actionInboxState: s.actionInboxState || initialActionInboxState(),
-            enamed: (s.enamedAnalises || []).slice(-1)[0] || null,
-            shouldRest,
-          });
+          const decisionOptions = buildDecisionSnapshotOptions(s, today);
+          const decisionSnapshot = buildDecisionCoreSnapshot(s, decisionOptions);
+          const nextInbox = buildActionInboxFromDecisionCore(s, { ...decisionOptions, snapshot: decisionSnapshot });
+          const phase = getPeakPhase({ examDate: s.meta?.dataProva, today });
 
           return {
             actionInbox: nextInbox,
+            decisionSnapshot,
             meta: {
               ...s.meta,
-              peakModePhase: snapshot.phase,
+              peakModePhase: phase,
             },
+          };
+        }),
+      rebuildDecisionSnapshot: () =>
+        set((s) => {
+          const today = todayStr();
+          const decisionOptions = buildDecisionSnapshotOptions(s, today);
+          return {
+            decisionSnapshot: buildDecisionCoreSnapshot(s, decisionOptions),
           };
         }),
       adicionarVisto: (id) => set((state) => {
@@ -931,15 +902,23 @@ export const useStore = create(
       validarDominio: (platKey, temaId, { questoes, acertos }) =>
         get().finalizarValidacaoDominioPrevio(platKey, temaId, { questoes, acertos }),
 
-      markStep: (platKey, temaId, stepKey, { acerto, previsao, questoes, motivosErro, erros, tempoMin, ansiedade, cansaco, confianca, dificuldade, foco, c1, c2, c3, c4, c5, modoReduzido, descansoPrescrito }) =>
+      markStep: (platKey, temaId, stepKey, { acerto, previsao, questoes, motivosErro, erros, tempoMin, ansiedade, cansaco, confianca, dificuldade, foco, c1, c2, c3, c4, c5, modoReduzido, descansoPrescrito, interleaved, interleavingStatus, interleavingPlan }) =>
         set((s) => {
           const reviewedAt = todayStr();
           let relapsedTema = null;
+          let topicName = "";
+          let area = "";
           const temasAtualizados = s[platKey].temas.map((t) => {
             if (t.id !== temaId) return t;
+            topicName = t.nome;
+            area = t.esp;
             const currentStep = t.rev?.[stepKey] || {};
             const revMarked = {
               ...t.rev,
+              meta: {
+                ...(t.rev?.meta || {}),
+                importancia: t.importancia,
+              },
               [stepKey]: {
                 ...currentStep,
                 done: true,
@@ -964,11 +943,16 @@ export const useStore = create(
                 c5: c5 ?? currentStep.c5,
                 modoReduzido: modoReduzido ?? currentStep.modoReduzido,
                 descansoPrescrito: descansoPrescrito ?? currentStep.descansoPrescrito,
+                interleaved: !!interleaved,
+                interleavingStatus: interleavingStatus || interleavingPlan?.status || null,
+                interleavingCandidateIds: Array.isArray(interleavingPlan?.candidates)
+                  ? interleavingPlan.candidates.map((c) => c.temaId).filter(Boolean).slice(0, 5)
+                  : [],
               },
             };
             const desiredRetention = getRetencaoArea(t.esp, s.meta?.retencaoFSRS ?? 0.90);
             const maxInterval = s.meta?.intervaloMaxDias ?? 180;
-            const updated = { ...t, rev: recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, t.esp) };
+            const updated = { ...t, rev: recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, t.esp, { tema: t }) };
             // G4: relapso de tema maduro com protocolo dirigido → marca p/ semear caso clínico.
             if (updated.rev?.relearning?.protocol?.clinicalCaseNext) {
               relapsedTema = updated;
@@ -1004,12 +988,38 @@ export const useStore = create(
             }
           }
 
+          const nextEvents = appendLearningEvent(s.learningEvents || [], {
+            source: "review",
+            topicId: temaId,
+            topicName,
+            area,
+            plat: platKey,
+            stepKey,
+            date: reviewedAt,
+            officialSchedulingImpact: true,
+            acerto,
+            previsao,
+            questoes,
+            rating: toRating(acerto),
+            confianca,
+            ansiedade,
+            cansaco,
+            foco,
+            tempoMin,
+            motivosErro: motivosErro || [],
+            dominantError: dominantErrorType([
+              ...(erros || []),
+              ...(motivosErro || []).map((tipoErro) => ({ tipoErro, acertou: false }))
+            ])
+          }, 1000);
+
           return {
             [platKey]: {
               ...s[platKey],
               temas: temasAtualizados,
               casosProgresso,
             },
+            learningEvents: nextEvents,
           };
         }),
 
@@ -1235,12 +1245,12 @@ export const useStore = create(
         set((s) => {
           const hoje = todayStr();
           const datas = s.meta?.ankiAdesao?.datas || [];
-          if (datas.includes(hoje)) return {};
+          const exists = datas.includes(hoje);
           return {
             meta: {
               ...s.meta,
               ankiAdesao: {
-                datas: [...datas, hoje],
+                datas: exists ? datas.filter((d) => d !== hoje) : [...datas, hoje],
               },
             },
           };
@@ -1337,8 +1347,10 @@ export const useStore = create(
           enamedAnalises: [],
           actionInbox: [],
           actionInboxState: initialActionInboxState(),
+          decisionSnapshot: null,
           sessionReflections: [],
           weeklyReviews: [],
+          learningEvents: [],
           brainDumpD1Data: {},
           temaStats: {},
           vistos: [],
@@ -1384,6 +1396,7 @@ export const useStore = create(
         actionInboxState: s.actionInboxState,
         sessionReflections: s.sessionReflections,
         weeklyReviews: s.weeklyReviews,
+        learningEvents: s.learningEvents,
         brainDumpD1Data: s.brainDumpD1Data,
         temaStats: s.temaStats,
         vistos: s.vistos,
@@ -1446,6 +1459,7 @@ export const useStore = create(
           actionInboxState: persisted.actionInboxState ?? initial.actionInboxState,
           sessionReflections: persisted.sessionReflections ?? initial.sessionReflections,
           weeklyReviews: persisted.weeklyReviews ?? initial.weeklyReviews,
+          learningEvents: persisted.learningEvents ?? initial.learningEvents,
           brainDumpD1Data: persisted.brainDumpD1Data ?? initial.brainDumpD1Data,
           temaStats: persisted.temaStats ?? initial.temaStats,
           vistos: persisted.vistos ?? initial.vistos,

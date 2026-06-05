@@ -94,7 +94,7 @@ const MORE_TOOL_META = {
   data_safety:      { icon: ShieldCheck,      color: "text-emerald-300", bg: "bg-emerald-500/10", ring: "border-emerald-500/20", glow: "group-hover:border-emerald-400/40" },
   launch_checklist: { icon: Rocket,           color: "text-rose-300",    bg: "bg-rose-500/10",    ring: "border-rose-500/20",    glow: "group-hover:border-rose-400/40" },
   guia:             { icon: BookOpen,         color: "text-sky-300",     bg: "bg-sky-500/10",     ring: "border-sky-500/20",     glow: "group-hover:border-sky-400/40" },
-  ajustes:          { icon: SlidersHorizontal,color: "text-gray-300",    bg: "bg-white/5",        ring: "border-white/10",       glow: "group-hover:border-white/25" },
+  conquistas:       { icon: Trophy,           color: "text-amber-300",   bg: "bg-amber-500/10",   ring: "border-amber-500/20",   glow: "group-hover:border-amber-400/40" },
 };
 
 const DEFAULT_TOOL_META = { icon: SlidersHorizontal, color: "text-gray-300", bg: "bg-white/5", ring: "border-white/10", glow: "group-hover:border-white/25" };
@@ -712,7 +712,10 @@ export default function App() {
           motivosErro: [],
           tempoMin: markData.tempoMin,
           modoReduzido: markData.modoReduzido,
-          descansoPrescrito: markData.descansoPrescrito
+          descansoPrescrito: markData.descansoPrescrito,
+          interleaved: !!markData.interleaved,
+          interleavingStatus: markData.interleavingStatus || markData.interleavingPlan?.status || null,
+          interleavingPlan: markData.interleavingPlan || null
         });
         showToast(getPostReviewMessage(plat, temaId, "d1"), true);
       } else if (stepKey === "d0") {
@@ -733,7 +736,10 @@ export default function App() {
           c4: markData.c4,
           c5: markData.c5,
           modoReduzido: markData.modoReduzido,
-          descansoPrescrito: markData.descansoPrescrito
+          descansoPrescrito: markData.descansoPrescrito,
+          interleaved: !!markData.interleaved,
+          interleavingStatus: markData.interleavingStatus || markData.interleavingPlan?.status || null,
+          interleavingPlan: markData.interleavingPlan || null
         });
         addTemaStats(temaId, {
           stepKey: "d0",
@@ -747,7 +753,10 @@ export default function App() {
           c4: markData.c4,
           c5: markData.c5,
           modoReduzido: markData.modoReduzido,
-          descansoPrescrito: markData.descansoPrescrito
+          descansoPrescrito: markData.descansoPrescrito,
+          interleaved: !!markData.interleaved,
+          interleavingStatus: markData.interleavingStatus || markData.interleavingPlan?.status || null,
+          interleavingCandidateIds: markData.interleavingPlan?.candidates?.map((c) => c.temaId).filter(Boolean).slice(0, 5) || []
         });
         updateTema(plat, temaId, {
           pico: markData.pico || "",
@@ -768,7 +777,10 @@ export default function App() {
           c4: markData.c4,
           c5: markData.c5,
           modoReduzido: markData.modoReduzido,
-          descansoPrescrito: markData.descansoPrescrito
+          descansoPrescrito: markData.descansoPrescrito,
+          interleaved: !!markData.interleaved,
+          interleavingStatus: markData.interleavingStatus || markData.interleavingPlan?.status || null,
+          interleavingPlan: markData.interleavingPlan || null
         });
         addTemaStats(temaId, {
           stepKey,
@@ -783,7 +795,10 @@ export default function App() {
           c4: markData.c4,
           c5: markData.c5,
           modoReduzido: markData.modoReduzido,
-          descansoPrescrito: markData.descansoPrescrito
+          descansoPrescrito: markData.descansoPrescrito,
+          interleaved: !!markData.interleaved,
+          interleavingStatus: markData.interleavingStatus || markData.interleavingPlan?.status || null,
+          interleavingCandidateIds: markData.interleavingPlan?.candidates?.map((c) => c.temaId).filter(Boolean).slice(0, 5) || []
         });
 
         // Confetti for D21

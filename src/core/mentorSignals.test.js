@@ -102,4 +102,31 @@ describe("mentorSignals", () => {
     expect(context.userAvailableMinutes).toBe(120);
     expect(context.weakSubject).toBe("Matemática");
   });
+
+  test("buildMentorContext expoe operationalMode derivado", () => {
+    const today = "2026-06-04";
+    const state = {
+      plat: "res",
+      meta: { tempoDisponivel: 1, dataProva: "2026-12-01" },
+      calendarProvider: { activeId: "medcof" },
+      focusMode: false,
+      modoSimples: true,
+      mentorMode: true,
+      res: {
+        temas: [],
+        simulados: [],
+        casosProgresso: {},
+      },
+      enamedAnalises: [],
+      actionInbox: [],
+      sessionReflections: [],
+    };
+
+    const context = buildMentorContext(state, "res", { today });
+
+    expect(context.operationalMode).toBeDefined();
+    expect(context.operationalMode.mode).toBe("normal");
+    expect(context.operationalMode.experienceMode).toBe("mentor");
+    expect(context.operationalMode.source).toBe("operational-mode-v1");
+  });
 });

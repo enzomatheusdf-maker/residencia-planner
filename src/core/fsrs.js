@@ -2,6 +2,11 @@
 // FSRS-Lite core rules, date math, and database constants
 
 import { MACRO_PESO_ENAMED } from "../constants/enamedIncidencia";
+import { FSRS_CANONICAL_SHADOW_ENABLED } from "./devFlags";
+import {
+  FSRS_CANONICAL_ADAPTER_VERSION,
+  buildFsrsCanonicalShadow,
+} from "./fsrsCanonicalShadow";
 
 export const todayStr = () => {
   const d = new Date();
@@ -250,6 +255,45 @@ export function appendReviewHistory(rev = {}, event, limit = 100) {
   return [...history, normalized].slice(-limit);
 }
 
+function withCanonicalShadow(historyEvent, context = {}) {
+  if (!FSRS_CANONICAL_SHADOW_ENABLED) return historyEvent;
+
+  try {
+    const buildShadow = context.buildFsrsCanonicalShadow || buildFsrsCanonicalShadow;
+    return {
+      ...historyEvent,
+      fsrsCanonicalShadow: buildShadow({
+        tema: context.tema,
+        stepKey: historyEvent.stepKey,
+        acerto: historyEvent.acerto,
+        ratingLite: historyEvent.rating,
+        effectiveRating: historyEvent.effectiveRating,
+        rawRatingFromAcerto: historyEvent.rating,
+        matureLapseAppliedByLite: !!context.matureLapseAppliedByLite,
+        scheduledAt: historyEvent.scheduledAt,
+        reviewedAt: historyEvent.reviewedAt,
+        atrasoDias: historyEvent.atrasoDias,
+        phaseBefore: historyEvent.phaseBefore,
+        liteIntervalAfter: historyEvent.intervalAfter,
+      }),
+    };
+  } catch (error) {
+    return {
+      ...historyEvent,
+      fsrsCanonicalShadow: {
+        enabled: true,
+        failed: true,
+        adapterVersion: FSRS_CANONICAL_ADAPTER_VERSION,
+        error: String(error?.message || error).slice(0, 160),
+      },
+    };
+  }
+}
+
+function appendReviewHistoryWithShadow(rev = {}, historyEvent, context = {}, limit = 100) {
+  return appendReviewHistory(rev, withCanonicalShadow(historyEvent, context), limit);
+}
+
 export function inferPhaseFromStep(stepKey, manutencao = false) {
   if (manutencao || stepKey === "manutencao") return "maintenance";
   if (stepKey === "d21") return "review";
@@ -442,6 +486,87 @@ export function updateStability(S_prev, acerto, D = 0.5, sMult = 1.0, ratingOver
   return Math.max(0.5, S_prev * Math.exp(ganho));
 }
 
+export const LEARNING_TRANSITION_POLICY = Object.freeze({
+  d0: { next: "d1", nominal: 1, min: 1, max: 1, fsrsWeight: 0.0 },
+  d1: { next: "d4", nominal: 3, min: 2, max: 5, fsrsWeight: 0.25 },
+  d4: { next: "d7", nominal: 3, min: 2, max: 6, fsrsWeight: 0.35 },
+  d7: { next: "d21", nominal: 14, min: 10, max: 21, fsrsWeight: 0.45 },
+});
+
+function clampNumber(value, min, max) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return min;
+  return Math.min(max, Math.max(min, n));
+}
+
+function getQuestionTrustMultiplier(questoes) {
+  const q = Number(questoes);
+  if (!Number.isFinite(q) || q <= 0) return 0.85;
+  if (q >= 20) return 1.0;
+  if (q >= 10) return 0.95;
+  if (q >= 5) return 0.90;
+  return 0.85;
+}
+
+function getRatingIntervalMultiplier(rating) {
+  if (rating === "easy") return 1.12;
+  if (rating === "good") return 1.0;
+  if (rating === "hard") return 0.82;
+  return 0.75;
+}
+
+function getCalibrationMultiplier(previsao, acerto) {
+  const p = normalizeAcerto(previsao);
+  const a = normalizeAcerto(acerto);
+  if (p == null || a == null) return 1.0;
+  const gap = p - a;
+  if (gap >= 0.30) return 0.80;
+  if (gap >= 0.20) return 0.88;
+  if (gap >= 0.10) return 0.95;
+  if (gap <= -0.20) return 1.05;
+  return 1.0;
+}
+
+function getImportanceMultiplier(importancia) {
+  const value = String(importancia || "").toUpperCase();
+  if (value.includes("DIAMANTE")) return 0.90;
+  if (value.includes("ALTA")) return 0.95;
+  return 1.0;
+}
+
+export function getAdaptiveLearningInterval({
+  doneKey,
+  S,
+  D,
+  acerto,
+  rating,
+  questoes,
+  previsao,
+  importancia,
+  desiredRetention = 0.90,
+  maxInterval = 180,
+} = {}) {
+  const policy = LEARNING_TRANSITION_POLICY[doneKey];
+  if (!policy) return null;
+
+  if (policy.min === policy.max) return policy.min;
+
+  const safeS = Number.isFinite(Number(S)) ? Number(S) : S_BASE[doneKey] || policy.nominal;
+  const safeD = Number.isFinite(Number(D)) ? Number(D) : 0.5;
+  const fsrsRaw = fsrsRawInterval(safeS, desiredRetention, safeD);
+
+  const blended = (policy.nominal * (1 - policy.fsrsWeight)) + (fsrsRaw * policy.fsrsWeight);
+  const ratingMult = getRatingIntervalMultiplier(rating || toRating(acerto));
+  const trustMult = getQuestionTrustMultiplier(questoes);
+  const calibrationMult = getCalibrationMultiplier(previsao, acerto);
+  const importanceMult = getImportanceMultiplier(importancia);
+
+  const adjusted = blended * ratingMult * trustMult * calibrationMult * importanceMult;
+  const bounded = Math.round(clampNumber(adjusted, policy.min, Math.min(policy.max, maxInterval || policy.max)));
+
+  return Math.max(1, bounded);
+}
+
 export function nextInterval(S, baseOffset, desiredRetention = 0.90, maxInterval = 180, D = 0.5) {
   if (baseOffset <= 1) return Math.max(1, baseOffset);
   const difficultyFactor = 1.05 - 0.1 * D;
@@ -514,7 +639,7 @@ export function buildRev(d0, esp = "Outro") {
   return r;
 }
 
-export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, maxInterval = 180, esp = "Outro") {
+export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, maxInterval = 180, esp = "Outro", shadowContext = {}) {
   const rating = toRating(acerto);
   // G1: numa revisão de tema maduro, < 60% é LAPSO (again), mesmo que toRating diga "hard".
   const acertoNorm = normalizeAcerto(acerto);
@@ -560,6 +685,10 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
   const computedS = updateStability(prevS, acerto, D_new, prior.sMult, effectiveRating, spacing);
   const S_new = applyRelearningRecoveryBonus(computedS, effectiveRating, { wasRelearning });
   const severity = effectiveRating === "again" ? getAgainSeverity(acerto) : null;
+  const canonicalShadowContext = {
+    ...shadowContext,
+    matureLapseAppliedByLite: forcedMatureLapse,
+  };
   const historyBase = {
     stepKey: doneKey,
     phaseBefore,
@@ -579,6 +708,11 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
     intervalBefore: eventStep.interval ?? null,
     official: true,
     source: "fsrs-lite",
+    interleaved: !!eventStep?.interleaved,
+    interleavingStatus: eventStep?.interleavingStatus || null,
+    interleavingCandidateIds: Array.isArray(eventStep?.interleavingCandidateIds)
+      ? eventStep.interleavingCandidateIds.slice(0, 5)
+      : [],
   };
 
   if (effectiveRating === "again") {
@@ -669,7 +803,7 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
       phaseAfter: targetPhase,
       intervalAfter: policy.delayDays,
     };
-    nextRev.reviewHistory = appendReviewHistory(nextRev, historyEvent, 100);
+    nextRev.reviewHistory = appendReviewHistoryWithShadow(nextRev, historyEvent, canonicalShadowContext, 100);
     return nextRev;
   }
 
@@ -700,12 +834,12 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
         schedulerWarning: null,
       },
     };
-    nextRev.reviewHistory = appendReviewHistory(nextRev, {
+    nextRev.reviewHistory = appendReviewHistoryWithShadow(nextRev, {
       ...historyBase,
       phaseAfter: "maintenance",
       intervalAfter: nextInt,
       intervalBefore: prevInterval || null,
-    }, 100);
+    }, canonicalShadowContext, 100);
     return nextRev;
   }
 
@@ -736,19 +870,30 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
         schedulerWarning: null,
       },
     };
-    nextRev.reviewHistory = appendReviewHistory(nextRev, {
+    nextRev.reviewHistory = appendReviewHistoryWithShadow(nextRev, {
       ...historyBase,
       phaseAfter: nextRev.phase,
       intervalAfter: nextInt,
       intervalBefore: null,
-    }, 100);
+    }, canonicalShadowContext, 100);
     return nextRev;
   }
 
   const doneIdx = STEPS.findIndex((s) => s.key === doneKey);
   const nextStep = STEPS[doneIdx + 1];
   if (!nextStep) return rev;
-  const interval = nextInterval(S_new, nextStep.offset, desiredRetention, maxInterval, D_new);
+  const interval = getAdaptiveLearningInterval({
+    doneKey,
+    S: S_new,
+    D: D_new,
+    acerto: acertoNorm,
+    rating: effectiveRating,
+    questoes: eventStep?.questoes,
+    previsao: eventStep?.previsao,
+    importancia: rev?.meta?.importancia,
+    desiredRetention,
+    maxInterval,
+  }) ?? nextInterval(S_new, nextStep.offset, desiredRetention, maxInterval, D_new);
   const baseDate = rev[doneKey].date >= now ? rev[doneKey].date : now;
   const nextDate = addDays(baseDate, interval);
   const phaseAfter = (wasRelearning && (rating === "good" || rating === "easy"))
@@ -765,11 +910,11 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
       schedulerWarning: null,
     },
   };
-  nextRev.reviewHistory = appendReviewHistory(nextRev, {
+  nextRev.reviewHistory = appendReviewHistoryWithShadow(nextRev, {
     ...historyBase,
     phaseAfter,
     intervalAfter: interval,
-  }, 100);
+  }, canonicalShadowContext, 100);
   return nextRev;
 }
 

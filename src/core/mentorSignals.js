@@ -1,10 +1,12 @@
-import { STEPS, todayStr, diffDays, getWorkloadProjection } from "./fsrs";
+import { STEPS, todayStr, diffDays, getWorkloadProjection, getEstimatedMinutesForStep } from "./fsrs";
 import { buildAgendaItems, getAgendaDaySummary } from "./agendaEngine";
 import { getFirstActionAfterOnboarding } from "./onboardingEngine";
 import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
 import { dominantErrorType, summarizeErrors } from "./errorTaxonomy";
 import { getCorrectiveAction } from "./errorActionMap";
 import { getReviewDisplayLabel } from "./domainValidation";
+import { deriveOperationalMode } from "./operationalMode";
+import { estimateStudentMastery } from "./mastery";
 
 function getStepEntries(rev = {}) {
   const entries = [];
@@ -51,6 +53,17 @@ function collectClinicalCaseSignals(casosProgresso = {}, today = todayStr()) {
     dueCount: due.length,
     dueItems: due.slice(0, 20),
   };
+}
+
+function workloadLevelByMinutes(minutes = 0) {
+  if (minutes > 120) return "high";
+  if (minutes > 60) return "moderate";
+  return "ok";
+}
+
+function maxWorkloadLevel(a = "ok", b = "ok") {
+  const rank = { ok: 0, moderate: 1, high: 2 };
+  return (rank[b] || 0) > (rank[a] || 0) ? b : a;
 }
 
 /**
@@ -115,6 +128,7 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
   let missingReviewedAtCount = 0;
   let missingRatingWarnings = 0;
   let reviewHistoryEvents = 0;
+  let computedDueMinutes = 0;
   const dueItems = [];
   const relearningItems = [];
 
@@ -151,6 +165,7 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
       if (step.done || !step.date) continue;
 
       if (step.date < today) {
+        computedDueMinutes += getEstimatedMinutesForStep(stepKey, step);
         overdueCount += 1;
         const delayDays = Math.max(0, diffDays(step.date, today));
         maxDelayDays = Math.max(maxDelayDays, delayDays);
@@ -165,6 +180,7 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
           phase: step.phase || null,
         });
       } else if (step.date === today) {
+        computedDueMinutes += getEstimatedMinutesForStep(stepKey, step);
         dueTodayCount += 1;
         dueItems.push({
           temaId: tema.id,
@@ -183,13 +199,18 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
   dueItems.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
   const nextDueItem = dueItems[0] || null;
   const trueRetention = calcTrueRetentionDetailed(temas);
+  const effectiveTodayMinutes = Math.max(todayEntry.estimatedMinutes || 0, computedDueMinutes);
+  const effectiveOverloadLevelToday = maxWorkloadLevel(
+    todayEntry.overloadLevel || "ok",
+    workloadLevelByMinutes(effectiveTodayMinutes)
+  );
 
   return {
     workloadProjection,
     todayCount: todayEntry.count || 0,
-    todayMinutes: todayEntry.estimatedMinutes || 0,
+    todayMinutes: effectiveTodayMinutes,
     next7DaysMinutes,
-    overloadLevelToday: todayEntry.overloadLevel || "ok",
+    overloadLevelToday: effectiveOverloadLevelToday,
     overloadDays,
     maxDayMinutes,
     overdueCount,
@@ -215,6 +236,7 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
   const temas = extras.temas || platState.temas || [];
   const simulados = extras.simulados || platState.simulados || [];
   const meta = extras.meta || state.meta || {};
+  const temaStats = extras.temaStats || platState.temaStats || state.temaStats || {};
   const scheduler = collectMentorSchedulerSignals(temas, {
     today,
     projectionDays: extras.projectionDays || 14,
@@ -229,6 +251,22 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
   const userAvailableMinutes = Number(meta?.tempoDisponivel || 0) > 0
     ? Number(meta.tempoDisponivel) * 60
     : null;
+  const operationalMode = deriveOperationalMode({
+    scheduler,
+    meta,
+    today,
+    plat,
+    focusMode: state.focusMode,
+    modoSimples: state.modoSimples,
+    mentorMode: state.mentorMode,
+    modoProva: state.modoProva,
+    userAvailableMinutes,
+  });
+  const mastery = estimateStudentMastery({
+    temas,
+    temaStats,
+    context: { plat, operationalMode },
+  });
   const pendingExamAnalysis = Boolean(simulados.length > 0 && !latestEnamed);
   const errorSignal = collectDominantErrorSignal(temas, simulados, plat);
 
@@ -252,6 +290,8 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     actionInbox: state.actionInbox || [],
     sessionReflections: state.sessionReflections || [],
     scheduler,
+    operationalMode,
+    mastery,
     enamed: latestEnamed,
     weakSubject: weakSubject || null,
     pendingExamAnalysis,

@@ -17,6 +17,8 @@ import ClinicalTaskPanel from "./ClinicalTaskPanel";
 import { getReviewTaskForStep } from "../core/reviewTaskPlanner";
 import { CASOS_CLINICOS } from "../constants/casosClinicos";
 import { buildReviewPreview } from "../core/reviewOutcome";
+import { buildInterleavingPlan } from "../core/interleavingPlanner";
+import RetrievabilitySpark from "./RetrievabilitySpark";
 
 const STEP_ICONS = { pretest: FileText, leitura: BookOpen, esqueleto: Layers, braindump: Brain, questoes: PenTool, anki: Zap };
 
@@ -109,6 +111,22 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
     }
     return null;
   }, [currentTarget, intelligentQueue, temas, tourStep, plat]);
+
+  const activeReviewItemThemeId = activeReviewItem?.tema?.id;
+  const activeReviewItemStepKey = activeReviewItem?.stepKey;
+
+  useEffect(() => {
+    if (activeReviewItemThemeId && activeReviewItemStepKey) {
+      useStore.setState((state) => ({
+        meta: {
+          ...state.meta,
+          lastFocusSessionAt: new Date().toISOString(),
+          lastFocusThemeId: activeReviewItemThemeId,
+          lastFocusStepKey: activeReviewItemStepKey,
+        },
+      }));
+    }
+  }, [activeReviewItemThemeId, activeReviewItemStepKey]);
 
   const tema = activeReviewItem?.tema;
   const stepKey = activeReviewItem?.stepKey;
@@ -241,12 +259,6 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
       confidence,
       nextAdjustment,
     });
-    useStore.setState((state) => ({
-      meta: {
-        ...state.meta,
-        lastFocusSessionAt: todayStr(),
-      },
-    }));
     setShowSessionClosure(true);
     
     resetSessionStates();
@@ -297,11 +309,16 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const [erros, setErros] = useState([]);
   const [interleaved, setInterleaved] = useState(false);
 
-  const canInterleave = useMemo(() => {
-    if (!tema || !tema.parentTopic) return false;
-    const siblingCount = temas.filter(t => t.parentTopic === tema.parentTopic).length;
-    return siblingCount >= 3;
-  }, [tema, temas]);
+  const interleavingPlan = useMemo(() => {
+    return buildInterleavingPlan({
+      tema,
+      temas,
+      stepKey,
+      platKey: plat,
+    });
+  }, [tema, temas, stepKey, plat]);
+
+  const canInterleave = !!interleavingPlan?.shouldRecommend;
   const canShowJaDomino = useMemo(() => {
     const status = tema?.dominioPrevio?.status;
     if (!tema) return false;
@@ -436,6 +453,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
         c4: +c4,
         c5: +c5,
         interleaved: interleaved,
+        interleavingPlan: interleavingPlan,
+        interleavingStatus: interleavingPlan?.status || null,
         tempoMin: elapsedMin,
         ansiedade,
         cansaco,
@@ -452,6 +471,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
         motivosErro: showErroBox ? erros.map(e => e.tipoErro) : [],
         erros: showErroBox ? erros : [],
         interleaved: interleaved,
+        interleavingPlan: interleavingPlan,
+        interleavingStatus: interleavingPlan?.status || null,
         tempoMin: elapsedMin,
         ansiedade,
         cansaco,
@@ -847,18 +868,44 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                 </div>
 
                 {canInterleave && (
-                  <div className="bg-blue-950/20 border border-blue-500/20 rounded-xl p-3 flex items-start gap-3">
+                  <div className="bg-blue-950/20 border border-blue-500/20 rounded-xl p-3.5 flex items-start gap-3">
                     <input
                       type="checkbox"
                       id="interleave-toggle-d0"
                       checked={interleaved}
                       onChange={(e) => setInterleaved(e.target.checked)}
-                      className="mt-1 rounded border-white/20 text-blue-600 focus:ring-blue-500 bg-black/40 h-4 w-4 cursor-pointer"
+                      className="mt-1 rounded border-white/20 text-blue-600 focus:ring-blue-500 bg-black/40 h-4 w-4 cursor-pointer shrink-0"
                     />
-                    <label htmlFor="interleave-toggle-d0" className="text-xs leading-relaxed text-gray-300 cursor-pointer">
-                      <span className="font-bold text-blue-400 block mb-0.5">🔀 Prática Intercalada (Opcional)</span>
-                      Você tem {temas.filter(t => t.parentTopic === tema.parentTopic).length} subtemas ativos em <strong className="text-white">{tema.parentTopic}</strong>.
-                      A evidência sugere que misturar questões de múltiplos subsegmentos melhora a retenção de longo prazo (Brunmair & Richter, 2019). <em className="text-[10px] text-gray-500">Nota: efeitos em provas cumulativas podem variar.</em>
+                    <label htmlFor="interleave-toggle-d0" className="flex-1 cursor-pointer select-none">
+                      <div className="text-xs leading-relaxed text-gray-300">
+                        <span className="font-bold text-blue-400 block mb-0.5">
+                          {interleavingPlan.title || "Prática intercalada"}
+                        </span>
+                        <span>{interleavingPlan.message}</span>
+                        {interleavingPlan.candidates?.length > 0 && (
+                          <ul className="mt-2.5 space-y-2">
+                            {interleavingPlan.candidates.map((c) => {
+                              const candTema = temas.find(t => t.id === c.temaId);
+                              return (
+                                <li key={`${c.temaId}-${c.stepKey}`} className="flex items-center justify-between bg-black/40 p-2.5 rounded-xl border border-white/5 shadow-inner">
+                                  <div className="flex flex-col min-w-0 pr-2">
+                                    <span className="text-[11px] text-white font-bold truncate">{c.temaNome}</span>
+                                    <span className="text-[9.5px] text-gray-400 leading-normal">{c.reason}</span>
+                                  </div>
+                                  {candTema && (
+                                    <div className="shrink-0 flex items-center bg-white/[0.02] border border-white/5 px-2 py-1 rounded-lg">
+                                      <RetrievabilitySpark tema={candTema} />
+                                    </div>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                        <p className="mt-2 text-[10px] text-gray-500 font-medium">
+                          Apenas a revisão atual será concluída oficialmente.
+                        </p>
+                      </div>
                     </label>
                   </div>
                 )}
@@ -1204,6 +1251,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                         pico,
                         ankiDeck,
                         interleaved: interleaved,
+                        interleavingPlan: interleavingPlan,
+                        interleavingStatus: interleavingPlan?.status || null,
                         tempoMin: elapsedMin,
                         ansiedade,
                         cansaco,
@@ -1220,6 +1269,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                         pico,
                         ankiDeck,
                         interleaved: interleaved,
+                        interleavingPlan: interleavingPlan,
+                        interleavingStatus: interleavingPlan?.status || null,
                         tempoMin: elapsedMin,
                         ansiedade,
                         cansaco,
@@ -1296,7 +1347,10 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                         fields: d1Fields,
                         acerto: d1Acerto,
                         tempoMin: elapsedMin,
-                        modoReduzido: modoReduzidoAtivo
+                        modoReduzido: modoReduzidoAtivo,
+                        interleaved: false,
+                        interleavingPlan: null,
+                        interleavingStatus: null
                       });
                     }}
                   >
@@ -1438,18 +1492,44 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
                 )}
 
                 {canInterleave && (
-                  <div className="bg-blue-950/20 border border-blue-500/20 rounded-xl p-3 flex items-start gap-3 mt-2">
+                  <div className="bg-blue-950/20 border border-blue-500/20 rounded-xl p-3.5 flex items-start gap-3 mt-2">
                     <input
                       type="checkbox"
                       id="interleave-toggle-rev"
                       checked={interleaved}
                       onChange={(e) => setInterleaved(e.target.checked)}
-                      className="mt-1 rounded border-white/20 text-blue-600 focus:ring-blue-500 bg-black/40 h-4 w-4 cursor-pointer"
+                      className="mt-1 rounded border-white/20 text-blue-600 focus:ring-blue-500 bg-black/40 h-4 w-4 cursor-pointer shrink-0"
                     />
-                    <label htmlFor="interleave-toggle-rev" className="text-xs leading-relaxed text-gray-300 cursor-pointer">
-                      <span className="font-bold text-blue-400 block mb-0.5">🔀 Prática Intercalada (Opcional)</span>
-                      Você tem {temas.filter(t => t.parentTopic === tema.parentTopic).length} subtemas ativos em <strong className="text-white">{tema.parentTopic}</strong>.
-                      A abordagem intercalada otimiza a consolidação (Brunmair & Richter, 2019).
+                    <label htmlFor="interleave-toggle-rev" className="flex-1 cursor-pointer select-none">
+                      <div className="text-xs leading-relaxed text-gray-300">
+                        <span className="font-bold text-blue-400 block mb-0.5">
+                          {interleavingPlan.title || "Prática intercalada"}
+                        </span>
+                        <span>{interleavingPlan.message}</span>
+                        {interleavingPlan.candidates?.length > 0 && (
+                          <ul className="mt-2.5 space-y-2">
+                            {interleavingPlan.candidates.map((c) => {
+                              const candTema = temas.find(t => t.id === c.temaId);
+                              return (
+                                <li key={`${c.temaId}-${c.stepKey}`} className="flex items-center justify-between bg-black/40 p-2.5 rounded-xl border border-white/5 shadow-inner">
+                                  <div className="flex flex-col min-w-0 pr-2">
+                                    <span className="text-[11px] text-white font-bold truncate">{c.temaNome}</span>
+                                    <span className="text-[9.5px] text-gray-400 leading-normal">{c.reason}</span>
+                                  </div>
+                                  {candTema && (
+                                    <div className="shrink-0 flex items-center bg-white/[0.02] border border-white/5 px-2 py-1 rounded-lg">
+                                      <RetrievabilitySpark tema={candTema} />
+                                    </div>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                        <p className="mt-2 text-[10px] text-gray-500 font-medium">
+                          Apenas a revisão atual será concluída oficialmente.
+                        </p>
+                      </div>
                     </label>
                   </div>
                 )}

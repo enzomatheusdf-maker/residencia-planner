@@ -141,7 +141,15 @@ export default function AnkiAudit() {
             Marque quando revisar seus cards. Esse check entra com peso leve na previsão de desempenho.
           </p>
         </div>
-        <Btn onClick={marcarAnkiHoje} disabled={ankiFeitoHoje} className="gap-2 sm:shrink-0">
+        <Btn
+          onClick={marcarAnkiHoje}
+          variant={ankiFeitoHoje ? "ghost" : "primary"}
+          className={`gap-2 sm:shrink-0 transition-all ${
+            ankiFeitoHoje
+              ? "border-emerald-500/20 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/30"
+              : ""
+          }`}
+        >
           <CheckCircle size={16} />
           {ankiFeitoHoje ? "Revisão de hoje registrada" : "Revisei meus cards hoje"}
         </Btn>
