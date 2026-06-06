@@ -110,6 +110,110 @@ export function calculateClinicalReasoningScoreDetailed(casosProgresso) {
   };
 }
 
+const CLINICAL_ERROR_LABELS = Object.freeze({
+  premature_closure: "Fechamento precoce",
+  anchoring: "Ancoragem",
+  overconfidence: "Excesso de confianca",
+  clinical_reasoning_gap: "Lacuna de raciocinio",
+  discrimination_gap: "Discriminacao entre confundiveis",
+  low_score: "Justificativa clinica incompleta",
+});
+
+function normalizeEventScore(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return n > 1 ? n / 100 : n;
+}
+
+function getCaseArea(caso = {}) {
+  return caso.area || caso.esp || "Outro";
+}
+
+function getCaseTitle(caso = {}, fallback = "Script clinico") {
+  return caso.tema || caso.subarea || caso.subtopic || caso.diagnosticoFinal || fallback;
+}
+
+/**
+ * Frame de competencia para raciocinio clinico:
+ * - scripts maduros por area
+ * - erros que deixaram de aparecer apos reexposicao bem sucedida
+ */
+export function summarizeClinicalCompetence({ casos = [], casosProgresso = {}, learningEvents = [] } = {}) {
+  const casesById = new Map((casos || []).filter(Boolean).map((caso) => [String(caso.id), caso]));
+  const byArea = {};
+
+  (casos || []).forEach((caso) => {
+    const area = getCaseArea(caso);
+    if (!byArea[area]) byArea[area] = { area, total: 0, maduros: 0, vistos: 0, exemplos: [] };
+    byArea[area].total += 1;
+  });
+
+  Object.entries(casosProgresso || {}).forEach(([casoId, progresso]) => {
+    const caso = casesById.get(String(casoId)) || {};
+    const area = getCaseArea(caso);
+    if (!byArea[area]) byArea[area] = { area, total: 0, maduros: 0, vistos: 0, exemplos: [] };
+
+    const score = normalizeClinicalReasoningProgress(progresso);
+    const vistos = Number(progresso?.vistos || 0);
+    const stableEnough = vistos >= 2 || Number(progresso?.S || 0) >= 9 || progresso?.rev?.d21?.done || progresso?.rev?.manutencao?.done;
+    const isMature = score != null && score >= 80 && stableEnough;
+
+    if (vistos > 0) byArea[area].vistos += 1;
+    if (isMature) {
+      byArea[area].maduros += 1;
+      byArea[area].exemplos.push(getCaseTitle(caso, casoId));
+    }
+  });
+
+  const scriptsMadurosPorArea = Object.values(byArea)
+    .map((row) => ({
+      ...row,
+      pct: row.total > 0 ? Math.round((row.maduros / row.total) * 100) : 0,
+      exemplos: row.exemplos.slice(0, 3),
+    }))
+    .sort((a, b) => b.maduros - a.maduros || b.vistos - a.vistos || a.area.localeCompare(b.area));
+
+  const clinicalEvents = (learningEvents || [])
+    .map((event, index) => {
+      const scriptId = String(event?.scriptId || event?.meta?.scriptId || event?.casoId || "");
+      if (!scriptId || event?.source !== "clinical_drill") return null;
+      const acerto = normalizeEventScore(event.acerto);
+      const dominantError = event.dominantError || (acerto != null && acerto < 0.8 ? "low_score" : null);
+      return { ...event, index, scriptId, acerto, dominantError };
+    })
+    .filter(Boolean);
+
+  const errosResolvidos = [];
+  clinicalEvents.forEach((event) => {
+    if (!event.dominantError) return;
+    const resolvedLater = clinicalEvents.some((later) => (
+      later.scriptId === event.scriptId
+      && later.index > event.index
+      && later.acerto != null
+      && later.acerto >= 0.8
+      && later.dominantError !== event.dominantError
+    ));
+    if (!resolvedLater) return;
+
+    const key = `${event.scriptId}:${event.dominantError}`;
+    if (errosResolvidos.some((item) => item.key === key)) return;
+    const caso = casesById.get(event.scriptId) || {};
+    errosResolvidos.push({
+      key,
+      tipo: event.dominantError,
+      label: CLINICAL_ERROR_LABELS[event.dominantError] || event.dominantError,
+      script: getCaseTitle(caso, event.scriptId),
+      area: getCaseArea(caso),
+    });
+  });
+
+  return {
+    scriptsMadurosPorArea,
+    totalScriptsMaduros: scriptsMadurosPorArea.reduce((sum, row) => sum + row.maduros, 0),
+    errosQueSumiram: errosResolvidos.slice(0, 5),
+  };
+}
+
 // ─── Cobertura por area ───────────────────────────────────────────────────────
 
 /**
@@ -149,4 +253,142 @@ export function calcCoverageByArea(casos, casosProgresso) {
   }
 
   return out;
+}
+
+// ─── Scorecard de Justificativa e Erros Cognitivos (RC-1) ──────────────────────
+
+function cleanText(text) {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function textMatchesAny(text, list = []) {
+  const cleanedText = cleanText(text);
+  if (!cleanedText || !list.length) return false;
+  return list.some(item => {
+    const cleanedItem = cleanText(item);
+    return cleanedItem && (cleanedText.includes(cleanedItem) || cleanedItem.includes(cleanedText));
+  });
+}
+
+/**
+ * Pontua justificativas baseadas em Key Features e componentes clínicos (0/1/2)
+ * e detecta o erro cognitivo de Fechamento Precoce (pular KF crítico com alta confiança).
+ *
+ * @param {object} userAnswers  - respostas do usuário
+ * @param {object} script       - illness script correspondente
+ * @returns {{ score: number, breakdown: object, errosDetectados: string[] }}
+ */
+export function scoreClinicalReasoningSession(userAnswers = {}, script = {}) {
+  const keyFeatures = script.keyFeatures || [];
+  const pertinentNegatives = script.pertinentNegatives || [];
+  
+  // 1. Pontuação de Key Features (2 pontos por item correto)
+  let keyFeaturesScore = 0;
+  let missedCritical = false;
+  const userActions = userAnswers.keyFeatures || [];
+
+  keyFeatures.forEach(kf => {
+    const matched = userActions.some(action => {
+      const cleanAct = cleanText(action);
+      const cleanExpected = cleanText(kf.expectedAction);
+      return cleanAct && cleanExpected && (cleanAct.includes(cleanExpected) || cleanExpected.includes(cleanAct));
+    });
+
+    if (matched) {
+      keyFeaturesScore += 2;
+    } else {
+      if (kf.isCritical) {
+        missedCritical = true;
+      }
+    }
+  });
+
+  // 2. Componente: Apoio (supporting features)
+  let apoiaScore = 0;
+  const userApoia = userAnswers.apoia || [];
+  let apoiaHits = 0;
+  userApoia.forEach(item => {
+    if (script.consequences && textMatchesAny(item, [script.consequences, script.tema])) {
+      apoiaHits++;
+    }
+  });
+  if (apoiaHits >= 2) apoiaScore = 2;
+  else if (apoiaHits === 1) apoiaScore = 1;
+
+  // 3. Componente: Negativos Pertinentes
+  let negativesScore = 0;
+  const userContra = userAnswers.contra || [];
+  let negativeHits = 0;
+  userContra.forEach(item => {
+    if (textMatchesAny(item, pertinentNegatives)) {
+      negativeHits++;
+    }
+  });
+  if (negativeHits >= 2) negativesScore = 2;
+  else if (negativeHits === 1) negativesScore = 1;
+
+  // 4. Componente: Esperado mas Ausente (falta)
+  let faltaScore = 0;
+  const userFalta = userAnswers.falta || [];
+  let faltaHits = 0;
+  userFalta.forEach(item => {
+    if (textMatchesAny(item, pertinentNegatives)) {
+      faltaHits++;
+    }
+  });
+  if (faltaHits >= 1) faltaScore = 2;
+
+  // 5. Componente: Conduta (adequação de conduta)
+  let condutaScore = 0;
+  const userConduta = userAnswers.conduta || "";
+  if (userConduta) {
+    const cleanConduta = cleanText(userConduta);
+    const cleanMgmt = cleanText(script.management);
+    if (cleanConduta && cleanMgmt) {
+      if (cleanConduta.includes(cleanMgmt) || cleanMgmt.includes(cleanConduta)) {
+        condutaScore = 2;
+      } else {
+        const mgmtTokens = cleanMgmt.split(/\s+/).filter(t => t.length >= 4);
+        const hits = mgmtTokens.filter(t => cleanConduta.includes(t)).length;
+        if (hits >= Math.max(1, Math.ceil(mgmtTokens.length * 0.3))) {
+          condutaScore = 1;
+        }
+      }
+    }
+  }
+
+  // 6. Cálculo da Pontuação Consolidada
+  const maxPoints = (keyFeatures.length * 2) + 8;
+  const earnedPoints = keyFeaturesScore + apoiaScore + negativesScore + faltaScore + condutaScore;
+  let score = maxPoints > 0 ? Math.round((earnedPoints / maxPoints) * 100) : 0;
+
+  // 7. Detecção de Erros Cognitivos (Fechamento Precoce)
+  const errosDetectados = [];
+  const confianca = userAnswers.confianca;
+  const isHighConfidence = confianca === "alta" || (typeof confianca === "number" && (confianca >= 8 || confianca >= 0.8));
+  
+  if (missedCritical && isHighConfidence) {
+    errosDetectados.push("premature_closure");
+    score = Math.max(0, score - 20); // Penalidade de 20 pontos
+  }
+
+  return {
+    score,
+    breakdown: {
+      keyFeatures: keyFeaturesScore,
+      apoia: apoiaScore,
+      negativos: negativesScore,
+      falta: faltaScore,
+      conduta: condutaScore,
+      maxPossiblePoints: maxPoints,
+      earnedPoints: earnedPoints
+    },
+    errosDetectados
+  };
 }

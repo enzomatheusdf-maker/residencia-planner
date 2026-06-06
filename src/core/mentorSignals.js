@@ -1,6 +1,7 @@
 import { STEPS, todayStr, diffDays, getWorkloadProjection, getEstimatedMinutesForStep } from "./fsrs";
 import { buildAgendaItems, getAgendaDaySummary } from "./agendaEngine";
 import { getFirstActionAfterOnboarding } from "./onboardingEngine";
+import { CASOS_CLINICOS } from "../constants/casosClinicos";
 import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
 import { dominantErrorType, summarizeErrors } from "./errorTaxonomy";
 import { getCorrectiveAction } from "./errorActionMap";
@@ -46,11 +47,15 @@ function inferWeakSubjectFromSimulados(simulados = []) {
 function collectClinicalCaseSignals(casosProgresso = {}, today = todayStr()) {
   const due = Object.entries(casosProgresso)
     .filter(([, item]) => item?.proximaData && item.proximaData <= today)
-    .map(([casoId, item]) => ({
-      casoId,
-      proximaData: item.proximaData,
-      atualizadoEm: item.atualizadoEm || null,
-    }));
+    .map(([casoId, item]) => {
+      const match = CASOS_CLINICOS.find(c => c.id === casoId);
+      return {
+        casoId,
+        proximaData: item.proximaData,
+        atualizadoEm: item.atualizadoEm || null,
+        temaName: match ? (match.tema || match.subarea) : null,
+      };
+    });
   return {
     dueCount: due.length,
     dueItems: due.slice(0, 20),

@@ -377,7 +377,7 @@ export function decideMentorAction(context = {}) {
     return buildAction({
       type: "clinical_case",
       priority: 72,
-      title: "Treinar caso clínico pendente",
+      title: dueCase.temaName ? `Treinar raciocínio: ${dueCase.temaName}` : "Treinar caso clínico pendente",
       subtitle: "Reencontro clínico venceu o prazo sugerido.",
       reason: "Raciocínio clínico vence após revisar base para evitar esquecimento aplicado.",
       explain: [

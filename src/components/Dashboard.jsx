@@ -33,6 +33,8 @@ import {
 import { getEnamedBottleneckExplanation, getEnamedIntel } from "../core/enamedIntel";
 import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
 import { computeGrowth } from "../core/growthMetrics";
+import { summarizeClinicalCompetence } from "../core/clinicalReasoningScoring";
+import { CASOS_CLINICOS } from "../constants/casosClinicos";
 import ActionInbox from "./ActionInbox";
 import WeeklyReview from "./WeeklyReview";
 import EmptyState from "./EmptyState";
@@ -615,6 +617,37 @@ function DailyProgressRing({ value, goal }) {
   );
 }
 
+function ClinicalCompetenceDashboardCard({ competence, setView }) {
+  const topArea = competence?.scriptsMadurosPorArea?.find((row) => row.maduros > 0);
+  const resolvedError = competence?.errosQueSumiram?.[0];
+
+  return (
+    <>
+      <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
+        <Brain size={11} className="text-emerald-400" /> Raciocínio clínico
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-2">
+          <p className="text-[8.5px] font-black uppercase tracking-wider text-emerald-300">Scripts maduros por área</p>
+          <p className="mt-1 text-[12px] font-black text-white leading-tight">
+            {topArea ? `${topArea.maduros}/${topArea.total} em ${topArea.area}` : "Coletando"}
+          </p>
+        </div>
+        <div className="rounded-xl border border-blue-500/10 bg-blue-500/5 p-2">
+          <p className="text-[8.5px] font-black uppercase tracking-wider text-blue-300">Erros que sumiram</p>
+          <p className="mt-1 text-[12px] font-black text-white leading-tight">
+            {resolvedError ? resolvedError.label : "Nenhum ainda"}
+          </p>
+        </div>
+      </div>
+      <button type="button" onClick={() => setView && setView("raciocinio")}
+        className="self-start px-2.5 py-1.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold cursor-pointer transition-colors">
+        Treinar caso →
+      </button>
+    </>
+  );
+}
+
 export default function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, setView, showToast, onOpenAjustes, onOpenAgenda }) {
   const currentUid = auth.currentUser?.uid || null;
   const { plat, sprint, tourStep, setTourStep, setOnboardingDone, onboardingDone } = useStore();
@@ -625,6 +658,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const addTema = useStore((s) => s.addTema);
   const gamif           = useStore((s) => s.gamif);
   const temas           = useStore((s) => s[plat]?.temas || []);
+  const casosProgresso  = useStore((s) => s[plat]?.casosProgresso || {});
   const learningEvents = useStore((s) => s.learningEvents || []);
   const legacyTemaStats = useStore((s) => s.temaStats || {});
   const temaStats = useMemo(
@@ -1005,6 +1039,15 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       targetAcerto: (meta.acerto || 85) / 100
     });
   }, [learningEvents, meta]);
+
+  const clinicalCompetence = useMemo(() => {
+    const customCases = Array.isArray(meta?.clinicalCustomCases) ? meta.clinicalCustomCases : [];
+    return summarizeClinicalCompetence({
+      casos: [...CASOS_CLINICOS, ...customCases],
+      casosProgresso,
+      learningEvents,
+    });
+  }, [casosProgresso, learningEvents, meta?.clinicalCustomCases]);
 
   const ankiFeitoHoje = ankiAdesaoDatas.includes(todayStr());
 
@@ -1964,16 +2007,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 </button>
               </>
             ) : meta.modulos?.raciocinioClinico ? (
-              <>
-                <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
-                  <Brain size={11} className="text-emerald-400" /> Raciocínio clínico
-                </p>
-                <p className="text-sm font-black text-white leading-tight">Casos clínicos ativos</p>
-                <button type="button" onClick={() => setView && setView("raciocinio")}
-                  className="self-start px-2.5 py-1.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold cursor-pointer transition-colors">
-                  Treinar caso →
-                </button>
-              </>
+              <ClinicalCompetenceDashboardCard competence={clinicalCompetence} setView={setView} />
             ) : (
               <>
                 <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
@@ -2266,16 +2300,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                       </button>
                     </>
                   ) : meta.modulos?.raciocinioClinico ? (
-                    <>
-                      <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">
-                        <Brain size={11} className="text-emerald-400" /> Raciocínio clínico
-                      </p>
-                      <p className="text-sm font-black text-white leading-tight">Casos clínicos ativos</p>
-                      <button type="button" onClick={() => setView && setView("raciocinio")}
-                        className="self-start px-2.5 py-1.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold cursor-pointer transition-colors">
-                        Treinar caso →
-                      </button>
-                    </>
+                    <ClinicalCompetenceDashboardCard competence={clinicalCompetence} setView={setView} />
                   ) : (
                     <>
                       <p className="text-[9.5px] text-gray-500 uppercase tracking-[0.12em] font-black flex items-center gap-1.5">

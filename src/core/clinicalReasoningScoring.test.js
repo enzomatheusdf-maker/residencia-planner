@@ -4,6 +4,7 @@ import {
   calculateClinicalReasoningScore,
   calculateClinicalReasoningScoreDetailed,
   calcCoverageByArea,
+  scoreClinicalReasoningSession,
 } from "./clinicalReasoningScoring";
 
 // ─── normalizeClinicalReasoningProgress ──────────────────────────────────────
@@ -207,5 +208,94 @@ describe("paridade com formula de readiness.js", () => {
     test(`fase2=${input.fase2Acerto} sct=${input.sctAcerto} -> ${expected}`, () => {
       expect(normalizeClinicalReasoningProgress(input)).toBe(expected);
     });
+  });
+});
+
+describe("scoreClinicalReasoningSession", () => {
+  const dummyScript = {
+    tema: "Apendicite Aguda",
+    consequences: "Dor migratória para FID, sinal de Blumberg",
+    management: "Apendicectomia urgente",
+    pertinentNegatives: ["Ausência de diarreia", "Sem febre alta"],
+    keyFeatures: [
+      { prompt: "Qual o exame inicial?", expectedAction: "USG de abdome", isCritical: true },
+      { prompt: "Qual a conduta?", expectedAction: "Internação", isCritical: false }
+    ]
+  };
+
+  test("negativo pertinente sobe o score", () => {
+    // Session A: Sem contra-argumentos/negativos pertinentes
+    const sessionA = {
+      keyFeatures: ["USG de abdome", "Internação"],
+      apoia: ["Dor migratória para FID"],
+      contra: [],
+      falta: [],
+      conduta: "Apendicectomia urgente",
+      confianca: "media"
+    };
+
+    // Session B: Com contra-argumentos/negativos pertinentes combinando com pertinentNegatives do script
+    const sessionB = {
+      ...sessionA,
+      contra: ["Ausência de diarreia", "Sem febre alta"]
+    };
+
+    const resultA = scoreClinicalReasoningSession(sessionA, dummyScript);
+    const resultB = scoreClinicalReasoningSession(sessionB, dummyScript);
+
+    expect(resultB.score).toBeGreaterThan(resultA.score);
+    expect(resultB.breakdown.negativos).toBe(2);
+    expect(resultA.breakdown.negativos).toBe(0);
+  });
+
+  test("pular key feature crítico derruba o score", () => {
+    // Session A: Realiza todos os key features
+    const sessionA = {
+      keyFeatures: ["USG de abdome", "Internação"],
+      apoia: ["Dor migratória para FID"],
+      contra: ["Ausência de diarreia"],
+      falta: [],
+      conduta: "Apendicectomia urgente",
+      confianca: "media"
+    };
+
+    // Session B: Pula o key feature crítico ("USG de abdome")
+    const sessionB = {
+      ...sessionA,
+      keyFeatures: ["Internação"]
+    };
+
+    const resultA = scoreClinicalReasoningSession(sessionA, dummyScript);
+    const resultB = scoreClinicalReasoningSession(sessionB, dummyScript);
+
+    expect(resultB.score).toBeLessThan(resultA.score);
+    expect(resultB.breakdown.keyFeatures).toBe(2); // 1 kf matched * 2
+    expect(resultA.breakdown.keyFeatures).toBe(4); // 2 kf matched * 2
+  });
+
+  test("fechamento precoce flag: pular key feature crítico com alta confiança", () => {
+    // Session A: Pula key feature crítico, mas com confiança baixa
+    const sessionA = {
+      keyFeatures: ["Internação"],
+      apoia: ["Dor migratória para FID"],
+      contra: ["Ausência de diarreia"],
+      falta: [],
+      conduta: "Apendicectomia urgente",
+      confianca: "baixa"
+    };
+
+    // Session B: Pula key feature crítico com confiança alta
+    const sessionB = {
+      ...sessionA,
+      confianca: "alta"
+    };
+
+    const resultA = scoreClinicalReasoningSession(sessionA, dummyScript);
+    const resultB = scoreClinicalReasoningSession(sessionB, dummyScript);
+
+    expect(resultB.errosDetectados).toContain("premature_closure");
+    expect(resultA.errosDetectados).not.toContain("premature_closure");
+    // O score da Session B deve ter -20 pontos de penalidade em relação ao A
+    expect(resultB.score).toBe(resultA.score - 20);
   });
 });

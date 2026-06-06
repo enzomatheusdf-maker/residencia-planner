@@ -195,4 +195,18 @@ describe("mentorDecisionPolicy", () => {
     expect(action.priority).toBe(91);
     expect(action.explain.join(" ")).toContain("sugere redefinir o gatilho");
   });
+
+  test("clinical_case vira acao recomendada com titulo especifico se temaName existe", () => {
+    const actionA = decideMentorAction(baseContext({
+      clinical: { dueCount: 1, dueItems: [{ casoId: "c1", temaName: "Apendicite" }] },
+    }));
+    expect(actionA.type).toBe("clinical_case");
+    expect(actionA.title).toBe("Treinar raciocínio: Apendicite");
+
+    const actionB = decideMentorAction(baseContext({
+      clinical: { dueCount: 1, dueItems: [{ casoId: "c1" }] },
+    }));
+    expect(actionB.type).toBe("clinical_case");
+    expect(actionB.title).toBe("Treinar caso clínico pendente");
+  });
 });

@@ -165,3 +165,30 @@ describe("clinicalCaseMatch (contrato tema↔caso)", () => {
     expect(clinicalCaseMatch(null, casos)).toBeNull();
   });
 });
+
+describe("Drill 0 Recall and Compartment Mastery", () => {
+  test("ratings qualitativos mapeiam para acertos corretos no BKT e agendamento FSRS", () => {
+    // Importamos updateBayesianMastery localmente para rodar o teste
+    const { updateBayesianMastery } = require("./mastery");
+
+    const prior = 0.30;
+    
+    // 1. Vermelho -> acerto = 0, nota = 40
+    const nextMasteryRed = updateBayesianMastery(prior, { acerto: 0.0, subtopic: "Cirurgia Geral" });
+    const schedRed = agendarReencontro({ S: 2 }, 40);
+    expect(nextMasteryRed).toBeLessThan(prior);
+    expect(schedRed.intervalo).toBe(2); // again -> 2 dias
+
+    // 2. Amarelo -> acerto = 0.55, nota = 60
+    const nextMasteryYellow = updateBayesianMastery(prior, { acerto: 0.55, subtopic: "Cirurgia Geral" });
+    const schedYellow = agendarReencontro({ S: 2 }, 60);
+    expect(nextMasteryYellow).toBeGreaterThan(prior);
+    expect(schedYellow.intervalo).toBeGreaterThanOrEqual(2);
+
+    // 3. Verde -> acerto = 1.0, nota = 92
+    const nextMasteryGreen = updateBayesianMastery(prior, { acerto: 1.0, subtopic: "Cirurgia Geral" });
+    const schedGreen = agendarReencontro({ S: 2 }, 92);
+    expect(nextMasteryGreen).toBeGreaterThan(nextMasteryYellow);
+    expect(schedGreen.intervalo).toBeGreaterThan(schedYellow.intervalo);
+  });
+});

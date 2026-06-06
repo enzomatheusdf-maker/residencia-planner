@@ -22,6 +22,7 @@ import {
 } from "./domainValidation";
 import { agendarReencontro, clinicalCaseMatch } from "./illnessScript";
 import { CASOS_CLINICOS } from "../constants/casosClinicos";
+import { updateBayesianMastery } from "./mastery";
 
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
@@ -1391,17 +1392,84 @@ export const useStore = create(
           const progressoAtual = platState.casosProgresso || {};
           const anterior = progressoAtual[casoId] || {};
           const hoje = todayStr();
-          const acertou = payload.acertou ?? payload.fase2Acerto ?? payload.sctAcerto ?? false;
+
+          // 1. Find case info
+          const caso = CASOS_CLINICOS.find(c => c.id === casoId) || {};
+          const subtopic = caso.subarea || caso.subtopic || caso.tema || "Geral";
+          const area = caso.area || "Outro";
+
+          // 2. Score normalization (0.0 to 1.0)
+          const scoreVal = payload.fase2Acerto ?? payload.fase1Acerto ?? payload.sctAcerto ?? (payload.acertou ? 100 : 0);
+          const acertoValue = Math.max(0, Math.min(1, scoreVal / 100));
+
+          // 3. Log Learning Event
+          const nextEvents = appendLearningEvent(s.learningEvents || [], {
+            source: "clinical_drill",
+            scriptId: casoId,
+            subtopic: subtopic,
+            topicName: subtopic,
+            area: area,
+            plat: platKey,
+            date: hoje,
+            officialSchedulingImpact: true,
+            acerto: acertoValue,
+            previsao: payload.confianca !== undefined ? (payload.confianca / 10) : null,
+            questoes: payload.questoes ?? 1,
+            tags: Array.isArray(payload.tags) ? payload.tags : [],
+            dominantError: payload.dominantError || null,
+            meta: payload.meta && typeof payload.meta === "object" ? payload.meta : {},
+          });
+
+          // 4. Update Bayesian Mastery on matching subtopic themes in state
+          const nextTemas = (platState.temas || []).map((t) => {
+            const tSubtopic = t.subarea || t.subtopic || t.nome || "";
+            if (tSubtopic.toLowerCase() === subtopic.toLowerCase() || t.nome.toLowerCase() === subtopic.toLowerCase()) {
+              const currentP = t.p ?? 0.30;
+              const nextP = updateBayesianMastery(currentP, {
+                subtopic: subtopic,
+                acerto: acertoValue,
+              });
+              return { ...t, p: nextP };
+            }
+            return t;
+          });
+
+          // 5. Spacing via FSRS-Lite (reuse recalcAfterMark)
+          const revAnterior = anterior.rev || buildRev(hoje);
+          const STEP_SEQUENCE = ["d0", "d1", "d4", "d7", "d21", "manutencao"];
+          let stepKey = STEP_SEQUENCE.find(key => revAnterior[key] && !revAnterior[key].done && revAnterior[key].date) || "d0";
+
+          const desiredRetention = s.meta?.retencaoFSRS ?? 0.90;
+          const maxInterval = s.meta?.intervaloMaxDias ?? 180;
+
+          const markedRev = {
+            ...revAnterior,
+            [stepKey]: {
+              ...revAnterior[stepKey],
+              done: true,
+              reviewedAt: hoje
+            }
+          };
+
+          const nextRev = recalcAfterMark(markedRev, stepKey, acertoValue, desiredRetention, maxInterval, area);
+          const nextStepKey = STEP_SEQUENCE.find(key => nextRev[key] && !nextRev[key].done && nextRev[key].date) || "manutencao";
+          const proximaData = nextRev[nextStepKey]?.date || addDays(hoje, 7);
+          const S = nextRev[nextStepKey]?.S || nextRev.manutencao?.S || 21;
+
           return {
+            learningEvents: nextEvents,
             [platKey]: {
               ...platState,
+              temas: nextTemas,
               casosProgresso: {
                 ...progressoAtual,
                 [casoId]: {
                   ...anterior,
                   ...payload,
+                  rev: nextRev,
+                  S: S,
                   vistos: payload.vistos ?? ((anterior.vistos || 0) + 1),
-                  proximaData: addDays(hoje, acertou ? 7 : 2),
+                  proximaData: proximaData,
                   atualizadoEm: hoje,
                 },
               },

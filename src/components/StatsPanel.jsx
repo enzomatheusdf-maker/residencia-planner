@@ -24,8 +24,9 @@ import { safeTrackEvent } from "../core/telemetry";
 import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
 import { saldoRitmo } from "../core/volume";
 import { getEnamedIntel } from "../core/enamedIntel";
-import { calculateClinicalReasoningScoreDetailed } from "../core/clinicalReasoningScoring";
+import { calculateClinicalReasoningScoreDetailed, summarizeClinicalCompetence } from "../core/clinicalReasoningScoring";
 import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
+import { CASOS_CLINICOS } from "../constants/casosClinicos";
 import EnamedMapa from "./EnamedMapa";
 import AdvancedSection from "./AdvancedSection";
 import MetricCard from "./MetricCard";
@@ -567,17 +568,33 @@ export default function StatsPanel({ setView = null }) {
 
   // Raciocinio clinico — dados existentes sem calculo duplicado
   // P4-A: usa fonte canonica de clinicalReasoningScoring.js
+  const clinicalCases = useMemo(() => {
+    const customCases = Array.isArray(meta?.clinicalCustomCases) ? meta.clinicalCustomCases : [];
+    return [...CASOS_CLINICOS, ...customCases];
+  }, [meta?.clinicalCustomCases]);
+
   const raciocinioStats = useMemo(() => {
     const detailed = calculateClinicalReasoningScoreDetailed(casosProgresso);
     const casosFeitos = detailed.byCase.filter((c) => c.vistos > 0).length;
+    const competencia = summarizeClinicalCompetence({
+      casos: clinicalCases,
+      casosProgresso,
+      learningEvents,
+    });
     return {
       casosFeitos,
       score: detailed.score,
       n: detailed.n,
       collecting: detailed.collecting,
       confident: detailed.confident,
+      competencia,
     };
-  }, [casosProgresso]);
+  }, [casosProgresso, clinicalCases, learningEvents]);
+  const clinicalCompetence = raciocinioStats.competencia || {
+    scriptsMadurosPorArea: [],
+    totalScriptsMaduros: 0,
+    errosQueSumiram: [],
+  };
 
   // Dias ativos (ultima semana, para consistencia)
   const activeLastWeek = useMemo(() => {
@@ -1558,7 +1575,61 @@ export default function StatsPanel({ setView = null }) {
             </div>
           </div>
 
-          {/* Placeholder P4 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] text-gray-500 uppercase font-semibold">Scripts maduros por área</p>
+                  <p className="text-[11px] text-gray-600 mt-0.5">Casos com score alto e reexposição suficiente.</p>
+                </div>
+                <p className="text-2xl font-black text-emerald-400 tabular-nums">{clinicalCompetence.totalScriptsMaduros}</p>
+              </div>
+              {clinicalCompetence.scriptsMadurosPorArea.some((row) => row.maduros > 0) ? (
+                <div className="space-y-2">
+                  {clinicalCompetence.scriptsMadurosPorArea.filter((row) => row.maduros > 0).slice(0, 5).map((row) => (
+                    <div key={row.area} className="space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-bold text-gray-300 truncate">{row.area}</span>
+                        <span className="text-[10px] font-black text-emerald-300 tabular-nums">{row.maduros}/{row.total}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${row.pct}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-gray-600 leading-relaxed">
+                  Ainda nenhum script maduro. Reexponha casos já vistos até estabilizar acima de 80%.
+                </p>
+              )}
+            </div>
+
+            <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] text-gray-500 uppercase font-semibold">Erros que sumiram</p>
+                  <p className="text-[11px] text-gray-600 mt-0.5">Padrões que apareceram antes e não reapareceram na reexposição madura.</p>
+                </div>
+                <p className="text-2xl font-black text-blue-300 tabular-nums">{clinicalCompetence.errosQueSumiram.length}</p>
+              </div>
+              {clinicalCompetence.errosQueSumiram.length > 0 ? (
+                <div className="space-y-2">
+                  {clinicalCompetence.errosQueSumiram.map((item) => (
+                    <div key={item.key} className="rounded-xl border border-blue-500/10 bg-blue-500/5 p-3">
+                      <p className="text-[11px] font-black text-blue-200">{item.label}</p>
+                      <p className="mt-0.5 text-[10px] text-gray-500">{item.script} · {item.area}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-gray-600 leading-relaxed">
+                  Complete uma reexposição com acerto alto após um erro para registrar a competência recuperada.
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="bg-purple-950/10 border border-purple-500/10 rounded-2xl p-5 flex items-start gap-3">
             <Brain size={16} className="text-purple-300 mt-0.5 shrink-0" />
             <div>

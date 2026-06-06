@@ -56,6 +56,8 @@ export function createLearningEvent(input = {}) {
     date,
     timestamp,
     officialSchedulingImpact: input.officialSchedulingImpact !== false,
+    scriptId: input.scriptId || null,
+    subtopic: input.subtopic || null,
 
     performance: normalizedPerformance,
     regulation: normalizedRegulation,
