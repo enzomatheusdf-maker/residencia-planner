@@ -1288,14 +1288,6 @@ export function AjustesModal({
   const saveMeta = (newFields) => {
     setMeta({ ...meta, ...newFields, estrategiaRefinada: true });
   };
-  const saveMetaNumber = (field, rawValue, options, fallback = null) => {
-    const value = readSanitizedNumber(rawValue, options);
-    if (value == null) {
-      if (fallback != null) saveMeta({ [field]: fallback });
-      return;
-    }
-    saveMeta({ [field]: value });
-  };
   const esps = plat === "res" ? ESPS_RES : ESPS_VEST;
 
   const readiness = getReadinessData({ temas, simulados, meta, plat });
