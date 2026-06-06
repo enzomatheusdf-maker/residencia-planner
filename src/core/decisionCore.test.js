@@ -211,12 +211,56 @@ describe("decisionCore", () => {
     });
 
     const inbox = buildActionInboxFromDecisionCore(state, { today });
-    expect(inbox.find((act) => act.id === "act_ref_keep")?.status).toBe("accepted");
-    expect(inbox.some((act) => act.id === "act_ref_drop")).toBe(false);
-    expect(inbox.some((act) => act.id === "act_ref_done")).toBe(false);
+    const keep = inbox.find((act) => act.legacyId === "act_ref_keep");
+    expect(keep?.id).toBe("act_ref_res_keep");
+    expect(keep?.status).toBe("accepted");
+    expect(inbox.some((act) => act.legacyId === "act_ref_drop")).toBe(false);
+    expect(inbox.some((act) => act.legacyId === "act_ref_done")).toBe(false);
   });
 
-  test("7. rebuildActionInboxForToday grava decisionSnapshot e evita politica paralela do store", () => {
+  test("7. filtra reflexoes legadas pela plataforma inferida do tema", () => {
+    const state = baseState({
+      plat: "vest",
+      res: {
+        temas: [
+          {
+            id: 10,
+            nome: "Modificações do Organismo Materno",
+            esp: "GO",
+            rev: {},
+          },
+        ],
+        simulados: [],
+        ankiLog: [],
+        cronogramas: [],
+        casosProgresso: {},
+      },
+      vest: {
+        temas: [
+          {
+            id: 20,
+            nome: "Matemática - Fundamentos",
+            esp: "Exatas",
+            rev: {},
+          },
+        ],
+        simulados: [],
+        ankiLog: [],
+        cronogramas: [],
+        casosProgresso: {},
+      },
+      sessionReflections: [
+        { id: "res-ref", date: today, outcome: "medio", mainIssue: "conteudo", confidence: "media", nextAdjustment: "revisar", tema: "Modificações do Organismo Materno" },
+        { id: "vest-ref", date: today, outcome: "medio", mainIssue: "conteudo", confidence: "media", nextAdjustment: "revisar", tema: "Matemática - Fundamentos" },
+      ],
+    });
+
+    const inbox = buildActionInboxFromDecisionCore(state, { today });
+    expect(inbox.some((act) => act.legacyId === "act_ref_res-ref")).toBe(false);
+    expect(inbox.find((act) => act.legacyId === "act_ref_vest-ref")?.id).toBe("act_ref_vest_vest-ref");
+  });
+
+  test("8. rebuildActionInboxForToday grava decisionSnapshot e evita politica paralela do store", () => {
     useStore.getState().resetStore({ touchUpdatedAt: false });
     useStore.setState({
       plat: "res",

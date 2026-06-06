@@ -6,6 +6,45 @@ import { todayStr, addDays } from "./fsrs";
 
 const EMPTY_INBOX_STATE = { dismissed: {}, accepted: {}, done: {} };
 
+function normalizeText(value = "") {
+  return String(value)
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function normalizePlat(value) {
+  return value === "vest" ? "vest" : value === "res" ? "res" : "";
+}
+
+function scopeActionId(id, plat) {
+  if (!id || !plat) return id;
+  return String(id).includes(`_${plat}_`) || String(id).endsWith(`_${plat}`)
+    ? id
+    : `${id}_${plat}`;
+}
+
+function reflectionMatchesPlat(reflection = {}, state = {}, plat = "res") {
+  const explicitPlat = normalizePlat(reflection.plat);
+  if (explicitPlat) return explicitPlat === plat;
+
+  const temaKey = normalizeText(reflection.tema);
+  const areaKey = normalizeText(reflection.area);
+  if (!temaKey && !areaKey) return true;
+
+  const matchesPlat = (platKey) => (state[platKey]?.temas || []).some((tema) => {
+    const nome = normalizeText(tema?.nome);
+    const esp = normalizeText(tema?.esp || tema?.area);
+    return (temaKey && nome === temaKey) || (areaKey && esp === areaKey);
+  });
+
+  const currentMatches = matchesPlat(plat);
+  const otherMatches = matchesPlat(plat === "vest" ? "res" : "vest");
+  if (currentMatches || otherMatches) return currentMatches;
+  return true;
+}
+
 /**
  * Cria o snapshot unificado com a decisao do Mentor v2.
  * @param {Object} state - Estado atual da store.
@@ -18,10 +57,11 @@ export function buildDecisionCoreSnapshot(state = {}, options = {}) {
   const primaryAction = decideMentorAction(context);
   const mentorAction = primaryAction;
   const todayPlan = buildMentorTodayPlan(context);
-  const primaryInboxAction = mentorActionToInboxAction(primaryAction, { today });
+  const primaryInboxAction = mentorActionToInboxAction(primaryAction, { today, plat });
   const reflectionActions = (state.sessionReflections || [])
     .filter((reflection) => reflection?.date && reflection.date >= addDays(today, -7))
-    .map((reflection) => reflectionToAction(reflection))
+    .filter((reflection) => reflectionMatchesPlat(reflection, state, plat))
+    .map((reflection) => reflectionToAction({ ...reflection, plat: reflection.plat || plat }))
     .map((action) => createAction({ ...action, dueDate: today }));
   const inboxActions = [primaryInboxAction, ...reflectionActions].filter(Boolean);
 
@@ -51,9 +91,12 @@ export function buildDecisionCoreSnapshot(state = {}, options = {}) {
 export function mentorActionToInboxAction(mentorAction, options = {}) {
   if (!mentorAction) return null;
   const today = options.today || todayStr();
+  const plat = normalizePlat(options.plat);
+  const legacyId = mentorAction.id;
 
   return createAction({
-    id: mentorAction.id,
+    id: scopeActionId(mentorAction.id, plat),
+    legacyId: plat ? legacyId : "",
     type: mentorAction.type,
     title: mentorAction.title,
     reason: mentorAction.reason || (Array.isArray(mentorAction.explain) ? mentorAction.explain.join(" ") : ""),
@@ -61,7 +104,8 @@ export function mentorActionToInboxAction(mentorAction, options = {}) {
     source: mentorAction.source || "mentor-v2",
     dueDate: mentorAction.dueDate || today,
     createdAt: mentorAction.createdAt || today,
-    target: mentorAction.target || {},
+    target: { ...(mentorAction.target || {}), plat: plat || undefined },
+    plat,
     // Informacoes adicionais preservadas para a UI/Dashboard
     subtitle: mentorAction.subtitle,
     explain: mentorAction.explain,

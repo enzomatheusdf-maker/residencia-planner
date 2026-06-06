@@ -331,7 +331,7 @@ export const useStore = create(
       temaStats: {},
       vistos: [],
       tourStep: null,
-      setPlat: (p) => set({ plat: p }),
+      setPlat: (p) => set({ plat: p, actionInbox: [], decisionSnapshot: null }),
       setCronogramaSel: (platKey, id) => set((s) => ({ cronogramaSel: { ...s.cronogramaSel, [platKey]: id } })),
       setCalendarProvider: (providerId) =>
         set((s) => ({
@@ -416,7 +416,11 @@ export const useStore = create(
           onboardingDone: false,
           meta: {
             ...state.meta,
-            onboarding: getOnboardingDefaults({}),
+            onboarding: {
+              ...getOnboardingDefaults({}),
+              version: 2,
+              replayV2: true,
+            },
           },
         })),
       // ── Onboarding v2 ───────────────────────────────────────────────────────
@@ -448,6 +452,7 @@ export const useStore = create(
               ...(state.meta?.onboarding || getOnboardingDefaults({})),
               version: 2,
               completed: true,
+              replayV2: false,
               completedAt: state.meta?.onboarding?.completedAt || new Date().toISOString().slice(0, 10),
             },
           },
@@ -501,13 +506,13 @@ export const useStore = create(
         })),
       addSessionReflection: (input) =>
         set((s) => {
-          const normalized = createSessionReflection(input);
+          const normalized = createSessionReflection({ ...input, plat: input.plat || s.plat || "res" });
           const nextReflections = [...(s.sessionReflections || []), normalized].slice(-400);
           const nextEvents = appendLearningEvent(s.learningEvents || [], {
             source: "session_reflection",
             topicName: normalized.tema || null,
             area: normalized.area || null,
-            plat: s.plat || "res",
+            plat: normalized.plat || s.plat || "res",
             date: normalized.date,
             officialSchedulingImpact: false,
             confianca: normalized.confidence,

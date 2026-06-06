@@ -1442,11 +1442,9 @@ export default function App() {
         danger={confirmDialog?.danger}
         onCancel={closeConfirm}
         onConfirm={() => {
-          try {
-            confirmDialog?.onConfirm?.();
-          } finally {
-            closeConfirm();
-          }
+          const action = confirmDialog?.onConfirm;
+          closeConfirm();
+          action?.();
         }}
       />
     </div>

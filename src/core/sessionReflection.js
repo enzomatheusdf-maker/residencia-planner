@@ -44,10 +44,13 @@ export function createSessionReflection(input = {}) {
   const nextAdjustment = ALLOWED_ADJUSTMENTS.has(rawAdjustment) ? rawAdjustment : "revisar";
   const date = input.date || toIsoDate();
   const id = input.id || `ref_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const plat = input.plat === "vest" || input.plat === "res" ? input.plat : "";
+  const createdAt = input.createdAt || input.completedAt || input.closedAt || new Date().toISOString();
 
   return {
     id,
     date,
+    createdAt,
     source: input.source || "focus",
     tema: input.tema || "",
     area: input.area || "",
@@ -56,6 +59,7 @@ export function createSessionReflection(input = {}) {
     confidence,
     nextAdjustment,
     note: String(input.note || "").trim(),
+    plat,
   };
 }
 
@@ -90,6 +94,8 @@ export function summarizeReflections(reflections = [], days = 7, today = toIsoDa
 export function reflectionToAction(reflection = {}) {
   const normalized = createSessionReflection(reflection);
   const adjustment = normalized.nextAdjustment || suggestAdjustmentFromReflection(normalized);
+  const legacyId = `act_ref_${normalized.id}`;
+  const scopedId = normalized.plat ? `act_ref_${normalized.plat}_${normalized.id}` : legacyId;
 
   const actionTypeByAdjustment = {
     revisar: "review",
@@ -104,7 +110,8 @@ export function reflectionToAction(reflection = {}) {
   const issueBonus = normalized.mainIssue === "energia" ? 20 : normalized.mainIssue === "raciocinio" ? 10 : 0;
 
   return {
-    id: `act_ref_${normalized.id}`,
+    id: scopedId,
+    legacyId: scopedId === legacyId ? "" : legacyId,
     type: actionTypeByAdjustment[adjustment] || "review",
     title: normalized.tema
       ? `${adjustment === "descanso" ? "Recuperar energia" : "Ajustar treino"}: ${normalized.tema}`
@@ -118,10 +125,12 @@ export function reflectionToAction(reflection = {}) {
     priority: basePriority + issueBonus,
     source: normalized.source || "focus",
     dueDate: normalized.date,
+    plat: normalized.plat,
     target: {
       tema: normalized.tema || undefined,
       area: normalized.area || undefined,
       reflectionId: normalized.id,
+      plat: normalized.plat || undefined,
     },
   };
 }
@@ -175,4 +184,3 @@ export function buildWeeklyReview(context = {}) {
     summary,
   };
 }
-

@@ -1315,6 +1315,10 @@ export function AjustesModal({
   }, [initialTab]);
   const [customPauseDays, setCustomPauseDays] = useState("10");
   const [importFeedback, setImportFeedback] = useState(null);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteAccountError, setDeleteAccountError] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const daysLeft = meta.dataProva ? diffDays(todayStr(), meta.dataProva) : null;
   const urgency  = daysLeft == null ? "" : daysLeft <= 30 ? "text-red-400" : daysLeft <= 90 ? "text-yellow-400" : "text-blue-400";
   const currentUid = authScope?.uid || auth.currentUser?.uid || null;
@@ -1445,30 +1449,44 @@ export function AjustesModal({
       confirmLabel: "Continuar",
       danger: true,
       onConfirm: () => {
-        openConfirm({
-          title: "Confirmação final",
-          message: "Para excluir seus dados definitivamente da nossa base, confirme novamente.",
-          confirmLabel: "Excluir conta",
-          danger: true,
-          onConfirm: async () => {
-            try {
-              const res = await excluirUsuarioEDados(auth.currentUser.uid);
-              if (res.sucesso) {
-                showToast("Sua conta foi excluída com sucesso.");
-                useStore.getState().resetStore();
-                onClose();
-              } else if (res.erro && res.erro.includes("requires-recent-login")) {
-                showToast("Ação requer login recente. Faça login novamente e tente de novo.");
-              } else {
-                showToast(`Erro ao excluir conta: ${res.erro}`);
-              }
-            } catch (e) {
-              showToast(`Erro: ${e.message}`);
-            }
-          }
-        });
+        setDeletePassword("");
+        setDeleteAccountError("");
+        setDeleteAccountOpen(true);
       }
     });
+  };
+
+  const confirmarExclusaoConta = async () => {
+    if (!auth.currentUser) {
+      setDeleteAccountError("Nenhum usuário logado.");
+      return;
+    }
+    if (!deletePassword.trim()) {
+      setDeleteAccountError("Digite sua senha para confirmar a exclusão definitiva.");
+      return;
+    }
+
+    setDeletingAccount(true);
+    setDeleteAccountError("");
+    try {
+      const res = await excluirUsuarioEDados(auth.currentUser.uid, deletePassword);
+      if (res.sucesso) {
+        showToast("Sua conta foi excluída com sucesso.");
+        setDeleteAccountOpen(false);
+        useStore.getState().resetStore();
+        onClose();
+      } else if (res.codigo === "auth/wrong-password" || res.codigo === "auth/invalid-credential") {
+        setDeleteAccountError("Senha incorreta. Confira e tente novamente.");
+      } else if (res.codigo === "auth/requires-recent-login" || (res.erro && res.erro.includes("requires-recent-login"))) {
+        setDeleteAccountError("Confirme sua senha para renovar a autenticação e excluir a conta.");
+      } else {
+        setDeleteAccountError(res.erro || "Não foi possível excluir a conta.");
+      }
+    } catch (e) {
+      setDeleteAccountError(e.message || "Não foi possível excluir a conta.");
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   const questPlatforms = plat === "res"
@@ -2285,6 +2303,57 @@ export function AjustesModal({
           </div>
         )}
       </div>
+      {deleteAccountOpen && (
+        <Modal onClose={() => {
+          if (!deletingAccount) setDeleteAccountOpen(false);
+        }}>
+          <div className="space-y-4 text-left">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-red-400 font-black">Confirmação final</p>
+              <h3 className="text-base font-black text-white mt-1">Excluir conta definitivamente</h3>
+              <p className="text-xs text-gray-400 mt-2 leading-relaxed">
+                Digite sua senha para confirmar. Isso remove seus dados do banco e exclui sua conta de login.
+              </p>
+            </div>
+            <div>
+              <label className="text-[11px] text-gray-500 font-semibold tracking-wide uppercase mb-1.5 block">
+                Senha atual
+              </label>
+              <Input
+                type="password"
+                value={deletePassword}
+                onChange={(event) => setDeletePassword(event.target.value)}
+                placeholder="Digite sua senha"
+                disabled={deletingAccount}
+                autoFocus
+              />
+            </div>
+            {deleteAccountError && (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2">
+                <p className="text-[12px] text-red-300">{deleteAccountError}</p>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Btn
+                variant="ghost"
+                className="flex-1"
+                disabled={deletingAccount}
+                onClick={() => setDeleteAccountOpen(false)}
+              >
+                Cancelar
+              </Btn>
+              <Btn
+                variant="danger"
+                className="flex-1"
+                disabled={deletingAccount}
+                onClick={confirmarExclusaoConta}
+              >
+                {deletingAccount ? "Excluindo..." : "Excluir conta"}
+              </Btn>
+            </div>
+          </div>
+        </Modal>
+      )}
     </Modal>
   );
 }

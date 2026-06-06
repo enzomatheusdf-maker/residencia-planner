@@ -43,6 +43,7 @@ import { isVestibularStartComplete } from "../core/vestibularOnboarding";
 import { Badge, Card, MetricRing } from "./ui";
 import SessionClosureModal from "./SessionClosureModal";
 import { createSessionReflection } from "../core/sessionReflection";
+import { getPendingSessionClosure } from "../core/sessionClosure";
 
 
 
@@ -1007,23 +1008,22 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const peakPolicy = useMemo(() => getPeakModePolicy(peakPhase), [peakPhase]);
   const peakModeAtivo = peakPhase !== "base";
   const [showSessionClosureModal, setShowSessionClosureModal] = useState(false);
-  const pendingTheme = useMemo(() => {
-    const themeId = meta?.lastFocusThemeId;
-    if (!themeId) return null;
-    return temas.find(t => t.id === themeId) || null;
-  }, [meta?.lastFocusThemeId, temas]);
-  const hasPendingClosure = useMemo(() => {
-    if (!meta?.lastFocusSessionAt) return false;
-    if (!pendingTheme) return false;
-    if (!meta?.lastReflectionAt) return true;
-    return meta.lastReflectionAt < meta.lastFocusSessionAt;
-  }, [meta?.lastFocusSessionAt, meta?.lastReflectionAt, pendingTheme]);
+  const pendingClosure = useMemo(() => (
+    getPendingSessionClosure({
+      meta,
+      sessionReflections,
+      temas,
+      plat,
+    })
+  ), [meta, plat, sessionReflections, temas]);
+  const pendingTheme = pendingClosure.theme;
+  const hasPendingClosure = pendingClosure.hasPendingClosure;
   const semanaDeProva = daysToProva != null && daysToProva >= 0 && daysToProva <= 7;
 
   useEffect(() => {
     if (!rebuildActionInboxForToday) return;
     rebuildActionInboxForToday();
-  }, [rebuildActionInboxForToday, pending, overdue.length, meta?.dataProva, enamedAnalises.length, sessionReflections.length]);
+  }, [rebuildActionInboxForToday, plat, pending, overdue.length, meta?.dataProva, enamedAnalises.length, sessionReflections.length]);
 
   useEffect(() => {
     if (modoSimples) {
@@ -1152,13 +1152,39 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   }, [filaInteligente, overdue, today_, temasFiltrados]);
 
 
-  const mentorNextAction = decisionSnapshot?.primaryAction || null;
+  const activeDecisionSnapshot = decisionSnapshot?.plat === plat ? decisionSnapshot : null;
+  const queueFallbackAction = useMemo(() => {
+    if (pending <= 0) return null;
+    return {
+      id: `mentor_fila_do_dia_${plat}`,
+      type: "fila_do_dia",
+      priority: 88,
+      title: "Fechar fila de hoje",
+      subtitle: `${pending} revisão(ões) para hoje.`,
+      reason: "Fechar a fila diária mantém ritmo e evita acúmulo amanhã.",
+      explain: [
+        `Carga estimada hoje: ${exibidosHojeMinutes || 0} minutos.`,
+        "Constância diária mantém o plano previsível.",
+      ],
+      cta: "Executar fila de hoje",
+      ctaView: "dash",
+      estimatedMinutes: Math.max(20, exibidosHojeMinutes || 20),
+      confidence: 0.85,
+      safety: "ok",
+      source: "dashboard-fallback",
+      target: { action: "close_today_queue", plat },
+    };
+  }, [exibidosHojeMinutes, pending, plat]);
+  const activeMentorAction = activeDecisionSnapshot?.primaryAction || null;
+  const mentorNextAction = queueFallbackAction && (!activeMentorAction || activeMentorAction.type === "rest")
+    ? queueFallbackAction
+    : activeMentorAction;
   const mentorTodayPlan = useMemo(
-    () => (Array.isArray(decisionSnapshot?.todayPlan) ? decisionSnapshot.todayPlan : []),
-    [decisionSnapshot?.todayPlan]
+    () => (Array.isArray(activeDecisionSnapshot?.todayPlan) ? activeDecisionSnapshot.todayPlan : []),
+    [activeDecisionSnapshot?.todayPlan]
   );
-  const decisionContext = decisionSnapshot?.context || null;
-  const agendaTodaySummary = decisionSnapshot?.context?.agendaTodaySummary || null;
+  const decisionContext = activeDecisionSnapshot?.context || null;
+  const agendaTodaySummary = activeDecisionSnapshot?.context?.agendaTodaySummary || null;
 
   const comandoDoDia = useMemo(() => {
     if (hasPendingClosure) {
@@ -1496,6 +1522,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                     </span>
                   </div>
                 )}
+                <button
+                  type="button"
+                  onClick={openAgenda}
+                  className="flex items-center gap-1.5 rounded-xl border border-blue-500/25 bg-blue-500/10 px-2.5 py-1.5 text-[10.5px] font-bold text-blue-200 hover:bg-blue-500/20 hover:text-white transition-colors cursor-pointer"
+                >
+                  <Calendar size={13} className="text-blue-300" />
+                  Ver agenda
+                </button>
                 {peakModeAtivo && (
                   <div className="flex items-center gap-1.5 rounded-xl border border-blue-500/25 bg-blue-500/10 px-2.5 py-1.5 text-[10px] font-bold text-blue-200">
                     <span className="uppercase tracking-wider text-[8px] text-blue-300">Reta final</span>

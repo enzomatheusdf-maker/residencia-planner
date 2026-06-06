@@ -37,6 +37,7 @@ export function createAction(input = {}) {
   const dueDate = input.dueDate || createdAt;
   return {
     id: buildActionId({ ...input, createdAt, dueDate }),
+    legacyId: input.legacyId || "",
     type: input.type || "rest",
     title: input.title || "Ação recomendada",
     reason: input.reason || "Sem motivo informado.",
@@ -53,6 +54,7 @@ export function createAction(input = {}) {
     estimatedMinutes: input.estimatedMinutes ?? null,
     confidence: input.confidence ?? null,
     safety: input.safety || "ok",
+    plat: input.plat || input.target?.plat || "",
   };
 }
 
@@ -111,11 +113,13 @@ function applyInboxState(actions = [], actionInboxState = {}) {
   const doneMap = actionInboxState.done || {};
   const dismissedMap = actionInboxState.dismissed || {};
   const acceptedMap = actionInboxState.accepted || {};
+  const statusKeys = (action) => [action.id, action.legacyId].filter(Boolean);
   return actions
     .map((action) => {
-      if (doneMap[action.id]) return { ...action, status: "done" };
-      if (dismissedMap[action.id]) return { ...action, status: "dismissed" };
-      if (acceptedMap[action.id]) return { ...action, status: "accepted" };
+      const keys = statusKeys(action);
+      if (keys.some((key) => doneMap[key])) return { ...action, status: "done" };
+      if (keys.some((key) => dismissedMap[key])) return { ...action, status: "dismissed" };
+      if (keys.some((key) => acceptedMap[key])) return { ...action, status: "accepted" };
       return action;
     })
     .filter((action) => action.status !== "done" && action.status !== "dismissed");

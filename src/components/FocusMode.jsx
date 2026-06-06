@@ -232,8 +232,20 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const handleStepSuccess = (temaId, stepKey, markData) => {
     const currentTemaName = tema?.nome || "Tema";
     const currentStepLabel = stepKey.toUpperCase();
+    const completedAt = new Date().toISOString();
     
     onCompleteStep(temaId, stepKey, markData);
+    useStore.setState((state) => ({
+      meta: {
+        ...state.meta,
+        lastFocusSessionAt: completedAt,
+        lastFocusThemeId: temaId,
+        lastFocusStepKey: stepKey,
+        lastCompletedFocusSessionAt: completedAt,
+        lastCompletedFocusThemeId: temaId,
+        lastCompletedFocusStepKey: stepKey,
+      },
+    }));
     
     setCompletedInSession(prev => prev + 1);
     setLastCompletedItem({

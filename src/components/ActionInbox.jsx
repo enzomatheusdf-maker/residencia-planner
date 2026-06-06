@@ -1,15 +1,46 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Inbox, Play, XCircle } from "lucide-react";
 import { useStore } from "../core/store";
+import { useFilaInteligente } from "../hooks/useMetrics";
 import EmptyState from "./EmptyState";
 
-function resolveActionCTA(action, onStudy, setView, rebalanceTodayWorkload, plat, showToast) {
+function isQueueAction(action) {
+  const target = action?.target || {};
+  return (
+    target.action === "close_today_queue" ||
+    target.tema === "fila_do_dia" ||
+    target.tema === "fila_vencida" ||
+    ["fila_do_dia", "revisao_vencida", "relearning"].includes(action?.type)
+  );
+}
+
+function pickQueueItem(action, filaInteligente = []) {
+  const target = action?.target || {};
+  if (target.tema === "fila_vencida" || action?.type === "revisao_vencida") {
+    return filaInteligente.find((item) => item.overdue) || filaInteligente[0] || null;
+  }
+  return filaInteligente[0] || null;
+}
+
+function resolveActionCTA(action, onStudy, setView, rebalanceTodayWorkload, plat, showToast, filaInteligente) {
   const temaId = action?.target?.temaId;
   const stepKey = action?.target?.stepKey || "d0";
   const view = action?.ctaView || action?.target?.view;
 
   if (temaId && onStudy) {
     return { label: "Iniciar", onClick: () => onStudy(temaId, stepKey) };
+  }
+  if (isQueueAction(action)) {
+    const queueItem = pickQueueItem(action, filaInteligente);
+    if (queueItem && onStudy) {
+      return {
+        label: action?.cta || "Executar fila",
+        onClick: () => onStudy(queueItem.temaId, queueItem.stepKey),
+      };
+    }
+    if (setView) {
+      return { label: action?.cta || "Abrir plano", onClick: () => setView("crono") };
+    }
   }
   if (action?.target?.action === "rebalance_workload" && rebalanceTodayWorkload) {
     return {
@@ -41,6 +72,7 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView }) {
   const rebalanceTodayWorkload = useStore((s) => s.rebalanceTodayWorkload);
   const plat = useStore((s) => s.plat);
   const showToast = useStore((s) => s.showToast);
+  const filaInteligente = useFilaInteligente();
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
@@ -48,8 +80,13 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView }) {
   }, [rebuildActionInboxForToday]);
 
   const openActions = useMemo(
-    () => actionInbox.filter((action) => action.status !== "done" && action.status !== "dismissed"),
-    [actionInbox]
+    () => actionInbox.filter((action) => {
+      const actionPlat = action.plat || action.target?.plat || "";
+      return action.status !== "done"
+        && action.status !== "dismissed"
+        && (!actionPlat || actionPlat === plat);
+    }),
+    [actionInbox, plat]
   );
 
   if (!openActions.length) {
@@ -64,7 +101,7 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView }) {
 
   const primary = openActions[0];
   const rest = mode === "manual" || expanded ? openActions.slice(1) : openActions.slice(1, 3);
-  const primaryCTA = resolveActionCTA(primary, onStudy, setView, rebalanceTodayWorkload, plat, showToast);
+  const primaryCTA = resolveActionCTA(primary, onStudy, setView, rebalanceTodayWorkload, plat, showToast, filaInteligente);
 
   return (
     <section className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 space-y-3">

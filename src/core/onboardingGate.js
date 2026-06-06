@@ -44,6 +44,8 @@ export function shouldShowOnboardingV2(state = {}) {
 
   const onboarding = state.meta?.onboarding || {};
 
+  if (onboarding.replayV2 === true) return true;
+
   // Nunca mostramos v2 se o planSetup já existe
   if (isPlanSetupComplete(state)) return false;
 

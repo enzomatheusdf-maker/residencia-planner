@@ -57,6 +57,14 @@ describe("onboardingGate", () => {
       ).toBe(false);
     });
 
+    test("reabre v2 quando replay manual foi solicitado", () => {
+      expect(
+        shouldShowOnboardingV2({
+          meta: { planSetup: { completedAt: "2026-06-02" }, onboarding: { version: 2, replayV2: true } },
+        })
+      ).toBe(true);
+    });
+
     test("nao forca veterano v1 (completed:true, sem version 2)", () => {
       expect(shouldShowOnboardingV2({ meta: { onboarding: { completed: true } } })).toBe(false);
     });

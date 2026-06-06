@@ -13,7 +13,9 @@ import {
   browserLocalPersistence,
   browserSessionPersistence,
   sendPasswordResetEmail,
-  deleteUser
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from "firebase/auth";
 import { getFirestore, setDoc, getDoc, deleteDoc } from "firebase/firestore";
 import { getAnalytics, isSupported, logEvent } from "firebase/analytics";
@@ -200,17 +202,21 @@ export const resetarSenha = async (email) => {
   }
 };
 
-export const excluirUsuarioEDados = async (uid) => {
+export const excluirUsuarioEDados = async (uid, senhaAtual = "") => {
   try {
     const scopedUid = assertWriteScope(uid);
     const user = auth.currentUser;
     if (!user) throw new Error("Nenhum usuário autenticado encontrado.");
+    if (senhaAtual && user.email) {
+      const credential = EmailAuthProvider.credential(user.email, senhaAtual);
+      await reauthenticateWithCredential(user, credential);
+    }
     await deleteDoc(userStateDoc(db, scopedUid));
     await deleteUser(user);
     return { sucesso: true };
   } catch (erro) {
     console.error("Erro ao excluir conta:", erro);
-    return { sucesso: false, erro: erro.message };
+    return { sucesso: false, erro: erro.message, codigo: erro.code || "" };
   }
 };
 
@@ -229,5 +235,3 @@ const firebaseService = {
 };
 
 export default firebaseService;
-
-
