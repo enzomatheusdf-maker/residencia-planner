@@ -196,7 +196,6 @@ const timestampMiddleware = (config) => (set, get, api) => {
         "weeklyReviews",
         "sprint",
         "learningEvents",
-        "decisionSnapshot",
       ].includes(key)
     );
 

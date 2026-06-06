@@ -1,4 +1,4 @@
-import { getMentorDiagnosis, proximaAcao } from "./mentor";
+import { getMentorDiagnosis } from "./mentor";
 
 function mkReview(esp, acerto, confianca = 3) {
   return { esp, acerto, confianca, completedAt: new Date().toISOString() };
@@ -38,25 +38,5 @@ describe("mentor upgrade smoke", () => {
     expect(hasFluencia).toBe(true);
   });
 
-  test("proximaAcao respeita ordem: fila -> gargalo -> cobertura", () => {
-    const acaoFila = proximaAcao({ temas: [], pending: 3, diag: { insights: [] }, readiness: { priorityList: [] } });
-    expect(acaoFila.label).toMatch(/Revisar fila/);
 
-    const acaoGargalo = proximaAcao({
-      temas: [],
-      pending: 0,
-      diag: { insights: [{ type: "gargalo", action: { esp: "GO" } }] },
-      readiness: { priorityList: [{ area: "CM", zona: "vermelha" }] },
-    });
-    expect(acaoGargalo.label).toMatch(/Fortalecer GO/);
-
-    const acaoCobertura = proximaAcao({
-      temas: [{ id: "1", esp: "CM", nome: "Hipertensao" }],
-      pending: 0,
-      diag: { insights: [] },
-      readiness: { priorityList: [{ area: "CM", zona: "vermelha" }] },
-    });
-    expect(acaoCobertura.label).toMatch(/Iniciar tema de alta incid/);
-    expect(acaoCobertura.action?.type).toBe("study");
-  });
 });

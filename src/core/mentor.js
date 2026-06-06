@@ -663,40 +663,7 @@ export function getMentorDiagnosis(userName, temas, doneReviews, temaStats = {},
   };
 }
 
-export function proximaAcao({ temas = [], pending = 0, diag = {}, readiness = {} } = {}) {
-  if (pending > 0) {
-    return {
-      label: `Revisar fila inteligente (${pending})`,
-      action: { type: "review_queue" },
-    };
-  }
 
-  const gargalo = (diag.insights || []).find((insight) => insight?.type === "gargalo" && insight?.action?.esp);
-  if (gargalo) {
-    return {
-      label: `Fortalecer ${gargalo.action.esp}`,
-      action: gargalo.action,
-    };
-  }
-
-  const priority = (readiness.priorityList || []).find((item) => item?.zona === "vermelha") || readiness.priorityList?.[0] || null;
-  const targetTema = temas.find((tema) => !priority?.area || tema?.esp === priority.area || tema?.area === priority.area) || temas[0] || null;
-  if (targetTema) {
-    return {
-      label: `Iniciar tema de alta incidência: ${targetTema.nome || targetTema.titulo || "tema prioritário"}`,
-      action: {
-        type: "study",
-        temaId: targetTema.id,
-        stepKey: "d0",
-      },
-    };
-  }
-
-  return {
-    label: "Manter revisão leve",
-    action: { type: "crono" },
-  };
-}
 
 export function isExhaustionDetected(temaStats = {}, doneReviews = []) {
   const currentHour = new Date().getHours();
