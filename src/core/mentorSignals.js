@@ -273,6 +273,14 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
   const userAvailableMinutes = Number(meta?.tempoDisponivel || 0) > 0
     ? Number(meta.tempoDisponivel) * 60
     : null;
+  // Espelha o alvo usado por rebalanceTodayWorkload (store.js) para a decisao
+  // saber se HOJE esta de fato acima da capacidade e ainda ha o que aliviar.
+  const rebalanceTargetMinutes = Number(userAvailableMinutes) > 0
+    ? Math.max(60, Math.min(120, Number(userAvailableMinutes)))
+    : 120;
+  const rebalanceMaxItems = Number(meta?.maxRevisoesDia) > 0
+    ? Number(meta.maxRevisoesDia)
+    : 30;
   const operationalMode = deriveOperationalMode({
     scheduler,
     meta,
@@ -331,6 +339,10 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     clinical,
     readinessData: extras.readinessData || null,
     userAvailableMinutes,
+    ankiDoneToday: (meta?.ankiAdesao?.datas || []).includes(today),
+    lastWorkloadRebalance: meta?.lastWorkloadRebalance || null,
+    rebalanceTargetMinutes,
+    rebalanceMaxItems,
     lowEnergy: Boolean(extras.lowEnergy),
     exhaustionDetected: Boolean(extras.exhaustionDetected),
     dominantError: errorSignal.dominantError,

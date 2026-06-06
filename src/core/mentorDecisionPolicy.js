@@ -164,7 +164,29 @@ export function decideMentorAction(context = {}) {
   const hasOverload = operationalMode
     ? operationalMode.mode === OPERATIONAL_MODE.OVERLOAD || schedulerOverloadSignal
     : schedulerOverloadSignal;
-  if (hasOverload) {
+
+  // O Rebalancear so deve sequestrar a fila do dia quando HOJE esta de fato acima
+  // da capacidade E ainda ha o que mover. rebalanceWorkloadForToday move apenas a
+  // carga de HOJE; sinais de horizonte (overloadDays) sozinhos nao podem suprimir
+  // "Comecar revisao"/"Executar fila de hoje" indefinidamente. Se o usuario acabou
+  // de rebalancear e nada pode ser movido, caimos na fila do dia.
+  const rebalanceTargetMinutes = Number(context.rebalanceTargetMinutes) > 0
+    ? Number(context.rebalanceTargetMinutes)
+    : 120;
+  const rebalanceMaxItems = Number(context.rebalanceMaxItems) > 0
+    ? Number(context.rebalanceMaxItems)
+    : 30;
+  const todayActuallyRelievable = Number(scheduler.todayMinutes || 0) > rebalanceTargetMinutes
+    || Number(scheduler.dueTodayCount || 0) > rebalanceMaxItems;
+  const lastRebalance = context.lastWorkloadRebalance || null;
+  const rebalancedTodayNoMove = Boolean(
+    lastRebalance
+      && lastRebalance.date === context.today
+      && Number(lastRebalance.movedCount || 0) === 0
+  );
+  const shouldRecommendRebalance = hasOverload && todayActuallyRelievable && !rebalancedTodayNoMove;
+
+  if (shouldRecommendRebalance) {
     return buildAction({
       type: "workload_relief",
       priority: 95,
@@ -462,7 +484,7 @@ export function decideMentorAction(context = {}) {
     });
   }
 
-  if (plat === "res") {
+  if (plat === "res" && !context.ankiDoneToday) {
     return buildAction({
       type: "anki_check",
       priority: 40,

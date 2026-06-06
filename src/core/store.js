@@ -608,10 +608,10 @@ export const useStore = create(
             },
           };
 
-          if (!result.movedCount) {
-            return { meta };
-          }
-
+          // Mesmo quando nada foi movido (movedCount === 0), reconstruimos o
+          // decisionSnapshot: meta.lastWorkloadRebalance agora registra a tentativa
+          // e a decisao precisa reavaliar para deixar de recomendar Rebalancear e
+          // cair na fila do dia / revisao vencida.
           const nextState = {
             ...s,
             meta,

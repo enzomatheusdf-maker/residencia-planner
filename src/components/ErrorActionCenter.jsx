@@ -11,7 +11,7 @@ import { STEPS } from "../core/fsrs";
 import {
   ERROR_TYPE_LABEL, dominantErrorType, summarizeErrors,
 } from "../core/errorTaxonomy";
-import { getCorrectiveAction, getActionsForPlatform } from "../core/errorActionMap";
+import { getCorrectiveAction, getActionsForPlatform, recommendRemediationFromError } from "../core/errorActionMap";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -25,7 +25,31 @@ function severityColor(count, max) {
 
 // ─── Linha de tipo de erro ────────────────────────────────────────────────────
 
-function ErrorTypeRow({ tipo, count, max, action, expanded, onToggle }) {
+function RemediationCta({ tipo, onNavigate }) {
+  const remediation = recommendRemediationFromError({ dominantError: tipo });
+  if (!remediation) return null;
+
+  const { kind } = remediation;
+  if (kind === "calibration_flag") return null;
+
+  const isFlashcard = kind === "flashcard";
+  const label = isFlashcard ? "Criar card de revisao no Anki" : "Treinar com caso clinico";
+  const targetView = isFlashcard ? "anki" : "raciocinio";
+
+  if (!onNavigate) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate(targetView)}
+      className="w-full py-2 mt-1 rounded-xl bg-blue-600/15 hover:bg-blue-600/30 text-blue-300 border border-blue-500/20 text-[10px] font-black cursor-pointer transition-colors"
+    >
+      {label} →
+    </button>
+  );
+}
+
+function ErrorTypeRow({ tipo, count, max, action, expanded, onToggle, onNavigate }) {
   const label = ERROR_TYPE_LABEL[tipo] || tipo;
   const color = severityColor(count, max);
 
@@ -69,6 +93,7 @@ function ErrorTypeRow({ tipo, count, max, action, expanded, onToggle }) {
               <p className="text-[11px] text-gray-400">{action.fsrsEffect}</p>
             </div>
           )}
+          <RemediationCta tipo={tipo} onNavigate={onNavigate} />
         </div>
       )}
 
@@ -87,7 +112,7 @@ function ErrorTypeRow({ tipo, count, max, action, expanded, onToggle }) {
  * Props:
  *   compact  bool    se true, mostra apenas os top 3 erros com > 0 ocorrencias
  */
-export default function ErrorActionCenter({ compact = false }) {
+export default function ErrorActionCenter({ compact = false, onNavigate = null }) {
   const plat = useStore((s) => s.plat);
   const temas = useStore((s) => s[plat]?.temas || []);
   const simulados = useStore((s) => s[plat]?.simulados || []);
@@ -189,6 +214,7 @@ export default function ErrorActionCenter({ compact = false }) {
               action={action}
               expanded={Boolean(expanded[tipo])}
               onToggle={() => toggleExpanded(tipo)}
+              onNavigate={onNavigate}
             />
           );
         })}

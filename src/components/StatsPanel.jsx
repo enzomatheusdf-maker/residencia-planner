@@ -1212,7 +1212,7 @@ export default function StatsPanel({ setView = null }) {
                 </div>
               </div>
 
-              <ErrorActionCenter />
+              <ErrorActionCenter onNavigate={setView} />
             </>
           )}
         </div>

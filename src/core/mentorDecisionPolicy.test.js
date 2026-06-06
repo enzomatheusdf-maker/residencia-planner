@@ -157,8 +157,40 @@ describe("mentorDecisionPolicy", () => {
       },
     }));
 
-    expect(action.type).toBe("workload_relief");
+    // Invariante: sob sobrecarga nunca abre tema novo. Como hoje esta leve
+    // (20 min, sem fila), o Rebalancear nao deve sequestrar a tela.
     expect(action.type).not.toBe("new_topic");
+    expect(action.type).not.toBe("workload_relief");
+  });
+
+  test("sobrecarga de sobrecarga com hoje pesado ainda recomenda rebalancear", () => {
+    const action = decideMentorAction(baseContext({
+      scheduler: { overloadLevelToday: "high", overloadDays: 3, todayMinutes: 150 },
+      operationalMode: {
+        mode: "sobrecarga",
+        flags: { canStartNewTopic: false, shouldReduceVolume: true },
+        policy: { newTopicBias: -50 },
+      },
+    }));
+    expect(action.type).toBe("workload_relief");
+  });
+
+  test("overload so de horizonte (hoje leve) nao mostra rebalancear; cai na fila do dia", () => {
+    const action = decideMentorAction(baseContext({
+      scheduler: { overloadLevelToday: "ok", overloadDays: 3, todayMinutes: 60, dueTodayCount: 2 },
+    }));
+    expect(action.type).not.toBe("workload_relief");
+    expect(action.type).toBe("fila_do_dia");
+  });
+
+  test("apos rebalancear sem mover nada, nao reaparece rebalancear; cai na fila do dia", () => {
+    const action = decideMentorAction(baseContext({
+      today: "2026-06-06",
+      scheduler: { overloadLevelToday: "high", overloadDays: 3, todayMinutes: 150, dueTodayCount: 3 },
+      lastWorkloadRebalance: { date: "2026-06-06", movedCount: 0 },
+    }));
+    expect(action.type).not.toBe("workload_relief");
+    expect(action.type).toBe("fila_do_dia");
   });
 
   test("tema novo escolhe area de baixa maestria e alta incidencia", () => {
@@ -194,6 +226,28 @@ describe("mentorDecisionPolicy", () => {
     expect(action.type).toBe("replan_intention");
     expect(action.priority).toBe(91);
     expect(action.explain.join(" ")).toContain("sugere redefinir o gatilho");
+  });
+
+  // anki_check fica abaixo de new_topic na cadeia; so dispara quando new_topic esta bloqueado.
+  // Simulamos isso com operationalMode bloqueando canStartNewTopic.
+  const ctxAnkiBase = {
+    operationalMode: {
+      mode: "sobrecarga",
+      flags: { canStartNewTopic: false, shouldReduceVolume: true },
+      policy: { newTopicBias: -100 },
+    },
+    scheduler: { overloadLevelToday: "ok", overloadDays: 0, todayMinutes: 20 },
+  };
+
+  test("anki_check nao aparece quando anki ja foi feito hoje (cai em rest)", () => {
+    const action = decideMentorAction(baseContext({ ...ctxAnkiBase, ankiDoneToday: true }));
+    expect(action.type).not.toBe("anki_check");
+    expect(action.type).toBe("rest");
+  });
+
+  test("anki_check aparece quando anki nao foi feito hoje e new_topic bloqueado", () => {
+    const action = decideMentorAction(baseContext({ ...ctxAnkiBase, ankiDoneToday: false }));
+    expect(action.type).toBe("anki_check");
   });
 
   test("clinical_case vira acao recomendada com titulo especifico se temaName existe", () => {
