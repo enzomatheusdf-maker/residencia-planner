@@ -6,6 +6,7 @@ import {
   getTemaStatsFromLearningEvents,
   summarizeByArea,
   summarizeLearningEvents,
+  getRecentErrorEvents,
 } from "./learningEvent";
 import { migrateTemaStatsToLearningEventsState, TEMA_STATS_MIGRATION_FLAG, useStore } from "./store";
 
@@ -358,5 +359,21 @@ describe("learningEvent integration with store markStep", () => {
     expect(ev.errors.dominantError).toBe("energia");
     expect(ev.tags).toEqual(["ruim", "descanso"]);
     expect(ev.meta).toMatchObject({ reflectionId: "ref_teste", mainIssue: "energia" });
+  });
+});
+
+describe("getRecentErrorEvents", () => {
+  test("filtra e ordena eventos de erro corretamente por data/timestamp desc", () => {
+    const events = [
+      createLearningEvent({ id: "e1", acerto: 1.0, timestamp: "2026-06-01T10:00:00Z" }),
+      createLearningEvent({ id: "e2", acerto: 0.5, timestamp: "2026-06-02T10:00:00Z" }), // error (acerto < 0.80)
+      createLearningEvent({ id: "e3", acerto: 1.0, dominantError: "chute", timestamp: "2026-06-03T10:00:00Z" }), // error (has dominantError)
+      createLearningEvent({ id: "e4", acerto: 0.9, timestamp: "2026-06-04T10:00:00Z" }),
+    ];
+
+    const result = getRecentErrorEvents(events, 5);
+    expect(result).toHaveLength(2);
+    expect(result[0].id).toBe("e3"); // most recent error first
+    expect(result[1].id).toBe("e2");
   });
 });

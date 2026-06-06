@@ -281,4 +281,56 @@ export function getErrorTypesBySeverity() {
   return Object.keys(ACTION_MAP);
 }
 
+/**
+ * Recommends remediation based on the dominant error or motives of an event.
+ *
+ * @param {Object} event
+ * @returns {{ kind: "flashcard" | "case" | "illness_script" | "calibration_flag", payload: string } | null}
+ */
+export function recommendRemediationFromError(event) {
+  if (!event) return null;
+
+  const rawError = event.dominantError || 
+                   event.errors?.dominantError || 
+                   (event.motivosErro && event.motivosErro[0]) || 
+                   (event.errors?.motivosErro && event.errors.motivosErro[0]) || 
+                   null;
+  const errorType = normalizeErrorType(rawError);
+
+  const tema = event.topicName || event.tema || "";
+  const fato = event.fato || event.fatoEspecifico || event.errors?.fato || event.meta?.fato || event.meta?.fatoEspecifico || "";
+
+  if (errorType === ERROR_TYPE.CONTENT || errorType === ERROR_TYPE.MEMORY) {
+    return {
+      kind: "flashcard",
+      payload: fato || (tema ? `Fato relacionado ao tema: ${tema}` : "Fato específico do erro"),
+    };
+  }
+
+  if (
+    errorType === ERROR_TYPE.REASONING ||
+    errorType === ERROR_TYPE.MANAGEMENT ||
+    errorType === ERROR_TYPE.PROBLEM_REPRESENTATION ||
+    errorType === ERROR_TYPE.DIFFERENTIAL ||
+    errorType === ERROR_TYPE.SCT_UNCERTAINTY ||
+    errorType === ERROR_TYPE.INTERPRETATION
+  ) {
+    const isScript = [ERROR_TYPE.DIFFERENTIAL, ERROR_TYPE.PROBLEM_REPRESENTATION, ERROR_TYPE.SCT_UNCERTAINTY].includes(errorType);
+    return {
+      kind: isScript ? "illness_script" : "case",
+      payload: tema,
+    };
+  }
+
+  if (errorType === ERROR_TYPE.CONFIDENCE_MISMATCH || errorType === ERROR_TYPE.GUESS) {
+    return {
+      kind: "calibration_flag",
+      payload: tema,
+    };
+  }
+
+  return null;
+}
+
 export { ACTION_MAP };
+

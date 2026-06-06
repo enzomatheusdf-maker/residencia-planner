@@ -5,6 +5,7 @@ import {
   dominantErrorToInboxAction,
   getErrorTypesBySeverity,
   ACTION_MAP,
+  recommendRemediationFromError,
 } from "./errorActionMap";
 import { ERROR_TYPE, normalizeErrorType } from "./errorTaxonomy";
 
@@ -208,5 +209,63 @@ describe("errorTaxonomy — novos tipos do P3-A", () => {
 
   test("ERROR_TYPE.EXAM_STRATEGY existe e tem valor correto", () => {
     expect(ERROR_TYPE.EXAM_STRATEGY).toBe("estrategia_prova");
+  });
+});
+
+describe("recommendRemediationFromError (B4)", () => {
+  test("conteudo/fato retorna flashcard com o fato específico", () => {
+    const event = {
+      dominantError: "conteudo",
+      topicName: "Apendicite Aguda",
+      fato: "Sinal de Blumberg positivo indica irritação peritoneal",
+    };
+    const recommendation = recommendRemediationFromError(event);
+    expect(recommendation).toEqual({
+      kind: "flashcard",
+      payload: "Sinal de Blumberg positivo indica irritação peritoneal",
+    });
+  });
+
+  test("raciocinio retorna case com o tema", () => {
+    const event = {
+      dominantError: "raciocinio",
+      topicName: "Apendicite Aguda",
+    };
+    const recommendation = recommendRemediationFromError(event);
+    expect(recommendation).toEqual({
+      kind: "case",
+      payload: "Apendicite Aguda",
+    });
+  });
+
+  test("diferencial retorna illness_script com o tema", () => {
+    const event = {
+      dominantError: "diferencial",
+      topicName: "Diverticulite",
+    };
+    const recommendation = recommendRemediationFromError(event);
+    expect(recommendation).toEqual({
+      kind: "illness_script",
+      payload: "Diverticulite",
+    });
+  });
+
+  test("calibracao/chute retorna calibration_flag com o tema", () => {
+    const event = {
+      dominantError: "chute",
+      topicName: "Obstetrícia",
+    };
+    const recommendation = recommendRemediationFromError(event);
+    expect(recommendation).toEqual({
+      kind: "calibration_flag",
+      payload: "Obstetrícia",
+    });
+  });
+
+  test("retorna null para eventos sem erro correspondente", () => {
+    const event = {
+      dominantError: "outro_tipo",
+    };
+    expect(recommendRemediationFromError(event)).toBeNull();
   });
 });

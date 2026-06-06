@@ -288,3 +288,28 @@ export function summarizeByArea(events = [], plat = null) {
     }];
   }));
 }
+
+/**
+ * Returns the most recent error events (where the user had incorrect answers or reported errors).
+ * @param {Array} events - List of learning events.
+ * @param {number} limit - Maximum number of events to return.
+ */
+export function getRecentErrorEvents(events = [], limit = 10) {
+  const list = Array.isArray(events) ? events : [];
+  return list
+    .filter((ev) => {
+      const acerto = ev.acerto ?? ev.performance?.acerto;
+      const hasErrors = ev.dominantError || 
+                        ev.errors?.dominantError || 
+                        (ev.motivosErro && ev.motivosErro.length > 0) || 
+                        (ev.errors?.motivosErro && ev.errors.motivosErro.length > 0);
+      return (acerto !== null && acerto < 0.80) || hasErrors;
+    })
+    .sort((a, b) => {
+      const aTime = Date.parse(a.timestamp || a.date || "") || 0;
+      const bTime = Date.parse(b.timestamp || b.date || "") || 0;
+      return bTime - aTime;
+    })
+    .slice(0, limit);
+}
+
