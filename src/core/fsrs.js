@@ -1,6 +1,7 @@
 // src/core/fsrs.js
 // FSRS-Lite core rules, date math, and database constants
 
+import { recommendDesiredRetention } from "./retentionPolicy";
 import { MACRO_PESO_ENAMED } from "../constants/enamedIncidencia";
 import { FSRS_CANONICAL_SHADOW_ENABLED } from "./devFlags";
 import {
@@ -810,7 +811,12 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
   if (doneKey === "manutencao") {
     const prevInterval = rev.manutencao?.interval || 0;
     // A2: intervalo cresce pelo S real (sem banda ±15%), com piso (não encurta) e teto.
-    const nextInt = maintenanceInterval(S_new, desiredRetention, D_new, prevInterval, maxInterval);
+    const examPhase = shadowContext?.examPhase || "base";
+    const overload = shadowContext?.overload ?? false;
+    const history = shadowContext?.history || rev.reviewHistory || [];
+    const policyResult = recommendDesiredRetention({ examPhase, overload, history });
+    const maintenanceRetention = getRetencaoArea(esp, policyResult.desiredRetention);
+    const nextInt = maintenanceInterval(S_new, maintenanceRetention, D_new, prevInterval, maxInterval);
     const baseDate = rev.manutencao.date >= now ? rev.manutencao.date : now;
     const nextDate = addDays(baseDate, nextInt);
     const nextRev = {
@@ -845,7 +851,12 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
 
   if (doneKey === "d21") {
     // A2: primeira manutenção também pelo S real (sem âncora fixa de 45).
-    const nextInt = maintenanceInterval(S_new, desiredRetention, D_new, 0, maxInterval);
+    const examPhase = shadowContext?.examPhase || "base";
+    const overload = shadowContext?.overload ?? false;
+    const history = shadowContext?.history || rev.reviewHistory || [];
+    const policyResult = recommendDesiredRetention({ examPhase, overload, history });
+    const maintenanceRetention = getRetencaoArea(esp, policyResult.desiredRetention);
+    const nextInt = maintenanceInterval(S_new, maintenanceRetention, D_new, 0, maxInterval);
     const baseDate = rev.d21.date >= now ? rev.d21.date : now;
     const nextDate = addDays(baseDate, nextInt);
     const nextRev = {

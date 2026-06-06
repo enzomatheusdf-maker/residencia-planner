@@ -82,7 +82,14 @@ export function buildReviewPreview({ tema, stepKey, acerto, meta = {} }) {
 
   const desiredRetention = getRetencaoArea(tema.esp, meta?.retencaoFSRS ?? 0.90);
   const maxInterval = meta?.intervaloMaxDias ?? 180;
-  const nextRev = recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, tema.esp);
+  const examPhase = meta?.peakModePhase || "base";
+  const overload = false;
+  const history = tema.rev?.reviewHistory || [];
+  const nextRev = recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, tema.esp, {
+    examPhase,
+    overload,
+    history,
+  });
   const nextTema = { ...tema, rev: nextRev };
   return describeReviewTransition({
     currentStepKey: stepKey,

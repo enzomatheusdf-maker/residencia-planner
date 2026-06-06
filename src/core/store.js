@@ -1050,7 +1050,18 @@ export const useStore = create(
             };
             const desiredRetention = getRetencaoArea(t.esp, s.meta?.retencaoFSRS ?? 0.90);
             const maxInterval = s.meta?.intervaloMaxDias ?? 180;
-            const updated = { ...t, rev: recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, t.esp, { tema: t }) };
+            const examPhase = s.meta?.peakModePhase || getPeakPhase({ examDate: s.meta?.dataProva, today: todayStr() });
+            const overload = s.decisionSnapshot?.context?.operationalMode?.mode === "sobrecarga";
+            const history = s.learningEvents || [];
+            const updated = {
+              ...t,
+              rev: recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, t.esp, {
+                tema: t,
+                examPhase,
+                overload,
+                history,
+              })
+            };
             // G4: relapso de tema maduro com protocolo dirigido → marca p/ semear caso clínico.
             if (updated.rev?.relearning?.protocol?.clinicalCaseNext) {
               relapsedTema = updated;
