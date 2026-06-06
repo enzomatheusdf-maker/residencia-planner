@@ -12,6 +12,18 @@ function makeTema(id, area, acerto = 0.8, date = "2026-01-01") {
   };
 }
 
+function makeScheduledTema(id, area, date = "2026-01-01") {
+  return {
+    id,
+    nome: `Tema ${id}`,
+    esp: area,
+    d0: date,
+    rev: {
+      d0: { done: false, acerto: null, questoes: null, date },
+    },
+  };
+}
+
 describe("readiness forecast integration", () => {
   test("getReadinessData mantem score e range legados", () => {
     const result = getReadinessData({
@@ -62,5 +74,20 @@ describe("readiness forecast integration", () => {
       projectedScore: null,
       displayMode: "collecting",
     }));
+  });
+
+  test("cobertura usa temas realmente vistos, nao apenas temas importados", () => {
+    const result = getReadinessData({
+      temas: [
+        makeTema("a", "Clinica Medica", 0.8),
+        makeScheduledTema("b", "Cirurgia"),
+        makeScheduledTema("c", "Preventiva"),
+      ],
+      simulados: [],
+      meta: {},
+      plat: "res",
+    });
+
+    expect(result.cobertura).toBe(33);
   });
 });

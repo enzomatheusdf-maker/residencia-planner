@@ -233,6 +233,7 @@ export default function App() {
 
   const [view, setView] = useState("login");
   const [planNavigationTarget, setPlanNavigationTarget] = useState(null);
+  const [vestCronoSubViewTarget, setVestCronoSubViewTarget] = useState(null);
   const [helpModal, setHelpModal] = useState(false);
 
   const [temaEdit, setTemaEdit] = useState(null);
@@ -289,6 +290,10 @@ export default function App() {
     setPlanNavigationTarget(plat === "res" ? buildPlanAgendaTarget({ date }) : null);
     setView(NAV_VIEW.PLAN);
   }, [plat]);
+  const openVestWeeklyPlan = useCallback(() => {
+    setVestCronoSubViewTarget("semanal");
+    setView(NAV_VIEW.PLAN);
+  }, []);
 
   const exportBackupNow = useCallback(() => {
     try {
@@ -1219,6 +1224,7 @@ export default function App() {
                 showToast={showToast}
                 onOpenAjustes={openAjustes}
                 onOpenAgenda={openPlanAgenda}
+                onOpenVestWeeklyPlan={openVestWeeklyPlan}
               />
             </ErrorBoundary>
           )}
@@ -1257,6 +1263,8 @@ export default function App() {
               <CronogramaVestHub
                 onStep={handleStudyTrigger}
                 onEdit={(t) => setTemaEdit(t)}
+                initialSubView={vestCronoSubViewTarget}
+                onSubViewTargetConsumed={() => setVestCronoSubViewTarget(null)}
                 onIniciarTema={(temaConfig) => {
                   if (!checkWorkloadAndWarn()) return;
                   if (temaConfig.id) {

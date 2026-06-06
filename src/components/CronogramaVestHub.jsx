@@ -1,11 +1,17 @@
 // src/components/CronogramaVestHub.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Cronograma from "./Cronograma";
 import CronogramaVest from "./CronogramaVest";
 import { BookOpen, Calendar } from "lucide-react";
 import { Tabs } from "./Primitives";
-export default function CronogramaVestHub({ onStep, onEdit, onIniciarTema }) {
+export default function CronogramaVestHub({ onStep, onEdit, onIniciarTema, initialSubView, onSubViewTargetConsumed }) {
   const [subView, setSubView] = useState("catalogo"); // "catalogo" | "semanal"
+
+  useEffect(() => {
+    if (!["catalogo", "semanal"].includes(initialSubView)) return;
+    setSubView(initialSubView);
+    if (onSubViewTargetConsumed) onSubViewTargetConsumed();
+  }, [initialSubView, onSubViewTargetConsumed]);
 
   const tabs = [
     { k: "catalogo", label: "Catálogo de Matérias", icon: BookOpen },

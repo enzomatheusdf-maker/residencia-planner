@@ -23,6 +23,7 @@ import {
 import { agendarReencontro, clinicalCaseMatch } from "./illnessScript";
 import { CASOS_CLINICOS } from "../constants/casosClinicos";
 import { updateBayesianMastery } from "./mastery";
+import { rebalanceWorkloadForToday } from "./workloadRebalance";
 
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
@@ -537,7 +538,7 @@ export const useStore = create(
             decisionSnapshot,
             meta: {
               ...s.meta,
-              lastReflectionAt: normalized.date,
+              lastReflectionAt: new Date().toISOString(),
             },
           };
         }),
@@ -576,6 +577,65 @@ export const useStore = create(
             decisionSnapshot: buildDecisionCoreSnapshot(s, decisionOptions),
           };
         }),
+      rebalanceTodayWorkload: (platKeyArg, options = {}) => {
+        let result = null;
+        set((s) => {
+          const today = todayStr();
+          const platKey = platKeyArg || s.plat || "res";
+          const platState = s[platKey] || {};
+          const availableMinutes = Number(s.meta?.tempoDisponivel || 0) > 0
+            ? Number(s.meta.tempoDisponivel) * 60
+            : 0;
+          const targetMinutes = Number(options.targetMinutes || 0) > 0
+            ? Number(options.targetMinutes)
+            : Math.max(60, Math.min(120, availableMinutes || 120));
+
+          result = rebalanceWorkloadForToday(platState.temas || [], {
+            today,
+            targetMinutes,
+            maxItemsToday: options.maxItemsToday || s.meta?.maxRevisoesDia || 30,
+          });
+
+          const meta = {
+            ...s.meta,
+            lastWorkloadRebalance: {
+              date: today,
+              plat: platKey,
+              movedCount: result.movedCount,
+              beforeTodayMinutes: result.beforeTodayMinutes,
+              afterTodayMinutes: result.afterTodayMinutes,
+              targetMinutes: result.targetMinutes,
+            },
+          };
+
+          if (!result.movedCount) {
+            return { meta };
+          }
+
+          const nextState = {
+            ...s,
+            meta,
+            [platKey]: {
+              ...platState,
+              temas: result.temas,
+            },
+          };
+          const decisionOptions = buildDecisionSnapshotOptions(nextState, today);
+          const decisionSnapshot = buildDecisionCoreSnapshot(nextState, decisionOptions);
+          const nextInbox = buildActionInboxFromDecisionCore(nextState, { ...decisionOptions, snapshot: decisionSnapshot });
+
+          return {
+            [platKey]: {
+              ...platState,
+              temas: result.temas,
+            },
+            meta,
+            decisionSnapshot,
+            actionInbox: nextInbox,
+          };
+        });
+        return result;
+      },
       adicionarVisto: (id) => set((state) => {
         if (state.vistos?.includes(id)) return {};
         return { vistos: [...(state.vistos || []), id] };

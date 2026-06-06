@@ -46,6 +46,13 @@ export function createAction(input = {}) {
     createdAt,
     dueDate,
     target: input.target && typeof input.target === "object" ? input.target : {},
+    subtitle: input.subtitle || "",
+    explain: Array.isArray(input.explain) ? input.explain : [],
+    cta: input.cta || "",
+    ctaView: input.ctaView || "",
+    estimatedMinutes: input.estimatedMinutes ?? null,
+    confidence: input.confidence ?? null,
+    safety: input.safety || "ok",
   };
 }
 

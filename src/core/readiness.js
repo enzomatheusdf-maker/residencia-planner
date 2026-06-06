@@ -24,6 +24,25 @@ export function matchesArea(studentEsp, examAreaName) {
   return false;
 }
 
+function hasTemaStatsSignal(tema = {}, temaStats = {}) {
+  const idCandidates = tema.id === undefined || tema.id === null ? [] : [tema.id, String(tema.id)];
+  const candidates = [...idCandidates, tema.nome, tema.topicName]
+    .filter((key) => key !== undefined && key !== null && key !== "");
+  return candidates.some((key) => Array.isArray(temaStats?.[key]) && temaStats[key].length > 0);
+}
+
+export function hasTemaBeenSeen(tema = {}, temaStats = {}) {
+  if (!tema) return false;
+  const dominioPrevio = tema.dominioPrevio || tema.validacaoDominio || {};
+  if (dominioPrevio.status === "validado_previo" || dominioPrevio.validado === true) return true;
+  if (hasTemaStatsSignal(tema, temaStats)) return true;
+  if (Array.isArray(tema.rev?.reviewHistory) && tema.rev.reviewHistory.length > 0) return true;
+  return STEPS.some((step) => {
+    const review = tema.rev?.[step.key];
+    return Boolean(review?.done && !review.skipped && review.skipReason !== "dominio_previo" && !review.skippeadoPorDominio);
+  });
+}
+
 // Removido: calcRaciocinioScore local substituida por calculateClinicalReasoningScore
 // de clinicalReasoningScoring.js (fonte canonica unica — P4-A)
 
@@ -37,7 +56,7 @@ export function getReadinessData({
   operationalMode = null,
   calibration = null,
 }) {
-  const startedTemas = temas.filter(t => !t.unstarted);
+  const startedTemas = temas.filter(t => hasTemaBeenSeen(t, temaStats));
   const today = todayStr();
   
   // 1. Calculate Coverage (Cobertura) percentage of target topics in grade
@@ -127,7 +146,7 @@ export function getReadinessData({
   if (examData && examData.perfil && examData.perfil.areas) {
     examData.perfil.areas.forEach(areaName => {
       const totalAreaTemas = temas.filter(t => matchesArea(t.esp, areaName));
-      const startedAreaTemas = totalAreaTemas.filter(t => !t.unstarted);
+      const startedAreaTemas = totalAreaTemas.filter(t => hasTemaBeenSeen(t, temaStats));
       
       const doneSteps = startedAreaTemas.flatMap(t => STEPS.map(s => t.rev?.[s.key])).filter(r => r?.done && r.acerto != null);
       

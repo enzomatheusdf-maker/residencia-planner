@@ -149,6 +149,7 @@ function WelcomePopup({ briefing, streakCurrent, onClose, onStartFocus }) {
 function MiniCronogramaWidget({
   plat,
   setView,
+  onOpenWeeklyPlan,
   onStudy,
   onMarkMastery,
   overdue = [],
@@ -218,6 +219,14 @@ function MiniCronogramaWidget({
     return plan?.nome || "MEDCOF 2026";
   }, [activeProvider, selectedPlanId]);
 
+  const openCalendarPlan = useCallback(() => {
+    if (plat === "vest" && onOpenWeeklyPlan) {
+      onOpenWeeklyPlan();
+      return;
+    }
+    if (setView) setView("crono");
+  }, [onOpenWeeklyPlan, plat, setView]);
+
   return (
     <div className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 flex flex-col gap-3 shadow-lg relative overflow-hidden text-left">
       <div className="absolute -right-12 -top-12 w-36 h-36 rounded-full bg-blue-600/5 blur-3xl pointer-events-none" />
@@ -239,7 +248,7 @@ function MiniCronogramaWidget({
           </span>
           {activeCrono && (
             <button
-              onClick={() => setView && setView("crono")}
+              onClick={openCalendarPlan}
               className="text-[9px] font-bold text-blue-400 hover:text-blue-300 transition-colors border-none p-0 bg-transparent cursor-pointer"
             >
               Ver tudo →
@@ -362,8 +371,8 @@ function MiniCronogramaWidget({
                         onClick={() => {
                           if (canFocus && onStudy) {
                             onStudy(temaExistente.id, nextStep.key);
-                          } else if (setView) {
-                            setView("crono");
+                          } else {
+                            openCalendarPlan();
                           }
                         }}
                         className="px-2 py-1 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-lg text-[9px] font-bold border-none cursor-pointer transition-all shadow-sm shadow-blue-900/40"
@@ -387,7 +396,7 @@ function MiniCronogramaWidget({
               <p className="text-[10px] text-gray-600">Sem tópicos para esta semana.</p>
               <button
                 type="button"
-                onClick={() => setView && setView("crono")}
+                onClick={openCalendarPlan}
                 className="text-[9px] bg-blue-600/15 text-blue-300 border border-blue-500/20 px-2.5 py-1.5 rounded-lg font-bold cursor-pointer hover:bg-blue-600/25 transition-all"
               >
                 Configurar calendário
@@ -648,7 +657,7 @@ function ClinicalCompetenceDashboardCard({ competence, setView }) {
   );
 }
 
-export default function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, setView, showToast, onOpenAjustes, onOpenAgenda }) {
+export default function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, setView, showToast, onOpenAjustes, onOpenAgenda, onOpenVestWeeklyPlan }) {
   const currentUid = auth.currentUser?.uid || null;
   const { plat, sprint, tourStep, setTourStep, setOnboardingDone, onboardingDone } = useStore();
   const showToastGlobal = useStore((s) => s.showToast);
@@ -673,6 +682,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const addSessionReflection = useStore((s) => s.addSessionReflection);
   const ankiAdesaoDatas = useStore((s) => s.meta?.ankiAdesao?.datas || []);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
+  const rebalanceTodayWorkload = useStore((s) => s.rebalanceTodayWorkload);
   const decisionSnapshot = useStore((s) => s.decisionSnapshot);
   const telemetryMeta = useStore((s) => s.meta);
   const calendarProvider = useStore((s) => s.calendarProvider || { activeId: "medcof" });
@@ -693,6 +703,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     }
     if (setView) setView("crono");
   }, [onOpenAgenda, setView]);
+  const openWeeklyPlan = useCallback(() => {
+    if (plat === "vest" && onOpenVestWeeklyPlan) {
+      onOpenVestWeeklyPlan();
+      return;
+    }
+    if (setView) setView("crono");
+  }, [onOpenVestWeeklyPlan, plat, setView]);
 
   const handleMarkMastery = (item) => {
     if (!item?.nome) return;
@@ -1210,10 +1227,25 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
       return;
     }
+    if (target.action === "rebalance_workload") {
+      const result = typeof rebalanceTodayWorkload === "function"
+        ? rebalanceTodayWorkload(plat)
+        : null;
+      const toast = showToast || showToastGlobal;
+      if (toast) {
+        if (result?.movedCount > 0) {
+          toast(`Rebalanceamento aplicado: ${result.movedCount} revisao(oes) movida(s); carga hoje ${result.beforeTodayMinutes} -> ${result.afterTodayMinutes} min.`);
+        } else {
+          toast("Nenhuma revisao elegivel para mover agora.");
+        }
+      }
+      safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
+      return;
+    }
     // 3. Demais comandos: navega para a tela correspondente.
     if (setView) setView(view);
     safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
-  }, [hasPendingClosure, mentorNextAction, onStudy, plat, setView, telemetryMeta, topFilaItem]);
+  }, [hasPendingClosure, mentorNextAction, onStudy, plat, rebalanceTodayWorkload, setView, showToast, showToastGlobal, telemetryMeta, topFilaItem]);
 
   const days = Array.from({ length: 35 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - 34 + i);
@@ -1876,10 +1908,11 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
       {!modoSimples && (
         <>
-          <MiniCronogramaWidget
-            plat={plat}
-            setView={setView}
-            onStudy={onStudy}
+            <MiniCronogramaWidget
+              plat={plat}
+              setView={setView}
+              onOpenWeeklyPlan={openWeeklyPlan}
+              onStudy={onStudy}
             onMarkMastery={handleMarkMastery}
             overdue={overdue}
             today_={today_}
@@ -2218,6 +2251,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               <MiniCronogramaWidget
                 plat={plat}
                 setView={setView}
+                onOpenWeeklyPlan={openWeeklyPlan}
                 onStudy={onStudy}
                 onMarkMastery={handleMarkMastery}
                 overdue={overdue}

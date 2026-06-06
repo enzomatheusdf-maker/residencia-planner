@@ -11,7 +11,7 @@ import { useStore } from "../core/store";
 import { STEPS, ESP_COLORS, todayStr, addDays, fmtDate, diffDays } from "../core/fsrs";
 import { calcCalibration } from "../core/calibration";
 import { getMentorPhrase, getMentorDiagnosis } from "../core/mentor";
-import { getReadinessData } from "../core/readiness";
+import { getReadinessData, hasTemaBeenSeen } from "../core/readiness";
 import {
   ERROR_TYPE_LABEL, dominantErrorType, summarizeErrors,
 } from "../core/errorTaxonomy";
@@ -200,7 +200,7 @@ export default function StatsPanel({ setView = null }) {
 
   // ─── Calculos compartilhados ────────────────────────────────────────────────
 
-  const startedTemas = useMemo(() => temas.filter((t) => !t.unstarted), [temas]);
+  const startedTemas = useMemo(() => temas.filter((t) => hasTemaBeenSeen(t, temaStats)), [temas, temaStats]);
 
   // Retencao real
   const retentionDetailed = useMemo(() => calcTrueRetentionDetailed(temas), [temas]);
@@ -352,12 +352,11 @@ export default function StatsPanel({ setView = null }) {
   // Equilíbrio de Ritmo para secao Provas
   const ritmoPaceStats = useMemo(() => {
     if (!meta?.metaQuestoesDia) return null;
-    const started = temas.filter((t) => !t.unstarted);
-    const firstD0 = started.length > 0
-      ? [...started].sort((a, b) => (a.d0 || "").localeCompare(b.d0 || ""))[0].d0
+    const firstD0 = startedTemas.length > 0
+      ? [...startedTemas].sort((a, b) => (a.d0 || "").localeCompare(b.d0 || ""))[0].d0
       : null;
     return saldoRitmo(temas, meta, firstD0);
-  }, [temas, meta]);
+  }, [temas, meta, startedTemas]);
 
   // Erros avancados de simulados para secao Provas
   const statsErrosSimulados = useMemo(() => {
@@ -1258,6 +1257,8 @@ export default function StatsPanel({ setView = null }) {
       )}
 
 
+      {currentSection === "aprendizagem" && (
+        <>
           {/* Preparo estimado do plano */}
           <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1321,7 +1322,11 @@ export default function StatsPanel({ setView = null }) {
               <p className="text-[11px] text-gray-500 italic">Configure a meta diaria de questoes nos Ajustes.</p>
             )}
           </div>
+        </>
+      )}
 
+      {currentSection === "provas" && (
+        <>
           {/* Erros avancados de simulados */}
           {statsErrosSimulados.total > 0 && (
             <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4">
@@ -1468,6 +1473,8 @@ export default function StatsPanel({ setView = null }) {
               </div>
             </div>
           )}
+        </>
+      )}
 
       {/* ── SECAO 5: REVISOES ──────────────────────────────────────────────── */}
       {currentSection === "revisoes" && (

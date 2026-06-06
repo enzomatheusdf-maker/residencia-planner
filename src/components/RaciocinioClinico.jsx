@@ -26,6 +26,51 @@ const FASES = [
   { k: "conduta", label: "Conduta", icon: Pill },
 ];
 
+const EMPTY_ANAMNESE = { queixa: "", roteiro: [], redFlags: [] };
+const EMPTY_CLINICAL_CASE = {
+  id: "",
+  tema: "Caso clinico",
+  diagnosticoFinal: "",
+  area: "Geral",
+  subarea: "",
+  vinheta: "",
+  script: {},
+  diferenciais: [],
+  workup: [],
+  keyFeatureAnswers: [],
+  expertReasoningTrace: [],
+  sct: [],
+  anamnese: EMPTY_ANAMNESE,
+};
+
+function normalizeClinicalCase(caseItem = {}) {
+  const anamnese = caseItem.anamnese && typeof caseItem.anamnese === "object"
+    ? caseItem.anamnese
+    : EMPTY_ANAMNESE;
+  return {
+    ...EMPTY_CLINICAL_CASE,
+    ...caseItem,
+    script: caseItem.script && typeof caseItem.script === "object" ? caseItem.script : {},
+    diferenciais: Array.isArray(caseItem.diferenciais) ? caseItem.diferenciais : [],
+    workup: Array.isArray(caseItem.workup) ? caseItem.workup : [],
+    keyFeatureAnswers: Array.isArray(caseItem.keyFeatureAnswers) ? caseItem.keyFeatureAnswers : [],
+    expertReasoningTrace: Array.isArray(caseItem.expertReasoningTrace) ? caseItem.expertReasoningTrace : [],
+    sct: Array.isArray(caseItem.sct) ? caseItem.sct : [],
+    anamnese: {
+      ...EMPTY_ANAMNESE,
+      ...anamnese,
+      roteiro: Array.isArray(anamnese.roteiro)
+        ? anamnese.roteiro.map((bloco) => ({
+            ...bloco,
+            bloco: bloco?.bloco || "Roteiro",
+            perguntasChave: Array.isArray(bloco?.perguntasChave) ? bloco.perguntasChave : [],
+          }))
+        : [],
+      redFlags: Array.isArray(anamnese.redFlags) ? anamnese.redFlags : [],
+    },
+  };
+}
+
 // Campos da fase de conduta simulada
 const CONDUTA_FIELDS = [
   { key: "estabilizacao", label: "Estabilizacao inicial", placeholder: "Vias aereas, acesso venoso, monitoracao, posicao, O2..." },
@@ -120,7 +165,7 @@ function resolveConfusableCase(memberId, allCases = [], temas = []) {
 }
 
 function getCaseScript(caseItem) {
-  return illnessScripts.find((script) => script.id === caseItem?.id) || caseItem || {};
+  return normalizeClinicalCase(illnessScripts.find((script) => script.id === caseItem?.id) || caseItem || {});
 }
 
 function findDiscriminatorFeature(targetCase, currentCase, currentScript) {
@@ -427,7 +472,7 @@ export default function RaciocinioClinico() {
   const temas = useStore((s) => s[plat]?.temas || []);
 
   const customCases = useMemo(() => Array.isArray(meta?.clinicalCustomCases) ? meta.clinicalCustomCases : [], [meta?.clinicalCustomCases]);
-  const allCases = useMemo(() => [...CASOS_CLINICOS, ...customCases], [customCases]);
+  const allCases = useMemo(() => [...CASOS_CLINICOS, ...customCases].map(normalizeClinicalCase), [customCases]);
   const recommendedDrill = useMemo(() => selectNextDrill({
     scripts: allCases,
     casosProgresso,
@@ -445,12 +490,13 @@ export default function RaciocinioClinico() {
     setRecommendedDrillApplied(true);
   }, [recommendedDrillApplied, recommendedDrill]);
 
-  const casoBase = allCases.find((item) => item.id === activeCasoId) || allCases[0];
+  const casoBase = allCases.find((item) => item.id === activeCasoId) || allCases[0] || EMPTY_CLINICAL_CASE;
   const progresso = casosProgresso[casoBase?.id] || {};
 
   const allInstancesForScript = useMemo(() => {
+    if (!casoBase?.id) return [];
     return caseInstances.filter(inst => inst.scriptId === casoBase.id);
-  }, [casoBase.id]);
+  }, [casoBase?.id]);
 
   const activeInstance = useMemo(() => {
     const isOverdue = progresso.proximaData && progresso.proximaData <= todayStr();
@@ -462,17 +508,16 @@ export default function RaciocinioClinico() {
   }, [allInstancesForScript, progresso.proximaData]);
 
   const caso = useMemo(() => {
-    if (!casoBase) return casoBase;
-    return {
+    return normalizeClinicalCase({
       ...casoBase,
       vinheta: activeInstance.vignette || casoBase.vinheta,
       keyFeatureAnswers: activeInstance.keyFeatureAnswers || casoBase.keyFeatureAnswers || [],
       expertReasoningTrace: activeInstance.expertReasoningTrace || casoBase.expertReasoningTrace || []
-    };
+    });
   }, [casoBase, activeInstance]);
 
   const activeScript = useMemo(() => {
-    return illnessScripts.find(s => s.id === caso.id) || caso;
+    return normalizeClinicalCase(illnessScripts.find(s => s.id === caso?.id) || caso);
   }, [caso]);
 
   const raciocinioScore = useMemo(() => calculateClinicalReasoningScore(casosProgresso), [casosProgresso]);

@@ -360,6 +360,37 @@ describe("learningEvent integration with store markStep", () => {
     expect(ev.tags).toEqual(["ruim", "descanso"]);
     expect(ev.meta).toMatchObject({ reflectionId: "ref_teste", mainIssue: "energia" });
   });
+
+  test("addSessionReflection marca fechamento com timestamp comparavel ao inicio do foco", () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date("2026-06-04T10:30:00.000Z"));
+    try {
+      useStore.getState().resetStore({ touchUpdatedAt: false });
+      useStore.setState({
+        learningEvents: [],
+        sessionReflections: [],
+        meta: {
+          ...useStore.getState().meta,
+          lastFocusSessionAt: "2026-06-04T10:00:00.000Z",
+          lastReflectionAt: null,
+        },
+      });
+
+      useStore.getState().addSessionReflection({
+        id: "ref_fechamento",
+        date: "2026-06-04",
+        tema: "Apendicite",
+        area: "Cirurgia",
+      });
+
+      const { lastFocusSessionAt, lastReflectionAt } = useStore.getState().meta;
+      expect(lastReflectionAt).toBe("2026-06-04T10:30:00.000Z");
+      expect(lastReflectionAt).not.toBe("2026-06-04");
+      expect(lastReflectionAt >= lastFocusSessionAt).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
 
 describe("getRecentErrorEvents", () => {
