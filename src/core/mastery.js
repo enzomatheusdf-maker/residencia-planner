@@ -334,14 +334,100 @@ function suggestedFocusFor(estimate) {
   return "manter";
 }
 
+export function estimateSubtopicParams(events = []) {
+  const observations = expandMasteryInput(events)
+    .map((event, index) => normalizeMasteryObservation(event, index))
+    .filter(Boolean);
+
+  const subtopicsData = {};
+
+  for (const obs of observations) {
+    const subtopic = obs.subtopic;
+    if (!subtopic) continue;
+    if (!subtopicsData[subtopic]) {
+      subtopicsData[subtopic] = {
+        n: 0,
+        guess_hits: 0,
+        guess_total: 0,
+        slip_misses: 0,
+        slip_total: 0,
+      };
+    }
+
+    const data = subtopicsData[subtopic];
+    data.n += 1;
+
+    const rawConf = obs.confidenceDeclared;
+    const isGuess = obs.errorTypes.includes(ERROR_TYPE.GUESS) || rawConf === "baixa";
+    if (isGuess) {
+      data.guess_total += 1;
+      if (obs.acerto >= 0.50) {
+        data.guess_hits += 1;
+      }
+    }
+
+    const isSlip = obs.errorTypes.includes(ERROR_TYPE.CONFIDENCE_MISMATCH) || rawConf === "alta";
+    if (isSlip) {
+      data.slip_total += 1;
+      if (obs.acerto < 0.50) {
+        data.slip_misses += 1;
+      }
+    }
+  }
+
+  const result = {};
+  const minSamples = 10;
+  const priorGuess = 0.25;
+  const priorSlip = 0.12;
+
+  for (const [subtopic, data] of Object.entries(subtopicsData)) {
+    let guessVal = priorGuess;
+    if (data.n < minSamples) {
+      guessVal = (data.guess_hits + priorGuess * minSamples) / (data.guess_total + minSamples);
+    } else {
+      guessVal = data.guess_total > 0 ? data.guess_hits / data.guess_total : priorGuess;
+    }
+
+    let slipVal = priorSlip;
+    if (data.n < minSamples) {
+      slipVal = (data.slip_misses + priorSlip * minSamples) / (data.slip_total + minSamples);
+    } else {
+      slipVal = data.slip_total > 0 ? data.slip_misses / data.slip_total : priorSlip;
+    }
+
+    guessVal = Math.min(0.45, Math.max(0.01, guessVal));
+    slipVal = Math.min(0.45, Math.max(0.01, slipVal));
+
+    result[subtopic] = {
+      slip: slipVal,
+      guess: guessVal,
+      n: data.n,
+    };
+  }
+
+  return result;
+}
+
 export function updateBayesianMastery(prior, observation = {}, params = DEFAULT_MASTERY_PARAMS) {
-  const p = clamp01(prior, params.prior);
+  const p = clamp01(prior, params?.prior ?? DEFAULT_MASTERY_PARAMS.prior);
   const a = clamp01(observation?.acerto, null);
   if (a == null) return p;
 
-  const guess = clamp01(params.guess, 0.25);
-  const slip = clamp01(params.slip, 0.12);
-  const learn = clamp01(params.learn, 0.08);
+  const subtopic = observation?.subtopic || observation?.subarea || observation?.parentTopic;
+  let guess = params?.guess;
+  let slip = params?.slip;
+
+  if (subtopic) {
+    const subParams = params?.[subtopic] || params?.subtopicParams?.[subtopic];
+    if (subParams) {
+      if (subParams.guess !== undefined) guess = subParams.guess;
+      if (subParams.slip !== undefined) slip = subParams.slip;
+    }
+  }
+
+  guess = clamp01(guess !== undefined ? guess : DEFAULT_MASTERY_PARAMS.guess, 0.25);
+  slip = clamp01(slip !== undefined ? slip : DEFAULT_MASTERY_PARAMS.slip, 0.12);
+  const learn = clamp01(params?.learn !== undefined ? params.learn : DEFAULT_MASTERY_PARAMS.learn, 0.08);
 
   const denomCorrect = (p * (1 - slip)) + ((1 - p) * guess);
   const denomIncorrect = (p * slip) + ((1 - p) * (1 - guess));
@@ -722,6 +808,7 @@ export function estimateMastery(events = [], options = {}) {
       const params = paramsForMasteryObservation(row, baseParams);
       effectiveParams.push(params);
       pKnown = updateBayesianMastery(pKnown, {
+        subtopic: row.subtopic,
         acerto: row.acerto,
         stepWeight: row.stepWeight,
         evidenceWeight: row.evidenceWeight,
@@ -791,8 +878,10 @@ export function estimateTopicMastery(tema, stats = [], context = {}) {
   const evidence = collectMasteryEvidence(tema, stats);
   let pMastery = clamp01(params.prior, DEFAULT_MASTERY_PARAMS.prior);
 
+  const subtopic = getTopicSubtopic(tema);
   for (const ev of evidence) {
     pMastery = updateBayesianMastery(pMastery, {
+      subtopic,
       acerto: ev.acerto,
       stepWeight: ev.stepWeight,
       evidenceWeight: ev.evidenceWeight,

@@ -11,6 +11,7 @@ import {
   getProntidaoGlobal,
   getWeakMasteryTargets,
   updateBayesianMastery,
+  estimateSubtopicParams,
 } from "./mastery";
 
 const temaVazio = {
@@ -342,5 +343,45 @@ describe("mastery optional operationalMode context", () => {
     const result = estimateTopicMastery(temaDominado, [], { operationalMode: { mode: "sobrecarga" } });
     expect(result.warnings).toContain("operational_overload_may_reduce_reliability");
     expect(result.confidence).toBe(MASTERY_CONFIDENCE.MEDIUM);
+  });
+});
+
+describe("estimateSubtopicParams (B3)", () => {
+  test("calcula n, guess, slip e suaviza com priors globais", () => {
+    const eventsPequeno = [
+      { tema: "Hipertensao", area: "Clinica Medica", step: "d1", acerto: 1, confianca: "baixa" }
+    ];
+    const paramsPequeno = estimateSubtopicParams(eventsPequeno);
+    expect(paramsPequeno.Cardiologia.n).toBe(1);
+    expect(paramsPequeno.Cardiologia.guess).toBeCloseTo(0.32, 2);
+    expect(paramsPequeno.Cardiologia.slip).toBeCloseTo(0.12, 2);
+  });
+
+  test("muitos chutes => guess alto e acerto sobe pouco", () => {
+    const eventsChutes = [];
+    for (let i = 0; i < 15; i++) {
+      eventsChutes.push({ tema: "Hipertensao", area: "Clinica Medica", step: "d1", acerto: 1, confianca: "baixa" });
+    }
+    const params = estimateSubtopicParams(eventsChutes);
+    expect(params.Cardiologia.n).toBe(15);
+    expect(params.Cardiologia.guess).toBe(0.45);
+
+    const p1 = updateBayesianMastery(0.30, { subtopic: "Cardiologia", acerto: 1 }, { Cardiologia: { guess: 0.25, slip: 0.12 } });
+    const p2 = updateBayesianMastery(0.30, { subtopic: "Cardiologia", acerto: 1 }, params);
+    expect(p2).toBeLessThan(p1);
+  });
+
+  test("errar-sabendo (slips) => slip alto e erro derruba pouco", () => {
+    const eventsSlips = [];
+    for (let i = 0; i < 15; i++) {
+      eventsSlips.push({ tema: "Hipertensao", area: "Clinica Medica", step: "d1", acerto: 0, confianca: "alta" });
+    }
+    const params = estimateSubtopicParams(eventsSlips);
+    expect(params.Cardiologia.n).toBe(15);
+    expect(params.Cardiologia.slip).toBe(0.45);
+
+    const p1 = updateBayesianMastery(0.70, { subtopic: "Cardiologia", acerto: 0 }, { Cardiologia: { guess: 0.25, slip: 0.12 } });
+    const p2 = updateBayesianMastery(0.70, { subtopic: "Cardiologia", acerto: 0 }, params);
+    expect(p2).toBeGreaterThan(p1);
   });
 });
