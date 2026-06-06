@@ -185,4 +185,14 @@ describe("mentorDecisionPolicy", () => {
     expect(action.type).toBe("new_topic");
     expect(action.target.area).toBe("Clinica Medica");
   });
+
+  test("replan_intention vira acao recomendada quando needsReplan e true", () => {
+    const action = decideMentorAction(baseContext({
+      studyPlanIntention: { cue: "Ao acordar", action: "fazer MedRev", window: "07:00" },
+      studyPlanIntentionNeedsReplan: true,
+    }));
+    expect(action.type).toBe("replan_intention");
+    expect(action.priority).toBe(91);
+    expect(action.explain.join(" ")).toContain("sugere redefinir o gatilho");
+  });
 });

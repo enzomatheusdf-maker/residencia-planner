@@ -85,6 +85,7 @@ export const CASOS_CLINICOS = [
       { dx: "SCA com supra", plausibilidade: "alta", pista: "Dor tipica com supra persistente de ST." },
       { dx: "Disseccao de aorta", plausibilidade: "media", pista: "Dor subita, lancinante e assimetria de pulsos." },
       { dx: "TEP", plausibilidade: "baixa", pista: "Dispneia aguda com fator de risco tromboembolico." },
+      { dx: "Pericardite", plausibilidade: "baixa", pista: "Dor piora em decúbito dorsal e melhora ao sentar (posição genupeitoral)." },
     ],
     workup: ["ECG seriado", "Troponina", "Radiografia de torax"],
     diagnosticoFinal: "Sindrome coronariana aguda",

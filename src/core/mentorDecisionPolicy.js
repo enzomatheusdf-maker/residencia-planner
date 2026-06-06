@@ -242,6 +242,27 @@ export function decideMentorAction(context = {}) {
     });
   }
 
+  if (context.studyPlanIntention && context.studyPlanIntentionNeedsReplan) {
+    return buildAction({
+      type: "replan_intention",
+      priority: 91,
+      title: "Ajustar plano de estudos (Intenção)",
+      subtitle: "A adesão ao seu plano de estudos nos últimos 7 dias ficou abaixo de 70%.",
+      reason: "Quando um plano não funciona, ajustar o gatilho é mais eficiente do que culpar-se.",
+      explain: [
+        `Seu plano atual: "Quando ${context.studyPlanIntention.cue}, então vou ${context.studyPlanIntention.action}".`,
+        "O mentor sugere redefinir o gatilho para outro momento mais estável da sua rotina.",
+        "Ajustar a intenção de implementação ajuda a reconstruir a consistência sem pressão.",
+      ],
+      cta: "Ajustar intenção",
+      ctaView: "ajustes",
+      estimatedMinutes: 5,
+      confidence: 0.9,
+      safety: "ok",
+      target: { action: "replan_intention" },
+    });
+  }
+
   if (Number(scheduler.dueTodayCount || 0) > 0) {
     return buildAction({
       type: "fila_do_dia",

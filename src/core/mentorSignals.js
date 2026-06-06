@@ -8,6 +8,7 @@ import { getReviewDisplayLabel } from "./domainValidation";
 import { deriveOperationalMode } from "./operationalMode";
 import { estimateStudentMastery } from "./mastery";
 import { getTemaStatsFromLearningEvents } from "./learningEvent";
+import { nextReminderFor, calculate7DayAdherence } from "./studyPlanIntentions";
 
 function getStepEntries(rev = {}) {
   const entries = [];
@@ -299,6 +300,15 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     : null;
   const planHealth = planSetup?.feasibility?.status || null;
 
+  const intention = meta.studyPlanIntention || null;
+  let studyPlanIntentionNeedsReplan = false;
+  if (intention) {
+    const learningEvents = state.learningEvents || [];
+    const adherence = calculate7DayAdherence(learningEvents, today);
+    const reminderInfo = nextReminderFor(intention, today, adherence);
+    studyPlanIntentionNeedsReplan = reminderInfo ? reminderInfo.needsReplan : false;
+  }
+
   return {
     plat,
     today,
@@ -324,5 +334,7 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     firstAction,
     agendaTodaySummary,
     planHealth,
+    studyPlanIntention: intention,
+    studyPlanIntentionNeedsReplan,
   };
 }

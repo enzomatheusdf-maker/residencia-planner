@@ -32,6 +32,7 @@ import {
 } from "../core/dailyBriefing";
 import { getEnamedBottleneckExplanation, getEnamedIntel } from "../core/enamedIntel";
 import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
+import { computeGrowth } from "../core/growthMetrics";
 import ActionInbox from "./ActionInbox";
 import WeeklyReview from "./WeeklyReview";
 import EmptyState from "./EmptyState";
@@ -725,6 +726,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     }
   };
 
+  const [refFrame, setRefFrame] = useState("past"); // "past" | "goal"
   const [showDetailedPanels, setShowDetailedPanels] = useState(false);
   const [showTourBalloon, setShowTourBalloon] = useState(true);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -995,6 +997,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     const rs = done.filter(r => r.acerto != null);
     return rs.length ? Math.round(rs.reduce((a, r) => a + r.acerto, 0) / rs.length * 100) : null;
   }, [done]);
+
+  const growth = useMemo(() => {
+    return computeGrowth(learningEvents, {
+      window: 30,
+      targetRetention: meta.retencaoFSRS || 0.90,
+      targetAcerto: (meta.acerto || 85) / 100
+    });
+  }, [learningEvents, meta]);
 
   const ankiFeitoHoje = ankiAdesaoDatas.includes(todayStr());
 
@@ -1322,6 +1332,16 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const dailyProgress = Math.min(concluidosHoje, dailyGoal);
   const readinessCountUp = useCountUp(readinessTrend.current, { duration: 600 });
   const acertoCountUp = useCountUp(acertoMedio ?? 0, { duration: 600 });
+
+  const currentDelta3 = refFrame === "past" ? growth.masteryByAreaDelta : growth.vsGoal.acerto;
+  const formattedDelta3 = currentDelta3 !== undefined && currentDelta3 !== null
+    ? `${currentDelta3 >= 0 ? "+" : ""}${Math.round(currentDelta3 * 100)}%`
+    : "";
+
+  const currentDelta4 = refFrame === "past" ? growth.retentionDelta : growth.vsGoal.retention;
+  const formattedDelta4 = currentDelta4 !== undefined && currentDelta4 !== null
+    ? `${currentDelta4 >= 0 ? "+" : ""}${Math.round(currentDelta4 * 100)}%`
+    : "";
 
   const [hasTriggeredConfetti, setHasTriggeredConfetti] = useState(false);
 
@@ -1702,7 +1722,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </Card>
 
         {/* Card 3: Sinal de prontidão */}
-        <Card variant="elevated" className="med-animate-in" style={{ padding: 16 }}>
+        <Card variant="elevated" className="med-animate-in flex flex-col justify-between gap-2" style={{ padding: 16 }}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <Badge tone={
@@ -1728,10 +1748,38 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             </div>
             <InfoTooltip texto="Estimativa interna baseada em revisões, desempenho registrado e cobertura. Não representa nota TRI oficial ou aprovação oficial." />
           </div>
+
+          {readinessData?.score != null && formattedDelta3 && (
+            <div className="flex items-center justify-between gap-1.5 mt-1 text-[10px] text-gray-500 border-t border-white/5 pt-1.5">
+              <span>
+                <strong className={currentDelta3 >= 0 ? "text-emerald-400" : "text-red-400"}>
+                  {formattedDelta3}
+                </strong>{" "}
+                {refFrame === "past" ? "vs você há 30 dias" : "vs meta 13/09"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setRefFrame(refFrame === "past" ? "goal" : "past")}
+                className="text-[8px] bg-white/5 hover:bg-white/10 text-gray-400 hover:text-gray-200 px-1.5 py-0.5 rounded cursor-pointer border border-white/5 transition-all uppercase font-bold"
+              >
+                Alternar
+              </button>
+            </div>
+          )}
+
+          {readinessData?.score != null && (
+            <button
+              type="button"
+              onClick={() => setView && setView("stats")}
+              className="mt-2 w-full py-1 bg-blue-600/15 hover:bg-blue-600/30 text-blue-300 border border-blue-500/20 text-[9px] font-black rounded-lg transition-colors cursor-pointer"
+            >
+              Focar área fraca
+            </button>
+          )}
         </Card>
 
         {/* Card 4: Qualidade geral */}
-        <Card variant="elevated" className="med-animate-in" style={{ padding: 16 }}>
+        <Card variant="elevated" className="med-animate-in flex flex-col justify-between gap-2" style={{ padding: 16 }}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <Badge tone={acertoMedio == null ? "neutral" : acertoMedio >= 70 ? "green" : "red"}>
@@ -1746,6 +1794,34 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             </div>
             <CheckCircle size={24} className={acertoMedio != null && acertoMedio >= 70 ? "text-emerald-300" : "text-gray-500"} />
           </div>
+
+          {acertoMedio != null && formattedDelta4 && (
+            <div className="flex items-center justify-between gap-1.5 mt-1 text-[10px] text-gray-500 border-t border-white/5 pt-1.5">
+              <span>
+                <strong className={currentDelta4 >= 0 ? "text-emerald-400" : "text-red-400"}>
+                  {formattedDelta4}
+                </strong>{" "}
+                {refFrame === "past" ? "vs você há 30 dias" : "vs meta 13/09"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setRefFrame(refFrame === "past" ? "goal" : "past")}
+                className="text-[8px] bg-white/5 hover:bg-white/10 text-gray-400 hover:text-gray-200 px-1.5 py-0.5 rounded cursor-pointer border border-white/5 transition-all uppercase font-bold"
+              >
+                Alternar
+              </button>
+            </div>
+          )}
+
+          {acertoMedio != null && (
+            <button
+              type="button"
+              onClick={() => setView && setView("stats")}
+              className="mt-2 w-full py-1 bg-blue-600/15 hover:bg-blue-600/30 text-blue-300 border border-blue-500/20 text-[9px] font-black rounded-lg transition-colors cursor-pointer"
+            >
+              Revisar erros
+            </button>
+          )}
         </Card>
       </section>
 

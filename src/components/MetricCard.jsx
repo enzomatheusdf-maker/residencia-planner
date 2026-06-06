@@ -66,10 +66,23 @@ export default function MetricCard({
   action,
   trend,
   className = "",
+  // New props
+  pastDelta,
+  goalDelta,
+  onActionClick,
 }) {
   const style = STATUS_STYLE[status] || STATUS_STYLE[METRIC_STATUS.COLLECTING];
   const StatusIcon = style.icon;
   const isCollecting = status === METRIC_STATUS.COLLECTING || status === METRIC_STATUS.LOW_CONFIDENCE;
+
+  const [refFrame, setRefFrame] = React.useState("past"); // "past" | "goal"
+
+  const hasComparison = (pastDelta !== undefined && pastDelta !== null) || (goalDelta !== undefined && goalDelta !== null);
+  const currentDelta = refFrame === "past" ? pastDelta : goalDelta;
+  const currentLabel = refFrame === "past" ? "vs você há 30 dias" : "vs meta 13/09";
+  const formattedDelta = currentDelta !== undefined && currentDelta !== null
+    ? `${currentDelta >= 0 ? "+" : ""}${Math.round(currentDelta * 100)}%`
+    : "";
 
   return (
     <Card
@@ -102,6 +115,25 @@ export default function MetricCard({
         )}
       </div>
 
+      {/* Moldura / Comparacao */}
+      {!isCollecting && hasComparison && formattedDelta && (
+        <div className="flex items-center justify-between gap-1.5 mt-1 text-[10px] text-gray-500 border-t border-white/5 pt-1.5">
+          <span>
+            <strong className={currentDelta >= 0 ? "text-emerald-400" : "text-red-400"}>
+              {formattedDelta}
+            </strong>{" "}
+            {currentLabel}
+          </span>
+          <button
+            type="button"
+            onClick={() => setRefFrame(refFrame === "past" ? "goal" : "past")}
+            className="text-[8px] bg-white/5 hover:bg-white/10 text-gray-400 hover:text-gray-200 px-1.5 py-0.5 rounded cursor-pointer border border-white/5 transition-all uppercase font-bold"
+          >
+            Alternar
+          </button>
+        </div>
+      )}
+
       {/* Descricao / estado vazio */}
       {isCollecting ? (
         <p className="text-[10px] text-gray-500 leading-relaxed">
@@ -115,9 +147,17 @@ export default function MetricCard({
 
       {/* Acao recomendada */}
       {action && !isCollecting && (
-        <p className={`text-[10px] leading-relaxed border-t border-white/5 pt-1.5 mt-0.5 ${style.valueColor} opacity-80`}>
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof onActionClick === "function") {
+              onActionClick();
+            }
+          }}
+          className="mt-2 w-full py-1 bg-blue-600/15 hover:bg-blue-600/30 text-blue-300 border border-blue-500/20 text-[9px] font-black rounded-lg transition-colors cursor-pointer"
+        >
           {action}
-        </p>
+        </button>
       )}
     </Card>
   );

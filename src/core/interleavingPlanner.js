@@ -1,4 +1,6 @@
 import { todayStr } from "./fsrs";
+import { CASOS_CLINICOS } from "../constants/casosClinicos";
+import { buildConfusableSets } from "./confusableSets";
 
 function toDateValue(date) {
   return String(date || "").slice(0, 10);
@@ -27,8 +29,24 @@ function getStepDueItems(tema, today) {
     .filter(Boolean);
 }
 
-function candidateReason(currentTema, candidate, status) {
+function inSameConfusableSet(id1, id2, sets) {
+  if (!id1 || !id2 || !sets) return false;
+  return sets.some((set) => set.members.includes(id1) && set.members.includes(id2));
+}
+
+function getCandidateReason(currentTema, candidate, status, confusableSets = []) {
   const other = candidate.tema;
+  
+  const sharesCaseSet = confusableSets.some(
+    (set) =>
+      set.key.startsWith("case:") &&
+      set.members.includes(currentTema.id) &&
+      set.members.includes(other.id)
+  );
+  if (sharesCaseSet) {
+    return "diagnóstico diferencial";
+  }
+
   if (other.parentTopic && currentTema.parentTopic && other.parentTopic === currentTema.parentTopic) {
     return "mesmo macrotema";
   }
@@ -40,7 +58,7 @@ function candidateReason(currentTema, candidate, status) {
   return "contraste útil";
 }
 
-function toCandidate(currentTema, item, status) {
+function toCandidate(currentTema, item, status, confusableSets) {
   return {
     temaId: item.tema.id,
     temaNome: item.tema.nome,
@@ -49,7 +67,7 @@ function toCandidate(currentTema, item, status) {
     stepKey: item.stepKey,
     date: item.date,
     delta: item.delta,
-    reason: candidateReason(currentTema, item, status),
+    reason: getCandidateReason(currentTema, item, status, confusableSets),
     official: false,
   };
 }
@@ -66,7 +84,7 @@ function getMatureContrastCandidates(currentTema, temas, today) {
     }));
 }
 
-export function buildInterleavingPlan({ tema, temas = [], stepKey, platKey, today = todayStr() } = {}) {
+export function buildInterleavingPlan({ tema, temas = [], stepKey, platKey, today = todayStr(), casos = CASOS_CLINICOS } = {}) {
   if (!tema || !stepKey) {
     return { shouldRecommend: false, mode: "none", status: "invalid", candidates: [] };
   }
@@ -77,22 +95,30 @@ export function buildInterleavingPlan({ tema, temas = [], stepKey, platKey, toda
     return { shouldRecommend: false, mode: "none", status: "not_applicable", candidates: [] };
   }
 
+  const confusableSets = buildConfusableSets(temas, casos);
   const others = temas.filter((t) => t && t.id !== tema.id);
+
   const dueItems = others
     .flatMap((t) => getStepDueItems(t, today))
     .filter((item) => item.delta <= 0)
     .sort((a, b) => {
+      const sameSetA = inSameConfusableSet(a.tema.id, tema.id, confusableSets) ? 0 : 1;
+      const sameSetB = inSameConfusableSet(b.tema.id, tema.id, confusableSets) ? 0 : 1;
+      if (sameSetA !== sameSetB) return sameSetA - sameSetB;
+
       const sameParentA = a.tema.parentTopic && tema.parentTopic && a.tema.parentTopic === tema.parentTopic ? 0 : 1;
       const sameParentB = b.tema.parentTopic && tema.parentTopic && b.tema.parentTopic === tema.parentTopic ? 0 : 1;
       if (sameParentA !== sameParentB) return sameParentA - sameParentB;
+
       const sameEspA = a.tema.esp === tema.esp ? 0 : 1;
       const sameEspB = b.tema.esp === tema.esp ? 0 : 1;
       if (sameEspA !== sameEspB) return sameEspA - sameEspB;
+
       return a.delta - b.delta;
     });
 
   if (dueItems.length > 0) {
-    const candidates = dueItems.slice(0, 3).map((item) => toCandidate(tema, item, "has_due_candidates"));
+    const candidates = dueItems.slice(0, 3).map((item) => toCandidate(tema, item, "has_due_candidates", confusableSets));
     return {
       shouldRecommend: true,
       mode: "full",
@@ -107,7 +133,21 @@ export function buildInterleavingPlan({ tema, temas = [], stepKey, platKey, toda
   const nearItems = others
     .flatMap((t) => getStepDueItems(t, today))
     .filter((item) => item.delta > 0 && item.delta <= 3)
-    .sort((a, b) => a.delta - b.delta)
+    .sort((a, b) => {
+      const sameSetA = inSameConfusableSet(a.tema.id, tema.id, confusableSets) ? 0 : 1;
+      const sameSetB = inSameConfusableSet(b.tema.id, tema.id, confusableSets) ? 0 : 1;
+      if (sameSetA !== sameSetB) return sameSetA - sameSetB;
+
+      const sameParentA = a.tema.parentTopic && tema.parentTopic && a.tema.parentTopic === tema.parentTopic ? 0 : 1;
+      const sameParentB = b.tema.parentTopic && tema.parentTopic && b.tema.parentTopic === tema.parentTopic ? 0 : 1;
+      if (sameParentA !== sameParentB) return sameParentA - sameParentB;
+
+      const sameEspA = a.tema.esp === tema.esp ? 0 : 1;
+      const sameEspB = b.tema.esp === tema.esp ? 0 : 1;
+      if (sameEspA !== sameEspB) return sameEspA - sameEspB;
+
+      return a.delta - b.delta;
+    })
     .slice(0, 3);
 
   if (nearItems.length > 0) {
@@ -117,12 +157,29 @@ export function buildInterleavingPlan({ tema, temas = [], stepKey, platKey, toda
       status: "near_due_only",
       title: "Interleaving leve disponível",
       message: "Não há outra revisão vencida hoje. Use um tema próximo de vencer apenas como contraste, sem marcar essa revisão como concluída.",
-      candidates: nearItems.map((item) => toCandidate(tema, item, "near_due_only")),
+      candidates: nearItems.map((item) => toCandidate(tema, item, "near_due_only", confusableSets)),
       officialPolicy: "only_current_review_is_official",
     };
   }
 
-  const mature = getMatureContrastCandidates(tema, others, today).slice(0, 3);
+  const mature = getMatureContrastCandidates(tema, others, today)
+    .sort((a, b) => {
+      const sameSetA = inSameConfusableSet(a.tema.id, tema.id, confusableSets) ? 0 : 1;
+      const sameSetB = inSameConfusableSet(b.tema.id, tema.id, confusableSets) ? 0 : 1;
+      if (sameSetA !== sameSetB) return sameSetA - sameSetB;
+
+      const sameParentA = a.tema.parentTopic && tema.parentTopic && a.tema.parentTopic === tema.parentTopic ? 0 : 1;
+      const sameParentB = b.tema.parentTopic && tema.parentTopic && b.tema.parentTopic === tema.parentTopic ? 0 : 1;
+      if (sameParentA !== sameParentB) return sameParentA - sameParentB;
+
+      const sameEspA = a.tema.esp === tema.esp ? 0 : 1;
+      const sameEspB = b.tema.esp === tema.esp ? 0 : 1;
+      if (sameEspA !== sameEspB) return sameEspA - sameEspB;
+
+      return 0;
+    })
+    .slice(0, 3);
+
   if (mature.length > 0) {
     return {
       shouldRecommend: true,
@@ -130,7 +187,7 @@ export function buildInterleavingPlan({ tema, temas = [], stepKey, platKey, toda
       status: "mature_only",
       title: "Interleaving de contraste",
       message: "Não há revisões vencidas hoje. Misture 2–5 questões de um tema já estudado para treinar discriminação clínica.",
-      candidates: mature.map((item) => toCandidate(tema, item, "mature_only")),
+      candidates: mature.map((item) => toCandidate(tema, item, "mature_only", confusableSets)),
       officialPolicy: "only_current_review_is_official",
     };
   }
@@ -148,3 +205,4 @@ export function buildInterleavingPlan({ tema, temas = [], stepKey, platKey, toda
     officialPolicy: "only_current_review_is_official",
   };
 }
+

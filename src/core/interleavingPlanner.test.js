@@ -172,4 +172,56 @@ describe("Interleaving Planner Test Suite", () => {
     expect(plan.shouldRecommend).toBe(true);
     expect(plan.status).toBe("has_due_candidates");
   });
+
+  test("Prioriza candidatos do mesmo set confuso (casos com diferenciais) acima de mesma area", () => {
+    const current = makeTema({ id: "current", nome: "Dor Torácica Coronariana", esp: "Cardiologia" });
+    
+    // Tema 1: Mesma área (Cardiologia), mas NÃO faz parte do set confuso
+    const otherEsp = makeTema({
+      id: "other-esp",
+      nome: "Cardiopatia Congênita",
+      esp: "Cardiologia",
+      parentTopic: "OutroMacrotema",
+      rev: { d1: { done: false, date: "2026-06-04" } }
+    });
+
+    // Tema 2: Faz parte do set confuso (por diferenciais), mas de OUTRA área/esp (Pneumo)
+    const otherSet = makeTema({
+      id: "other-set",
+      nome: "Tromboembolismo Pulmonar (TEP)",
+      esp: "Pneumologia",
+      parentTopic: "Pneumo",
+      rev: { d1: { done: false, date: "2026-06-04" } }
+    });
+
+    const mockCasos = [
+      {
+        id: "dor-toracica",
+        tema: "Dor Torácica Coronariana",
+        diferenciais: [
+          { dx: "TEP" }
+        ]
+      }
+    ];
+
+    const plan = buildInterleavingPlan({
+      tema: current,
+      temas: [current, otherEsp, otherSet],
+      stepKey: "d21",
+      platKey: "res",
+      today: "2026-06-04",
+      casos: mockCasos
+    });
+
+    expect(plan.shouldRecommend).toBe(true);
+    expect(plan.candidates).toHaveLength(2);
+    // O candidato do mesmo set deve vir primeiro
+    expect(plan.candidates[0].temaId).toBe("other-set");
+    expect(plan.candidates[0].reason).toBe("diagnóstico diferencial");
+    
+    // O candidato apenas de mesma área vem depois
+    expect(plan.candidates[1].temaId).toBe("other-esp");
+    expect(plan.candidates[1].reason).toBe("mesma área");
+  });
 });
+

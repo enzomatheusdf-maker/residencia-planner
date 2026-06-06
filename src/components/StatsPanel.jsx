@@ -30,6 +30,7 @@ import EnamedMapa from "./EnamedMapa";
 import AdvancedSection from "./AdvancedSection";
 import MetricCard from "./MetricCard";
 import ErrorActionCenter from "./ErrorActionCenter";
+import { computeGrowth } from "../core/growthMetrics";
 import { Badge, Card, SegmentedControl } from "./ui";
 
 const EnamedProvaAnalyzer = lazy(() => import("./EnamedProvaAnalyzer"));
@@ -208,6 +209,14 @@ export default function StatsPanel({ setView = null }) {
     () => getReadinessData({ temas, simulados, meta, plat, casosProgresso, temaStats }),
     [temas, simulados, meta, plat, casosProgresso, temaStats]
   );
+
+  const growth = useMemo(() => {
+    return computeGrowth(learningEvents, {
+      window: 30,
+      targetRetention: meta.retencaoFSRS || 0.90,
+      targetAcerto: (meta.acerto || 85) / 100
+    });
+  }, [learningEvents, meta]);
   const readinessValidation = useMemo(() => {
     const latestSimulado = simulados[simulados.length - 1] || null;
     return compareReadinessToSimulado(
@@ -901,6 +910,9 @@ export default function StatsPanel({ setView = null }) {
             emptyState={metricsEvaluated.coverageByArea.emptyState}
             action={metricsEvaluated.coverageByArea.action}
             className="sm:col-span-2"
+            pastDelta={growth.masteryByAreaDelta}
+            goalDelta={growth.vsGoal.acerto}
+            onActionClick={() => setView && setView("crono")}
           />
 
           {/* Grafico de acertos */}
@@ -1202,6 +1214,9 @@ export default function StatsPanel({ setView = null }) {
             description={metricsEvaluated.simuladoAccuracy.description}
             emptyState={metricsEvaluated.simuladoAccuracy.emptyState}
             action={metricsEvaluated.simuladoAccuracy.action}
+            pastDelta={growth.masteryByAreaDelta}
+            goalDelta={growth.vsGoal.acerto}
+            onActionClick={() => setView && setView("sims")}
           />
 
           {plat === "res" && (
@@ -1450,6 +1465,9 @@ export default function StatsPanel({ setView = null }) {
               description={metricsEvaluated.trueRetention.description}
               emptyState={metricsEvaluated.trueRetention.emptyState}
               action={metricsEvaluated.trueRetention.action}
+              pastDelta={growth.retentionDelta}
+              goalDelta={growth.vsGoal.retention}
+              onActionClick={() => setView && setView("dash")}
             />
             <MetricCard
               label={metricsEvaluated.overdueReviews.label}
