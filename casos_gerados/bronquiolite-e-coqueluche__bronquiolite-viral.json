@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "bronquiolite-e-coqueluche__bronquiolite-viral",
+    "entidade": "Bronquiolite viral aguda",
+    "area": "Pediatria",
+    "subtopico": "Bronquiolite e Coqueluche",
+    "sindrome": "Síndrome obstrutiva viral do lactente",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "fator de risco ou faixa etária típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Asma em lactente",
+        "feature": "primeiro episódio com pródromo viral em lactente favorece bronquiolite"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "bronquiolite-e-coqueluche__bronquiolite-viral-typical",
+      "scriptId": "bronquiolite-e-coqueluche__bronquiolite-viral",
+      "presentation": "typical",
+      "vignette": "lactente de 5 meses com coriza, tosse, sibilância difusa, tiragem e dificuldade para mamar",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "lactente pequeno com pródromo viral e obstrução de vias aéreas inferiores",
+        "sindromeCorreta": "Síndrome obstrutiva viral do lactente",
+        "opcoes": [
+          "Síndrome obstrutiva viral do lactente",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome obstrutiva viral do lactente; primeiro episódio com pródromo viral em lactente favorece bronquiolite.",
+        "diferenciaisDaSindrome": [
+          "Asma em lactente",
+          "Coqueluche",
+          "Pneumonia bacteriana típica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Asma em lactente",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Coqueluche",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Pneumonia bacteriana típica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Bronquiolite viral aguda",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Bronquiolite viral aguda. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "bronquiolite-e-coqueluche__bronquiolite-viral-atypical",
+      "scriptId": "bronquiolite-e-coqueluche__bronquiolite-viral",
+      "presentation": "atypical",
+      "vignette": "lactente de 5 meses com coriza, tosse, sibilância difusa, tiragem e dificuldade para mamar Na apresentação menos clássica, a intensidade dos achados é menor, mas o padrão sindrômico permanece reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "lactente pequeno com pródromo viral e obstrução de vias aéreas inferiores com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome obstrutiva viral do lactente",
+        "opcoes": [
+          "Síndrome obstrutiva viral do lactente",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome obstrutiva viral do lactente; primeiro episódio com pródromo viral em lactente favorece bronquiolite.",
+        "diferenciaisDaSindrome": [
+          "Asma em lactente",
+          "Coqueluche",
+          "Pneumonia bacteriana típica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Asma em lactente",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Coqueluche",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Pneumonia bacteriana típica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Bronquiolite viral aguda",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Bronquiolite viral aguda. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.506Z"
+  }
+}

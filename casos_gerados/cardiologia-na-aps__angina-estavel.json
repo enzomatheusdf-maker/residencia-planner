@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "cardiologia-na-aps__angina-estavel",
+    "entidade": "Angina estável",
+    "area": "Preventiva",
+    "subtopico": "Cardiologia na APS",
+    "sindrome": "Síndrome coronariana crônica aos esforços",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Dor musculoesquelética",
+        "feature": "reprodutibilidade com esforço e alívio ao repouso favorecem isquemia estável"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "cardiologia-na-aps__angina-estavel-typical",
+      "scriptId": "cardiologia-na-aps__angina-estavel",
+      "presentation": "typical",
+      "vignette": "adulto com aperto retroesternal previsível ao subir ladeira, melhora com repouso e fatores de risco cardiovascular",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "dor torácica típica desencadeada por esforço e aliviada por repouso",
+        "sindromeCorreta": "Síndrome coronariana crônica aos esforços",
+        "opcoes": [
+          "Síndrome coronariana crônica aos esforços",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome coronariana crônica aos esforços; reprodutibilidade com esforço e alívio ao repouso favorecem isquemia estável.",
+        "diferenciaisDaSindrome": [
+          "Dor musculoesquelética",
+          "Síndrome coronariana aguda",
+          "Tromboembolismo pulmonar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Dor musculoesquelética",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Síndrome coronariana aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Tromboembolismo pulmonar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Angina estável",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Angina estável. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "cardiologia-na-aps__angina-estavel-atypical",
+      "scriptId": "cardiologia-na-aps__angina-estavel",
+      "presentation": "atypical",
+      "vignette": "adulto com aperto retroesternal previsível ao subir ladeira, melhora com repouso e fatores de risco cardiovascular Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "dor torácica típica desencadeada por esforço e aliviada por repouso com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome coronariana crônica aos esforços",
+        "opcoes": [
+          "Síndrome coronariana crônica aos esforços",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome coronariana crônica aos esforços; reprodutibilidade com esforço e alívio ao repouso favorecem isquemia estável.",
+        "diferenciaisDaSindrome": [
+          "Dor musculoesquelética",
+          "Síndrome coronariana aguda",
+          "Tromboembolismo pulmonar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Dor musculoesquelética",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Síndrome coronariana aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Tromboembolismo pulmonar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Angina estável",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Angina estável. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.538Z"
+  }
+}

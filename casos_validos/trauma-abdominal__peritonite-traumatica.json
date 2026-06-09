@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "trauma-abdominal__peritonite-traumatica",
+    "entidade": "Perfuração de víscera oca traumática",
+    "area": "Cirurgia",
+    "subtopico": "Trauma Abdominal",
+    "sindrome": "Síndrome peritoneal pós-trauma",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "fator de risco clínico compatível",
+      "contexto epidemiológico provável"
+    ],
+    "fault": "ruptura de alça com extravasamento entérico",
+    "consequences": [
+      "sintomas cardinais",
+      "risco de complicação se não reconhecido"
+    ],
+    "management": [
+      "confirmar diagnóstico sindrômico",
+      "avaliar gravidade",
+      "instituir conduta inicial adequada"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar confundíveis da mesma apresentação",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que aponte para confundível principal"
+    ],
+    "discriminators": [
+      {
+        "vs": "Contusão de parede",
+        "feature": "defesa involuntária e piora progressiva favorecem perfuração"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "ancorar no primeiro diagnóstico sem comparar diferenciais da síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "trauma-abdominal__peritonite-traumatica-typical",
+      "scriptId": "trauma-abdominal__peritonite-traumatica",
+      "presentation": "typical",
+      "vignette": "Homem com ferimento abdominal apresenta dor difusa, defesa involuntária e piora progressiva após período inicial estável.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "trauma abdominal com irritação peritoneal progressiva",
+        "sindromeCorreta": "Síndrome peritoneal pós-trauma",
+        "opcoes": [
+          "Síndrome peritoneal pós-trauma",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "Os achados centrais definem a síndrome e orientam os diferenciais mais próximos.",
+        "diferenciaisDaSindrome": [
+          "Contusão de parede",
+          "Lesão esplênica traumática",
+          "Apendicite aguda"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Contusão de parede",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Lesão esplênica traumática",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Apendicite aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar diagnóstico sindrômico",
+        "avaliar gravidade",
+        "instituir conduta inicial adequada"
+      ],
+      "diagnosticoFinal": "Perfuração de víscera oca traumática",
+      "justificativa": "Os achados centrais definem a síndrome e orientam os diferenciais mais próximos. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "trauma-abdominal__peritonite-traumatica-atypical",
+      "scriptId": "trauma-abdominal__peritonite-traumatica",
+      "presentation": "atypical",
+      "vignette": "Homem com ferimento abdominal apresenta dor difusa, defesa involuntária e piora progressiva após período inicial estável. Em apresentação menos clássica, os achados são discretos e o principal erro é ignorar o padrão sindrômico.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "trauma abdominal com irritação peritoneal progressiva com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome peritoneal pós-trauma",
+        "opcoes": [
+          "Síndrome peritoneal pós-trauma",
+          "Síndrome inespecífica",
+          "Quadro funcional isolado"
+        ],
+        "justificativa": "Mesmo com menor exuberância, o conjunto ainda pertence à mesma síndrome clínica.",
+        "diferenciaisDaSindrome": [
+          "Contusão de parede",
+          "diagnóstico alternativo da mesma síndrome",
+          "causa não orgânica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Contusão de parede",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "diagnóstico alternativo da mesma síndrome",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "causa não orgânica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar diagnóstico sindrômico",
+        "avaliar gravidade",
+        "instituir conduta inicial adequada"
+      ],
+      "diagnosticoFinal": "Perfuração de víscera oca traumática",
+      "justificativa": "Mesmo com menor exuberância, o conjunto ainda pertence à mesma síndrome clínica. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.256Z"
+  }
+}

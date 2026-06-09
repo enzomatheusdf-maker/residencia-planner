@@ -1,0 +1,170 @@
+{
+  "script": {
+    "id": "introducao-ao-trauma-e-atendimento-inicial__choque-hemorragico-trauma",
+    "entidade": "Choque hemorrágico no trauma",
+    "area": "Cirurgia",
+    "subtopico": "Introdução ao Trauma e Atendimento Inicial",
+    "sindrome": "Síndrome de choque no politrauma",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "trauma de alta energia",
+      "hemorragia externa ou interna",
+      "fratura pélvica"
+    ],
+    "fault": "Perda sanguínea aguda reduz pré-carga e perfusão tecidual, causando choque obstrutivo/hipovolêmico até prova em contrário no trauma.",
+    "consequences": [
+      "taquicardia",
+      "hipotensão tardia",
+      "pele fria",
+      "rebaixamento"
+    ],
+    "management": [
+      "ABCDE",
+      "controle de hemorragia",
+      "protocolo de transfusão maciça",
+      "cirurgia/embolização conforme foco"
+    ],
+    "redFlags": [
+      "hipotensão persistente",
+      "FAST positivo",
+      "sangramento compressível não controlado"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Priorizar controle de hemorragia no C",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Não atrasar tratamento por exames desnecessários",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem sinais predominantes de pneumotórax hipertensivo"
+    ],
+    "discriminators": [
+      {
+        "vs": "Choque neurogênico",
+        "feature": "taquicardia e pele fria favorecem hipovolemia hemorrágica"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "ancoragem",
+        "armadilha": "atribuir rebaixamento ao álcool e perder choque oculto"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "introducao-ao-trauma-e-atendimento-inicial__choque-hemorragico-trauma-typical",
+      "scriptId": "introducao-ao-trauma-e-atendimento-inicial__choque-hemorragico-trauma",
+      "presentation": "typical",
+      "vignette": "Homem de 29 anos vítima de colisão moto-carro chega pálido, sudoreico, confuso, FC 132 e PA 86/54. Há deformidade pélvica e escoriações abdominais.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "politrauma de alta energia com hipoperfusão e provável perda sanguínea",
+        "sindromeCorreta": "Síndrome de choque no politrauma",
+        "opcoes": [
+          "Síndrome de choque no politrauma",
+          "Síndrome neurológica focal aguda",
+          "Síndrome coronariana aguda"
+        ],
+        "justificativa": "Instabilidade após trauma até prova em contrário é hemorragia e exige controle imediato.",
+        "diferenciaisDaSindrome": [
+          "choque obstrutivo",
+          "choque neurogênico",
+          "intoxicação"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "choque obstrutivo",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "choque neurogênico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "intoxicação",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "ABCDE",
+        "controle de hemorragia",
+        "protocolo de transfusão maciça"
+      ],
+      "diagnosticoFinal": "Choque hemorrágico no trauma",
+      "justificativa": "Instabilidade após trauma até prova em contrário é hemorragia e exige controle imediato. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "introducao-ao-trauma-e-atendimento-inicial__choque-hemorragico-trauma-atypical",
+      "scriptId": "introducao-ao-trauma-e-atendimento-inicial__choque-hemorragico-trauma",
+      "presentation": "atypical",
+      "vignette": "Idosa atropelada chega lúcida, PA 104/70, FC 118, pele fria e dor em quadril. Após 20 minutos evolui com sonolência e enchimento capilar lento.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "trauma com sinais precoces de hipoperfusão apesar de pressão inicial aparentemente preservada",
+        "sindromeCorreta": "Síndrome de choque no politrauma",
+        "opcoes": [
+          "Síndrome de choque no politrauma",
+          "Síncope vasovagal",
+          "Crise ansiosa"
+        ],
+        "justificativa": "Taquicardia, pele fria e piora neurológica sugerem choque compensado.",
+        "diferenciaisDaSindrome": [
+          "fratura pélvica hemorrágica",
+          "trauma craniano",
+          "choque cardiogênico"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "fratura pélvica hemorrágica",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "trauma craniano",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "choque cardiogênico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "ABCDE",
+        "controle de hemorragia",
+        "protocolo de transfusão maciça"
+      ],
+      "diagnosticoFinal": "Choque hemorrágico no trauma",
+      "justificativa": "Taquicardia, pele fria e piora neurológica sugerem choque compensado. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.964Z"
+  }
+}

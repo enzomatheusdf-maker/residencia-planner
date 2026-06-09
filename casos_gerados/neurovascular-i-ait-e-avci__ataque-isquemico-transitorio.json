@@ -1,0 +1,169 @@
+{
+  "script": {
+    "id": "neurovascular-i-ait-e-avci__ataque-isquemico-transitorio",
+    "entidade": "Ataque isquêmico transitório",
+    "area": "Clínica Médica",
+    "subtopico": "Neurovascular I: AIT e AVCi",
+    "sindrome": "Síndrome neurológica focal transitória",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "fibrilação atrial",
+      "aterosclerose carotídea",
+      "hipertensão"
+    ],
+    "fault": "Isquemia cerebral focal reversível causa déficit neurológico súbito sem infarto estabelecido.",
+    "consequences": [
+      "alto risco precoce de AVC",
+      "déficit focal resolvido",
+      "necessidade de investigação urgente"
+    ],
+    "management": [
+      "avaliar imagem",
+      "estratificar risco",
+      "antiagregação/anticoagulação conforme causa",
+      "investigar carótidas e cardioembolia"
+    ],
+    "redFlags": [
+      "déficit persistente",
+      "afasia",
+      "amaurose fugaz recorrente"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Não tranquilizar pela resolução",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Investigar etiologia vascular rapidamente",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem crise convulsiva presenciada"
+    ],
+    "discriminators": [
+      {
+        "vs": "Enxaqueca com aura",
+        "feature": "déficit negativo súbito e fatores vasculares favorecem evento isquêmico"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "dispensar paciente porque os sintomas passaram"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "neurovascular-i-ait-e-avci__ataque-isquemico-transitorio-typical",
+      "scriptId": "neurovascular-i-ait-e-avci__ataque-isquemico-transitorio",
+      "presentation": "typical",
+      "vignette": "Homem de 71 anos teve fraqueza súbita em braço direito e fala enrolada por 20 minutos, resolvidas antes da chegada. Tem hipertensão e tabagismo.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "idoso com déficit focal súbito e transitório em território vascular",
+        "sindromeCorreta": "Síndrome neurológica focal transitória",
+        "opcoes": [
+          "Síndrome neurológica focal transitória",
+          "Síndrome vestibular periférica",
+          "Crise funcional"
+        ],
+        "justificativa": "Déficit focal negativo, súbito e reversível define evento vascular transitório até prova contrária.",
+        "diferenciaisDaSindrome": [
+          "AVC isquêmico",
+          "enxaqueca com aura",
+          "crise epiléptica focal"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "AVC isquêmico",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "enxaqueca com aura",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "crise epiléptica focal",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar imagem",
+        "estratificar risco",
+        "antiagregação/anticoagulação conforme causa"
+      ],
+      "diagnosticoFinal": "Ataque isquêmico transitório",
+      "justificativa": "Déficit focal negativo, súbito e reversível define evento vascular transitório até prova contrária. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "neurovascular-i-ait-e-avci__ataque-isquemico-transitorio-atypical",
+      "scriptId": "neurovascular-i-ait-e-avci__ataque-isquemico-transitorio",
+      "presentation": "atypical",
+      "vignette": "Mulher de 66 anos relata perda visual monocular esquerda por 8 minutos, como uma cortina descendo, com recuperação completa. Ausculta cervical sugere sopro.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "evento visual monocular transitório em paciente com risco aterosclerótico",
+        "sindromeCorreta": "Síndrome neurológica focal transitória",
+        "opcoes": [
+          "Síndrome neurológica focal transitória",
+          "Síndrome ocular alérgica",
+          "Cefaleia primária"
+        ],
+        "justificativa": "Amaurose fugaz é manifestação vascular focal transitória.",
+        "diferenciaisDaSindrome": [
+          "oclusão de artéria retiniana",
+          "neurite óptica",
+          "descolamento de retina"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "oclusão de artéria retiniana",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "neurite óptica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "descolamento de retina",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar imagem",
+        "estratificar risco",
+        "antiagregação/anticoagulação conforme causa"
+      ],
+      "diagnosticoFinal": "Ataque isquêmico transitório",
+      "justificativa": "Amaurose fugaz é manifestação vascular focal transitória. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.022Z"
+  }
+}

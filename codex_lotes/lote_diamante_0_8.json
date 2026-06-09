@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-06-06T22:17:49.640Z",
+  "mode": "codex_local",
+  "tier": "Diamante",
+  "offset": 0,
+  "limit": 8,
+  "totalTier": 110,
+  "remainingAfterBatch": 102,
+  "instructions": [
+    "Codex deve decompor cada tema em entidades clínicas atômicas quando aplicável.",
+    "Temas não clínicos devem entrar em temas_nao_clinicos.json, não em casos clínicos.",
+    "Para cada entidade clínica, Codex deve criar um arquivo JSON em casos_gerados/ com determinaçãoSindromica.",
+    "Todo caso é rascunho para revisão humana antes de publicação."
+  ],
+  "expectedOutputs": {
+    "entidades": "entidades.json",
+    "temasNaoClinicos": "temas_nao_clinicos.json",
+    "casosGeradosDir": "casos_gerados/",
+    "filaRevisar": "fila_revisar.json"
+  },
+  "temas": [
+    {
+      "id": "abdome-agudo-obstrutivo",
+      "nome": "Abdome Agudo Obstrutivo",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 9
+    },
+    {
+      "id": "abortamento",
+      "nome": "Abortamento",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 8
+    },
+    {
+      "id": "acidente-de-trabalho",
+      "nome": "Acidente de Trabalho",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 19
+    },
+    {
+      "id": "aleitamento-materno",
+      "nome": "Aleitamento Materno",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 1
+    },
+    {
+      "id": "alergia-alimentar-refluxo-e-constipacao",
+      "nome": "Alergia Alimentar, Refluxo e Constipação",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 3
+    },
+    {
+      "id": "amenorreia-primaria",
+      "nome": "Amenorreia Primária",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 5
+    },
+    {
+      "id": "amenorreia-secundaria",
+      "nome": "Amenorreia Secundária",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 6
+    },
+    {
+      "id": "anatomia-pelvica-feminina",
+      "nome": "Anatomia Pélvica Feminina",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 2
+    }
+  ]
+}

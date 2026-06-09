@@ -1,0 +1,169 @@
+{
+  "script": {
+    "id": "anemias-hipoproliferativas-i__anemia-ferropriva",
+    "entidade": "Anemia ferropriva",
+    "area": "Clínica Médica",
+    "subtopico": "Anemias Hipoproliferativas I",
+    "sindrome": "Síndrome anêmica microcítica",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "menstruação volumosa",
+      "baixa ingestão de ferro",
+      "perda crônica de sangue"
+    ],
+    "fault": "Deficiência de ferro reduz síntese de hemoglobina e produz anemia microcítica hipocrômica.",
+    "consequences": [
+      "fadiga",
+      "palidez",
+      "pica",
+      "unhas frágeis"
+    ],
+    "management": [
+      "confirmar ferritina baixa",
+      "repor ferro oral quando possível",
+      "investigar fonte de perda"
+    ],
+    "redFlags": [
+      "sangramento digestivo",
+      "instabilidade hemodinâmica",
+      "perda ponderal"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Diferenciar deficiência de ferro de talassemia/ doença crônica",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Pesquisar causa de perda crônica",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem icterícia ou reticulocitose importante"
+    ],
+    "discriminators": [
+      {
+        "vs": "Talassemia menor",
+        "feature": "ferritina baixa e RDW elevado favorecem deficiência de ferro"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "tratar com ferro sem buscar sangramento crônico em adulto"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "anemias-hipoproliferativas-i__anemia-ferropriva-typical",
+      "scriptId": "anemias-hipoproliferativas-i__anemia-ferropriva",
+      "presentation": "typical",
+      "vignette": "Mulher de 32 anos relata fadiga progressiva, queda de cabelo e desejo de mastigar gelo. Refere fluxos menstruais intensos há um ano. Hemograma mostra Hb 9,6 g/dL, VCM 68 fL e RDW elevado.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "mulher jovem com fadiga crônica, perdas menstruais intensas e anemia microcítica",
+        "sindromeCorreta": "Síndrome anêmica microcítica",
+        "opcoes": [
+          "Síndrome anêmica microcítica",
+          "Síndrome hemolítica",
+          "Pancitopenia medular"
+        ],
+        "justificativa": "Microcitose com história de perda crônica orienta deficiência de ferro.",
+        "diferenciaisDaSindrome": [
+          "talassemia menor",
+          "anemia da doença crônica",
+          "sideroblástica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "talassemia menor",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "anemia da doença crônica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "sideroblástica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar ferritina baixa",
+        "repor ferro oral quando possível",
+        "investigar fonte de perda"
+      ],
+      "diagnosticoFinal": "Anemia ferropriva",
+      "justificativa": "Microcitose com história de perda crônica orienta deficiência de ferro. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "anemias-hipoproliferativas-i__anemia-ferropriva-atypical",
+      "scriptId": "anemias-hipoproliferativas-i__anemia-ferropriva",
+      "presentation": "atypical",
+      "vignette": "Homem de 68 anos procura atendimento por dispneia aos esforços e tontura. Nega melena, mas relata uso frequente de anti-inflamatório. Hb 8,8 g/dL, VCM 70 fL e ferritina muito baixa.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "idoso com sintomas anêmicos e microcitose por provável perda oculta",
+        "sindromeCorreta": "Síndrome anêmica microcítica",
+        "opcoes": [
+          "Síndrome anêmica microcítica",
+          "Síndrome dispéptica funcional",
+          "Síndrome consumptiva isolada"
+        ],
+        "justificativa": "Microcitose e ferritina baixa exigem investigação de perda gastrointestinal.",
+        "diferenciaisDaSindrome": [
+          "câncer colorretal",
+          "úlcera péptica",
+          "anemia da inflamação"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "câncer colorretal",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "úlcera péptica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "anemia da inflamação",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar ferritina baixa",
+        "repor ferro oral quando possível",
+        "investigar fonte de perda"
+      ],
+      "diagnosticoFinal": "Anemia ferropriva",
+      "justificativa": "Microcitose e ferritina baixa exigem investigação de perda gastrointestinal. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.413Z"
+  }
+}

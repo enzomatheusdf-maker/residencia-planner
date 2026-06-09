@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "meningite-e-encefalite-em-pediatria__encefalite-herpetica",
+    "entidade": "Encefalite herpética",
+    "area": "Pediatria",
+    "subtopico": "Meningite e Encefalite em Pediatria",
+    "sindrome": "Síndrome encefalítica febril focal",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Meningite viral",
+        "feature": "alteração comportamental e sinais focais favorecem acometimento encefálico"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "meningite-e-encefalite-em-pediatria__encefalite-herpetica-typical",
+      "scriptId": "meningite-e-encefalite-em-pediatria__encefalite-herpetica",
+      "presentation": "typical",
+      "vignette": "criança com febre, alteração de comportamento, crise focal e rebaixamento do nível de consciência",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "febre com disfunção cerebral focal e crise epiléptica",
+        "sindromeCorreta": "Síndrome encefalítica febril focal",
+        "opcoes": [
+          "Síndrome encefalítica febril focal",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome encefalítica febril focal; alteração comportamental e sinais focais favorecem acometimento encefálico.",
+        "diferenciaisDaSindrome": [
+          "Meningite viral",
+          "Meningite bacteriana",
+          "AVC isquêmico"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Meningite viral",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Meningite bacteriana",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "AVC isquêmico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Encefalite herpética",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Encefalite herpética. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "meningite-e-encefalite-em-pediatria__encefalite-herpetica-atypical",
+      "scriptId": "meningite-e-encefalite-em-pediatria__encefalite-herpetica",
+      "presentation": "atypical",
+      "vignette": "criança com febre, alteração de comportamento, crise focal e rebaixamento do nível de consciência Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "febre com disfunção cerebral focal e crise epiléptica com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome encefalítica febril focal",
+        "opcoes": [
+          "Síndrome encefalítica febril focal",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome encefalítica febril focal; alteração comportamental e sinais focais favorecem acometimento encefálico.",
+        "diferenciaisDaSindrome": [
+          "Meningite viral",
+          "Meningite bacteriana",
+          "AVC isquêmico"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Meningite viral",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Meningite bacteriana",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "AVC isquêmico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Encefalite herpética",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Encefalite herpética. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.005Z"
+  }
+}

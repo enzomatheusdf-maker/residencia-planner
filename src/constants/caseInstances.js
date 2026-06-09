@@ -1,7 +1,9 @@
 // src/constants/caseInstances.js
 // Banco de Case Instances (vinhetas/instâncias clínicas) de raciocínio clínico.
 
-export const caseInstances = [
+import { generatedCaseInstances } from "./generatedClinicalCases";
+
+const baseCaseInstances = [
   {
     id: "apendicite-classica",
     scriptId: "apendicite-classica",
@@ -121,3 +123,5 @@ export const caseInstances = [
     ]
   }
 ];
+
+export const caseInstances = [...baseCaseInstances, ...generatedCaseInstances];

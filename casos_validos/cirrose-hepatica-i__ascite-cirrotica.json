@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "cirrose-hepatica-i__ascite-cirrotica",
+    "entidade": "Ascite cirrótica",
+    "area": "Clínica Médica",
+    "subtopico": "Cirrose Hepática I",
+    "sindrome": "Síndrome ascítica por hipertensão portal",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "fator de risco ou faixa etária típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Ascite neoplásica",
+        "feature": "estigmas hepáticos e hipertensão portal favorecem causa cirrótica"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "cirrose-hepatica-i__ascite-cirrotica-typical",
+      "scriptId": "cirrose-hepatica-i__ascite-cirrotica",
+      "presentation": "typical",
+      "vignette": "homem com doença hepática crônica, aumento abdominal progressivo, macicez móvel e edema de membros inferiores",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "paciente hepatopata com acúmulo líquido abdominal e sinais de hipertensão portal",
+        "sindromeCorreta": "Síndrome ascítica por hipertensão portal",
+        "opcoes": [
+          "Síndrome ascítica por hipertensão portal",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome ascítica por hipertensão portal; estigmas hepáticos e hipertensão portal favorecem causa cirrótica.",
+        "diferenciaisDaSindrome": [
+          "Ascite neoplásica",
+          "Peritonite bacteriana espontânea",
+          "Colecistite aguda"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Ascite neoplásica",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Peritonite bacteriana espontânea",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Colecistite aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Ascite cirrótica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Ascite cirrótica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "cirrose-hepatica-i__ascite-cirrotica-atypical",
+      "scriptId": "cirrose-hepatica-i__ascite-cirrotica",
+      "presentation": "atypical",
+      "vignette": "homem com doença hepática crônica, aumento abdominal progressivo, macicez móvel e edema de membros inferiores Na apresentação menos clássica, a intensidade dos achados é menor, mas o padrão sindrômico permanece reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "paciente hepatopata com acúmulo líquido abdominal e sinais de hipertensão portal com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome ascítica por hipertensão portal",
+        "opcoes": [
+          "Síndrome ascítica por hipertensão portal",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome ascítica por hipertensão portal; estigmas hepáticos e hipertensão portal favorecem causa cirrótica.",
+        "diferenciaisDaSindrome": [
+          "Ascite neoplásica",
+          "Peritonite bacteriana espontânea",
+          "Colecistite aguda"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Ascite neoplásica",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Peritonite bacteriana espontânea",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Colecistite aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Ascite cirrótica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Ascite cirrótica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.574Z"
+  }
+}

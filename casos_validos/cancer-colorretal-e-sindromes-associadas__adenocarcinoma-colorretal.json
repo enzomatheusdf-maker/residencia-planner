@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "cancer-colorretal-e-sindromes-associadas__adenocarcinoma-colorretal",
+    "entidade": "Adenocarcinoma colorretal",
+    "area": "Cirurgia",
+    "subtopico": "Câncer Colorretal e Síndromes Associadas",
+    "sindrome": "Síndrome neoplásica colorretal",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Síndrome do intestino irritável",
+        "feature": "anemia e perda ponderal afastam quadro funcional"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "cancer-colorretal-e-sindromes-associadas__adenocarcinoma-colorretal-typical",
+      "scriptId": "cancer-colorretal-e-sindromes-associadas__adenocarcinoma-colorretal",
+      "presentation": "typical",
+      "vignette": "idoso com alteração recente do hábito intestinal, sangue oculto positivo, anemia ferropriva e perda ponderal",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sintomas intestinais novos com anemia e sinais de alarme",
+        "sindromeCorreta": "Síndrome neoplásica colorretal",
+        "opcoes": [
+          "Síndrome neoplásica colorretal",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome neoplásica colorretal; anemia e perda ponderal afastam quadro funcional.",
+        "diferenciaisDaSindrome": [
+          "Síndrome do intestino irritável",
+          "Adenocarcinoma gástrico",
+          "Carcinoma hepatocelular"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Síndrome do intestino irritável",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Adenocarcinoma gástrico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Carcinoma hepatocelular",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Adenocarcinoma colorretal",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Adenocarcinoma colorretal. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "cancer-colorretal-e-sindromes-associadas__adenocarcinoma-colorretal-atypical",
+      "scriptId": "cancer-colorretal-e-sindromes-associadas__adenocarcinoma-colorretal",
+      "presentation": "atypical",
+      "vignette": "idoso com alteração recente do hábito intestinal, sangue oculto positivo, anemia ferropriva e perda ponderal Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sintomas intestinais novos com anemia e sinais de alarme com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome neoplásica colorretal",
+        "opcoes": [
+          "Síndrome neoplásica colorretal",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome neoplásica colorretal; anemia e perda ponderal afastam quadro funcional.",
+        "diferenciaisDaSindrome": [
+          "Síndrome do intestino irritável",
+          "Adenocarcinoma gástrico",
+          "Carcinoma hepatocelular"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Síndrome do intestino irritável",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Adenocarcinoma gástrico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Carcinoma hepatocelular",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Adenocarcinoma colorretal",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Adenocarcinoma colorretal. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.521Z"
+  }
+}

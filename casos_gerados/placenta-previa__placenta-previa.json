@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "placenta-previa__placenta-previa",
+    "entidade": "Placenta prévia",
+    "area": "GO",
+    "subtopico": "Placenta Prévia",
+    "sindrome": "Síndrome hemorrágica indolor da segunda metade da gestação",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Descolamento prematuro de placenta",
+        "feature": "ausência de dor e hipertonia favorece inserção placentária baixa"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "placenta-previa__placenta-previa-typical",
+      "scriptId": "placenta-previa__placenta-previa",
+      "presentation": "typical",
+      "vignette": "gestante no terceiro trimestre apresenta sangramento vermelho vivo indolor, útero normotônico e vitalidade fetal preservada",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sangramento tardio indolor sem hipertonia uterina",
+        "sindromeCorreta": "Síndrome hemorrágica indolor da segunda metade da gestação",
+        "opcoes": [
+          "Síndrome hemorrágica indolor da segunda metade da gestação",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome hemorrágica indolor da segunda metade da gestação; ausência de dor e hipertonia favorece inserção placentária baixa.",
+        "diferenciaisDaSindrome": [
+          "Descolamento prematuro de placenta",
+          "Gestação ectópica tubária",
+          "Ameaça de abortamento"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Descolamento prematuro de placenta",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gestação ectópica tubária",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Ameaça de abortamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Placenta prévia",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Placenta prévia. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "placenta-previa__placenta-previa-atypical",
+      "scriptId": "placenta-previa__placenta-previa",
+      "presentation": "atypical",
+      "vignette": "gestante no terceiro trimestre apresenta sangramento vermelho vivo indolor, útero normotônico e vitalidade fetal preservada Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sangramento tardio indolor sem hipertonia uterina com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome hemorrágica indolor da segunda metade da gestação",
+        "opcoes": [
+          "Síndrome hemorrágica indolor da segunda metade da gestação",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome hemorrágica indolor da segunda metade da gestação; ausência de dor e hipertonia favorece inserção placentária baixa.",
+        "diferenciaisDaSindrome": [
+          "Descolamento prematuro de placenta",
+          "Gestação ectópica tubária",
+          "Ameaça de abortamento"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Descolamento prematuro de placenta",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gestação ectópica tubária",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Ameaça de abortamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Placenta prévia",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Placenta prévia. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.138Z"
+  }
+}

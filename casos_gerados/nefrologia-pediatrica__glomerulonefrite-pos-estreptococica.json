@@ -1,0 +1,169 @@
+{
+  "script": {
+    "id": "nefrologia-pediatrica__glomerulonefrite-pos-estreptococica",
+    "entidade": "Glomerulonefrite pós-estreptocócica",
+    "area": "Pediatria",
+    "subtopico": "Nefrologia Pediátrica",
+    "sindrome": "Síndrome nefrítica aguda",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "faringite ou impetigo recente",
+      "idade escolar",
+      "baixo complemento"
+    ],
+    "fault": "Resposta imune pós-infecciosa causa inflamação glomerular com hematúria, retenção de sal e queda de filtração.",
+    "consequences": [
+      "urina escura",
+      "edema",
+      "hipertensão",
+      "oligúria"
+    ],
+    "management": [
+      "controle pressórico e hídrico",
+      "avaliar função renal/complemento",
+      "tratar foco estreptocócico se presente"
+    ],
+    "redFlags": [
+      "encefalopatia hipertensiva",
+      "hipercalemia",
+      "edema pulmonar"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Reconhecer tríade nefrítica",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Monitorar complicações de hipertensão/oligúria",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem proteinúria maciça isolada como manifestação principal"
+    ],
+    "discriminators": [
+      {
+        "vs": "Síndrome nefrótica",
+        "feature": "hematúria escura e hipertensão favorecem síndrome nefrítica"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "atribuir urina escura a desidratação sem medir PA e urina tipo 1"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "nefrologia-pediatrica__glomerulonefrite-pos-estreptococica-typical",
+      "scriptId": "nefrologia-pediatrica__glomerulonefrite-pos-estreptococica",
+      "presentation": "typical",
+      "vignette": "Menino de 8 anos apresenta edema palpebral, urina cor de coca-cola e cefaleia. Teve impetigo há três semanas. PA 138/92.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "escolar com hematúria macroscópica, edema e hipertensão após infecção cutânea",
+        "sindromeCorreta": "Síndrome nefrítica aguda",
+        "opcoes": [
+          "Síndrome nefrítica aguda",
+          "Síndrome edematosa com proteinúria",
+          "Infecção urinária baixa"
+        ],
+        "justificativa": "Hematúria escura, edema e hipertensão configuram síndrome nefrítica.",
+        "diferenciaisDaSindrome": [
+          "nefropatia por IgA",
+          "lúpus",
+          "síndrome nefrótica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "nefropatia por IgA",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "lúpus",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "síndrome nefrótica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "controle pressórico e hídrico",
+        "avaliar função renal/complemento",
+        "tratar foco estreptocócico se presente"
+      ],
+      "diagnosticoFinal": "Glomerulonefrite pós-estreptocócica",
+      "justificativa": "Hematúria escura, edema e hipertensão configuram síndrome nefrítica. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "nefrologia-pediatrica__glomerulonefrite-pos-estreptococica-atypical",
+      "scriptId": "nefrologia-pediatrica__glomerulonefrite-pos-estreptococica",
+      "presentation": "atypical",
+      "vignette": "Criança de 6 anos chega por vômitos e sonolência. A mãe notou urina escura e redução do volume urinário. PA muito elevada para a idade.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "criança com oligúria, hematúria e sinais neurológicos por hipertensão",
+        "sindromeCorreta": "Síndrome nefrítica aguda",
+        "opcoes": [
+          "Síndrome nefrítica aguda",
+          "Meningoencefalite",
+          "Gastroenterite com desidratação"
+        ],
+        "justificativa": "Urina escura, oligúria e hipertensão apontam para glomerulonefrite com gravidade.",
+        "diferenciaisDaSindrome": [
+          "síndrome hemolítico-urêmica",
+          "glomerulonefrite rapidamente progressiva",
+          "pielonefrite"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "síndrome hemolítico-urêmica",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "glomerulonefrite rapidamente progressiva",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "pielonefrite",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "controle pressórico e hídrico",
+        "avaliar função renal/complemento",
+        "tratar foco estreptocócico se presente"
+      ],
+      "diagnosticoFinal": "Glomerulonefrite pós-estreptocócica",
+      "justificativa": "Urina escura, oligúria e hipertensão apontam para glomerulonefrite com gravidade. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.014Z"
+  }
+}

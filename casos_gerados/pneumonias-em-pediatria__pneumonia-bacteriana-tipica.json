@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "pneumonias-em-pediatria__pneumonia-bacteriana-tipica",
+    "entidade": "Pneumonia bacteriana típica",
+    "area": "Pediatria",
+    "subtopico": "Pneumonias em Pediatria",
+    "sindrome": "Síndrome de consolidação pulmonar febril",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "fator de risco ou faixa etária típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Bronquiolite viral",
+        "feature": "focalidade auscultatória e febre alta favorecem consolidação bacteriana"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "pneumonias-em-pediatria__pneumonia-bacteriana-tipica-typical",
+      "scriptId": "pneumonias-em-pediatria__pneumonia-bacteriana-tipica",
+      "presentation": "typical",
+      "vignette": "criança de 5 anos com febre alta, tosse, taquipneia, tiragem leve e crepitações localizadas",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "criança febril com sinais respiratórios focais e desconforto",
+        "sindromeCorreta": "Síndrome de consolidação pulmonar febril",
+        "opcoes": [
+          "Síndrome de consolidação pulmonar febril",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de consolidação pulmonar febril; focalidade auscultatória e febre alta favorecem consolidação bacteriana.",
+        "diferenciaisDaSindrome": [
+          "Bronquiolite viral",
+          "Pneumonia atípica",
+          "Pneumonia adquirida na comunidade"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Bronquiolite viral",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Pneumonia atípica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Pneumonia adquirida na comunidade",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Pneumonia bacteriana típica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Pneumonia bacteriana típica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "pneumonias-em-pediatria__pneumonia-bacteriana-tipica-atypical",
+      "scriptId": "pneumonias-em-pediatria__pneumonia-bacteriana-tipica",
+      "presentation": "atypical",
+      "vignette": "criança de 5 anos com febre alta, tosse, taquipneia, tiragem leve e crepitações localizadas Na apresentação menos clássica, a intensidade dos achados é menor, mas o padrão sindrômico permanece reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "criança febril com sinais respiratórios focais e desconforto com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de consolidação pulmonar febril",
+        "opcoes": [
+          "Síndrome de consolidação pulmonar febril",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de consolidação pulmonar febril; focalidade auscultatória e febre alta favorecem consolidação bacteriana.",
+        "diferenciaisDaSindrome": [
+          "Bronquiolite viral",
+          "Pneumonia atípica",
+          "Pneumonia adquirida na comunidade"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Bronquiolite viral",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Pneumonia atípica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Pneumonia adquirida na comunidade",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Pneumonia bacteriana típica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Pneumonia bacteriana típica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.146Z"
+  }
+}

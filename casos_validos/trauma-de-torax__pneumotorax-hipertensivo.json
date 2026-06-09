@@ -1,0 +1,168 @@
+{
+  "script": {
+    "id": "trauma-de-torax__pneumotorax-hipertensivo",
+    "entidade": "Pneumotórax hipertensivo traumático",
+    "area": "Cirurgia",
+    "subtopico": "Trauma de Tórax",
+    "sindrome": "Síndrome de choque obstrutivo no trauma torácico",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "trauma penetrante",
+      "ventilação com pressão positiva",
+      "fratura costal"
+    ],
+    "fault": "Entrada de ar sob pressão no espaço pleural colapsa pulmão e reduz retorno venoso.",
+    "consequences": [
+      "dispneia",
+      "hipotensão",
+      "turgência jugular",
+      "murmúrio abolido"
+    ],
+    "management": [
+      "descompressão imediata",
+      "dreno torácico",
+      "ABCDE"
+    ],
+    "redFlags": [
+      "instabilidade hemodinâmica",
+      "hipóxia refratária"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Diagnóstico clínico em instável",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Descompressão antes de imagem",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem macicez à percussão que sugira hemotórax maciço"
+    ],
+    "discriminators": [
+      {
+        "vs": "Hemotórax maciço",
+        "feature": "hipertimpanismo e murmúrio abolido favorecem pneumotórax"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "aguardar radiografia em paciente instável"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "trauma-de-torax__pneumotorax-hipertensivo-typical",
+      "scriptId": "trauma-de-torax__pneumotorax-hipertensivo",
+      "presentation": "typical",
+      "vignette": "Homem esfaqueado no hemitórax direito chega agitado, dispneico, PA 78/50, SatO2 84%, com murmúrio abolido e turgência jugular.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "trauma torácico penetrante com hipóxia e choque obstrutivo",
+        "sindromeCorreta": "Síndrome de choque obstrutivo no trauma torácico",
+        "opcoes": [
+          "Síndrome de choque obstrutivo no trauma torácico",
+          "Síndrome hemorrágica abdominal",
+          "Síndrome coronariana aguda"
+        ],
+        "justificativa": "Instabilidade, hipoxemia e achados unilaterais torácicos indicam descompressão imediata.",
+        "diferenciaisDaSindrome": [
+          "hemotórax maciço",
+          "tamponamento cardíaco",
+          "contusão pulmonar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "hemotórax maciço",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "tamponamento cardíaco",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "contusão pulmonar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "descompressão imediata",
+        "dreno torácico",
+        "ABCDE"
+      ],
+      "diagnosticoFinal": "Pneumotórax hipertensivo traumático",
+      "justificativa": "Instabilidade, hipoxemia e achados unilaterais torácicos indicam descompressão imediata. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "trauma-de-torax__pneumotorax-hipertensivo-atypical",
+      "scriptId": "trauma-de-torax__pneumotorax-hipertensivo",
+      "presentation": "atypical",
+      "vignette": "Paciente intubado após colisão evolui subitamente com queda de saturação, aumento de pressão no ventilador e hipotensão. Um lado do tórax expande menos.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "trauma ventilado com deterioração respiratória e hemodinâmica abrupta",
+        "sindromeCorreta": "Síndrome de choque obstrutivo no trauma torácico",
+        "opcoes": [
+          "Síndrome de choque obstrutivo no trauma torácico",
+          "Broncoaspiração isolada",
+          "Edema agudo pulmonar"
+        ],
+        "justificativa": "Piora súbita em ventilação positiva após trauma sugere ar sob tensão.",
+        "diferenciaisDaSindrome": [
+          "intubação seletiva",
+          "tamponamento",
+          "embolia aérea"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "intubação seletiva",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "tamponamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "embolia aérea",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "descompressão imediata",
+        "dreno torácico",
+        "ABCDE"
+      ],
+      "diagnosticoFinal": "Pneumotórax hipertensivo traumático",
+      "justificativa": "Piora súbita em ventilação positiva após trauma sugere ar sob tensão. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.283Z"
+  }
+}

@@ -1,0 +1,24 @@
+Você é um professor de medicina (residência brasileira / ENAMED). Recebe UM tema do currículo e deve
+DECOMPÔ-LO em entidades clínicas ATÔMICAS (uma doença/condição diagnosticável por entidade) e identificar
+a SÍNDROME clínica guarda-chuva. Devolva APENAS JSON, sem texto fora dele.
+
+REGRAS:
+- Se o tema empacota várias entidades (ex.: "AIT e AVCi", "CAD e EHH", "Gota e CPPD", "Arboviroses",
+  "Doenças Exantemáticas", "Taquiarritmias", "Úlceras Genitais"), liste cada entidade separadamente.
+- Se o tema já é atômico (ex.: "Apendicite Aguda"), devolva 1 entidade.
+- Para temas sindrômicos amplos (ex.: "Taquiarritmias", "Glomerulopatias", "Vasculites"), liste as
+  entidades de MAIOR rendimento ENAMED, no MÁXIMO 6.
+- Se o tema NÃO for clínico/diagnosticável (ex.: legislação do SUS, metodologia científica, epidemiologia,
+  ética, indicadores, financiamento, SUS/APS administrativo), devolva tipoTema:"nao_clinico" e entidades:[].
+- "sindrome" = a síndrome clínica que agrupa a apresentação típica (ex.: "Síndrome coronariana aguda",
+  "Abdome agudo inflamatório", "Síndrome ictérica febril", "Síndrome consumptiva", "Artrite aguda monoarticular").
+
+ESQUEMA (preencha e devolva só isto):
+{
+  "temaId": "<id recebido>",
+  "tipoTema": "clinico" | "nao_clinico",
+  "motivoNaoClinico": "<curto, se nao_clinico>",
+  "entidades": [
+    { "id": "<slug-da-entidade>", "nome": "<nome da doença/condição>", "sindrome": "<síndrome guarda-chuva>", "incidencia": "alta|media|baixa" }
+  ]
+}

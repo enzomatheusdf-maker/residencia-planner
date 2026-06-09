@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "amenorreia-primaria__agenesia-mulleriana",
+    "entidade": "Agenesia mülleriana",
+    "area": "GO",
+    "subtopico": "Amenorreia Primária",
+    "sindrome": "Síndrome de amenorreia primária com caracteres sexuais presentes",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "fator de risco clínico compatível",
+      "contexto epidemiológico provável"
+    ],
+    "fault": "ausência congênita de útero e parte superior da vagina",
+    "consequences": [
+      "sintomas cardinais",
+      "risco de complicação se não reconhecido"
+    ],
+    "management": [
+      "confirmar diagnóstico sindrômico",
+      "avaliar gravidade",
+      "instituir conduta inicial adequada"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar confundíveis da mesma apresentação",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que aponte para confundível principal"
+    ],
+    "discriminators": [
+      {
+        "vs": "Síndrome de Turner",
+        "feature": "mamas desenvolvidas e ovários funcionantes favorecem agenesia mülleriana"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "ancorar no primeiro diagnóstico sem comparar diferenciais da síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "amenorreia-primaria__agenesia-mulleriana-typical",
+      "scriptId": "amenorreia-primaria__agenesia-mulleriana",
+      "presentation": "typical",
+      "vignette": "Adolescente de 16 anos nunca menstruou, tem desenvolvimento mamário normal e dor cíclica ausente; ultrassom não identifica útero.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "amenorreia primária com puberdade normal e ausência uterina",
+        "sindromeCorreta": "Síndrome de amenorreia primária com caracteres sexuais presentes",
+        "opcoes": [
+          "Síndrome de amenorreia primária com caracteres sexuais presentes",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "Os achados centrais definem a síndrome e orientam os diferenciais mais próximos.",
+        "diferenciaisDaSindrome": [
+          "Síndrome de Turner",
+          "Gestação ectópica tubária",
+          "Ameaça de abortamento"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Síndrome de Turner",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gestação ectópica tubária",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Ameaça de abortamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar diagnóstico sindrômico",
+        "avaliar gravidade",
+        "instituir conduta inicial adequada"
+      ],
+      "diagnosticoFinal": "Agenesia mülleriana",
+      "justificativa": "Os achados centrais definem a síndrome e orientam os diferenciais mais próximos. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "amenorreia-primaria__agenesia-mulleriana-atypical",
+      "scriptId": "amenorreia-primaria__agenesia-mulleriana",
+      "presentation": "atypical",
+      "vignette": "Adolescente de 16 anos nunca menstruou, tem desenvolvimento mamário normal e dor cíclica ausente; ultrassom não identifica útero. Em apresentação menos clássica, os achados são discretos e o principal erro é ignorar o padrão sindrômico.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "amenorreia primária com puberdade normal e ausência uterina com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de amenorreia primária com caracteres sexuais presentes",
+        "opcoes": [
+          "Síndrome de amenorreia primária com caracteres sexuais presentes",
+          "Síndrome inespecífica",
+          "Quadro funcional isolado"
+        ],
+        "justificativa": "Mesmo com menor exuberância, o conjunto ainda pertence à mesma síndrome clínica.",
+        "diferenciaisDaSindrome": [
+          "Síndrome de Turner",
+          "diagnóstico alternativo da mesma síndrome",
+          "causa não orgânica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Síndrome de Turner",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "diagnóstico alternativo da mesma síndrome",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "causa não orgânica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar diagnóstico sindrômico",
+        "avaliar gravidade",
+        "instituir conduta inicial adequada"
+      ],
+      "diagnosticoFinal": "Agenesia mülleriana",
+      "justificativa": "Mesmo com menor exuberância, o conjunto ainda pertence à mesma síndrome clínica. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.373Z"
+  }
+}

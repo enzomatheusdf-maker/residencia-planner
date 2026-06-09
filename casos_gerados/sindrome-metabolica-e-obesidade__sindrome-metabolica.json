@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "sindrome-metabolica-e-obesidade__sindrome-metabolica",
+    "entidade": "Síndrome metabólica",
+    "area": "Clínica Médica",
+    "subtopico": "Síndrome Metabólica e Obesidade",
+    "sindrome": "Síndrome cardiometabólica de resistência insulínica",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Obesidade isolada",
+        "feature": "associação de dislipidemia, pressão e glicemia define risco sindrômico"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "sindrome-metabolica-e-obesidade__sindrome-metabolica-typical",
+      "scriptId": "sindrome-metabolica-e-obesidade__sindrome-metabolica",
+      "presentation": "typical",
+      "vignette": "adulto com obesidade central, pressão elevada, triglicérides altos, HDL baixo e glicemia alterada",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "agrupamento de fatores de risco cardiometabólico",
+        "sindromeCorreta": "Síndrome cardiometabólica de resistência insulínica",
+        "opcoes": [
+          "Síndrome cardiometabólica de resistência insulínica",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome cardiometabólica de resistência insulínica; associação de dislipidemia, pressão e glicemia define risco sindrômico.",
+        "diferenciaisDaSindrome": [
+          "Obesidade isolada",
+          "Síndrome coronariana aguda",
+          "Tromboembolismo pulmonar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Obesidade isolada",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Síndrome coronariana aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Tromboembolismo pulmonar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Síndrome metabólica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Síndrome metabólica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "sindrome-metabolica-e-obesidade__sindrome-metabolica-atypical",
+      "scriptId": "sindrome-metabolica-e-obesidade__sindrome-metabolica",
+      "presentation": "atypical",
+      "vignette": "adulto com obesidade central, pressão elevada, triglicérides altos, HDL baixo e glicemia alterada Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "agrupamento de fatores de risco cardiometabólico com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome cardiometabólica de resistência insulínica",
+        "opcoes": [
+          "Síndrome cardiometabólica de resistência insulínica",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome cardiometabólica de resistência insulínica; associação de dislipidemia, pressão e glicemia define risco sindrômico.",
+        "diferenciaisDaSindrome": [
+          "Obesidade isolada",
+          "Síndrome coronariana aguda",
+          "Tromboembolismo pulmonar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Obesidade isolada",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Síndrome coronariana aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Tromboembolismo pulmonar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Síndrome metabólica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Síndrome metabólica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.226Z"
+  }
+}

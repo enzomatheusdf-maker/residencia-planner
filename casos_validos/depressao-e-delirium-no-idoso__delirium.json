@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "depressao-e-delirium-no-idoso__delirium",
+    "entidade": "Delirium",
+    "area": "Clínica Médica",
+    "subtopico": "Depressão e Delirium no Idoso",
+    "sindrome": "Síndrome confusional aguda",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Demência",
+        "feature": "início abrupto e flutuação favorecem síndrome confusional"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "depressao-e-delirium-no-idoso__delirium-typical",
+      "scriptId": "depressao-e-delirium-no-idoso__delirium",
+      "presentation": "typical",
+      "vignette": "idoso internado apresenta início súbito de desatenção, flutuação ao longo do dia, inversão sono-vigília e alucinações visuais",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "alteração aguda e flutuante de atenção em paciente vulnerável",
+        "sindromeCorreta": "Síndrome confusional aguda",
+        "opcoes": [
+          "Síndrome confusional aguda",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome confusional aguda; início abrupto e flutuação favorecem síndrome confusional.",
+        "diferenciaisDaSindrome": [
+          "Demência",
+          "AVC isquêmico",
+          "Hemorragia intraparenquimatosa hipertensiva"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Demência",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "AVC isquêmico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Hemorragia intraparenquimatosa hipertensiva",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Delirium",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Delirium. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "depressao-e-delirium-no-idoso__delirium-atypical",
+      "scriptId": "depressao-e-delirium-no-idoso__delirium",
+      "presentation": "atypical",
+      "vignette": "idoso internado apresenta início súbito de desatenção, flutuação ao longo do dia, inversão sono-vigília e alucinações visuais Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "alteração aguda e flutuante de atenção em paciente vulnerável com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome confusional aguda",
+        "opcoes": [
+          "Síndrome confusional aguda",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome confusional aguda; início abrupto e flutuação favorecem síndrome confusional.",
+        "diferenciaisDaSindrome": [
+          "Demência",
+          "AVC isquêmico",
+          "Hemorragia intraparenquimatosa hipertensiva"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Demência",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "AVC isquêmico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Hemorragia intraparenquimatosa hipertensiva",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Delirium",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Delirium. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.615Z"
+  }
+}

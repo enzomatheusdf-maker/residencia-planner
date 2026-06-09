@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "sangramento-uterino-anormal__mioma-submucoso",
+    "entidade": "Mioma submucoso",
+    "area": "GO",
+    "subtopico": "Sangramento Uterino Anormal",
+    "sindrome": "Síndrome de sangramento uterino estrutural",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Sangramento anovulatório",
+        "feature": "achado focal intracavitário favorece causa estrutural"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "sangramento-uterino-anormal__mioma-submucoso-typical",
+      "scriptId": "sangramento-uterino-anormal__mioma-submucoso",
+      "presentation": "typical",
+      "vignette": "mulher em idade reprodutiva com aumento do fluxo menstrual, anemia e imagem intracavitária arredondada deformando o endométrio",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sangramento uterino aumentado associado a lesão estrutural intracavitária",
+        "sindromeCorreta": "Síndrome de sangramento uterino estrutural",
+        "opcoes": [
+          "Síndrome de sangramento uterino estrutural",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de sangramento uterino estrutural; achado focal intracavitário favorece causa estrutural.",
+        "diferenciaisDaSindrome": [
+          "Sangramento anovulatório",
+          "Gestação ectópica tubária",
+          "Ameaça de abortamento"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Sangramento anovulatório",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gestação ectópica tubária",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Ameaça de abortamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Mioma submucoso",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Mioma submucoso. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "sangramento-uterino-anormal__mioma-submucoso-atypical",
+      "scriptId": "sangramento-uterino-anormal__mioma-submucoso",
+      "presentation": "atypical",
+      "vignette": "mulher em idade reprodutiva com aumento do fluxo menstrual, anemia e imagem intracavitária arredondada deformando o endométrio Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sangramento uterino aumentado associado a lesão estrutural intracavitária com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de sangramento uterino estrutural",
+        "opcoes": [
+          "Síndrome de sangramento uterino estrutural",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de sangramento uterino estrutural; achado focal intracavitário favorece causa estrutural.",
+        "diferenciaisDaSindrome": [
+          "Sangramento anovulatório",
+          "Gestação ectópica tubária",
+          "Ameaça de abortamento"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Sangramento anovulatório",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gestação ectópica tubária",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Ameaça de abortamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Mioma submucoso",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Mioma submucoso. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.190Z"
+  }
+}

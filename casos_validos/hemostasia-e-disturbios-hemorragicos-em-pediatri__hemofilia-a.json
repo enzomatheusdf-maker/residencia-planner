@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "hemostasia-e-disturbios-hemorragicos-em-pediatri__hemofilia-a",
+    "entidade": "Hemofilia A",
+    "area": "Pediatria",
+    "subtopico": "Hemostasia e Distúrbios Hemorrágicos em Pediatria",
+    "sindrome": "Síndrome hemorrágica por coagulopatia hereditária",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Púrpura trombocitopênica imune",
+        "feature": "hemartrose e sangramento profundo favorecem deficiência de fator"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "hemostasia-e-disturbios-hemorragicos-em-pediatri__hemofilia-a-typical",
+      "scriptId": "hemostasia-e-disturbios-hemorragicos-em-pediatri__hemofilia-a",
+      "presentation": "typical",
+      "vignette": "menino com hemartroses recorrentes, equimoses profundas e história familiar materna de sangramentos",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sangramento profundo recorrente em padrão hereditário ligado ao sexo",
+        "sindromeCorreta": "Síndrome hemorrágica por coagulopatia hereditária",
+        "opcoes": [
+          "Síndrome hemorrágica por coagulopatia hereditária",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome hemorrágica por coagulopatia hereditária; hemartrose e sangramento profundo favorecem deficiência de fator.",
+        "diferenciaisDaSindrome": [
+          "Púrpura trombocitopênica imune",
+          "Vaginose bacteriana",
+          "Candidíase vulvovaginal"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Púrpura trombocitopênica imune",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Vaginose bacteriana",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Candidíase vulvovaginal",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Hemofilia A",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Hemofilia A. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "hemostasia-e-disturbios-hemorragicos-em-pediatri__hemofilia-a-atypical",
+      "scriptId": "hemostasia-e-disturbios-hemorragicos-em-pediatri__hemofilia-a",
+      "presentation": "atypical",
+      "vignette": "menino com hemartroses recorrentes, equimoses profundas e história familiar materna de sangramentos Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sangramento profundo recorrente em padrão hereditário ligado ao sexo com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome hemorrágica por coagulopatia hereditária",
+        "opcoes": [
+          "Síndrome hemorrágica por coagulopatia hereditária",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome hemorrágica por coagulopatia hereditária; hemartrose e sangramento profundo favorecem deficiência de fator.",
+        "diferenciaisDaSindrome": [
+          "Púrpura trombocitopênica imune",
+          "Vaginose bacteriana",
+          "Candidíase vulvovaginal"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Púrpura trombocitopênica imune",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Vaginose bacteriana",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Candidíase vulvovaginal",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Hemofilia A",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Hemofilia A. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.838Z"
+  }
+}

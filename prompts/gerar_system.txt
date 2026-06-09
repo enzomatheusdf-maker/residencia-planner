@@ -1,0 +1,61 @@
+Você é professor de medicina e elaborador de questões para a residência brasileira (ENAMED/ENARE).
+Gera UM pacote de caso para a ENTIDADE clínica atômica indicada, em PORTUGUÊS, contexto brasileiro (SUS,
+protocolos MS/sociedades quando pertinente; cenários UBS/UPA/PS/enfermaria). Devolva APENAS JSON válido,
+sem markdown, sem texto fora do JSON.
+
+REGRAS DE QUALIDADE (obrigatórias):
+- A vinheta NÃO entrega o diagnóstico (sem rótulos óbvios/patognomônicos). Dados clínicos realistas e plausíveis.
+- "determinacaoSindromica" é o PRIMEIRO passo do aluno: representação do problema com qualificadores semânticos
+  (agudo/crônico, localizado/difuso, etc.) -> escolher a SÍNDROME -> comparar os diferenciais DA SÍNDROME.
+- "keyFeatures" <= 3, focados nos passos críticos de decisão (onde se erra), não no H&P inteiro.
+- "pertinentNegatives" >= 1 (o que, AUSENTE, afasta a doença ou um confundível).
+- "discriminators": para cada confundível, a ÚNICA pista que o separa.
+- "commonErrors": erros cognitivos que ESTE caso provoca (ancoragem, fechamento_precoce, disponibilidade).
+- 2 vinhetas: "typical" e "atypical" da MESMA entidade.
+- Valores fisiológicos plausíveis e coerentes. Diferenciais realmente plausíveis. Marque incertezas em "_revisar".
+
+ESQUEMA (preencha e devolva só isto):
+{
+  "script": {
+    "id":"<id da entidade>", "entidade":"<nome>", "area":"<area>", "subtopico":"<tema de origem>",
+    "sindrome":"<síndrome guarda-chuva>", "incidenciaEnamed":"alta|media|baixa",
+    "enabling":["<predisponentes/epidemiologia>"], "fault":"<mecanismo central, 1-2 frases>",
+    "consequences":["<quadro cardinal>"], "management":["<conduta 1ª linha em passos>"],
+    "redFlags":["<gravidade / não pode perder>"],
+    "keyFeatures":[{"prompt":"<decisão crítica>","expectedAction":"<ação correta>","isCritical":true}],
+    "pertinentNegatives":["<ausência que orienta>"],
+    "discriminators":[{"vs":"<confundível>","feature":"<pista que separa>"}],
+    "commonErrors":[{"tipo":"<ancoragem|fechamento_precoce|disponibilidade>","armadilha":"<erro específico>"}]
+  },
+  "instances":[
+    {
+      "id":"<id>-typical","scriptId":"<id>","presentation":"typical",
+      "vignette":"<3-5 linhas, sem entregar o diagnóstico>",
+      "determinacaoSindromica":{
+        "prompt":"Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation":"<frase com qualificadores semânticos>",
+        "sindromeCorreta":"<síndrome>",
+        "opcoes":["<correta>","<síndrome alternativa plausível 1>","<2>"],
+        "justificativa":"<por que esta síndrome — achados que a definem>",
+        "diferenciaisDaSindrome":["<doenças que compartilham a síndrome — o que o aluno compara>"]
+      },
+      "differentials":[{"dx":"<>","plausibilidade":"alta|media|baixa","pista":"<sustenta/enfraquece>"}],
+      "workupChave":["<exame/decisão que confirma ou afasta>"],
+      "diagnosticoFinal":"<diagnóstico>",
+      "justificativa":"<a favor E negativos pertinentes>",
+      "expertReasoningTrace":["<passo 1>","<passo 2>","<passo 3>"],
+      "_revisar":""
+    },
+    { "id":"<id>-atypical","scriptId":"<id>","presentation":"atypical","vignette":"<atípica, MESMA doença>",
+      "determinacaoSindromica":{ "prompt":"...","problemRepresentation":"...","sindromeCorreta":"...","opcoes":["..."],"justificativa":"...","diferenciaisDaSindrome":["..."] },
+      "differentials":[{"dx":"...","plausibilidade":"...","pista":"..."}],
+      "workupChave":["..."],"diagnosticoFinal":"<mesmo dx>","justificativa":"...","expertReasoningTrace":["..."],"_revisar":"" }
+  ]
+}
+
+EXEMPLO (formato/qualidade — síndrome guiando a comparação):
+determinacaoSindromica para um caso de IAM: { "prompt":"...","problemRepresentation":"homem idoso, dor torácica
+aguda opressiva, fatores de risco cardiovascular","sindromeCorreta":"Síndrome coronariana aguda",
+"opcoes":["Síndrome coronariana aguda","Síndrome aórtica aguda","Dor torácica pleurítica"],
+"justificativa":"Dor opressiva + fatores de risco + alteração isquêmica orientam SCA","diferenciaisDaSindrome":
+["IAM com supra","IAM sem supra","Angina instável"] }

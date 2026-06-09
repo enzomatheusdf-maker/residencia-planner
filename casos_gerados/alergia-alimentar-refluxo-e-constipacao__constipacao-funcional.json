@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "alergia-alimentar-refluxo-e-constipacao__constipacao-funcional",
+    "entidade": "Constipação funcional",
+    "area": "Pediatria",
+    "subtopico": "Alergia Alimentar, Refluxo e Constipação",
+    "sindrome": "Síndrome de constipação crônica sem alarme",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "fator de risco clínico compatível",
+      "contexto epidemiológico provável"
+    ],
+    "fault": "retenção fecal comportamental e fezes endurecidas",
+    "consequences": [
+      "sintomas cardinais",
+      "risco de complicação se não reconhecido"
+    ],
+    "management": [
+      "confirmar diagnóstico sindrômico",
+      "avaliar gravidade",
+      "instituir conduta inicial adequada"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar confundíveis da mesma apresentação",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que aponte para confundível principal"
+    ],
+    "discriminators": [
+      {
+        "vs": "Doença de Hirschsprung",
+        "feature": "início após desfralde e crescimento normal favorecem funcional"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "ancorar no primeiro diagnóstico sem comparar diferenciais da síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "alergia-alimentar-refluxo-e-constipacao__constipacao-funcional-typical",
+      "scriptId": "alergia-alimentar-refluxo-e-constipacao__constipacao-funcional",
+      "presentation": "typical",
+      "vignette": "Pré-escolar evacua a cada 5 dias, com fezes volumosas, escape fecal e dor ao evacuar desde desfralde.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "criança com retenção fecal crônica e escape",
+        "sindromeCorreta": "Síndrome de constipação crônica sem alarme",
+        "opcoes": [
+          "Síndrome de constipação crônica sem alarme",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "Os achados centrais definem a síndrome e orientam os diferenciais mais próximos.",
+        "diferenciaisDaSindrome": [
+          "Doença de Hirschsprung",
+          "Alergia à proteína do leite de vaca",
+          "Sepse pediátrica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Doença de Hirschsprung",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Alergia à proteína do leite de vaca",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Sepse pediátrica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar diagnóstico sindrômico",
+        "avaliar gravidade",
+        "instituir conduta inicial adequada"
+      ],
+      "diagnosticoFinal": "Constipação funcional",
+      "justificativa": "Os achados centrais definem a síndrome e orientam os diferenciais mais próximos. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "alergia-alimentar-refluxo-e-constipacao__constipacao-funcional-atypical",
+      "scriptId": "alergia-alimentar-refluxo-e-constipacao__constipacao-funcional",
+      "presentation": "atypical",
+      "vignette": "Pré-escolar evacua a cada 5 dias, com fezes volumosas, escape fecal e dor ao evacuar desde desfralde. Em apresentação menos clássica, os achados são discretos e o principal erro é ignorar o padrão sindrômico.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "criança com retenção fecal crônica e escape com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de constipação crônica sem alarme",
+        "opcoes": [
+          "Síndrome de constipação crônica sem alarme",
+          "Síndrome inespecífica",
+          "Quadro funcional isolado"
+        ],
+        "justificativa": "Mesmo com menor exuberância, o conjunto ainda pertence à mesma síndrome clínica.",
+        "diferenciaisDaSindrome": [
+          "Doença de Hirschsprung",
+          "diagnóstico alternativo da mesma síndrome",
+          "causa não orgânica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Doença de Hirschsprung",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "diagnóstico alternativo da mesma síndrome",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "causa não orgânica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar diagnóstico sindrômico",
+        "avaliar gravidade",
+        "instituir conduta inicial adequada"
+      ],
+      "diagnosticoFinal": "Constipação funcional",
+      "justificativa": "Mesmo com menor exuberância, o conjunto ainda pertence à mesma síndrome clínica. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.366Z"
+  }
+}

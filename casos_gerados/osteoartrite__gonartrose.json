@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "osteoartrite__gonartrose",
+    "entidade": "Osteoartrite de joelho",
+    "area": "Clínica Médica",
+    "subtopico": "Osteoartrite",
+    "sindrome": "Síndrome articular mecânica degenerativa",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Artrite reumatoide",
+        "feature": "rigidez curta e piora com carga favorecem degeneração articular"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "osteoartrite__gonartrose-typical",
+      "scriptId": "osteoartrite__gonartrose",
+      "presentation": "typical",
+      "vignette": "idoso com dor crônica em joelhos, piora ao caminhar, melhora ao repouso, crepitação e rigidez breve pela manhã",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "dor articular mecânica crônica em articulação de carga",
+        "sindromeCorreta": "Síndrome articular mecânica degenerativa",
+        "opcoes": [
+          "Síndrome articular mecânica degenerativa",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome articular mecânica degenerativa; rigidez curta e piora com carga favorecem degeneração articular.",
+        "diferenciaisDaSindrome": [
+          "Artrite reumatoide",
+          "Lúpus eritematoso sistêmico",
+          "Gota"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Artrite reumatoide",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Lúpus eritematoso sistêmico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Gota",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Osteoartrite de joelho",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Osteoartrite de joelho. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "osteoartrite__gonartrose-atypical",
+      "scriptId": "osteoartrite__gonartrose",
+      "presentation": "atypical",
+      "vignette": "idoso com dor crônica em joelhos, piora ao caminhar, melhora ao repouso, crepitação e rigidez breve pela manhã Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "dor articular mecânica crônica em articulação de carga com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome articular mecânica degenerativa",
+        "opcoes": [
+          "Síndrome articular mecânica degenerativa",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome articular mecânica degenerativa; rigidez curta e piora com carga favorecem degeneração articular.",
+        "diferenciaisDaSindrome": [
+          "Artrite reumatoide",
+          "Lúpus eritematoso sistêmico",
+          "Gota"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Artrite reumatoide",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Lúpus eritematoso sistêmico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Gota",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Osteoartrite de joelho",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Osteoartrite de joelho. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.051Z"
+  }
+}

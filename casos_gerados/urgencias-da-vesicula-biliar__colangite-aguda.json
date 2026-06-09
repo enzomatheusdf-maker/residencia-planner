@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "urgencias-da-vesicula-biliar__colangite-aguda",
+    "entidade": "Colangite aguda",
+    "area": "Cirurgia",
+    "subtopico": "Urgências da Vesícula Biliar",
+    "sindrome": "Síndrome infecciosa biliar obstrutiva",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "fator de risco ou faixa etária típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Colecistite aguda",
+        "feature": "icterícia e sepse favorecem infecção da via biliar principal"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "urgencias-da-vesicula-biliar__colangite-aguda-typical",
+      "scriptId": "urgencias-da-vesicula-biliar__colangite-aguda",
+      "presentation": "typical",
+      "vignette": "idoso com febre, dor em hipocôndrio direito, icterícia, confusão e hipotensão",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "infecção sistêmica associada a obstrução biliar",
+        "sindromeCorreta": "Síndrome infecciosa biliar obstrutiva",
+        "opcoes": [
+          "Síndrome infecciosa biliar obstrutiva",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome infecciosa biliar obstrutiva; icterícia e sepse favorecem infecção da via biliar principal.",
+        "diferenciaisDaSindrome": [
+          "Colecistite aguda",
+          "Coledocolitíase",
+          "Pancreatite aguda biliar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Colecistite aguda",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Coledocolitíase",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Pancreatite aguda biliar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Colangite aguda",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Colangite aguda. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "urgencias-da-vesicula-biliar__colangite-aguda-atypical",
+      "scriptId": "urgencias-da-vesicula-biliar__colangite-aguda",
+      "presentation": "atypical",
+      "vignette": "idoso com febre, dor em hipocôndrio direito, icterícia, confusão e hipotensão Na apresentação menos clássica, a intensidade dos achados é menor, mas o padrão sindrômico permanece reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "infecção sistêmica associada a obstrução biliar com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome infecciosa biliar obstrutiva",
+        "opcoes": [
+          "Síndrome infecciosa biliar obstrutiva",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome infecciosa biliar obstrutiva; icterícia e sepse favorecem infecção da via biliar principal.",
+        "diferenciaisDaSindrome": [
+          "Colecistite aguda",
+          "Coledocolitíase",
+          "Pancreatite aguda biliar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Colecistite aguda",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Coledocolitíase",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Pancreatite aguda biliar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Colangite aguda",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Colangite aguda. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.311Z"
+  }
+}

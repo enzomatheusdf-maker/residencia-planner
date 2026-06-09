@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "gestacao-ectopica__gestacao-ectopica-tubaria",
+    "entidade": "Gestação ectópica tubária",
+    "area": "GO",
+    "subtopico": "Gestação Ectópica",
+    "sindrome": "Síndrome de dor pélvica e sangramento no primeiro trimestre",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "fator de risco ou faixa etária típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Abortamento inicial",
+        "feature": "dor unilateral e ausência de saco intrauterino com beta-hCG compatível favorecem ectópica"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "gestacao-ectopica__gestacao-ectopica-tubaria-typical",
+      "scriptId": "gestacao-ectopica__gestacao-ectopica-tubaria",
+      "presentation": "typical",
+      "vignette": "mulher com atraso menstrual, dor pélvica unilateral, sangramento escasso e beta-hCG positivo sem saco intrauterino esperado",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "gestação inicial com dor lateralizada e ausência de implantação intrauterina confirmada",
+        "sindromeCorreta": "Síndrome de dor pélvica e sangramento no primeiro trimestre",
+        "opcoes": [
+          "Síndrome de dor pélvica e sangramento no primeiro trimestre",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de dor pélvica e sangramento no primeiro trimestre; dor unilateral e ausência de saco intrauterino com beta-hCG compatível favorecem ectópica.",
+        "diferenciaisDaSindrome": [
+          "Abortamento inicial",
+          "Ameaça de abortamento",
+          "Abortamento incompleto"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Abortamento inicial",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Ameaça de abortamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Abortamento incompleto",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Gestação ectópica tubária",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Gestação ectópica tubária. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "gestacao-ectopica__gestacao-ectopica-tubaria-atypical",
+      "scriptId": "gestacao-ectopica__gestacao-ectopica-tubaria",
+      "presentation": "atypical",
+      "vignette": "mulher com atraso menstrual, dor pélvica unilateral, sangramento escasso e beta-hCG positivo sem saco intrauterino esperado Na apresentação menos clássica, a intensidade dos achados é menor, mas o padrão sindrômico permanece reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "gestação inicial com dor lateralizada e ausência de implantação intrauterina confirmada com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de dor pélvica e sangramento no primeiro trimestre",
+        "opcoes": [
+          "Síndrome de dor pélvica e sangramento no primeiro trimestre",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de dor pélvica e sangramento no primeiro trimestre; dor unilateral e ausência de saco intrauterino com beta-hCG compatível favorecem ectópica.",
+        "diferenciaisDaSindrome": [
+          "Abortamento inicial",
+          "Ameaça de abortamento",
+          "Abortamento incompleto"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Abortamento inicial",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Ameaça de abortamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Abortamento incompleto",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Gestação ectópica tubária",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Gestação ectópica tubária. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.815Z"
+  }
+}

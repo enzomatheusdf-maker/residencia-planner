@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "ortopedia-pediatrica__epifisiolise-femoral-proximal",
+    "entidade": "Epifisiólise femoral proximal",
+    "area": "Pediatria",
+    "subtopico": "Ortopedia Pediátrica",
+    "sindrome": "Síndrome de claudicação do adolescente",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Dor de crescimento",
+        "feature": "limitação de rotação interna e perfil etário apontam para deslizamento epifisário"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "ortopedia-pediatrica__epifisiolise-femoral-proximal-typical",
+      "scriptId": "ortopedia-pediatrica__epifisiolise-femoral-proximal",
+      "presentation": "typical",
+      "vignette": "adolescente com sobrepeso, dor insidiosa em quadril irradiada para joelho e limitação de rotação interna",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "dor crônica de quadril/joelho com limitação mecânica em adolescente",
+        "sindromeCorreta": "Síndrome de claudicação do adolescente",
+        "opcoes": [
+          "Síndrome de claudicação do adolescente",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de claudicação do adolescente; limitação de rotação interna e perfil etário apontam para deslizamento epifisário.",
+        "diferenciaisDaSindrome": [
+          "Dor de crescimento",
+          "Sinovite transitória do quadril",
+          "Sepse pediátrica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Dor de crescimento",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Sinovite transitória do quadril",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Sepse pediátrica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Epifisiólise femoral proximal",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Epifisiólise femoral proximal. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "ortopedia-pediatrica__epifisiolise-femoral-proximal-atypical",
+      "scriptId": "ortopedia-pediatrica__epifisiolise-femoral-proximal",
+      "presentation": "atypical",
+      "vignette": "adolescente com sobrepeso, dor insidiosa em quadril irradiada para joelho e limitação de rotação interna Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "dor crônica de quadril/joelho com limitação mecânica em adolescente com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de claudicação do adolescente",
+        "opcoes": [
+          "Síndrome de claudicação do adolescente",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de claudicação do adolescente; limitação de rotação interna e perfil etário apontam para deslizamento epifisário.",
+        "diferenciaisDaSindrome": [
+          "Dor de crescimento",
+          "Sinovite transitória do quadril",
+          "Sepse pediátrica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Dor de crescimento",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Sinovite transitória do quadril",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Sepse pediátrica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Epifisiólise femoral proximal",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Epifisiólise femoral proximal. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.048Z"
+  }
+}

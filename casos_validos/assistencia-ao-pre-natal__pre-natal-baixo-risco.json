@@ -1,0 +1,170 @@
+{
+  "script": {
+    "id": "assistencia-ao-pre-natal__pre-natal-baixo-risco",
+    "entidade": "Gestação de baixo risco em início de pré-natal",
+    "area": "GO",
+    "subtopico": "Assistência ao Pré-Natal",
+    "sindrome": "Síndrome de gestação inicial sem sinais de alto risco",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "atraso menstrual",
+      "teste positivo",
+      "ausência de comorbidades graves"
+    ],
+    "fault": "A gestação inicial exige estratificação de risco, datação e rastreios para reduzir morbimortalidade materno-fetal.",
+    "consequences": [
+      "necessidade de exames iniciais",
+      "vacinação",
+      "orientações e seguimento longitudinal"
+    ],
+    "management": [
+      "confirmar idade gestacional",
+      "solicitar rotina inicial",
+      "estratificar risco",
+      "programar consultas"
+    ],
+    "redFlags": [
+      "sangramento importante",
+      "dor pélvica intensa",
+      "hipertensão",
+      "diabetes prévio"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Reconhecer baixo risco",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Iniciar rastreios e suplementação no tempo correto",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem dor pélvica intensa ou sangramento volumoso"
+    ],
+    "discriminators": [
+      {
+        "vs": "Gestação ectópica",
+        "feature": "ausência de dor unilateral intensa e instabilidade reduz urgência imediata, mas não dispensa ultrassom quando indicado"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "disponibilidade",
+        "armadilha": "focar só no ultrassom e esquecer sorologias, tipagem e estratificação de risco"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "assistencia-ao-pre-natal__pre-natal-baixo-risco-typical",
+      "scriptId": "assistencia-ao-pre-natal__pre-natal-baixo-risco",
+      "presentation": "typical",
+      "vignette": "Mulher de 24 anos, G1P0, vem à UBS com atraso menstrual de 7 semanas e teste positivo. Está assintomática, PA 108/68, sem doenças conhecidas e sem sangramento.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "gestante no primeiro trimestre, assintomática, sem critérios de alto risco",
+        "sindromeCorreta": "Síndrome de gestação inicial sem sinais de alto risco",
+        "opcoes": [
+          "Síndrome de gestação inicial sem sinais de alto risco",
+          "Abdome agudo ginecológico",
+          "Síndrome hipertensiva gestacional"
+        ],
+        "justificativa": "Teste positivo e estabilidade clínica orientam início organizado do acompanhamento.",
+        "diferenciaisDaSindrome": [
+          "gestação ectópica",
+          "abortamento inicial",
+          "gestação de alto risco"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "gestação ectópica",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "abortamento inicial",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "gestação de alto risco",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar idade gestacional",
+        "solicitar rotina inicial",
+        "estratificar risco"
+      ],
+      "diagnosticoFinal": "Gestação de baixo risco em início de pré-natal",
+      "justificativa": "Teste positivo e estabilidade clínica orientam início organizado do acompanhamento. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "assistencia-ao-pre-natal__pre-natal-baixo-risco-atypical",
+      "scriptId": "assistencia-ao-pre-natal__pre-natal-baixo-risco",
+      "presentation": "atypical",
+      "vignette": "Adolescente de 16 anos busca primeira consulta com atraso menstrual de 10 semanas. Nega dor ou sangramento, mora longe da unidade e não usa medicações.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "gestante adolescente estável com vulnerabilidade social e necessidade de captação precoce",
+        "sindromeCorreta": "Síndrome de gestação inicial sem sinais de alto risco",
+        "opcoes": [
+          "Síndrome de gestação inicial sem sinais de alto risco",
+          "Síndrome de abortamento",
+          "Doença hipertensiva específica da gestação"
+        ],
+        "justificativa": "Não há sinais de urgência, mas há necessidade de vínculo, rastreio e avaliação social.",
+        "diferenciaisDaSindrome": [
+          "gestação ectópica",
+          "violência sexual",
+          "gestação com vulnerabilidade"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "gestação ectópica",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "violência sexual",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "gestação com vulnerabilidade",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar idade gestacional",
+        "solicitar rotina inicial",
+        "estratificar risco"
+      ],
+      "diagnosticoFinal": "Gestação de baixo risco em início de pré-natal",
+      "justificativa": "Não há sinais de urgência, mas há necessidade de vínculo, rastreio e avaliação social. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.469Z"
+  }
+}

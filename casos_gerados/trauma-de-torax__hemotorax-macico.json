@@ -1,0 +1,169 @@
+{
+  "script": {
+    "id": "trauma-de-torax__hemotorax-macico",
+    "entidade": "Hemotórax maciço",
+    "area": "Cirurgia",
+    "subtopico": "Trauma de Tórax",
+    "sindrome": "Síndrome hemorrágica intratorácica traumática",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "trauma penetrante",
+      "lesão vascular intercostal",
+      "lesão pulmonar"
+    ],
+    "fault": "Acúmulo volumoso de sangue no espaço pleural compromete ventilação e causa choque hemorrágico.",
+    "consequences": [
+      "dispneia",
+      "macicez",
+      "murmúrio reduzido",
+      "choque"
+    ],
+    "management": [
+      "dreno torácico calibroso",
+      "reposição hemostática",
+      "toracotomia se débito maciço/persistente"
+    ],
+    "redFlags": [
+      "débito inicial muito alto",
+      "sangramento contínuo",
+      "instabilidade"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Diferenciar de pneumotórax por percussão",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Reconhecer critérios de toracotomia",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem hipertimpanismo predominante"
+    ],
+    "discriminators": [
+      {
+        "vs": "Pneumotórax hipertensivo",
+        "feature": "macicez à percussão favorece sangue no espaço pleural"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "ancoragem",
+        "armadilha": "tratar só como pneumotórax e atrasar reposição/transfusão"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "trauma-de-torax__hemotorax-macico-typical",
+      "scriptId": "trauma-de-torax__hemotorax-macico",
+      "presentation": "typical",
+      "vignette": "Homem baleado em hemitórax esquerdo chega pálido, FC 136, PA 82/48. Há macicez e murmúrio muito reduzido à esquerda.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "trauma torácico penetrante com choque e derrame pleural traumático volumoso",
+        "sindromeCorreta": "Síndrome hemorrágica intratorácica traumática",
+        "opcoes": [
+          "Síndrome hemorrágica intratorácica traumática",
+          "Síndrome de choque séptico",
+          "Síndrome broncoespástica"
+        ],
+        "justificativa": "Macicez unilateral e choque após ferimento torácico sugerem grande volume de sangue pleural.",
+        "diferenciaisDaSindrome": [
+          "pneumotórax hipertensivo",
+          "tamponamento",
+          "lesão abdominal associada"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "pneumotórax hipertensivo",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "tamponamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "lesão abdominal associada",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "dreno torácico calibroso",
+        "reposição hemostática",
+        "toracotomia se débito maciço/persistente"
+      ],
+      "diagnosticoFinal": "Hemotórax maciço",
+      "justificativa": "Macicez unilateral e choque após ferimento torácico sugerem grande volume de sangue pleural. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "trauma-de-torax__hemotorax-macico-atypical",
+      "scriptId": "trauma-de-torax__hemotorax-macico",
+      "presentation": "atypical",
+      "vignette": "Após queda de altura, idoso anticoagulado apresenta dispneia progressiva, dor torácica e hipotensão leve. Radiografia mostra opacificação de metade do hemitórax.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "trauma fechado com coleção pleural volumosa e sinais de perda sanguínea",
+        "sindromeCorreta": "Síndrome hemorrágica intratorácica traumática",
+        "opcoes": [
+          "Síndrome hemorrágica intratorácica traumática",
+          "Derrame pleural crônico",
+          "Pneumonia extensa"
+        ],
+        "justificativa": "Contexto traumático e instabilidade tornam coleção pleural sanguínea provável.",
+        "diferenciaisDaSindrome": [
+          "contusão pulmonar",
+          "derrame pleural prévio",
+          "atelectasia"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "contusão pulmonar",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "derrame pleural prévio",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "atelectasia",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "dreno torácico calibroso",
+        "reposição hemostática",
+        "toracotomia se débito maciço/persistente"
+      ],
+      "diagnosticoFinal": "Hemotórax maciço",
+      "justificativa": "Contexto traumático e instabilidade tornam coleção pleural sanguínea provável. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.280Z"
+  }
+}

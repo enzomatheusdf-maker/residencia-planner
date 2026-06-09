@@ -1,0 +1,4171 @@
+{
+  "generatedAt": "2026-06-07T19:26:57.693Z",
+  "policy": "Pare se houver risco de alucinação: temas sem entidade atômica segura ficam bloqueados para revisão.",
+  "summary": {
+    "ja_tem_caso": 215,
+    "nao_clinico_ou_metodologico": 39,
+    "precisa_decomposicao_humana": 29,
+    "pendente_revisao_clinica": 81
+  },
+  "rows": [
+    {
+      "id": "anemias-hipoproliferativas-i",
+      "nome": "Anemias Hipoproliferativas I",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 1,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "anemias-hipoproliferativas-i__anemia-ferropriva"
+      ]
+    },
+    {
+      "id": "assistencia-ao-pre-natal",
+      "nome": "Assistência ao Pré-Natal",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 1,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "assistencia-ao-pre-natal__pre-natal-baixo-risco"
+      ]
+    },
+    {
+      "id": "aleitamento-materno",
+      "nome": "Aleitamento Materno",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 1,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "aleitamento-materno__mastite-puerperal"
+      ]
+    },
+    {
+      "id": "indicadores-de-saude",
+      "nome": "Indicadores de Saúde",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 1,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual/epidemiológico sem entidade clínica diagnosticável única.",
+      "entidades": []
+    },
+    {
+      "id": "introducao-ao-trauma-e-atendimento-inicial",
+      "nome": "Introdução ao Trauma e Atendimento Inicial",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 1,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "introducao-ao-trauma-e-atendimento-inicial__choque-hemorragico-trauma"
+      ]
+    },
+    {
+      "id": "neurovascular-i-ait-e-avci",
+      "nome": "Neurovascular I: AIT e AVCi",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 2,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "neurovascular-i-ait-e-avci__ataque-isquemico-transitorio",
+        "neurovascular-i-ait-e-avci__avc-isquemico"
+      ]
+    },
+    {
+      "id": "anatomia-pelvica-feminina",
+      "nome": "Anatomia Pélvica Feminina",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 2,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema anatômico de base, melhor convertido em cards conceituais do que caso clínico.",
+      "entidades": []
+    },
+    {
+      "id": "nefrologia-pediatrica",
+      "nome": "Nefrologia Pediátrica",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 2,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "nefrologia-pediatrica__sindrome-nefrotica",
+        "nefrologia-pediatrica__glomerulonefrite-pos-estreptococica"
+      ]
+    },
+    {
+      "id": "testes-diagnosticos",
+      "nome": "Testes Diagnósticos",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 2,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema metodológico sem doença/condição clínica atômica.",
+      "entidades": []
+    },
+    {
+      "id": "trauma-de-torax",
+      "nome": "Trauma de Tórax",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 2,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "trauma-de-torax__pneumotorax-hipertensivo",
+        "trauma-de-torax__hemotorax-macico"
+      ]
+    },
+    {
+      "id": "sifilis",
+      "nome": "Sífilis",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 3,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "sifilis__sifilis-primaria",
+        "sifilis__sifilis-secundaria"
+      ]
+    },
+    {
+      "id": "corrimentos-vaginais",
+      "nome": "Corrimentos Vaginais",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 3,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "corrimentos-vaginais__vaginose-bacteriana",
+        "corrimentos-vaginais__candidiase-vulvovaginal"
+      ]
+    },
+    {
+      "id": "alergia-alimentar-refluxo-e-constipacao",
+      "nome": "Alergia Alimentar, Refluxo e Constipação",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 3,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "alergia-alimentar-refluxo-e-constipacao__alergia-proteina-leite-vaca",
+        "alergia-alimentar-refluxo-e-constipacao__constipacao-funcional"
+      ]
+    },
+    {
+      "id": "determinacao-social-do-processo-saude-doenca",
+      "nome": "Determinação Social do Processo Saúde-Doença",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 3,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual de saúde coletiva.",
+      "entidades": []
+    },
+    {
+      "id": "trauma-abdominal",
+      "nome": "Trauma Abdominal",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 3,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "trauma-abdominal__lesao-esplenica",
+        "trauma-abdominal__peritonite-traumatica"
+      ]
+    },
+    {
+      "id": "assistencia-ao-parto",
+      "nome": "Assistência ao Parto",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "assistencia-ao-parto__distocia-de-ombro",
+        "assistencia-ao-parto__trabalho-de-parto-ativo"
+      ]
+    },
+    {
+      "id": "crescimento-e-baixa-estatura",
+      "nome": "Crescimento e Baixa Estatura",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "crescimento-e-baixa-estatura__baixa-estatura-familiar",
+        "crescimento-e-baixa-estatura__deficiencia-hormonio-crescimento"
+      ]
+    },
+    {
+      "id": "redes-de-atencao-a-saude",
+      "nome": "Redes de Atenção à Saúde",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 4,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema administrativo/organizacional.",
+      "entidades": []
+    },
+    {
+      "id": "atencao-primaria-a-saude",
+      "nome": "Atenção Primária à Saúde",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 4,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema de organização do cuidado, não diagnóstico clínico atômico.",
+      "entidades": []
+    },
+    {
+      "id": "trauma-cranioencefalico",
+      "nome": "Trauma Cranioencefálico",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "trauma-cranioencefalico__hematoma-epidural",
+        "trauma-cranioencefalico__hipertensao-intracraniana-traumatica"
+      ]
+    },
+    {
+      "id": "dor-toracica-coronariana",
+      "nome": "Dor Torácica Coronariana",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 5,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "dor-toracica-coronariana__iam-com-supra",
+        "dor-toracica-coronariana__angina-instavel"
+      ]
+    },
+    {
+      "id": "amenorreia-primaria",
+      "nome": "Amenorreia Primária",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 5,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "amenorreia-primaria__sindrome-de-turner",
+        "amenorreia-primaria__agenesia-mulleriana"
+      ]
+    },
+    {
+      "id": "diarreia-aguda-em-pediatria",
+      "nome": "Diarreia Aguda em Pediatria",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 5,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "diarreia-aguda-em-pediatria__gastroenterite-aguda-com-desidratacao",
+        "diarreia-aguda-em-pediatria__disenteria-bacteriana"
+      ]
+    },
+    {
+      "id": "classificacao-dos-estudos-epidemiologicos",
+      "nome": "Classificação dos Estudos Epidemiológicos",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 5,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema metodológico.",
+      "entidades": []
+    },
+    {
+      "id": "amenorreia-secundaria",
+      "nome": "Amenorreia Secundária",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "amenorreia-secundaria__gestacao-inicial",
+        "amenorreia-secundaria__insuficiencia-ovariana-prematura"
+      ]
+    },
+    {
+      "id": "pneumonias-em-pediatria",
+      "nome": "Pneumonias em Pediatria",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "pneumonias-em-pediatria__pneumonia-bacteriana-tipica",
+        "pneumonias-em-pediatria__pneumonia-atipica"
+      ]
+    },
+    {
+      "id": "bronquiolite-e-coqueluche",
+      "nome": "Bronquiolite e Coqueluche",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "bronquiolite-e-coqueluche__bronquiolite-viral",
+        "bronquiolite-e-coqueluche__coqueluche"
+      ]
+    },
+    {
+      "id": "estudos-longitudinais-coorte-e-caso-controle",
+      "nome": "Estudos Longitudinais: Coorte e Caso-Controle",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 6,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema metodológico/epidemiológico sem entidade clínica diagnosticável única.",
+      "entidades": []
+    },
+    {
+      "id": "apendicite-aguda",
+      "nome": "Apendicite Aguda",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "apendicite-aguda__apendicite-aguda"
+      ]
+    },
+    {
+      "id": "antibioticos",
+      "nome": "Antibióticos",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 7,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema farmacológico transversal; melhor como cards/questões de conduta do que illness script atômico.",
+      "entidades": []
+    },
+    {
+      "id": "infeccoes-e-gravidez",
+      "nome": "Infecções e Gravidez",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 7,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "infeccoes-e-gravidez__toxoplasmose-gestacional",
+        "infeccoes-e-gravidez__sifilis-na-gestacao",
+        "infeccoes-e-gravidez__itu-na-gestacao"
+      ]
+    },
+    {
+      "id": "infeccoes-congenitas",
+      "nome": "Infecções Congênitas",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 7,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "infeccoes-congenitas__toxoplasmose-congenita",
+        "infeccoes-congenitas__sifilis-congenita",
+        "infeccoes-congenitas__citomegalovirus-congenito"
+      ]
+    },
+    {
+      "id": "historia-e-principios-do-sus",
+      "nome": "História e Princípios do SUS",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 7,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual de saúde coletiva.",
+      "entidades": []
+    },
+    {
+      "id": "urgencias-da-vesicula-biliar",
+      "nome": "Urgências da Vesícula Biliar",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 7,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "urgencias-da-vesicula-biliar__colecistite-aguda",
+        "urgencias-da-vesicula-biliar__colangite-aguda",
+        "urgencias-da-vesicula-biliar__coledocolitiase"
+      ]
+    },
+    {
+      "id": "abortamento",
+      "nome": "Abortamento",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 8,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "abortamento__ameaca-de-abortamento",
+        "abortamento__abortamento-incompleto",
+        "abortamento__abortamento-infectado"
+      ]
+    },
+    {
+      "id": "gestacao-ectopica",
+      "nome": "Gestação Ectópica",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 8,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "gestacao-ectopica__gestacao-ectopica-tubaria"
+      ]
+    },
+    {
+      "id": "dermatoses-e-infeccoes-de-partes-moles",
+      "nome": "Dermatoses e Infecções de Partes Moles",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 8,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "dermatoses-e-infeccoes-de-partes-moles__impetigo",
+        "dermatoses-e-infeccoes-de-partes-moles__celulite-bacteriana",
+        "dermatoses-e-infeccoes-de-partes-moles__escabiose"
+      ]
+    },
+    {
+      "id": "legislacao-do-sus-i",
+      "nome": "Legislação do SUS I",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 8,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema normativo/administrativo.",
+      "entidades": []
+    },
+    {
+      "id": "diverticulite-aguda",
+      "nome": "Diverticulite Aguda",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 8,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "diverticulite-aguda__diverticulite-nao-complicada",
+        "diverticulite-aguda__diverticulite-complicada"
+      ]
+    },
+    {
+      "id": "cirrose-hepatica-i",
+      "nome": "Cirrose Hepática I",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "cirrose-hepatica-i__ascite-cirrotica",
+        "cirrose-hepatica-i__peritonite-bacteriana-espontanea"
+      ]
+    },
+    {
+      "id": "pac-pneumonia-adquirida-na-comunidade",
+      "nome": "PAC - Pneumonia Adquirida na Comunidade",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "pac-pneumonia-adquirida-na-comunidade__pneumonia-comunitaria",
+        "pac-pneumonia-adquirida-na-comunidade__pneumonia-comunitaria-grave"
+      ]
+    },
+    {
+      "id": "descolamento-prematuro-de-placenta",
+      "nome": "Descolamento Prematuro de Placenta",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "descolamento-prematuro-de-placenta__descolamento-prematuro-placenta"
+      ]
+    },
+    {
+      "id": "anemia-ferropriva-e-talassemia",
+      "nome": "Anemia Ferropriva e Talassemia",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "anemia-ferropriva-e-talassemia__talassemia-menor"
+      ]
+    },
+    {
+      "id": "abdome-agudo-obstrutivo",
+      "nome": "Abdome Agudo Obstrutivo",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "abdome-agudo-obstrutivo__obstrucao-por-bridas",
+        "abdome-agudo-obstrutivo__volvo-sigmoide"
+      ]
+    },
+    {
+      "id": "has-ambulatorial-e-emergencias",
+      "nome": "HAS: Ambulatorial e Emergências",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 10,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "has-ambulatorial-e-emergencias__urgencia-hipertensiva",
+        "has-ambulatorial-e-emergencias__emergencia-hipertensiva-eap"
+      ]
+    },
+    {
+      "id": "sindromes-hipertensivas-na-gestacao",
+      "nome": "Síndromes Hipertensivas na Gestação",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 10,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "sindromes-hipertensivas-na-gestacao__pre-eclampsia",
+        "sindromes-hipertensivas-na-gestacao__eclampsia",
+        "sindromes-hipertensivas-na-gestacao__sindrome-hellp"
+      ]
+    },
+    {
+      "id": "sangramento-uterino-anormal",
+      "nome": "Sangramento Uterino Anormal",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 10,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "sangramento-uterino-anormal__mioma-submucoso",
+        "sangramento-uterino-anormal__sangramento-anovulatorio"
+      ]
+    },
+    {
+      "id": "pals-suporte-avancado-de-vida-em-pediatria",
+      "nome": "PALS - Suporte Avançado de Vida em Pediatria",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 10,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "ensaios-clinicos",
+      "nome": "Ensaios Clínicos",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 10,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "hernia-inguinal-e-anatomia-da-parede-abdominal",
+      "nome": "Hérnia Inguinal e Anatomia da Parede Abdominal",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 10,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "diabetes-tratamento",
+      "nome": "Diabetes: Tratamento",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 11,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "diabetes-na-gestacao",
+      "nome": "Diabetes na Gestação",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 11,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "diabetes-na-gestacao__diabetes-gestacional"
+      ]
+    },
+    {
+      "id": "doencas-exantematicas",
+      "nome": "Doenças Exantemáticas",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 11,
+      "status": "ja_tem_caso",
+      "reason": "4 entidade(s) já gerada(s).",
+      "entidades": [
+        "doencas-exantematicas__sarampo",
+        "doencas-exantematicas__varicela",
+        "doencas-exantematicas__escarlatina",
+        "doencas-exantematicas__exantema-subito"
+      ]
+    },
+    {
+      "id": "urgencias-endoscopicas",
+      "nome": "Urgências Endoscópicas",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 11,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "urgencias-endoscopicas__hemorragia-digestiva-alta",
+        "urgencias-endoscopicas__impactacao-alimentar-esofagica"
+      ]
+    },
+    {
+      "id": "dislipidemias",
+      "nome": "Dislipidemias",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 12,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "dislipidemias__hipercolesterolemia-familiar"
+      ]
+    },
+    {
+      "id": "uroginecologia-e-incontinencia-urinaria",
+      "nome": "Uroginecologia e Incontinência Urinária",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 12,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "uroginecologia-e-incontinencia-urinaria__incontinencia-esforco",
+        "uroginecologia-e-incontinencia-urinaria__bexiga-hiperativa"
+      ]
+    },
+    {
+      "id": "peconhentos-raiva-e-tetano",
+      "nome": "Peçonhentos, Raiva e Tétano",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 12,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "peconhentos-raiva-e-tetano__escorpionismo",
+        "peconhentos-raiva-e-tetano__acidente-botropico",
+        "peconhentos-raiva-e-tetano__tetano"
+      ]
+    },
+    {
+      "id": "revisao-sistematica-e-metanalise",
+      "nome": "Revisão Sistemática e Metanálise",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 12,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "pre-operatorio",
+      "nome": "Pré-Operatório",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 12,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "tuberculose-clinica-e-diagnostico",
+      "nome": "Tuberculose: Clínica e Diagnóstico",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 13,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "tuberculose-clinica-e-diagnostico__tuberculose-pulmonar",
+        "tuberculose-clinica-e-diagnostico__tuberculose-pleural"
+      ]
+    },
+    {
+      "id": "avaliacao-de-vitalidade-fetal",
+      "nome": "Avaliação de Vitalidade Fetal",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 13,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "convulsao-na-emergencia-e-convulsao-febril",
+      "nome": "Convulsão na Emergência e Convulsão Febril",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 13,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "convulsao-na-emergencia-e-convulsao-febril__convulsao-febril-simples",
+        "convulsao-na-emergencia-e-convulsao-febril__estado-mal-epileptico"
+      ]
+    },
+    {
+      "id": "estrategia-saude-da-familia",
+      "nome": "Estratégia Saúde da Família",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 13,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "remit-e-pos-operatorio",
+      "nome": "REMIT e Pós-Operatório",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 13,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "taquiarritmias",
+      "nome": "Taquiarritmias",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "taquiarritmias__taquicardia-supraventricular-paroxistica",
+        "taquiarritmias__fibrilacao-atrial-alta-resposta",
+        "taquiarritmias__taquicardia-ventricular-monomorfica"
+      ]
+    },
+    {
+      "id": "anticoncepcao",
+      "nome": "Anticoncepção",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 14,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "kawasaki-vasculite-por-iga-e-febre-reumatica",
+      "nome": "Kawasaki, Vasculite por IgA e Febre Reumática",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "kawasaki-vasculite-por-iga-e-febre-reumatica__kawasaki",
+        "kawasaki-vasculite-por-iga-e-febre-reumatica__vasculite-iga",
+        "kawasaki-vasculite-por-iga-e-febre-reumatica__febre-reumatica"
+      ]
+    },
+    {
+      "id": "meningite-e-encefalite-em-pediatria",
+      "nome": "Meningite e Encefalite em Pediatria",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "meningite-e-encefalite-em-pediatria__meningite-bacteriana",
+        "meningite-e-encefalite-em-pediatria__encefalite-herpetica"
+      ]
+    },
+    {
+      "id": "financiamento-da-aps",
+      "nome": "Financiamento da APS",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 14,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "propedeutica-mamaria",
+      "nome": "Propedêutica Mamária",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 15,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "vacinacao-em-pediatria",
+      "nome": "Vacinação em Pediatria",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 15,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "ortopedia-pediatrica",
+      "nome": "Ortopedia Pediátrica",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 15,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "ortopedia-pediatrica__sinovite-transitoria-quadril",
+        "ortopedia-pediatrica__epifisiolise-femoral-proximal"
+      ]
+    },
+    {
+      "id": "ferramentas-da-aps-esf",
+      "nome": "Ferramentas da APS/ESF",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 15,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "figado-nodulos-hepaticos",
+      "nome": "Fígado: Nódulos Hepáticos",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 15,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "figado-nodulos-hepaticos__hemangioma-hepatico",
+        "figado-nodulos-hepaticos__carcinoma-hepatocelular"
+      ]
+    },
+    {
+      "id": "injuria-renal-aguda",
+      "nome": "Injúria Renal Aguda",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 16,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "injuria-renal-aguda__ira-pre-renal",
+        "injuria-renal-aguda__necrose-tubular-aguda"
+      ]
+    },
+    {
+      "id": "trabalho-de-parto-prematuro",
+      "nome": "Trabalho de Parto Prematuro",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 16,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "trabalho-de-parto-prematuro__trabalho-parto-prematuro"
+      ]
+    },
+    {
+      "id": "metodo-clinico-centrado-na-pessoa",
+      "nome": "Método Clínico Centrado na Pessoa",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 16,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "telemedicina-e-publicidade-medica",
+      "nome": "Telemedicina e Publicidade Médica",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 16,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "litiase-renal-cirurgica",
+      "nome": "Litíase Renal Cirúrgica",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 16,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "litiase-renal-cirurgica__colica-renal-ureteral",
+        "litiase-renal-cirurgica__pielonefrite-obstrutiva"
+      ]
+    },
+    {
+      "id": "lupus-eritematoso-sistemico",
+      "nome": "Lúpus Eritematoso Sistêmico",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 17,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "lupus-eritematoso-sistemico__lupus-sistemico"
+      ]
+    },
+    {
+      "id": "intoxicacoes-exogenas",
+      "nome": "Intoxicações Exógenas",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 17,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "intoxicacoes-exogenas__intoxicacao-organofosforado",
+        "intoxicacoes-exogenas__intoxicacao-monoxido-carbono",
+        "intoxicacoes-exogenas__intoxicacao-paracetamol"
+      ]
+    },
+    {
+      "id": "hemorragia-pos-parto",
+      "nome": "Hemorragia Pós-Parto",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 17,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "hemorragia-pos-parto__atonia-uterina",
+        "hemorragia-pos-parto__laceracao-canal-parto",
+        "hemorragia-pos-parto__retencao-placentaria"
+      ]
+    },
+    {
+      "id": "asma-em-pediatria",
+      "nome": "Asma em Pediatria",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 17,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "asma-em-pediatria__exacerbacao-asmatica"
+      ]
+    },
+    {
+      "id": "vigilancia-em-saude",
+      "nome": "Vigilância em Saúde",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 17,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "hipotireoidismo",
+      "nome": "Hipotireoidismo",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 18,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "hipotireoidismo__hipotireoidismo-primario"
+      ]
+    },
+    {
+      "id": "cancer-de-colo-de-utero-rastreamento",
+      "nome": "Câncer de Colo de Útero: Rastreamento",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 18,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "cancer-de-colo-de-utero-diagnostico-e-tratamento",
+      "nome": "Câncer de Colo de Útero: Diagnóstico e Tratamento",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 18,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "desconforto-respiratorio-neonatal",
+      "nome": "Desconforto Respiratório Neonatal",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 18,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "desconforto-respiratorio-neonatal__taquipneia-transitoria-rn",
+        "desconforto-respiratorio-neonatal__sindrome-desconforto-rn",
+        "desconforto-respiratorio-neonatal__aspiracao-meconial"
+      ]
+    },
+    {
+      "id": "sindrome-de-fournier",
+      "nome": "Síndrome de Fournier",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 18,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sindrome-de-fournier__fasciite-necrosante-perineal"
+      ]
+    },
+    {
+      "id": "tromboembolismo-pulmonar",
+      "nome": "Tromboembolismo Pulmonar",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 19,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "tromboembolismo-pulmonar__embolia-pulmonar"
+      ]
+    },
+    {
+      "id": "cancer-de-mama-rastreamento",
+      "nome": "Câncer de Mama: Rastreamento",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 19,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "cancer-de-mama-fatores-de-risco-e-cdis",
+      "nome": "Câncer de Mama: Fatores de Risco e CDIS",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 19,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "neoplasias-pediatricas",
+      "nome": "Neoplasias Pediátricas",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 19,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "neoplasias-pediatricas__leucemia-linfoide-aguda",
+        "neoplasias-pediatricas__tumor-wilms"
+      ]
+    },
+    {
+      "id": "acidente-de-trabalho",
+      "nome": "Acidente de Trabalho",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 19,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "infeccao-do-trato-urinario-itu",
+      "nome": "Infecção do Trato Urinário (ITU)",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 20,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "infeccao-do-trato-urinario-itu__cistite-aguda",
+        "infeccao-do-trato-urinario-itu__pielonefrite-aguda"
+      ]
+    },
+    {
+      "id": "sindrome-climaterica",
+      "nome": "Síndrome Climatérica",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 20,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "terapia-hormonal",
+      "nome": "Terapia Hormonal",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 20,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "tuberculose-e-hanseniase-na-aps",
+      "nome": "Tuberculose e Hanseníase na APS",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 20,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "tuberculose-e-hanseniase-na-aps__hanseniase-tuberculoide"
+      ]
+    },
+    {
+      "id": "cirurgia-encerramento",
+      "nome": "Cirurgia: Encerramento",
+      "area": "Cirurgia",
+      "prio": "Diamante",
+      "bloco": 20,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "insuficiencia-cognitiva-e-demencias",
+      "nome": "Insuficiência Cognitiva e Demências",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 21,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "insuficiencia-cognitiva-e-demencias__doenca-alzheimer",
+        "insuficiencia-cognitiva-e-demencias__demencia-vascular"
+      ]
+    },
+    {
+      "id": "hiperplasia-endometrial",
+      "nome": "Hiperplasia Endometrial",
+      "area": "GO",
+      "prio": "Diamante",
+      "bloco": 21,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "hiperplasia-endometrial__hiperplasia-com-atipia"
+      ]
+    },
+    {
+      "id": "cirurgia-pediatrica-no-ps",
+      "nome": "Cirurgia Pediátrica no PS",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 21,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cirurgia-pediatrica-no-ps__hernia-inguinal-encarcerada"
+      ]
+    },
+    {
+      "id": "declaracao-de-obito-e-atestados",
+      "nome": "Declaração de Óbito e Atestados",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 21,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "atencao-a-saude-de-populacoes-especificas",
+      "nome": "Atenção à Saúde de Populações Específicas",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 21,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "arboviroses-tropicais",
+      "nome": "Arboviroses Tropicais",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 22,
+      "status": "ja_tem_caso",
+      "reason": "3 entidade(s) já gerada(s).",
+      "entidades": [
+        "arboviroses-tropicais__dengue",
+        "arboviroses-tropicais__chikungunya",
+        "arboviroses-tropicais__zika"
+      ]
+    },
+    {
+      "id": "hepatites-virais",
+      "nome": "Hepatites Virais",
+      "area": "Clínica Médica",
+      "prio": "Diamante",
+      "bloco": 22,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "hepatites-virais__hepatite-a-aguda",
+        "hepatites-virais__hepatite-b-aguda"
+      ]
+    },
+    {
+      "id": "etica-em-pediatria",
+      "nome": "Ética em Pediatria",
+      "area": "Pediatria",
+      "prio": "Diamante",
+      "bloco": 22,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "etica-medica",
+      "nome": "Ética Médica",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 22,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "violencias-e-vulnerabilidade",
+      "nome": "Violências e Vulnerabilidade",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 23,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "saude-suplementar-e-judicializacao-em-saude",
+      "nome": "Saúde Suplementar e Judicialização em Saúde",
+      "area": "Preventiva",
+      "prio": "Diamante",
+      "bloco": 23,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "avaliacao-global-do-hemograma",
+      "nome": "Avaliação Global do Hemograma",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 1,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "anemias-hipoproliferativas-ii",
+      "nome": "Anemias Hipoproliferativas II",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 1,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "anemias-hipoproliferativas-ii__anemia-doenca-cronica",
+        "anemias-hipoproliferativas-ii__anemia-megaloblastica-b12"
+      ]
+    },
+    {
+      "id": "modificacoes-do-organismo-materno",
+      "nome": "Modificações do Organismo Materno",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 1,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "desenvolvimento-infantil",
+      "nome": "Desenvolvimento Infantil",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 1,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "alteracoes-no-neurodesenvolvimento-tea-e-tdah",
+      "nome": "Alterações no Neurodesenvolvimento - TEA e TDAH",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 1,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "alteracoes-no-neurodesenvolvimento-tea-e-tdah__tea",
+        "alteracoes-no-neurodesenvolvimento-tea-e-tdah__tdah"
+      ]
+    },
+    {
+      "id": "niveis-de-prevencao",
+      "nome": "Níveis de Prevenção",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 1,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "trauma-vias-aereas",
+      "nome": "Trauma: Vias Aéreas",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 1,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "trauma-vias-aereas__obstrucao-via-aerea-trauma-face"
+      ]
+    },
+    {
+      "id": "choque-e-ressuscitacao-hemostatica",
+      "nome": "Choque e Ressuscitação Hemostática",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 1,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "neurovascular-ii-hsa-e-avch",
+      "nome": "Neurovascular II: HSA e AVCh",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 2,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "neurovascular-ii-hsa-e-avch__hemorragia-subaracnoidea",
+        "neurovascular-ii-hsa-e-avch__hemorragia-intraparenquimatosa"
+      ]
+    },
+    {
+      "id": "dispepsia-e-drge",
+      "nome": "Dispepsia e DRGE",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 3,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "dispepsia-e-drge__doenca-refluxo-gastroesofagico",
+        "dispepsia-e-drge__dispepsia-funcional"
+      ]
+    },
+    {
+      "id": "ulcera-peptica-h-pylori-e-gastrite-atrofica",
+      "nome": "Úlcera Péptica, H. pylori e Gastrite Atrófica",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 3,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "ulcera-peptica-h-pylori-e-gastrite-atrofica__ulcera-duodenal",
+        "ulcera-peptica-h-pylori-e-gastrite-atrofica__gastrite-h-pylori"
+      ]
+    },
+    {
+      "id": "doenca-inflamatoria-pelvica-aguda",
+      "nome": "Doença Inflamatória Pélvica Aguda",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 3,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "doenca-inflamatoria-pelvica-aguda__dip-aguda"
+      ]
+    },
+    {
+      "id": "ulceras-genitais",
+      "nome": "Úlceras Genitais",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 3,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "ulceras-genitais__herpes-genital"
+      ]
+    },
+    {
+      "id": "violencia-contra-a-crianca-e-o-adolescente",
+      "nome": "Violência Contra a Criança e o Adolescente",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 3,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "artrite-reumatoide",
+      "nome": "Artrite Reumatoide",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "artrite-reumatoide__artrite-reumatoide"
+      ]
+    },
+    {
+      "id": "espondiloartrites",
+      "nome": "Espondiloartrites",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "espondiloartrites__espondilite-anquilosante"
+      ]
+    },
+    {
+      "id": "sofrimento-fetal-agudo",
+      "nome": "Sofrimento Fetal Agudo",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 4,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "puberdade",
+      "nome": "Puberdade",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "puberdade__puberdade-precoce-central"
+      ]
+    },
+    {
+      "id": "trauma-de-pelve",
+      "nome": "Trauma de Pelve",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "trauma-de-pelve__fratura-pelvica-instavel"
+      ]
+    },
+    {
+      "id": "fisiologia-menstrual",
+      "nome": "Fisiologia Menstrual",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 5,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "associacao-x-causalidade",
+      "nome": "Associação x Causalidade",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 5,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "rastreamentos",
+      "nome": "Rastreamentos",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 5,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "queimaduras",
+      "nome": "Queimaduras",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 5,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "queimaduras__queimadura-espessura-parcial",
+        "queimaduras__lesao-inalatoria"
+      ]
+    },
+    {
+      "id": "escroto-agudo",
+      "nome": "Escroto Agudo",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 5,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "escroto-agudo__torcao-testicular",
+        "escroto-agudo__epididimite-aguda"
+      ]
+    },
+    {
+      "id": "gasometria-arterial",
+      "nome": "Gasometria Arterial",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 6,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "disturbios-do-sodio",
+      "nome": "Distúrbios do Sódio",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "disturbios-do-sodio__hiponatremia-sintomatica"
+      ]
+    },
+    {
+      "id": "disturbios-do-potassio",
+      "nome": "Distúrbios do Potássio",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "disturbios-do-potassio__hipercalemia",
+        "disturbios-do-potassio__hipocalemia"
+      ]
+    },
+    {
+      "id": "sindrome-dos-ovarios-policisticos",
+      "nome": "Síndrome dos Ovários Policísticos",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sindrome-dos-ovarios-policisticos__sop"
+      ]
+    },
+    {
+      "id": "infeccoes-de-vias-aereas-superiores-ivas",
+      "nome": "Infecções de Vias Aéreas Superiores (IVAS)",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "infeccoes-de-vias-aereas-superiores-ivas__rinofaringite-viral",
+        "infeccoes-de-vias-aereas-superiores-ivas__amigdalite-estreptococica"
+      ]
+    },
+    {
+      "id": "estudos-transversais",
+      "nome": "Estudos Transversais",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 6,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "abdome-agudo-introducao",
+      "nome": "Abdome Agudo: Introdução",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 6,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "anemias-hemoliticas",
+      "nome": "Anemias Hemolíticas",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 7,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "anemias-hemoliticas__anemia-hemolitica-autoimune",
+        "anemias-hemoliticas__esferocitose-hereditaria"
+      ]
+    },
+    {
+      "id": "rotura-prematura-de-membranas-ovulares",
+      "nome": "Rotura Prematura de Membranas Ovulares",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 7,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "rotura-prematura-de-membranas-ovulares__rpmo-pretermo"
+      ]
+    },
+    {
+      "id": "violencia-sexual",
+      "nome": "Violência Sexual",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 7,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "reanimacao-neonatal",
+      "nome": "Reanimação Neonatal",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 7,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "ictericia-e-colestase-neonatal",
+      "nome": "Icterícia e Colestase Neonatal",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 7,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "ictericia-e-colestase-neonatal__ictericia-fisiologica",
+        "ictericia-e-colestase-neonatal__atresia-biliar"
+      ]
+    },
+    {
+      "id": "cancer-de-esofago",
+      "nome": "Câncer de Esôfago",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 7,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cancer-de-esofago__carcinoma-espinocelular-esofago"
+      ]
+    },
+    {
+      "id": "cefaleias",
+      "nome": "Cefaleias",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 8,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "cefaleias__migranea",
+        "cefaleias__cefaleia-tensional"
+      ]
+    },
+    {
+      "id": "avaliacao-geriatrica-ampla",
+      "nome": "Avaliação Geriátrica Ampla",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 8,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "dermatite-atopica-e-lesoes-benignas-do-rn",
+      "nome": "Dermatite Atópica e Lesões Benignas do RN",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 8,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "dermatite-atopica-e-lesoes-benignas-do-rn__dermatite-atopica"
+      ]
+    },
+    {
+      "id": "pancreatite-aguda",
+      "nome": "Pancreatite Aguda",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 8,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "pancreatite-aguda__pancreatite-biliar"
+      ]
+    },
+    {
+      "id": "cirrose-hepatica-ii",
+      "nome": "Cirrose Hepática II",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "cirrose-hepatica-ii__encefalopatia-hepatica",
+        "cirrose-hepatica-ii__hemorragia-varicosa"
+      ]
+    },
+    {
+      "id": "derrame-pleural",
+      "nome": "Derrame Pleural",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "derrame-pleural__derrame-parapneumonico",
+        "derrame-pleural__derrame-maligno"
+      ]
+    },
+    {
+      "id": "tabagismo",
+      "nome": "Tabagismo",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 9,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "placenta-previa",
+      "nome": "Placenta Prévia",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "placenta-previa__placenta-previa"
+      ]
+    },
+    {
+      "id": "anemia-falciforme",
+      "nome": "Anemia Falciforme",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "anemia-falciforme__crise-vaso-oclusiva",
+        "anemia-falciforme__sindrome-toracica-aguda"
+      ]
+    },
+    {
+      "id": "hemostasia-e-disturbios-hemorragicos-em-pediatri",
+      "nome": "Hemostasia e Distúrbios Hemorrágicos em Pediatria",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "hemostasia-e-disturbios-hemorragicos-em-pediatri__hemofilia-a",
+        "hemostasia-e-disturbios-hemorragicos-em-pediatri__pti"
+      ]
+    },
+    {
+      "id": "genetica-em-pediatria",
+      "nome": "Genética em Pediatria",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 9,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "legislacao-do-sus-ii",
+      "nome": "Legislação do SUS II",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 9,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "abdome-agudo-perfurativo-vascular-e-hemorragico",
+      "nome": "Abdome Agudo Perfurativo, Vascular e Hemorrágico",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "abdome-agudo-perfurativo-vascular-e-hemorragico__ulcera-perfurada",
+        "abdome-agudo-perfurativo-vascular-e-hemorragico__isquemia-mesenterica"
+      ]
+    },
+    {
+      "id": "cancer-de-estomago",
+      "nome": "Câncer de Estômago",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cancer-de-estomago__adenocarcinoma-gastrico"
+      ]
+    },
+    {
+      "id": "insuficiencia-cardiaca",
+      "nome": "Insuficiência Cardíaca",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 10,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "insuficiencia-cardiaca__ic-descompensada"
+      ]
+    },
+    {
+      "id": "asma",
+      "nome": "Asma",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 10,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "asma__exacerbacao-asmatica-adulto"
+      ]
+    },
+    {
+      "id": "dpoc",
+      "nome": "DPOC",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 10,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "dpoc__exacerbacao-dpoc"
+      ]
+    },
+    {
+      "id": "bls-e-acls",
+      "nome": "BLS e ACLS",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 10,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "cardiopatias-congenitas",
+      "nome": "Cardiopatias Congênitas",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 10,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "cardiopatias-congenitas__tetralogia-fallot",
+        "cardiopatias-congenitas__comunicacao-interventricular"
+      ]
+    },
+    {
+      "id": "has-em-pediatria",
+      "nome": "HAS em Pediatria",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 10,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "has-em-pediatria__hipertensao-secundaria-renal"
+      ]
+    },
+    {
+      "id": "medidas-de-associacao",
+      "nome": "Medidas de Associação",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 10,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "legislacao-do-sus-iii-decreto-7508",
+      "nome": "Legislação do SUS III: Decreto 7508",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 10,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "diabetes-classificacao-e-diagnostico",
+      "nome": "Diabetes: Classificação e Diagnóstico",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 11,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "emergencias-hiperglicemicas-cad-e-ehh",
+      "nome": "Emergências Hiperglicêmicas - CAD e EHH",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 11,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "emergencias-hiperglicemicas-cad-e-ehh__cetoacidose-diabetica",
+        "emergencias-hiperglicemicas-cad-e-ehh__estado-hiperosmolar"
+      ]
+    },
+    {
+      "id": "infertilidade",
+      "nome": "Infertilidade",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 11,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "endometriose",
+      "nome": "Endometriose",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 11,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "endometriose__endometriose"
+      ]
+    },
+    {
+      "id": "arboviroses-em-pediatria",
+      "nome": "Arboviroses em Pediatria",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 11,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "arboviroses-em-pediatria__dengue-sinais-alarme"
+      ]
+    },
+    {
+      "id": "cad-em-pediatria",
+      "nome": "CAD em Pediatria",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 11,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cad-em-pediatria__cetoacidose-diabetica-pediatrica"
+      ]
+    },
+    {
+      "id": "financiamento-do-sus",
+      "nome": "Financiamento do SUS",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 11,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "sindrome-metabolica-e-obesidade",
+      "nome": "Síndrome Metabólica e Obesidade",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 12,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sindrome-metabolica-e-obesidade__sindrome-metabolica"
+      ]
+    },
+    {
+      "id": "prolapso-genital",
+      "nome": "Prolapso Genital",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 12,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "prolapso-genital__prolapso-uterino"
+      ]
+    },
+    {
+      "id": "triagens-neonatais",
+      "nome": "Triagens Neonatais",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 12,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "triagens-neonatais__hipotireoidismo-congenito"
+      ]
+    },
+    {
+      "id": "significancia-estatistica-e-intervalo-de-confian",
+      "nome": "Significância Estatística e Intervalo de Confiança",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 12,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "medicina-baseada-em-evidencias",
+      "nome": "Medicina Baseada em Evidências",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 12,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "cirurgia-bariatrica",
+      "nome": "Cirurgia Bariátrica",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 12,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cirurgia-bariatrica__sindrome-dumping"
+      ]
+    },
+    {
+      "id": "tuberculose-tratamento",
+      "nome": "Tuberculose: Tratamento",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 13,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "restricao-de-crescimento-intrauterino",
+      "nome": "Restrição de Crescimento Intrauterino",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 13,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "restricao-de-crescimento-intrauterino__rciu-placentaria"
+      ]
+    },
+    {
+      "id": "tuberculose-em-pediatria",
+      "nome": "Tuberculose em Pediatria",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 13,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "tuberculose-em-pediatria__tuberculose-primaria"
+      ]
+    },
+    {
+      "id": "cardiologia-na-aps",
+      "nome": "Cardiologia na APS",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 13,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cardiologia-na-aps__angina-estavel"
+      ]
+    },
+    {
+      "id": "diabetes-no-sus",
+      "nome": "Diabetes no SUS",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 13,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "perioperatorio-complicacoes-gerais",
+      "nome": "Perioperatório: Complicações Gerais",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 13,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "hiperplasia-prostatica-benigna",
+      "nome": "Hiperplasia Prostática Benigna",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 13,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "hiperplasia-prostatica-benigna__hpb"
+      ]
+    },
+    {
+      "id": "meningites-e-encefalites",
+      "nome": "Meningites e Encefalites",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "meningites-e-encefalites__meningite-bacteriana-adulto"
+      ]
+    },
+    {
+      "id": "bradiarritmias",
+      "nome": "Bradiarritmias",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "bradiarritmias__bloqueio-av-total"
+      ]
+    },
+    {
+      "id": "sincope",
+      "nome": "Síncope",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sincope__sincope-vasovagal"
+      ]
+    },
+    {
+      "id": "artrite-idiopatica-juvenil",
+      "nome": "Artrite Idiopática Juvenil",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "artrite-idiopatica-juvenil__aij"
+      ]
+    },
+    {
+      "id": "sindrome-depressiva",
+      "nome": "Síndrome Depressiva",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sindrome-depressiva__episodio-depressivo-maior"
+      ]
+    },
+    {
+      "id": "cancer-colorretal-e-sindromes-associadas",
+      "nome": "Câncer Colorretal e Síndromes Associadas",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cancer-colorretal-e-sindromes-associadas__adenocarcinoma-colorretal"
+      ]
+    },
+    {
+      "id": "doencas-orificiais-e-cec-de-canal-anal",
+      "nome": "Doenças Orificiais e CEC de Canal Anal",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "doencas-orificiais-e-cec-de-canal-anal__fissura-anal",
+        "doencas-orificiais-e-cec-de-canal-anal__hemorroida-interna"
+      ]
+    },
+    {
+      "id": "sdra-sindrome-do-desconforto-respiratorio",
+      "nome": "SDRA - Síndrome do Desconforto Respiratório",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 15,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sdra-sindrome-do-desconforto-respiratorio__sdra"
+      ]
+    },
+    {
+      "id": "choque-em-uti",
+      "nome": "Choque em UTI",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 15,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "choque-em-uti__choque-septico",
+        "choque-em-uti__choque-hipovolemico"
+      ]
+    },
+    {
+      "id": "principais-sintomas-em-mastologia",
+      "nome": "Principais Sintomas em Mastologia",
+      "area": "GO",
+      "prio": "Alta",
+      "bloco": 15,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "diarreia-aguda-e-colite-pseudomembranosa",
+      "nome": "Diarreia Aguda e Colite Pseudomembranosa",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 16,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "diarreia-aguda-e-colite-pseudomembranosa__colite-pseudomembranosa"
+      ]
+    },
+    {
+      "id": "hiperplasia-adrenal-congenita",
+      "nome": "Hiperplasia Adrenal Congênita",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 16,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "hiperplasia-adrenal-congenita__hac-classica"
+      ]
+    },
+    {
+      "id": "glomerulopatias",
+      "nome": "Glomerulopatias",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 17,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "glomerulopatias__nefropatia-iga"
+      ]
+    },
+    {
+      "id": "fibrose-cistica",
+      "nome": "Fibrose Cística",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 17,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "fibrose-cistica__fibrose-cistica"
+      ]
+    },
+    {
+      "id": "adenocarcinoma-de-pancreas",
+      "nome": "Adenocarcinoma de Pâncreas",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 17,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "adenocarcinoma-de-pancreas__adenocarcinoma-pancreas"
+      ]
+    },
+    {
+      "id": "hiv-e-doencas-oportunistas",
+      "nome": "HIV e Doenças Oportunistas",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 18,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "hiv-e-doencas-oportunistas__pneumocistose"
+      ]
+    },
+    {
+      "id": "hipertireoidismo-e-tireoidite",
+      "nome": "Hipertireoidismo e Tireoidite",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 18,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "hipertireoidismo-e-tireoidite__doenca-graves"
+      ]
+    },
+    {
+      "id": "processo-epidemico",
+      "nome": "Processo Epidêmico",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 18,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "parasitoses-intestinais",
+      "nome": "Parasitoses Intestinais",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 19,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "parasitoses-intestinais__giardiase"
+      ]
+    },
+    {
+      "id": "depressao-e-delirium-no-idoso",
+      "nome": "Depressão e Delirium no Idoso",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 21,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "depressao-e-delirium-no-idoso__delirium"
+      ]
+    },
+    {
+      "id": "uropediatria-e-hernias-em-pediatria",
+      "nome": "Uropediatria e Hérnias em Pediatria",
+      "area": "Pediatria",
+      "prio": "Alta",
+      "bloco": 21,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "uropediatria-e-hernias-em-pediatria__criptorquidia"
+      ]
+    },
+    {
+      "id": "diagnosticos-diferenciais-das-massas-cervicais",
+      "nome": "Diagnósticos Diferenciais das Massas Cervicais",
+      "area": "Cirurgia",
+      "prio": "Alta",
+      "bloco": 21,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "diagnosticos-diferenciais-das-massas-cervicais__cisto-tireoglosso"
+      ]
+    },
+    {
+      "id": "doencas-virais-e-pandemicas",
+      "nome": "Doenças Virais e Pandêmicas",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 22,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "doencas-virais-e-pandemicas__influenza",
+        "doencas-virais-e-pandemicas__covid-19"
+      ]
+    },
+    {
+      "id": "ictericias-febris-e-febre-maculosa",
+      "nome": "Icterícias Febris e Febre Maculosa",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 22,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "ictericias-febris-e-febre-maculosa__leptospirose",
+        "ictericias-febris-e-febre-maculosa__febre-maculosa"
+      ]
+    },
+    {
+      "id": "otologia",
+      "nome": "Otologia",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 25,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "otologia__otite-media-aguda"
+      ]
+    },
+    {
+      "id": "rinologia",
+      "nome": "Rinologia",
+      "area": "Clínica Médica",
+      "prio": "Alta",
+      "bloco": 26,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "rinologia__rinossinusite-aguda"
+      ]
+    },
+    {
+      "id": "preventiva-reta-final",
+      "nome": "Preventiva: Reta Final",
+      "area": "Preventiva",
+      "prio": "Alta",
+      "bloco": 26,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "ultrassonografia-em-obstetricia",
+      "nome": "Ultrassonografia em Obstetrícia",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 1,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "alimentacao-infantil",
+      "nome": "Alimentação Infantil",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 1,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "embriologia-do-sistema-genital-feminino",
+      "nome": "Embriologia do Sistema Genital Feminino",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 2,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "malformacoes-mullerianas",
+      "nome": "Malformações Mullerianas",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 2,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "febre-sem-sinais-localizatorios",
+      "nome": "Febre sem Sinais Localizatórios",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 2,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "febre-sem-sinais-localizatorios__itu-oculta-lactente"
+      ]
+    },
+    {
+      "id": "miscelanea-em-nefropediatria",
+      "nome": "Miscelânea em Nefropediatria",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 2,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "assistencia-ao-pre-natal-na-aps",
+      "nome": "Assistência ao Pré-Natal na APS",
+      "area": "Preventiva",
+      "prio": "Média",
+      "bloco": 2,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "diarreia-cronica-e-doencas-funcionais",
+      "nome": "Diarreia Crônica e Doenças Funcionais",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 3,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "diarreia-cronica-e-doencas-funcionais__doenca-celiaca"
+      ]
+    },
+    {
+      "id": "trauma-urologico",
+      "nome": "Trauma Urológico",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 3,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "trauma-urologico__ruptura-uretra-posterior"
+      ]
+    },
+    {
+      "id": "artrites-microcristalinas-gota-e-cppd",
+      "nome": "Artrites Microcristalinas - Gota e CPPD",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "artrites-microcristalinas-gota-e-cppd__gota"
+      ]
+    },
+    {
+      "id": "osteoartrite",
+      "nome": "Osteoartrite",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "osteoartrite__gonartrose"
+      ]
+    },
+    {
+      "id": "fibromialgia",
+      "nome": "Fibromialgia",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "fibromialgia__fibromialgia"
+      ]
+    },
+    {
+      "id": "obesidade-e-sindrome-metabolica",
+      "nome": "Obesidade e Síndrome Metabólica",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "obesidade-e-sindrome-metabolica__obesidade-infantil"
+      ]
+    },
+    {
+      "id": "desnutricao-e-vitaminas",
+      "nome": "Desnutrição e Vitaminas",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "desnutricao-e-vitaminas__raquitismo-carencial"
+      ]
+    },
+    {
+      "id": "trauma-raquimedular",
+      "nome": "Trauma Raquimedular",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 4,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "trauma-raquimedular__trauma-raquimedular"
+      ]
+    },
+    {
+      "id": "dor-toracica-nao-coronariana",
+      "nome": "Dor Torácica Não Coronariana",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 5,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "dor-toracica-nao-coronariana__pericardite-aguda"
+      ]
+    },
+    {
+      "id": "esteroidogenese",
+      "nome": "Esteroidogênese",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 5,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "tce-e-hipertensao-intracraniana-em-pediatria",
+      "nome": "TCE e Hipertensão Intracraniana em Pediatria",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 5,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "tce-e-hipertensao-intracraniana-em-pediatria__hipertensao-intracraniana"
+      ]
+    },
+    {
+      "id": "reacoes-alergicas",
+      "nome": "Reações Alérgicas",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "reacoes-alergicas__anafilaxia"
+      ]
+    },
+    {
+      "id": "hiperprolactinemia",
+      "nome": "Hiperprolactinemia",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "hiperprolactinemia__hiperprolactinemia-medicamentosa"
+      ]
+    },
+    {
+      "id": "cicatrizacao-e-lesoes-por-pressao",
+      "nome": "Cicatrização e Lesões por Pressão",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cicatrizacao-e-lesoes-por-pressao__lesao-pressao-sacral"
+      ]
+    },
+    {
+      "id": "oncologia-emergencias-e-cuidados-paliativos",
+      "nome": "Oncologia: Emergências e Cuidados Paliativos",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 7,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "oncologia-emergencias-e-cuidados-paliativos__compressao-medular"
+      ]
+    },
+    {
+      "id": "interrupcao-legal-da-gestacao",
+      "nome": "Interrupção Legal da Gestação",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 7,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "grandes-sindromes-geriatricas",
+      "nome": "Grandes Síndromes Geriátricas",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 8,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "doenca-trofoblastica-gestacional",
+      "nome": "Doença Trofoblástica Gestacional",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 8,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "doenca-trofoblastica-gestacional__mola-hidatiforme"
+      ]
+    },
+    {
+      "id": "disfagia-e-acalasia",
+      "nome": "Disfagia e Acalasia",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 8,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "disfagia-e-acalasia__acalasia"
+      ]
+    },
+    {
+      "id": "coagulacao-e-hemostasia",
+      "nome": "Coagulação e Hemostasia",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "coagulacao-e-hemostasia__coagulacao-intravascular-disseminada"
+      ]
+    },
+    {
+      "id": "outros-sangramentos-da-2-metade-da-gestacao",
+      "nome": "Outros Sangramentos da 2ª Metade da Gestação",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 9,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "outros-sangramentos-da-2-metade-da-gestacao__vasa-previa"
+      ]
+    },
+    {
+      "id": "miocardite-sincope-e-ic-em-pediatria",
+      "nome": "Miocardite, Síncope e IC em Pediatria",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 10,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "miocardite-sincope-e-ic-em-pediatria__miocardite-aguda"
+      ]
+    },
+    {
+      "id": "rede-de-atencao-psicossocial-raps",
+      "nome": "Rede de Atenção Psicossocial (RAPS)",
+      "area": "Preventiva",
+      "prio": "Média",
+      "bloco": 10,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "hernioplastia-inguinal",
+      "nome": "Hernioplastia Inguinal",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 10,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "retalhos",
+      "nome": "Retalhos",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 10,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "enxertos",
+      "nome": "Enxertos",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 10,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "etica-em-pesquisa-clinica",
+      "nome": "Ética em Pesquisa Clínica",
+      "area": "Preventiva",
+      "prio": "Média",
+      "bloco": 11,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "sindrome-compartimental-intra-abdominal",
+      "nome": "Síndrome Compartimental Intra-Abdominal",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 11,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sindrome-compartimental-intra-abdominal__sindrome-compartimental"
+      ]
+    },
+    {
+      "id": "disturbios-metabolicos-neonatais",
+      "nome": "Distúrbios Metabólicos Neonatais",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 12,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "disturbios-metabolicos-neonatais__hipoglicemia-neonatal"
+      ]
+    },
+    {
+      "id": "ingestao-e-aspiracao-de-corpo-estranho-e-brue",
+      "nome": "Ingestão e Aspiração de Corpo Estranho e BRUE",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 12,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "ingestao-e-aspiracao-de-corpo-estranho-e-brue__aspiracao-corpo-estranho"
+      ]
+    },
+    {
+      "id": "uro-oncologia",
+      "nome": "Uro-Oncologia",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 12,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "uro-oncologia__cancer-bexiga"
+      ]
+    },
+    {
+      "id": "vasculites",
+      "nome": "Vasculites",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 13,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "vasculites__arterite-celulas-gigantes"
+      ]
+    },
+    {
+      "id": "sofrimento-fetal-cronico",
+      "nome": "Sofrimento Fetal Crônico",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 13,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sofrimento-fetal-cronico__insuficiencia-placentaria-cronica"
+      ]
+    },
+    {
+      "id": "gemelaridade",
+      "nome": "Gemelaridade",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 13,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "gemelaridade__transfusao-feto-fetal"
+      ]
+    },
+    {
+      "id": "doencas-valvares",
+      "nome": "Doenças Valvares",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "doencas-valvares__estenose-aortica"
+      ]
+    },
+    {
+      "id": "lesoes-benignas-da-mama",
+      "nome": "Lesões Benignas da Mama",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 15,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "lesoes-benignas-da-mama__fibroadenoma"
+      ]
+    },
+    {
+      "id": "osteomielite-e-artrite-septica",
+      "nome": "Osteomielite e Artrite Séptica",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 15,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "osteomielite-e-artrite-septica__osteomielite-aguda",
+        "osteomielite-e-artrite-septica__artrite-septica"
+      ]
+    },
+    {
+      "id": "sindrome-ansiosa",
+      "nome": "Síndrome Ansiosa",
+      "area": "Preventiva",
+      "prio": "Média",
+      "bloco": 15,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sindrome-ansiosa__transtorno-panico"
+      ]
+    },
+    {
+      "id": "doenca-inflamatoria-intestinal-dii",
+      "nome": "Doença Inflamatória Intestinal (DII)",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 16,
+      "status": "ja_tem_caso",
+      "reason": "2 entidade(s) já gerada(s).",
+      "entidades": [
+        "doenca-inflamatoria-intestinal-dii__doenca-crohn",
+        "doenca-inflamatoria-intestinal-dii__retocolite-ulcerativa"
+      ]
+    },
+    {
+      "id": "doencas-negligenciadas",
+      "nome": "Doenças Negligenciadas",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 16,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "doencas-negligenciadas__doenca-chagas-cronica"
+      ]
+    },
+    {
+      "id": "colo-curto-e-incompetencia-istmocervical",
+      "nome": "Colo Curto e Incompetência Istmocervical",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 16,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "colo-curto-e-incompetencia-istmocervical__incompetencia-istmocervical"
+      ]
+    },
+    {
+      "id": "hipotireoidismo-em-pediatria",
+      "nome": "Hipotireoidismo em Pediatria",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 16,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "hipotireoidismo-em-pediatria__tireoidite-hashimoto"
+      ]
+    },
+    {
+      "id": "nutrologia-em-pediatria",
+      "nome": "Nutrologia em Pediatria",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 16,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "aneurisma-de-aorta",
+      "nome": "Aneurisma de Aorta",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 16,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "aneurisma-de-aorta__aneurisma-aorta-abdominal"
+      ]
+    },
+    {
+      "id": "osteoporose",
+      "nome": "Osteoporose",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 17,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "osteoporose__fratura-fragilidade"
+      ]
+    },
+    {
+      "id": "puerperio",
+      "nome": "Puerpério",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 17,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "puerperio__endometrite-puerperal"
+      ]
+    },
+    {
+      "id": "imunodeficiencias-em-pediatria",
+      "nome": "Imunodeficiências em Pediatria",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 17,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "registro-de-saude-orientado-por-problemas",
+      "nome": "Registro de Saúde Orientado por Problemas",
+      "area": "Preventiva",
+      "prio": "Média",
+      "bloco": 17,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "sepse-neonatal",
+      "nome": "Sepse Neonatal",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 18,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sepse-neonatal__sepse-neonatal-precoce"
+      ]
+    },
+    {
+      "id": "abordagem-familiar-e-comunitaria",
+      "nome": "Abordagem Familiar e Comunitária",
+      "area": "Preventiva",
+      "prio": "Média",
+      "bloco": 18,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "trombose-venosa-profunda",
+      "nome": "Trombose Venosa Profunda",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 18,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "trombose-venosa-profunda__tvp"
+      ]
+    },
+    {
+      "id": "adrenal",
+      "nome": "Adrenal",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 19,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "adrenal__insuficiencia-adrenal-primaria"
+      ]
+    },
+    {
+      "id": "sindrome-de-cushing",
+      "nome": "Síndrome de Cushing",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 19,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sindrome-de-cushing__sindrome-cushing"
+      ]
+    },
+    {
+      "id": "nodulo-pulmonar",
+      "nome": "Nódulo Pulmonar",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 19,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "cancer-de-mama-doenca-invasiva",
+      "nome": "Câncer de Mama: Doença Invasiva",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 19,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cancer-de-mama-doenca-invasiva__carcinoma-mama-invasivo"
+      ]
+    },
+    {
+      "id": "isquemia-de-membros-inferiores",
+      "nome": "Isquemia de Membros Inferiores",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 19,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "isquemia-de-membros-inferiores__isquemia-aguda-membro"
+      ]
+    },
+    {
+      "id": "outros-disturbios-hidroeletroliticos",
+      "nome": "Outros Distúrbios Hidroeletrolíticos",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 20,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "doenca-renal-cronica",
+      "nome": "Doença Renal Crônica",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 20,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "doenca-renal-cronica__doenca-renal-cronica"
+      ]
+    },
+    {
+      "id": "cancer-de-ovario",
+      "nome": "Câncer de Ovário",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 20,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cancer-de-ovario__carcinoma-epitelial-ovario"
+      ]
+    },
+    {
+      "id": "itu-em-pediatria",
+      "nome": "ITU em Pediatria",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 20,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "itu-em-pediatria__itu-febril-lactente"
+      ]
+    },
+    {
+      "id": "sepse-pediatrica",
+      "nome": "Sepse Pediátrica",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 20,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sepse-pediatrica__sepse-pediatrica"
+      ]
+    },
+    {
+      "id": "choque-e-drogas-vasoativas-em-pediatria",
+      "nome": "Choque e Drogas Vasoativas em Pediatria",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 20,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "choque-e-drogas-vasoativas-em-pediatria__choque-septico-pediatrico"
+      ]
+    },
+    {
+      "id": "pneumoconioses",
+      "nome": "Pneumoconioses",
+      "area": "Preventiva",
+      "prio": "Média",
+      "bloco": 20,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "pneumoconioses__silicose"
+      ]
+    },
+    {
+      "id": "cancer-de-endometrio",
+      "nome": "Câncer de Endométrio",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 21,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cancer-de-endometrio__adenocarcinoma-endometrio"
+      ]
+    },
+    {
+      "id": "outras-intercorrencias-clinicas-na-gestacao",
+      "nome": "Outras Intercorrências Clínicas na Gestação",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 21,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "malformacoes-congenitas",
+      "nome": "Malformações Congênitas",
+      "area": "Pediatria",
+      "prio": "Média",
+      "bloco": 21,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "videolaparoscopia",
+      "nome": "Videolaparoscopia",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 21,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "insuficiencia-venosa-cronica",
+      "nome": "Insuficiência Venosa Crônica",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 21,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "insuficiencia-venosa-cronica__insuficiencia-venosa-cronica"
+      ]
+    },
+    {
+      "id": "tecnicas-de-reproducao-assistida",
+      "nome": "Técnicas de Reprodução Assistida",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 22,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "cuidado-a-saude-lgbtqiapn",
+      "nome": "Cuidado à Saúde LGBTQIAPN+",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 22,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "intoxicacoes-pairo-e-burnout",
+      "nome": "Intoxicações, PAIRO e Burnout",
+      "area": "Preventiva",
+      "prio": "Média",
+      "bloco": 22,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "hiperaldosteronismo-primario",
+      "nome": "Hiperaldosteronismo Primário",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 23,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "hiperaldosteronismo-primario__hiperaldosteronismo-primario"
+      ]
+    },
+    {
+      "id": "oncohematologia",
+      "nome": "Oncohematologia",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 23,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "oncohematologia__linfoma-hodgkin"
+      ]
+    },
+    {
+      "id": "emergencias-psiquiatricas",
+      "nome": "Emergências Psiquiátricas",
+      "area": "Preventiva",
+      "prio": "Média",
+      "bloco": 23,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "anomalias-congenitas-de-cabeca-e-pescoco",
+      "nome": "Anomalias Congênitas de Cabeça e Pescoço",
+      "area": "Cirurgia",
+      "prio": "Média",
+      "bloco": 23,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "oftalmologia-para-o-generalista",
+      "nome": "Oftalmologia para o Generalista",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 25,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "oftalmologia-para-o-generalista__glaucoma-agudo"
+      ]
+    },
+    {
+      "id": "trombofilias-na-gestacao-e-puerperio",
+      "nome": "Trombofilias na Gestação e Puerpério",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 25,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "doenca-hemolitica-perinatal",
+      "nome": "Doença Hemolítica Perinatal",
+      "area": "GO",
+      "prio": "Média",
+      "bloco": 25,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "doenca-hemolitica-perinatal__doenca-hemolitica-rh"
+      ]
+    },
+    {
+      "id": "saude-do-trabalhador",
+      "nome": "Saúde do Trabalhador",
+      "area": "Preventiva",
+      "prio": "Média",
+      "bloco": 25,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "bucofaringolaringologia",
+      "nome": "Bucofaringolaringologia",
+      "area": "Clínica Médica",
+      "prio": "Média",
+      "bloco": 26,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "transtornos-relacionados-a-substancias-alcool",
+      "nome": "Transtornos Relacionados a Substâncias - Álcool",
+      "area": "Preventiva",
+      "prio": "Média",
+      "bloco": 26,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "transtornos-relacionados-a-substancias-alcool__abstinencia-alcoolica"
+      ]
+    },
+    {
+      "id": "doenca-renal-cronica-e-lesao-renal-agudo",
+      "nome": "Doença Renal Crônica e Lesão Renal Agudo",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 2,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "trauma-medidas-auxiliares-e-fast",
+      "nome": "Trauma: Medidas Auxiliares e FAST",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 2,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "trauma-musculoesqueletico",
+      "nome": "Trauma Musculoesquelético",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 4,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "trauma-de-pescoco",
+      "nome": "Trauma de Pescoço",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 4,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "politrauma-e-afogamento",
+      "nome": "Politrauma e Afogamento",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 5,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "queimaduras-em-pediatria",
+      "nome": "Queimaduras em Pediatria",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 5,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "priapismo",
+      "nome": "Priapismo",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 5,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "priapismo__priapismo-isquemico"
+      ]
+    },
+    {
+      "id": "doencas-autoinflamatorias",
+      "nome": "Doenças Autoinflamatórias",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 6,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "covid-em-pediatria",
+      "nome": "COVID em Pediatria",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 6,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "covid-em-pediatria__covid-pediatrico"
+      ]
+    },
+    {
+      "id": "avaliacao-de-enzimas-hepaticas-e-dhem",
+      "nome": "Avaliação de Enzimas Hepáticas e DHEM",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 8,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "abscesso-hepatico",
+      "nome": "Abscesso Hepático",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 8,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "abscesso-hepatico__abscesso-hepatico-piogenico"
+      ]
+    },
+    {
+      "id": "hemoterapia",
+      "nome": "Hemoterapia",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 9,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "hernias-incisionais-e-outras-hernias",
+      "nome": "Hérnias Incisionais e Outras Hérnias",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 11,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "dhem-doenca-hepatica-esteatotica-metabolica",
+      "nome": "DHEM - Doença Hepática Esteatótica Metabólica",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 12,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "cardiopatias-na-gravidez",
+      "nome": "Cardiopatias na Gravidez",
+      "area": "GO",
+      "prio": "Baixa",
+      "bloco": 14,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "sindrome-maniaca",
+      "nome": "Síndrome Maníaca",
+      "area": "Preventiva",
+      "prio": "Baixa",
+      "bloco": 14,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sindrome-maniaca__episodio-maniaco"
+      ]
+    },
+    {
+      "id": "via-aerea-intubacao-e-vni",
+      "nome": "Via Aérea, Intubação e VNI",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 15,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "ventilacao-mecanica",
+      "nome": "Ventilação Mecânica",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 15,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "infeccoes-nosocomiais",
+      "nome": "Infecções Nosocomiais",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 15,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "infeccoes-nosocomiais__pneumonia-associada-ventilacao"
+      ]
+    },
+    {
+      "id": "hiv-em-pediatria",
+      "nome": "HIV em Pediatria",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 15,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "hiv-em-pediatria__hiv-pediatrico"
+      ]
+    },
+    {
+      "id": "diferencas-no-desenvolvimento-sexual",
+      "nome": "Diferenças no Desenvolvimento Sexual",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 16,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "carcinoma-hepatocelular",
+      "nome": "Carcinoma Hepatocelular",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 16,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "esclerose-sistemica",
+      "nome": "Esclerose Sistêmica",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 17,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "doenca-de-sjogren",
+      "nome": "Doença de Sjögren",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 17,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "miopatias-autoimunes",
+      "nome": "Miopatias Autoimunes",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 17,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "doencas-da-vulva-e-da-vagina",
+      "nome": "Doenças da Vulva e da Vagina",
+      "area": "GO",
+      "prio": "Baixa",
+      "bloco": 18,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "doencas-da-vulva-e-da-vagina__liquen-escleroso-vulvar"
+      ]
+    },
+    {
+      "id": "outras-doencas-neonatais",
+      "nome": "Outras Doenças Neonatais",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 18,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "ortopedia-geral",
+      "nome": "Ortopedia Geral",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 18,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "ortopedia-geral__fratura-colo-femur"
+      ]
+    },
+    {
+      "id": "doenca-pulmonar-intersticial",
+      "nome": "Doença Pulmonar Intersticial",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 19,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "doenca-pulmonar-intersticial__fibrose-pulmonar-idiopatica"
+      ]
+    },
+    {
+      "id": "sindrome-psicotica",
+      "nome": "Síndrome Psicótica",
+      "area": "Preventiva",
+      "prio": "Baixa",
+      "bloco": 19,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "sindrome-psicotica__primeiro-surto-psicotico"
+      ]
+    },
+    {
+      "id": "psicofarmacologia",
+      "nome": "Psicofarmacologia",
+      "area": "Preventiva",
+      "prio": "Baixa",
+      "bloco": 19,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "oncocirurgia-geral",
+      "nome": "Oncocirurgia Geral",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 19,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "tumores-anexiais",
+      "nome": "Tumores Anexiais",
+      "area": "GO",
+      "prio": "Baixa",
+      "bloco": 20,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "tumores-anexiais__cisto-ovariano-funcional"
+      ]
+    },
+    {
+      "id": "sedoanalgesia-e-sequencia-rapida-de-intubacao",
+      "nome": "Sedoanalgesia e Sequência Rápida de Intubação",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 20,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "saude-socioecologica",
+      "nome": "Saúde Socioecológica",
+      "area": "Preventiva",
+      "prio": "Baixa",
+      "bloco": 20,
+      "status": "nao_clinico_ou_metodologico",
+      "reason": "Tema conceitual, metodológico, administrativo ou transversal; não deve virar illness script clínico sem formato próprio.",
+      "entidades": []
+    },
+    {
+      "id": "pancreatite-cronica",
+      "nome": "Pancreatite Crônica",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 20,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "pancreatite-cronica__pancreatite-cronica"
+      ]
+    },
+    {
+      "id": "cancer-de-pulmao",
+      "nome": "Câncer de Pulmão",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 20,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cancer-de-pulmao__cancer-pulmao"
+      ]
+    },
+    {
+      "id": "cec-de-cabeca-e-pescoco",
+      "nome": "CEC de Cabeça e Pescoço",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 22,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "cec-de-cabeca-e-pescoco__cec-orofaringe"
+      ]
+    },
+    {
+      "id": "doencas-traqueais-e-bronquiectasias",
+      "nome": "Doenças Traqueais e Bronquiectasias",
+      "area": "Cirurgia",
+      "prio": "Baixa",
+      "bloco": 22,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "doencas-traqueais-e-bronquiectasias__bronquiectasias"
+      ]
+    },
+    {
+      "id": "feocromocitoma",
+      "nome": "Feocromocitoma",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 23,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "feocromocitoma__feocromocitoma"
+      ]
+    },
+    {
+      "id": "prolactinomas",
+      "nome": "Prolactinomas",
+      "area": "Clínica Médica",
+      "prio": "Baixa",
+      "bloco": 23,
+      "status": "ja_tem_caso",
+      "reason": "1 entidade(s) já gerada(s).",
+      "entidades": [
+        "prolactinomas__prolactinoma"
+      ]
+    },
+    {
+      "id": "cirurgia-ginecologica-principios",
+      "nome": "Cirurgia Ginecológica: Princípios",
+      "area": "GO",
+      "prio": "Baixa",
+      "bloco": 23,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "transtornos-psiquiatricos-na-gestacao-e-pos-part",
+      "nome": "Transtornos Psiquiátricos na Gestação e Pós-Parto",
+      "area": "GO",
+      "prio": "Baixa",
+      "bloco": 23,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "medicina-fetal",
+      "nome": "Medicina Fetal",
+      "area": "GO",
+      "prio": "Baixa",
+      "bloco": 24,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "otites-rinossinusites-e-epistaxe",
+      "nome": "Otites, Rinossinusites e Epistaxe",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 24,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "rinites-e-afeccoes-da-laringe-e-faringe",
+      "nome": "Rinites e Afecções da Laringe e Faringe",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 24,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "oftalmopediatria",
+      "nome": "Oftalmopediatria",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 25,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "outras-urgencias-ginecologicas",
+      "nome": "Outras Urgências Ginecológicas",
+      "area": "GO",
+      "prio": "Baixa",
+      "bloco": 26,
+      "status": "precisa_decomposicao_humana",
+      "reason": "Tema amplo/transversal; gerar caso diretamente teria alto risco de entidade arbitrária.",
+      "entidades": []
+    },
+    {
+      "id": "malformacoes-do-sistema-nervoso",
+      "nome": "Malformações do Sistema Nervoso",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 26,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "doencas-neuromusculares-na-infancia",
+      "nome": "Doenças Neuromusculares na Infância",
+      "area": "Pediatria",
+      "prio": "Baixa",
+      "bloco": 26,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "trauma-populacoes-especiais",
+      "nome": "Trauma: Populações Especiais",
+      "area": "Cirurgia",
+      "prio": "Bônus",
+      "bloco": 2,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "fios-de-sutura",
+      "nome": "Fios de Sutura",
+      "area": "Cirurgia",
+      "prio": "Bônus",
+      "bloco": 6,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "anestesicos-locais",
+      "nome": "Anestésicos Locais",
+      "area": "Cirurgia",
+      "prio": "Bônus",
+      "bloco": 6,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "neoplasias-cisticas-pancreaticas",
+      "nome": "Neoplasias Císticas Pancreáticas",
+      "area": "Cirurgia",
+      "prio": "Bônus",
+      "bloco": 20,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "transtornos-alimentares-e-de-personalidade",
+      "nome": "Transtornos Alimentares e de Personalidade",
+      "area": "Preventiva",
+      "prio": "Bônus",
+      "bloco": 24,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "endoscopia-diagnostica",
+      "nome": "Endoscopia Diagnóstica",
+      "area": "Cirurgia",
+      "prio": "Bônus",
+      "bloco": 24,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "cabeca-e-pescoco-tireoide-e-paratireoide",
+      "nome": "Cabeça e Pescoço: Tireoide e Paratireoide",
+      "area": "Cirurgia",
+      "prio": "Bônus",
+      "bloco": 24,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "neurocirurgia",
+      "nome": "Neurocirurgia",
+      "area": "Cirurgia",
+      "prio": "Bônus",
+      "bloco": 24,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "anestesiologia",
+      "nome": "Anestesiologia",
+      "area": "Cirurgia",
+      "prio": "Bônus",
+      "bloco": 25,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    },
+    {
+      "id": "cirurgia-cardiaca",
+      "nome": "Cirurgia Cardíaca",
+      "area": "Cirurgia",
+      "prio": "Bônus",
+      "bloco": 26,
+      "status": "pendente_revisao_clinica",
+      "reason": "Tema potencialmente clínico, mas ainda precisa decomposição/checagem antes de geração em massa.",
+      "entidades": []
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "itu-em-pediatria__itu-febril-lactente",
+    "entidade": "Infecção urinária febril no lactente",
+    "area": "Pediatria",
+    "subtopico": "ITU em Pediatria",
+    "sindrome": "Síndrome urinária febril pediátrica",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Virose inespecífica",
+        "feature": "urocultura positiva e ausência de outro foco favorecem infecção urinária"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "itu-em-pediatria__itu-febril-lactente-typical",
+      "scriptId": "itu-em-pediatria__itu-febril-lactente",
+      "presentation": "typical",
+      "vignette": "lactente com febre sem foco, irritabilidade, recusa alimentar e urocultura positiva",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "febre inespecífica em lactente com confirmação urinária",
+        "sindromeCorreta": "Síndrome urinária febril pediátrica",
+        "opcoes": [
+          "Síndrome urinária febril pediátrica",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome urinária febril pediátrica; urocultura positiva e ausência de outro foco favorecem infecção urinária.",
+        "diferenciaisDaSindrome": [
+          "Virose inespecífica",
+          "Cistite aguda",
+          "Pielonefrite aguda"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Virose inespecífica",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Cistite aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Pielonefrite aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Infecção urinária febril no lactente",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Infecção urinária febril no lactente. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "itu-em-pediatria__itu-febril-lactente-atypical",
+      "scriptId": "itu-em-pediatria__itu-febril-lactente",
+      "presentation": "atypical",
+      "vignette": "lactente com febre sem foco, irritabilidade, recusa alimentar e urocultura positiva Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "febre inespecífica em lactente com confirmação urinária com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome urinária febril pediátrica",
+        "opcoes": [
+          "Síndrome urinária febril pediátrica",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome urinária febril pediátrica; urocultura positiva e ausência de outro foco favorecem infecção urinária.",
+        "diferenciaisDaSindrome": [
+          "Virose inespecífica",
+          "Cistite aguda",
+          "Pielonefrite aguda"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Virose inespecífica",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Cistite aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Pielonefrite aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Infecção urinária febril no lactente",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Infecção urinária febril no lactente. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.968Z"
+  }
+}

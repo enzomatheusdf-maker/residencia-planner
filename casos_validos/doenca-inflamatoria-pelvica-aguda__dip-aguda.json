@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "doenca-inflamatoria-pelvica-aguda__dip-aguda",
+    "entidade": "Doença inflamatória pélvica aguda",
+    "area": "GO",
+    "subtopico": "Doença Inflamatória Pélvica Aguda",
+    "sindrome": "Síndrome infecciosa pélvica ascendente",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Gestação ectópica",
+        "feature": "teste negativo e dor à mobilização cervical favorecem infecção pélvica"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "doenca-inflamatoria-pelvica-aguda__dip-aguda-typical",
+      "scriptId": "doenca-inflamatoria-pelvica-aguda__dip-aguda",
+      "presentation": "typical",
+      "vignette": "mulher jovem com dor pélvica bilateral, febre, corrimento, dor à mobilização do colo e teste de gestação negativo",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "dor pélvica infecciosa em mulher sexualmente ativa com sinais ao exame ginecológico",
+        "sindromeCorreta": "Síndrome infecciosa pélvica ascendente",
+        "opcoes": [
+          "Síndrome infecciosa pélvica ascendente",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome infecciosa pélvica ascendente; teste negativo e dor à mobilização cervical favorecem infecção pélvica.",
+        "diferenciaisDaSindrome": [
+          "Gestação ectópica",
+          "Gestação ectópica tubária",
+          "Ameaça de abortamento"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Gestação ectópica",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gestação ectópica tubária",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Ameaça de abortamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Doença inflamatória pélvica aguda",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Doença inflamatória pélvica aguda. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "doenca-inflamatoria-pelvica-aguda__dip-aguda-atypical",
+      "scriptId": "doenca-inflamatoria-pelvica-aguda__dip-aguda",
+      "presentation": "atypical",
+      "vignette": "mulher jovem com dor pélvica bilateral, febre, corrimento, dor à mobilização do colo e teste de gestação negativo Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "dor pélvica infecciosa em mulher sexualmente ativa com sinais ao exame ginecológico com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome infecciosa pélvica ascendente",
+        "opcoes": [
+          "Síndrome infecciosa pélvica ascendente",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome infecciosa pélvica ascendente; teste negativo e dor à mobilização cervical favorecem infecção pélvica.",
+        "diferenciaisDaSindrome": [
+          "Gestação ectópica",
+          "Gestação ectópica tubária",
+          "Ameaça de abortamento"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Gestação ectópica",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gestação ectópica tubária",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Ameaça de abortamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Doença inflamatória pélvica aguda",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Doença inflamatória pélvica aguda. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.724Z"
+  }
+}

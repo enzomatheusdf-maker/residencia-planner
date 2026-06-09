@@ -1,0 +1,169 @@
+{
+  "script": {
+    "id": "sifilis__sifilis-primaria",
+    "entidade": "Sífilis primária",
+    "area": "Clínica Médica",
+    "subtopico": "Sífilis",
+    "sindrome": "Síndrome de úlcera genital indolor",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "exposição sexual desprotegida",
+      "múltiplas parcerias",
+      "coinfecções"
+    ],
+    "fault": "Infecção por Treponema pallidum causa cancro duro no local de inoculação.",
+    "consequences": [
+      "úlcera única",
+      "adenopatia regional",
+      "progressão para fases sistêmicas"
+    ],
+    "management": [
+      "testes treponêmico/não treponêmico",
+      "penicilina benzatina",
+      "tratar parcerias",
+      "rastrear ISTs"
+    ],
+    "redFlags": [
+      "gestação",
+      "sinais neurológicos",
+      "coinfecção HIV"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Reconhecer úlcera indolor",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Tratar e rastrear parcerias",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem vesículas dolorosas agrupadas"
+    ],
+    "discriminators": [
+      {
+        "vs": "Herpes genital",
+        "feature": "lesão indolor única e base endurecida favorecem cancro duro"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "disponibilidade",
+        "armadilha": "assumir que toda úlcera genital é herpes"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "sifilis__sifilis-primaria-typical",
+      "scriptId": "sifilis__sifilis-primaria",
+      "presentation": "typical",
+      "vignette": "Homem de 27 anos nota ferida única em pênis há 10 dias. A lesão não dói, tem base endurecida e há linfonodos inguinais pequenos.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "adulto jovem com úlcera genital única e indolor após exposição sexual",
+        "sindromeCorreta": "Síndrome de úlcera genital indolor",
+        "opcoes": [
+          "Síndrome de úlcera genital indolor",
+          "Síndrome uretral purulenta",
+          "Síndrome escrotal aguda"
+        ],
+        "justificativa": "Úlcera única, limpa e indolor sugere cancro duro.",
+        "diferenciaisDaSindrome": [
+          "herpes genital",
+          "cancroide",
+          "linfogranuloma venéreo"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "herpes genital",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "cancroide",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "linfogranuloma venéreo",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "testes treponêmico/não treponêmico",
+        "penicilina benzatina",
+        "tratar parcerias"
+      ],
+      "diagnosticoFinal": "Sífilis primária",
+      "justificativa": "Úlcera única, limpa e indolor sugere cancro duro. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "sifilis__sifilis-primaria-atypical",
+      "scriptId": "sifilis__sifilis-primaria",
+      "presentation": "atypical",
+      "vignette": "Mulher de 31 anos procura consulta por linfonodo inguinal e discreto desconforto vulvar. Ao exame, há pequena erosão firme em introito, pouco dolorosa.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "mulher com lesão genital discreta e adenopatia regional",
+        "sindromeCorreta": "Síndrome de úlcera genital indolor",
+        "opcoes": [
+          "Síndrome de úlcera genital indolor",
+          "Vulvovaginite irritativa",
+          "Bartholinite"
+        ],
+        "justificativa": "Lesão firme e pouco dolorosa com adenopatia orienta IST ulcerativa treponêmica.",
+        "diferenciaisDaSindrome": [
+          "trauma local",
+          "herpes",
+          "cancroide"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "trauma local",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "herpes",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "cancroide",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "testes treponêmico/não treponêmico",
+        "penicilina benzatina",
+        "tratar parcerias"
+      ],
+      "diagnosticoFinal": "Sífilis primária",
+      "justificativa": "Lesão firme e pouco dolorosa com adenopatia orienta IST ulcerativa treponêmica. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.203Z"
+  }
+}

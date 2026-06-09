@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "cirrose-hepatica-ii__hemorragia-varicosa",
+    "entidade": "Hemorragia varicosa esofágica",
+    "area": "Clínica Médica",
+    "subtopico": "Cirrose Hepática II",
+    "sindrome": "Síndrome hemorrágica digestiva por hipertensão portal",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Úlcera péptica sangrante",
+        "feature": "cirrose e estigmas portais favorecem ruptura de varizes"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "cirrose-hepatica-ii__hemorragia-varicosa-typical",
+      "scriptId": "cirrose-hepatica-ii__hemorragia-varicosa",
+      "presentation": "typical",
+      "vignette": "cirrótico com hematêmese volumosa, melena, hipotensão e estigmas de hipertensão portal",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sangramento digestivo alto grave em paciente com hipertensão portal",
+        "sindromeCorreta": "Síndrome hemorrágica digestiva por hipertensão portal",
+        "opcoes": [
+          "Síndrome hemorrágica digestiva por hipertensão portal",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome hemorrágica digestiva por hipertensão portal; cirrose e estigmas portais favorecem ruptura de varizes.",
+        "diferenciaisDaSindrome": [
+          "Úlcera péptica sangrante",
+          "Encefalopatia hepática",
+          "Colecistite aguda"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Úlcera péptica sangrante",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Encefalopatia hepática",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Colecistite aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Hemorragia varicosa esofágica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Hemorragia varicosa esofágica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "cirrose-hepatica-ii__hemorragia-varicosa-atypical",
+      "scriptId": "cirrose-hepatica-ii__hemorragia-varicosa",
+      "presentation": "atypical",
+      "vignette": "cirrótico com hematêmese volumosa, melena, hipotensão e estigmas de hipertensão portal Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sangramento digestivo alto grave em paciente com hipertensão portal com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome hemorrágica digestiva por hipertensão portal",
+        "opcoes": [
+          "Síndrome hemorrágica digestiva por hipertensão portal",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome hemorrágica digestiva por hipertensão portal; cirrose e estigmas portais favorecem ruptura de varizes.",
+        "diferenciaisDaSindrome": [
+          "Úlcera péptica sangrante",
+          "Encefalopatia hepática",
+          "Colecistite aguda"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Úlcera péptica sangrante",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Encefalopatia hepática",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Colecistite aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Hemorragia varicosa esofágica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Hemorragia varicosa esofágica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.572Z"
+  }
+}

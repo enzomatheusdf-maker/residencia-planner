@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "choque-em-uti__choque-septico",
+    "entidade": "Choque séptico",
+    "area": "Clínica Médica",
+    "subtopico": "Choque em UTI",
+    "sindrome": "Síndrome circulatória distributiva infecciosa",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Choque hipovolêmico",
+        "feature": "foco infeccioso e vasodilatação sistêmica favorecem choque distributivo"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "choque-em-uti__choque-septico-typical",
+      "scriptId": "choque-em-uti__choque-septico",
+      "presentation": "typical",
+      "vignette": "paciente com foco infeccioso, febre, confusão, hipotensão persistente e sinais de hipoperfusão",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "instabilidade hemodinâmica associada a infecção sistêmica",
+        "sindromeCorreta": "Síndrome circulatória distributiva infecciosa",
+        "opcoes": [
+          "Síndrome circulatória distributiva infecciosa",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome circulatória distributiva infecciosa; foco infeccioso e vasodilatação sistêmica favorecem choque distributivo.",
+        "diferenciaisDaSindrome": [
+          "Choque hipovolêmico",
+          "Síndrome coronariana aguda",
+          "Tromboembolismo pulmonar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Choque hipovolêmico",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Síndrome coronariana aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Tromboembolismo pulmonar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Choque séptico",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Choque séptico. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "choque-em-uti__choque-septico-atypical",
+      "scriptId": "choque-em-uti__choque-septico",
+      "presentation": "atypical",
+      "vignette": "paciente com foco infeccioso, febre, confusão, hipotensão persistente e sinais de hipoperfusão Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "instabilidade hemodinâmica associada a infecção sistêmica com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome circulatória distributiva infecciosa",
+        "opcoes": [
+          "Síndrome circulatória distributiva infecciosa",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome circulatória distributiva infecciosa; foco infeccioso e vasodilatação sistêmica favorecem choque distributivo.",
+        "diferenciaisDaSindrome": [
+          "Choque hipovolêmico",
+          "Síndrome coronariana aguda",
+          "Tromboembolismo pulmonar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Choque hipovolêmico",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Síndrome coronariana aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Tromboembolismo pulmonar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Choque séptico",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Choque séptico. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.564Z"
+  }
+}

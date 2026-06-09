@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "diagnosticos-diferenciais-das-massas-cervicais__cisto-tireoglosso",
+    "entidade": "Cisto do ducto tireoglosso",
+    "area": "Cirurgia",
+    "subtopico": "Diagnósticos Diferenciais das Massas Cervicais",
+    "sindrome": "Síndrome de massa cervical congênita mediana",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Linfadenite cervical",
+        "feature": "movimento com a língua favorece remanescente embrionário"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "diagnosticos-diferenciais-das-massas-cervicais__cisto-tireoglosso-typical",
+      "scriptId": "diagnosticos-diferenciais-das-massas-cervicais__cisto-tireoglosso",
+      "presentation": "typical",
+      "vignette": "criança com nódulo cervical anterior mediano que se eleva ao protruir a língua",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "massa cervical central móvel com deglutição/protrusão lingual",
+        "sindromeCorreta": "Síndrome de massa cervical congênita mediana",
+        "opcoes": [
+          "Síndrome de massa cervical congênita mediana",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de massa cervical congênita mediana; movimento com a língua favorece remanescente embrionário.",
+        "diferenciaisDaSindrome": [
+          "Linfadenite cervical",
+          "Vaginose bacteriana",
+          "Candidíase vulvovaginal"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Linfadenite cervical",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Vaginose bacteriana",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Candidíase vulvovaginal",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Cisto do ducto tireoglosso",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Cisto do ducto tireoglosso. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "diagnosticos-diferenciais-das-massas-cervicais__cisto-tireoglosso-atypical",
+      "scriptId": "diagnosticos-diferenciais-das-massas-cervicais__cisto-tireoglosso",
+      "presentation": "atypical",
+      "vignette": "criança com nódulo cervical anterior mediano que se eleva ao protruir a língua Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "massa cervical central móvel com deglutição/protrusão lingual com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de massa cervical congênita mediana",
+        "opcoes": [
+          "Síndrome de massa cervical congênita mediana",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de massa cervical congênita mediana; movimento com a língua favorece remanescente embrionário.",
+        "diferenciaisDaSindrome": [
+          "Linfadenite cervical",
+          "Vaginose bacteriana",
+          "Candidíase vulvovaginal"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Linfadenite cervical",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Vaginose bacteriana",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Candidíase vulvovaginal",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Cisto do ducto tireoglosso",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Cisto do ducto tireoglosso. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.680Z"
+  }
+}

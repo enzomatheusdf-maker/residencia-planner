@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "taquiarritmias__fibrilacao-atrial-alta-resposta",
+    "entidade": "Fibrilação atrial com alta resposta ventricular",
+    "area": "Clínica Médica",
+    "subtopico": "Taquiarritmias",
+    "sindrome": "Síndrome taquicárdica irregular de QRS estreito",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Taquicardia supraventricular regular",
+        "feature": "irregularidade irregular e ausência de onda atrial organizada separam o ritmo"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "taquiarritmias__fibrilacao-atrial-alta-resposta-typical",
+      "scriptId": "taquiarritmias__fibrilacao-atrial-alta-resposta",
+      "presentation": "typical",
+      "vignette": "idoso com palpitações, dispneia leve, pulso irregularmente irregular e traçado sem ondas P organizadas",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "taquicardia irregular em paciente com risco cardiovascular",
+        "sindromeCorreta": "Síndrome taquicárdica irregular de QRS estreito",
+        "opcoes": [
+          "Síndrome taquicárdica irregular de QRS estreito",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome taquicárdica irregular de QRS estreito; irregularidade irregular e ausência de onda atrial organizada separam o ritmo.",
+        "diferenciaisDaSindrome": [
+          "Taquicardia supraventricular regular",
+          "Taquicardia supraventricular paroxística",
+          "Taquicardia ventricular monomórfica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Taquicardia supraventricular regular",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Taquicardia supraventricular paroxística",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Taquicardia ventricular monomórfica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Fibrilação atrial com alta resposta ventricular",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Fibrilação atrial com alta resposta ventricular. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "taquiarritmias__fibrilacao-atrial-alta-resposta-atypical",
+      "scriptId": "taquiarritmias__fibrilacao-atrial-alta-resposta",
+      "presentation": "atypical",
+      "vignette": "idoso com palpitações, dispneia leve, pulso irregularmente irregular e traçado sem ondas P organizadas Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "taquicardia irregular em paciente com risco cardiovascular com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome taquicárdica irregular de QRS estreito",
+        "opcoes": [
+          "Síndrome taquicárdica irregular de QRS estreito",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome taquicárdica irregular de QRS estreito; irregularidade irregular e ausência de onda atrial organizada separam o ritmo.",
+        "diferenciaisDaSindrome": [
+          "Taquicardia supraventricular regular",
+          "Taquicardia supraventricular paroxística",
+          "Taquicardia ventricular monomórfica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Taquicardia supraventricular regular",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Taquicardia supraventricular paroxística",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Taquicardia ventricular monomórfica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Fibrilação atrial com alta resposta ventricular",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Fibrilação atrial com alta resposta ventricular. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.240Z"
+  }
+}

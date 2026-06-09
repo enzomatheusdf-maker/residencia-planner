@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "pac-pneumonia-adquirida-na-comunidade__pneumonia-comunitaria-grave",
+    "entidade": "Pneumonia adquirida na comunidade grave",
+    "area": "Clínica Médica",
+    "subtopico": "PAC - Pneumonia Adquirida na Comunidade",
+    "sindrome": "Síndrome pneumônica comunitária com gravidade sistêmica",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "fator de risco ou faixa etária típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Pneumonia leve ambulatorial",
+        "feature": "hipotensão, hipoxemia e confusão indicam gravidade"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "pac-pneumonia-adquirida-na-comunidade__pneumonia-comunitaria-grave-typical",
+      "scriptId": "pac-pneumonia-adquirida-na-comunidade__pneumonia-comunitaria-grave",
+      "presentation": "typical",
+      "vignette": "idoso com febre, tosse, confusão, FR 32, PA 86/52 e SatO2 88% em ar ambiente",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "infecção respiratória baixa com instabilidade e disfunção sistêmica",
+        "sindromeCorreta": "Síndrome pneumônica comunitária com gravidade sistêmica",
+        "opcoes": [
+          "Síndrome pneumônica comunitária com gravidade sistêmica",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome pneumônica comunitária com gravidade sistêmica; hipotensão, hipoxemia e confusão indicam gravidade.",
+        "diferenciaisDaSindrome": [
+          "Pneumonia leve ambulatorial",
+          "Pneumonia adquirida na comunidade",
+          "Tromboembolismo pulmonar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Pneumonia leve ambulatorial",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Pneumonia adquirida na comunidade",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Tromboembolismo pulmonar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Pneumonia adquirida na comunidade grave",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Pneumonia adquirida na comunidade grave. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "pac-pneumonia-adquirida-na-comunidade__pneumonia-comunitaria-grave-atypical",
+      "scriptId": "pac-pneumonia-adquirida-na-comunidade__pneumonia-comunitaria-grave",
+      "presentation": "atypical",
+      "vignette": "idoso com febre, tosse, confusão, FR 32, PA 86/52 e SatO2 88% em ar ambiente Na apresentação menos clássica, a intensidade dos achados é menor, mas o padrão sindrômico permanece reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "infecção respiratória baixa com instabilidade e disfunção sistêmica com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome pneumônica comunitária com gravidade sistêmica",
+        "opcoes": [
+          "Síndrome pneumônica comunitária com gravidade sistêmica",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome pneumônica comunitária com gravidade sistêmica; hipotensão, hipoxemia e confusão indicam gravidade.",
+        "diferenciaisDaSindrome": [
+          "Pneumonia leve ambulatorial",
+          "Pneumonia adquirida na comunidade",
+          "Tromboembolismo pulmonar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Pneumonia leve ambulatorial",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Pneumonia adquirida na comunidade",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Tromboembolismo pulmonar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Pneumonia adquirida na comunidade grave",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Pneumonia adquirida na comunidade grave. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.062Z"
+  }
+}

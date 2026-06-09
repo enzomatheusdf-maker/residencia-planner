@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "diarreia-cronica-e-doencas-funcionais__doenca-celiaca",
+    "entidade": "Doença celíaca",
+    "area": "Pediatria",
+    "subtopico": "Diarreia Crônica e Doenças Funcionais",
+    "sindrome": "Síndrome disabsortiva crônica imunomediada",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Intolerância à lactose",
+        "feature": "anemia e baixa estatura favorecem enteropatia imune"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "diarreia-cronica-e-doencas-funcionais__doenca-celiaca-typical",
+      "scriptId": "diarreia-cronica-e-doencas-funcionais__doenca-celiaca",
+      "presentation": "typical",
+      "vignette": "criança com diarreia crônica, distensão abdominal, baixa estatura, anemia ferropriva e piora após introdução de glúten",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "má absorção crônica com repercussão nutricional e gatilho alimentar",
+        "sindromeCorreta": "Síndrome disabsortiva crônica imunomediada",
+        "opcoes": [
+          "Síndrome disabsortiva crônica imunomediada",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome disabsortiva crônica imunomediada; anemia e baixa estatura favorecem enteropatia imune.",
+        "diferenciaisDaSindrome": [
+          "Intolerância à lactose",
+          "Sepse pediátrica",
+          "Pneumonia bacteriana típica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Intolerância à lactose",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Sepse pediátrica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Pneumonia bacteriana típica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Doença celíaca",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Doença celíaca. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "diarreia-cronica-e-doencas-funcionais__doenca-celiaca-atypical",
+      "scriptId": "diarreia-cronica-e-doencas-funcionais__doenca-celiaca",
+      "presentation": "atypical",
+      "vignette": "criança com diarreia crônica, distensão abdominal, baixa estatura, anemia ferropriva e piora após introdução de glúten Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "má absorção crônica com repercussão nutricional e gatilho alimentar com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome disabsortiva crônica imunomediada",
+        "opcoes": [
+          "Síndrome disabsortiva crônica imunomediada",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome disabsortiva crônica imunomediada; anemia e baixa estatura favorecem enteropatia imune.",
+        "diferenciaisDaSindrome": [
+          "Intolerância à lactose",
+          "Sepse pediátrica",
+          "Pneumonia bacteriana típica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Intolerância à lactose",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Sepse pediátrica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Pneumonia bacteriana típica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Doença celíaca",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Doença celíaca. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.688Z"
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "neoplasias-pediatricas__tumor-wilms",
+    "entidade": "Tumor de Wilms",
+    "area": "Pediatria",
+    "subtopico": "Neoplasias Pediátricas",
+    "sindrome": "Síndrome de massa abdominal renal da infância",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Neuroblastoma",
+        "feature": "massa renal associada a hematúria e hipertensão favorece tumor renal infantil"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "neoplasias-pediatricas__tumor-wilms-typical",
+      "scriptId": "neoplasias-pediatricas__tumor-wilms",
+      "presentation": "typical",
+      "vignette": "pré-escolar com massa abdominal palpável indolor, hematúria microscópica e hipertensão",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "massa abdominal indolor com sinais urinários em criança pequena",
+        "sindromeCorreta": "Síndrome de massa abdominal renal da infância",
+        "opcoes": [
+          "Síndrome de massa abdominal renal da infância",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de massa abdominal renal da infância; massa renal associada a hematúria e hipertensão favorece tumor renal infantil.",
+        "diferenciaisDaSindrome": [
+          "Neuroblastoma",
+          "Leucemia linfoide aguda",
+          "Cistite aguda"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Neuroblastoma",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Leucemia linfoide aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Cistite aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Tumor de Wilms",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Tumor de Wilms. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "neoplasias-pediatricas__tumor-wilms-atypical",
+      "scriptId": "neoplasias-pediatricas__tumor-wilms",
+      "presentation": "atypical",
+      "vignette": "pré-escolar com massa abdominal palpável indolor, hematúria microscópica e hipertensão Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "massa abdominal indolor com sinais urinários em criança pequena com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de massa abdominal renal da infância",
+        "opcoes": [
+          "Síndrome de massa abdominal renal da infância",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de massa abdominal renal da infância; massa renal associada a hematúria e hipertensão favorece tumor renal infantil.",
+        "diferenciaisDaSindrome": [
+          "Neuroblastoma",
+          "Leucemia linfoide aguda",
+          "Cistite aguda"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Neuroblastoma",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Leucemia linfoide aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Cistite aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Tumor de Wilms",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Tumor de Wilms. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.020Z"
+  }
+}

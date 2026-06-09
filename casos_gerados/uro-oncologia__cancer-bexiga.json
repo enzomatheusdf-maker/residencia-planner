@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "uro-oncologia__cancer-bexiga",
+    "entidade": "Câncer de bexiga",
+    "area": "Cirurgia",
+    "subtopico": "Uro-Oncologia",
+    "sindrome": "Síndrome hematúrica urológica neoplásica",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Cistite aguda",
+        "feature": "ausência de disúria e tabagismo favorecem neoplasia urotelial"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "uro-oncologia__cancer-bexiga-typical",
+      "scriptId": "uro-oncologia__cancer-bexiga",
+      "presentation": "typical",
+      "vignette": "homem tabagista com hematúria macroscópica indolor recorrente e ausência de sintomas infecciosos",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sangramento urinário visível sem dor em paciente com fator de risco",
+        "sindromeCorreta": "Síndrome hematúrica urológica neoplásica",
+        "opcoes": [
+          "Síndrome hematúrica urológica neoplásica",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome hematúrica urológica neoplásica; ausência de disúria e tabagismo favorecem neoplasia urotelial.",
+        "diferenciaisDaSindrome": [
+          "Cistite aguda",
+          "Adenocarcinoma colorretal",
+          "Adenocarcinoma gástrico"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Cistite aguda",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Adenocarcinoma colorretal",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Adenocarcinoma gástrico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Câncer de bexiga",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Câncer de bexiga. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "uro-oncologia__cancer-bexiga-atypical",
+      "scriptId": "uro-oncologia__cancer-bexiga",
+      "presentation": "atypical",
+      "vignette": "homem tabagista com hematúria macroscópica indolor recorrente e ausência de sintomas infecciosos Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "sangramento urinário visível sem dor em paciente com fator de risco com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome hematúrica urológica neoplásica",
+        "opcoes": [
+          "Síndrome hematúrica urológica neoplásica",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome hematúrica urológica neoplásica; ausência de disúria e tabagismo favorecem neoplasia urotelial.",
+        "diferenciaisDaSindrome": [
+          "Cistite aguda",
+          "Adenocarcinoma colorretal",
+          "Adenocarcinoma gástrico"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Cistite aguda",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Adenocarcinoma colorretal",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Adenocarcinoma gástrico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Câncer de bexiga",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Câncer de bexiga. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.324Z"
+  }
+}

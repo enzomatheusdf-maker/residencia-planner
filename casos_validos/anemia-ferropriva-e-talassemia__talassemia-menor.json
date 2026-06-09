@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "anemia-ferropriva-e-talassemia__talassemia-menor",
+    "entidade": "Talassemia menor",
+    "area": "Pediatria",
+    "subtopico": "Anemia Ferropriva e Talassemia",
+    "sindrome": "Síndrome anêmica microcítica familiar",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Anemia ferropriva",
+        "feature": "ferritina preservada e padrão familiar favorecem hemoglobinopatia heterozigótica"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "anemia-ferropriva-e-talassemia__talassemia-menor-typical",
+      "scriptId": "anemia-ferropriva-e-talassemia__talassemia-menor",
+      "presentation": "typical",
+      "vignette": "criança assintomática com palidez leve, microcitose importante, ferritina preservada e história familiar semelhante",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "microcitose desproporcional com reserva de ferro preservada em paciente estável",
+        "sindromeCorreta": "Síndrome anêmica microcítica familiar",
+        "opcoes": [
+          "Síndrome anêmica microcítica familiar",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome anêmica microcítica familiar; ferritina preservada e padrão familiar favorecem hemoglobinopatia heterozigótica.",
+        "diferenciaisDaSindrome": [
+          "Anemia ferropriva",
+          "Anemia da doença crônica",
+          "Anemia megaloblástica por deficiência de B12"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Anemia ferropriva",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Anemia da doença crônica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Anemia megaloblástica por deficiência de B12",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Talassemia menor",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Talassemia menor. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "anemia-ferropriva-e-talassemia__talassemia-menor-atypical",
+      "scriptId": "anemia-ferropriva-e-talassemia__talassemia-menor",
+      "presentation": "atypical",
+      "vignette": "criança assintomática com palidez leve, microcitose importante, ferritina preservada e história familiar semelhante Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "microcitose desproporcional com reserva de ferro preservada em paciente estável com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome anêmica microcítica familiar",
+        "opcoes": [
+          "Síndrome anêmica microcítica familiar",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome anêmica microcítica familiar; ferritina preservada e padrão familiar favorecem hemoglobinopatia heterozigótica.",
+        "diferenciaisDaSindrome": [
+          "Anemia ferropriva",
+          "Anemia da doença crônica",
+          "Anemia megaloblástica por deficiência de B12"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Anemia ferropriva",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Anemia da doença crônica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Anemia megaloblástica por deficiência de B12",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Talassemia menor",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Talassemia menor. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.401Z"
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "sangramento-uterino-anormal__sangramento-anovulatorio",
+    "entidade": "Sangramento anovulatório",
+    "area": "GO",
+    "subtopico": "Sangramento Uterino Anormal",
+    "sindrome": "Síndrome de sangramento uterino não estrutural",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Mioma submucoso",
+        "feature": "idade, irregularidade desde menarca e ausência de massa sugerem causa ovulatória"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "sangramento-uterino-anormal__sangramento-anovulatorio-typical",
+      "scriptId": "sangramento-uterino-anormal__sangramento-anovulatorio",
+      "presentation": "typical",
+      "vignette": "adolescente com ciclos irregulares desde a menarca, sangramento prolongado, teste de gestação negativo e exame pélvico sem massa",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "irregularidade menstrual persistente sem lesão estrutural evidente",
+        "sindromeCorreta": "Síndrome de sangramento uterino não estrutural",
+        "opcoes": [
+          "Síndrome de sangramento uterino não estrutural",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de sangramento uterino não estrutural; idade, irregularidade desde menarca e ausência de massa sugerem causa ovulatória.",
+        "diferenciaisDaSindrome": [
+          "Mioma submucoso",
+          "Gestação ectópica tubária",
+          "Ameaça de abortamento"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Mioma submucoso",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gestação ectópica tubária",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Ameaça de abortamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Sangramento anovulatório",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Sangramento anovulatório. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "sangramento-uterino-anormal__sangramento-anovulatorio-atypical",
+      "scriptId": "sangramento-uterino-anormal__sangramento-anovulatorio",
+      "presentation": "atypical",
+      "vignette": "adolescente com ciclos irregulares desde a menarca, sangramento prolongado, teste de gestação negativo e exame pélvico sem massa Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "irregularidade menstrual persistente sem lesão estrutural evidente com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de sangramento uterino não estrutural",
+        "opcoes": [
+          "Síndrome de sangramento uterino não estrutural",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de sangramento uterino não estrutural; idade, irregularidade desde menarca e ausência de massa sugerem causa ovulatória.",
+        "diferenciaisDaSindrome": [
+          "Mioma submucoso",
+          "Gestação ectópica tubária",
+          "Ameaça de abortamento"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Mioma submucoso",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gestação ectópica tubária",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Ameaça de abortamento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Sangramento anovulatório",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Sangramento anovulatório. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.194Z"
+  }
+}

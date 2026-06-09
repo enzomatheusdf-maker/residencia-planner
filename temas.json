@@ -1,0 +1,2550 @@
+[
+  {
+    "id": "anemias-hipoproliferativas-i",
+    "nome": "Anemias Hipoproliferativas I",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 1
+  },
+  {
+    "id": "assistencia-ao-pre-natal",
+    "nome": "Assistência ao Pré-Natal",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 1
+  },
+  {
+    "id": "aleitamento-materno",
+    "nome": "Aleitamento Materno",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 1
+  },
+  {
+    "id": "indicadores-de-saude",
+    "nome": "Indicadores de Saúde",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 1
+  },
+  {
+    "id": "introducao-ao-trauma-e-atendimento-inicial",
+    "nome": "Introdução ao Trauma e Atendimento Inicial",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 1
+  },
+  {
+    "id": "neurovascular-i-ait-e-avci",
+    "nome": "Neurovascular I: AIT e AVCi",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 2
+  },
+  {
+    "id": "anatomia-pelvica-feminina",
+    "nome": "Anatomia Pélvica Feminina",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 2
+  },
+  {
+    "id": "nefrologia-pediatrica",
+    "nome": "Nefrologia Pediátrica",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 2
+  },
+  {
+    "id": "testes-diagnosticos",
+    "nome": "Testes Diagnósticos",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 2
+  },
+  {
+    "id": "trauma-de-torax",
+    "nome": "Trauma de Tórax",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 2
+  },
+  {
+    "id": "sifilis",
+    "nome": "Sífilis",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 3
+  },
+  {
+    "id": "corrimentos-vaginais",
+    "nome": "Corrimentos Vaginais",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 3
+  },
+  {
+    "id": "alergia-alimentar-refluxo-e-constipacao",
+    "nome": "Alergia Alimentar, Refluxo e Constipação",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 3
+  },
+  {
+    "id": "determinacao-social-do-processo-saude-doenca",
+    "nome": "Determinação Social do Processo Saúde-Doença",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 3
+  },
+  {
+    "id": "trauma-abdominal",
+    "nome": "Trauma Abdominal",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 3
+  },
+  {
+    "id": "assistencia-ao-parto",
+    "nome": "Assistência ao Parto",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 4
+  },
+  {
+    "id": "crescimento-e-baixa-estatura",
+    "nome": "Crescimento e Baixa Estatura",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 4
+  },
+  {
+    "id": "redes-de-atencao-a-saude",
+    "nome": "Redes de Atenção à Saúde",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 4
+  },
+  {
+    "id": "atencao-primaria-a-saude",
+    "nome": "Atenção Primária à Saúde",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 4
+  },
+  {
+    "id": "trauma-cranioencefalico",
+    "nome": "Trauma Cranioencefálico",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 4
+  },
+  {
+    "id": "dor-toracica-coronariana",
+    "nome": "Dor Torácica Coronariana",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 5
+  },
+  {
+    "id": "amenorreia-primaria",
+    "nome": "Amenorreia Primária",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 5
+  },
+  {
+    "id": "diarreia-aguda-em-pediatria",
+    "nome": "Diarreia Aguda em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 5
+  },
+  {
+    "id": "classificacao-dos-estudos-epidemiologicos",
+    "nome": "Classificação dos Estudos Epidemiológicos",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 5
+  },
+  {
+    "id": "amenorreia-secundaria",
+    "nome": "Amenorreia Secundária",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 6
+  },
+  {
+    "id": "pneumonias-em-pediatria",
+    "nome": "Pneumonias em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 6
+  },
+  {
+    "id": "bronquiolite-e-coqueluche",
+    "nome": "Bronquiolite e Coqueluche",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 6
+  },
+  {
+    "id": "estudos-longitudinais-coorte-e-caso-controle",
+    "nome": "Estudos Longitudinais: Coorte e Caso-Controle",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 6
+  },
+  {
+    "id": "apendicite-aguda",
+    "nome": "Apendicite Aguda",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 6
+  },
+  {
+    "id": "antibioticos",
+    "nome": "Antibióticos",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 7
+  },
+  {
+    "id": "infeccoes-e-gravidez",
+    "nome": "Infecções e Gravidez",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 7
+  },
+  {
+    "id": "infeccoes-congenitas",
+    "nome": "Infecções Congênitas",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 7
+  },
+  {
+    "id": "historia-e-principios-do-sus",
+    "nome": "História e Princípios do SUS",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 7
+  },
+  {
+    "id": "urgencias-da-vesicula-biliar",
+    "nome": "Urgências da Vesícula Biliar",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 7
+  },
+  {
+    "id": "abortamento",
+    "nome": "Abortamento",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 8
+  },
+  {
+    "id": "gestacao-ectopica",
+    "nome": "Gestação Ectópica",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 8
+  },
+  {
+    "id": "dermatoses-e-infeccoes-de-partes-moles",
+    "nome": "Dermatoses e Infecções de Partes Moles",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 8
+  },
+  {
+    "id": "legislacao-do-sus-i",
+    "nome": "Legislação do SUS I",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 8
+  },
+  {
+    "id": "diverticulite-aguda",
+    "nome": "Diverticulite Aguda",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 8
+  },
+  {
+    "id": "cirrose-hepatica-i",
+    "nome": "Cirrose Hepática I",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 9
+  },
+  {
+    "id": "pac-pneumonia-adquirida-na-comunidade",
+    "nome": "PAC - Pneumonia Adquirida na Comunidade",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 9
+  },
+  {
+    "id": "descolamento-prematuro-de-placenta",
+    "nome": "Descolamento Prematuro de Placenta",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 9
+  },
+  {
+    "id": "anemia-ferropriva-e-talassemia",
+    "nome": "Anemia Ferropriva e Talassemia",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 9
+  },
+  {
+    "id": "abdome-agudo-obstrutivo",
+    "nome": "Abdome Agudo Obstrutivo",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 9
+  },
+  {
+    "id": "has-ambulatorial-e-emergencias",
+    "nome": "HAS: Ambulatorial e Emergências",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 10
+  },
+  {
+    "id": "sindromes-hipertensivas-na-gestacao",
+    "nome": "Síndromes Hipertensivas na Gestação",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 10
+  },
+  {
+    "id": "sangramento-uterino-anormal",
+    "nome": "Sangramento Uterino Anormal",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 10
+  },
+  {
+    "id": "pals-suporte-avancado-de-vida-em-pediatria",
+    "nome": "PALS - Suporte Avançado de Vida em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 10
+  },
+  {
+    "id": "ensaios-clinicos",
+    "nome": "Ensaios Clínicos",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 10
+  },
+  {
+    "id": "hernia-inguinal-e-anatomia-da-parede-abdominal",
+    "nome": "Hérnia Inguinal e Anatomia da Parede Abdominal",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 10
+  },
+  {
+    "id": "diabetes-tratamento",
+    "nome": "Diabetes: Tratamento",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 11
+  },
+  {
+    "id": "diabetes-na-gestacao",
+    "nome": "Diabetes na Gestação",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 11
+  },
+  {
+    "id": "doencas-exantematicas",
+    "nome": "Doenças Exantemáticas",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 11
+  },
+  {
+    "id": "urgencias-endoscopicas",
+    "nome": "Urgências Endoscópicas",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 11
+  },
+  {
+    "id": "dislipidemias",
+    "nome": "Dislipidemias",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 12
+  },
+  {
+    "id": "uroginecologia-e-incontinencia-urinaria",
+    "nome": "Uroginecologia e Incontinência Urinária",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 12
+  },
+  {
+    "id": "peconhentos-raiva-e-tetano",
+    "nome": "Peçonhentos, Raiva e Tétano",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 12
+  },
+  {
+    "id": "revisao-sistematica-e-metanalise",
+    "nome": "Revisão Sistemática e Metanálise",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 12
+  },
+  {
+    "id": "pre-operatorio",
+    "nome": "Pré-Operatório",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 12
+  },
+  {
+    "id": "tuberculose-clinica-e-diagnostico",
+    "nome": "Tuberculose: Clínica e Diagnóstico",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 13
+  },
+  {
+    "id": "avaliacao-de-vitalidade-fetal",
+    "nome": "Avaliação de Vitalidade Fetal",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 13
+  },
+  {
+    "id": "convulsao-na-emergencia-e-convulsao-febril",
+    "nome": "Convulsão na Emergência e Convulsão Febril",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 13
+  },
+  {
+    "id": "estrategia-saude-da-familia",
+    "nome": "Estratégia Saúde da Família",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 13
+  },
+  {
+    "id": "remit-e-pos-operatorio",
+    "nome": "REMIT e Pós-Operatório",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 13
+  },
+  {
+    "id": "taquiarritmias",
+    "nome": "Taquiarritmias",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 14
+  },
+  {
+    "id": "anticoncepcao",
+    "nome": "Anticoncepção",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 14
+  },
+  {
+    "id": "kawasaki-vasculite-por-iga-e-febre-reumatica",
+    "nome": "Kawasaki, Vasculite por IgA e Febre Reumática",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 14
+  },
+  {
+    "id": "meningite-e-encefalite-em-pediatria",
+    "nome": "Meningite e Encefalite em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 14
+  },
+  {
+    "id": "financiamento-da-aps",
+    "nome": "Financiamento da APS",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 14
+  },
+  {
+    "id": "propedeutica-mamaria",
+    "nome": "Propedêutica Mamária",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 15
+  },
+  {
+    "id": "vacinacao-em-pediatria",
+    "nome": "Vacinação em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 15
+  },
+  {
+    "id": "ortopedia-pediatrica",
+    "nome": "Ortopedia Pediátrica",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 15
+  },
+  {
+    "id": "ferramentas-da-aps-esf",
+    "nome": "Ferramentas da APS/ESF",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 15
+  },
+  {
+    "id": "figado-nodulos-hepaticos",
+    "nome": "Fígado: Nódulos Hepáticos",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 15
+  },
+  {
+    "id": "injuria-renal-aguda",
+    "nome": "Injúria Renal Aguda",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 16
+  },
+  {
+    "id": "trabalho-de-parto-prematuro",
+    "nome": "Trabalho de Parto Prematuro",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 16
+  },
+  {
+    "id": "metodo-clinico-centrado-na-pessoa",
+    "nome": "Método Clínico Centrado na Pessoa",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 16
+  },
+  {
+    "id": "telemedicina-e-publicidade-medica",
+    "nome": "Telemedicina e Publicidade Médica",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 16
+  },
+  {
+    "id": "litiase-renal-cirurgica",
+    "nome": "Litíase Renal Cirúrgica",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 16
+  },
+  {
+    "id": "lupus-eritematoso-sistemico",
+    "nome": "Lúpus Eritematoso Sistêmico",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 17
+  },
+  {
+    "id": "intoxicacoes-exogenas",
+    "nome": "Intoxicações Exógenas",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 17
+  },
+  {
+    "id": "hemorragia-pos-parto",
+    "nome": "Hemorragia Pós-Parto",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 17
+  },
+  {
+    "id": "asma-em-pediatria",
+    "nome": "Asma em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 17
+  },
+  {
+    "id": "vigilancia-em-saude",
+    "nome": "Vigilância em Saúde",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 17
+  },
+  {
+    "id": "hipotireoidismo",
+    "nome": "Hipotireoidismo",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 18
+  },
+  {
+    "id": "cancer-de-colo-de-utero-rastreamento",
+    "nome": "Câncer de Colo de Útero: Rastreamento",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 18
+  },
+  {
+    "id": "cancer-de-colo-de-utero-diagnostico-e-tratamento",
+    "nome": "Câncer de Colo de Útero: Diagnóstico e Tratamento",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 18
+  },
+  {
+    "id": "desconforto-respiratorio-neonatal",
+    "nome": "Desconforto Respiratório Neonatal",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 18
+  },
+  {
+    "id": "sindrome-de-fournier",
+    "nome": "Síndrome de Fournier",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 18
+  },
+  {
+    "id": "tromboembolismo-pulmonar",
+    "nome": "Tromboembolismo Pulmonar",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 19
+  },
+  {
+    "id": "cancer-de-mama-rastreamento",
+    "nome": "Câncer de Mama: Rastreamento",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 19
+  },
+  {
+    "id": "cancer-de-mama-fatores-de-risco-e-cdis",
+    "nome": "Câncer de Mama: Fatores de Risco e CDIS",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 19
+  },
+  {
+    "id": "neoplasias-pediatricas",
+    "nome": "Neoplasias Pediátricas",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 19
+  },
+  {
+    "id": "acidente-de-trabalho",
+    "nome": "Acidente de Trabalho",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 19
+  },
+  {
+    "id": "infeccao-do-trato-urinario-itu",
+    "nome": "Infecção do Trato Urinário (ITU)",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 20
+  },
+  {
+    "id": "sindrome-climaterica",
+    "nome": "Síndrome Climatérica",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 20
+  },
+  {
+    "id": "terapia-hormonal",
+    "nome": "Terapia Hormonal",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 20
+  },
+  {
+    "id": "tuberculose-e-hanseniase-na-aps",
+    "nome": "Tuberculose e Hanseníase na APS",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 20
+  },
+  {
+    "id": "cirurgia-encerramento",
+    "nome": "Cirurgia: Encerramento",
+    "area": "Cirurgia",
+    "prio": "Diamante",
+    "bloco": 20
+  },
+  {
+    "id": "insuficiencia-cognitiva-e-demencias",
+    "nome": "Insuficiência Cognitiva e Demências",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 21
+  },
+  {
+    "id": "hiperplasia-endometrial",
+    "nome": "Hiperplasia Endometrial",
+    "area": "GO",
+    "prio": "Diamante",
+    "bloco": 21
+  },
+  {
+    "id": "cirurgia-pediatrica-no-ps",
+    "nome": "Cirurgia Pediátrica no PS",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 21
+  },
+  {
+    "id": "declaracao-de-obito-e-atestados",
+    "nome": "Declaração de Óbito e Atestados",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 21
+  },
+  {
+    "id": "atencao-a-saude-de-populacoes-especificas",
+    "nome": "Atenção à Saúde de Populações Específicas",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 21
+  },
+  {
+    "id": "arboviroses-tropicais",
+    "nome": "Arboviroses Tropicais",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 22
+  },
+  {
+    "id": "hepatites-virais",
+    "nome": "Hepatites Virais",
+    "area": "Clínica Médica",
+    "prio": "Diamante",
+    "bloco": 22
+  },
+  {
+    "id": "etica-em-pediatria",
+    "nome": "Ética em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante",
+    "bloco": 22
+  },
+  {
+    "id": "etica-medica",
+    "nome": "Ética Médica",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 22
+  },
+  {
+    "id": "violencias-e-vulnerabilidade",
+    "nome": "Violências e Vulnerabilidade",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 23
+  },
+  {
+    "id": "saude-suplementar-e-judicializacao-em-saude",
+    "nome": "Saúde Suplementar e Judicialização em Saúde",
+    "area": "Preventiva",
+    "prio": "Diamante",
+    "bloco": 23
+  },
+  {
+    "id": "avaliacao-global-do-hemograma",
+    "nome": "Avaliação Global do Hemograma",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 1
+  },
+  {
+    "id": "anemias-hipoproliferativas-ii",
+    "nome": "Anemias Hipoproliferativas II",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 1
+  },
+  {
+    "id": "modificacoes-do-organismo-materno",
+    "nome": "Modificações do Organismo Materno",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 1
+  },
+  {
+    "id": "desenvolvimento-infantil",
+    "nome": "Desenvolvimento Infantil",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 1
+  },
+  {
+    "id": "alteracoes-no-neurodesenvolvimento-tea-e-tdah",
+    "nome": "Alterações no Neurodesenvolvimento - TEA e TDAH",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 1
+  },
+  {
+    "id": "niveis-de-prevencao",
+    "nome": "Níveis de Prevenção",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 1
+  },
+  {
+    "id": "trauma-vias-aereas",
+    "nome": "Trauma: Vias Aéreas",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 1
+  },
+  {
+    "id": "choque-e-ressuscitacao-hemostatica",
+    "nome": "Choque e Ressuscitação Hemostática",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 1
+  },
+  {
+    "id": "neurovascular-ii-hsa-e-avch",
+    "nome": "Neurovascular II: HSA e AVCh",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 2
+  },
+  {
+    "id": "dispepsia-e-drge",
+    "nome": "Dispepsia e DRGE",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 3
+  },
+  {
+    "id": "ulcera-peptica-h-pylori-e-gastrite-atrofica",
+    "nome": "Úlcera Péptica, H. pylori e Gastrite Atrófica",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 3
+  },
+  {
+    "id": "doenca-inflamatoria-pelvica-aguda",
+    "nome": "Doença Inflamatória Pélvica Aguda",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 3
+  },
+  {
+    "id": "ulceras-genitais",
+    "nome": "Úlceras Genitais",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 3
+  },
+  {
+    "id": "violencia-contra-a-crianca-e-o-adolescente",
+    "nome": "Violência Contra a Criança e o Adolescente",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 3
+  },
+  {
+    "id": "artrite-reumatoide",
+    "nome": "Artrite Reumatoide",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 4
+  },
+  {
+    "id": "espondiloartrites",
+    "nome": "Espondiloartrites",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 4
+  },
+  {
+    "id": "sofrimento-fetal-agudo",
+    "nome": "Sofrimento Fetal Agudo",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 4
+  },
+  {
+    "id": "puberdade",
+    "nome": "Puberdade",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 4
+  },
+  {
+    "id": "trauma-de-pelve",
+    "nome": "Trauma de Pelve",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 4
+  },
+  {
+    "id": "fisiologia-menstrual",
+    "nome": "Fisiologia Menstrual",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 5
+  },
+  {
+    "id": "associacao-x-causalidade",
+    "nome": "Associação x Causalidade",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 5
+  },
+  {
+    "id": "rastreamentos",
+    "nome": "Rastreamentos",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 5
+  },
+  {
+    "id": "queimaduras",
+    "nome": "Queimaduras",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 5
+  },
+  {
+    "id": "escroto-agudo",
+    "nome": "Escroto Agudo",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 5
+  },
+  {
+    "id": "gasometria-arterial",
+    "nome": "Gasometria Arterial",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 6
+  },
+  {
+    "id": "disturbios-do-sodio",
+    "nome": "Distúrbios do Sódio",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 6
+  },
+  {
+    "id": "disturbios-do-potassio",
+    "nome": "Distúrbios do Potássio",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 6
+  },
+  {
+    "id": "sindrome-dos-ovarios-policisticos",
+    "nome": "Síndrome dos Ovários Policísticos",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 6
+  },
+  {
+    "id": "infeccoes-de-vias-aereas-superiores-ivas",
+    "nome": "Infecções de Vias Aéreas Superiores (IVAS)",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 6
+  },
+  {
+    "id": "estudos-transversais",
+    "nome": "Estudos Transversais",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 6
+  },
+  {
+    "id": "abdome-agudo-introducao",
+    "nome": "Abdome Agudo: Introdução",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 6
+  },
+  {
+    "id": "anemias-hemoliticas",
+    "nome": "Anemias Hemolíticas",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 7
+  },
+  {
+    "id": "rotura-prematura-de-membranas-ovulares",
+    "nome": "Rotura Prematura de Membranas Ovulares",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 7
+  },
+  {
+    "id": "violencia-sexual",
+    "nome": "Violência Sexual",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 7
+  },
+  {
+    "id": "reanimacao-neonatal",
+    "nome": "Reanimação Neonatal",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 7
+  },
+  {
+    "id": "ictericia-e-colestase-neonatal",
+    "nome": "Icterícia e Colestase Neonatal",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 7
+  },
+  {
+    "id": "cancer-de-esofago",
+    "nome": "Câncer de Esôfago",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 7
+  },
+  {
+    "id": "cefaleias",
+    "nome": "Cefaleias",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 8
+  },
+  {
+    "id": "avaliacao-geriatrica-ampla",
+    "nome": "Avaliação Geriátrica Ampla",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 8
+  },
+  {
+    "id": "dermatite-atopica-e-lesoes-benignas-do-rn",
+    "nome": "Dermatite Atópica e Lesões Benignas do RN",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 8
+  },
+  {
+    "id": "pancreatite-aguda",
+    "nome": "Pancreatite Aguda",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 8
+  },
+  {
+    "id": "cirrose-hepatica-ii",
+    "nome": "Cirrose Hepática II",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 9
+  },
+  {
+    "id": "derrame-pleural",
+    "nome": "Derrame Pleural",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 9
+  },
+  {
+    "id": "tabagismo",
+    "nome": "Tabagismo",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 9
+  },
+  {
+    "id": "placenta-previa",
+    "nome": "Placenta Prévia",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 9
+  },
+  {
+    "id": "anemia-falciforme",
+    "nome": "Anemia Falciforme",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 9
+  },
+  {
+    "id": "hemostasia-e-disturbios-hemorragicos-em-pediatri",
+    "nome": "Hemostasia e Distúrbios Hemorrágicos em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 9
+  },
+  {
+    "id": "genetica-em-pediatria",
+    "nome": "Genética em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 9
+  },
+  {
+    "id": "legislacao-do-sus-ii",
+    "nome": "Legislação do SUS II",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 9
+  },
+  {
+    "id": "abdome-agudo-perfurativo-vascular-e-hemorragico",
+    "nome": "Abdome Agudo Perfurativo, Vascular e Hemorrágico",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 9
+  },
+  {
+    "id": "cancer-de-estomago",
+    "nome": "Câncer de Estômago",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 9
+  },
+  {
+    "id": "insuficiencia-cardiaca",
+    "nome": "Insuficiência Cardíaca",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 10
+  },
+  {
+    "id": "asma",
+    "nome": "Asma",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 10
+  },
+  {
+    "id": "dpoc",
+    "nome": "DPOC",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 10
+  },
+  {
+    "id": "bls-e-acls",
+    "nome": "BLS e ACLS",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 10
+  },
+  {
+    "id": "cardiopatias-congenitas",
+    "nome": "Cardiopatias Congênitas",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 10
+  },
+  {
+    "id": "has-em-pediatria",
+    "nome": "HAS em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 10
+  },
+  {
+    "id": "medidas-de-associacao",
+    "nome": "Medidas de Associação",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 10
+  },
+  {
+    "id": "legislacao-do-sus-iii-decreto-7508",
+    "nome": "Legislação do SUS III: Decreto 7508",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 10
+  },
+  {
+    "id": "diabetes-classificacao-e-diagnostico",
+    "nome": "Diabetes: Classificação e Diagnóstico",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 11
+  },
+  {
+    "id": "emergencias-hiperglicemicas-cad-e-ehh",
+    "nome": "Emergências Hiperglicêmicas - CAD e EHH",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 11
+  },
+  {
+    "id": "infertilidade",
+    "nome": "Infertilidade",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 11
+  },
+  {
+    "id": "endometriose",
+    "nome": "Endometriose",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 11
+  },
+  {
+    "id": "arboviroses-em-pediatria",
+    "nome": "Arboviroses em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 11
+  },
+  {
+    "id": "cad-em-pediatria",
+    "nome": "CAD em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 11
+  },
+  {
+    "id": "financiamento-do-sus",
+    "nome": "Financiamento do SUS",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 11
+  },
+  {
+    "id": "sindrome-metabolica-e-obesidade",
+    "nome": "Síndrome Metabólica e Obesidade",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 12
+  },
+  {
+    "id": "prolapso-genital",
+    "nome": "Prolapso Genital",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 12
+  },
+  {
+    "id": "triagens-neonatais",
+    "nome": "Triagens Neonatais",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 12
+  },
+  {
+    "id": "significancia-estatistica-e-intervalo-de-confian",
+    "nome": "Significância Estatística e Intervalo de Confiança",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 12
+  },
+  {
+    "id": "medicina-baseada-em-evidencias",
+    "nome": "Medicina Baseada em Evidências",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 12
+  },
+  {
+    "id": "cirurgia-bariatrica",
+    "nome": "Cirurgia Bariátrica",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 12
+  },
+  {
+    "id": "tuberculose-tratamento",
+    "nome": "Tuberculose: Tratamento",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 13
+  },
+  {
+    "id": "restricao-de-crescimento-intrauterino",
+    "nome": "Restrição de Crescimento Intrauterino",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 13
+  },
+  {
+    "id": "tuberculose-em-pediatria",
+    "nome": "Tuberculose em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 13
+  },
+  {
+    "id": "cardiologia-na-aps",
+    "nome": "Cardiologia na APS",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 13
+  },
+  {
+    "id": "diabetes-no-sus",
+    "nome": "Diabetes no SUS",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 13
+  },
+  {
+    "id": "perioperatorio-complicacoes-gerais",
+    "nome": "Perioperatório: Complicações Gerais",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 13
+  },
+  {
+    "id": "hiperplasia-prostatica-benigna",
+    "nome": "Hiperplasia Prostática Benigna",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 13
+  },
+  {
+    "id": "meningites-e-encefalites",
+    "nome": "Meningites e Encefalites",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 14
+  },
+  {
+    "id": "bradiarritmias",
+    "nome": "Bradiarritmias",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 14
+  },
+  {
+    "id": "sincope",
+    "nome": "Síncope",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 14
+  },
+  {
+    "id": "artrite-idiopatica-juvenil",
+    "nome": "Artrite Idiopática Juvenil",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 14
+  },
+  {
+    "id": "sindrome-depressiva",
+    "nome": "Síndrome Depressiva",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 14
+  },
+  {
+    "id": "cancer-colorretal-e-sindromes-associadas",
+    "nome": "Câncer Colorretal e Síndromes Associadas",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 14
+  },
+  {
+    "id": "doencas-orificiais-e-cec-de-canal-anal",
+    "nome": "Doenças Orificiais e CEC de Canal Anal",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 14
+  },
+  {
+    "id": "sdra-sindrome-do-desconforto-respiratorio",
+    "nome": "SDRA - Síndrome do Desconforto Respiratório",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 15
+  },
+  {
+    "id": "choque-em-uti",
+    "nome": "Choque em UTI",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 15
+  },
+  {
+    "id": "principais-sintomas-em-mastologia",
+    "nome": "Principais Sintomas em Mastologia",
+    "area": "GO",
+    "prio": "Alta",
+    "bloco": 15
+  },
+  {
+    "id": "diarreia-aguda-e-colite-pseudomembranosa",
+    "nome": "Diarreia Aguda e Colite Pseudomembranosa",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 16
+  },
+  {
+    "id": "hiperplasia-adrenal-congenita",
+    "nome": "Hiperplasia Adrenal Congênita",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 16
+  },
+  {
+    "id": "glomerulopatias",
+    "nome": "Glomerulopatias",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 17
+  },
+  {
+    "id": "fibrose-cistica",
+    "nome": "Fibrose Cística",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 17
+  },
+  {
+    "id": "adenocarcinoma-de-pancreas",
+    "nome": "Adenocarcinoma de Pâncreas",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 17
+  },
+  {
+    "id": "hiv-e-doencas-oportunistas",
+    "nome": "HIV e Doenças Oportunistas",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 18
+  },
+  {
+    "id": "hipertireoidismo-e-tireoidite",
+    "nome": "Hipertireoidismo e Tireoidite",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 18
+  },
+  {
+    "id": "processo-epidemico",
+    "nome": "Processo Epidêmico",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 18
+  },
+  {
+    "id": "parasitoses-intestinais",
+    "nome": "Parasitoses Intestinais",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 19
+  },
+  {
+    "id": "depressao-e-delirium-no-idoso",
+    "nome": "Depressão e Delirium no Idoso",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 21
+  },
+  {
+    "id": "uropediatria-e-hernias-em-pediatria",
+    "nome": "Uropediatria e Hérnias em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta",
+    "bloco": 21
+  },
+  {
+    "id": "diagnosticos-diferenciais-das-massas-cervicais",
+    "nome": "Diagnósticos Diferenciais das Massas Cervicais",
+    "area": "Cirurgia",
+    "prio": "Alta",
+    "bloco": 21
+  },
+  {
+    "id": "doencas-virais-e-pandemicas",
+    "nome": "Doenças Virais e Pandêmicas",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 22
+  },
+  {
+    "id": "ictericias-febris-e-febre-maculosa",
+    "nome": "Icterícias Febris e Febre Maculosa",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 22
+  },
+  {
+    "id": "otologia",
+    "nome": "Otologia",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 25
+  },
+  {
+    "id": "rinologia",
+    "nome": "Rinologia",
+    "area": "Clínica Médica",
+    "prio": "Alta",
+    "bloco": 26
+  },
+  {
+    "id": "preventiva-reta-final",
+    "nome": "Preventiva: Reta Final",
+    "area": "Preventiva",
+    "prio": "Alta",
+    "bloco": 26
+  },
+  {
+    "id": "ultrassonografia-em-obstetricia",
+    "nome": "Ultrassonografia em Obstetrícia",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 1
+  },
+  {
+    "id": "alimentacao-infantil",
+    "nome": "Alimentação Infantil",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 1
+  },
+  {
+    "id": "embriologia-do-sistema-genital-feminino",
+    "nome": "Embriologia do Sistema Genital Feminino",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 2
+  },
+  {
+    "id": "malformacoes-mullerianas",
+    "nome": "Malformações Mullerianas",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 2
+  },
+  {
+    "id": "febre-sem-sinais-localizatorios",
+    "nome": "Febre sem Sinais Localizatórios",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 2
+  },
+  {
+    "id": "miscelanea-em-nefropediatria",
+    "nome": "Miscelânea em Nefropediatria",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 2
+  },
+  {
+    "id": "assistencia-ao-pre-natal-na-aps",
+    "nome": "Assistência ao Pré-Natal na APS",
+    "area": "Preventiva",
+    "prio": "Média",
+    "bloco": 2
+  },
+  {
+    "id": "diarreia-cronica-e-doencas-funcionais",
+    "nome": "Diarreia Crônica e Doenças Funcionais",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 3
+  },
+  {
+    "id": "trauma-urologico",
+    "nome": "Trauma Urológico",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 3
+  },
+  {
+    "id": "artrites-microcristalinas-gota-e-cppd",
+    "nome": "Artrites Microcristalinas - Gota e CPPD",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 4
+  },
+  {
+    "id": "osteoartrite",
+    "nome": "Osteoartrite",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 4
+  },
+  {
+    "id": "fibromialgia",
+    "nome": "Fibromialgia",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 4
+  },
+  {
+    "id": "obesidade-e-sindrome-metabolica",
+    "nome": "Obesidade e Síndrome Metabólica",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 4
+  },
+  {
+    "id": "desnutricao-e-vitaminas",
+    "nome": "Desnutrição e Vitaminas",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 4
+  },
+  {
+    "id": "trauma-raquimedular",
+    "nome": "Trauma Raquimedular",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 4
+  },
+  {
+    "id": "dor-toracica-nao-coronariana",
+    "nome": "Dor Torácica Não Coronariana",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 5
+  },
+  {
+    "id": "esteroidogenese",
+    "nome": "Esteroidogênese",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 5
+  },
+  {
+    "id": "tce-e-hipertensao-intracraniana-em-pediatria",
+    "nome": "TCE e Hipertensão Intracraniana em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 5
+  },
+  {
+    "id": "reacoes-alergicas",
+    "nome": "Reações Alérgicas",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 6
+  },
+  {
+    "id": "hiperprolactinemia",
+    "nome": "Hiperprolactinemia",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 6
+  },
+  {
+    "id": "cicatrizacao-e-lesoes-por-pressao",
+    "nome": "Cicatrização e Lesões por Pressão",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 6
+  },
+  {
+    "id": "oncologia-emergencias-e-cuidados-paliativos",
+    "nome": "Oncologia: Emergências e Cuidados Paliativos",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 7
+  },
+  {
+    "id": "interrupcao-legal-da-gestacao",
+    "nome": "Interrupção Legal da Gestação",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 7
+  },
+  {
+    "id": "grandes-sindromes-geriatricas",
+    "nome": "Grandes Síndromes Geriátricas",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 8
+  },
+  {
+    "id": "doenca-trofoblastica-gestacional",
+    "nome": "Doença Trofoblástica Gestacional",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 8
+  },
+  {
+    "id": "disfagia-e-acalasia",
+    "nome": "Disfagia e Acalasia",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 8
+  },
+  {
+    "id": "coagulacao-e-hemostasia",
+    "nome": "Coagulação e Hemostasia",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 9
+  },
+  {
+    "id": "outros-sangramentos-da-2-metade-da-gestacao",
+    "nome": "Outros Sangramentos da 2ª Metade da Gestação",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 9
+  },
+  {
+    "id": "miocardite-sincope-e-ic-em-pediatria",
+    "nome": "Miocardite, Síncope e IC em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 10
+  },
+  {
+    "id": "rede-de-atencao-psicossocial-raps",
+    "nome": "Rede de Atenção Psicossocial (RAPS)",
+    "area": "Preventiva",
+    "prio": "Média",
+    "bloco": 10
+  },
+  {
+    "id": "hernioplastia-inguinal",
+    "nome": "Hernioplastia Inguinal",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 10
+  },
+  {
+    "id": "retalhos",
+    "nome": "Retalhos",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 10
+  },
+  {
+    "id": "enxertos",
+    "nome": "Enxertos",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 10
+  },
+  {
+    "id": "etica-em-pesquisa-clinica",
+    "nome": "Ética em Pesquisa Clínica",
+    "area": "Preventiva",
+    "prio": "Média",
+    "bloco": 11
+  },
+  {
+    "id": "sindrome-compartimental-intra-abdominal",
+    "nome": "Síndrome Compartimental Intra-Abdominal",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 11
+  },
+  {
+    "id": "disturbios-metabolicos-neonatais",
+    "nome": "Distúrbios Metabólicos Neonatais",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 12
+  },
+  {
+    "id": "ingestao-e-aspiracao-de-corpo-estranho-e-brue",
+    "nome": "Ingestão e Aspiração de Corpo Estranho e BRUE",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 12
+  },
+  {
+    "id": "uro-oncologia",
+    "nome": "Uro-Oncologia",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 12
+  },
+  {
+    "id": "vasculites",
+    "nome": "Vasculites",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 13
+  },
+  {
+    "id": "sofrimento-fetal-cronico",
+    "nome": "Sofrimento Fetal Crônico",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 13
+  },
+  {
+    "id": "gemelaridade",
+    "nome": "Gemelaridade",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 13
+  },
+  {
+    "id": "doencas-valvares",
+    "nome": "Doenças Valvares",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 14
+  },
+  {
+    "id": "lesoes-benignas-da-mama",
+    "nome": "Lesões Benignas da Mama",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 15
+  },
+  {
+    "id": "osteomielite-e-artrite-septica",
+    "nome": "Osteomielite e Artrite Séptica",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 15
+  },
+  {
+    "id": "sindrome-ansiosa",
+    "nome": "Síndrome Ansiosa",
+    "area": "Preventiva",
+    "prio": "Média",
+    "bloco": 15
+  },
+  {
+    "id": "doenca-inflamatoria-intestinal-dii",
+    "nome": "Doença Inflamatória Intestinal (DII)",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 16
+  },
+  {
+    "id": "doencas-negligenciadas",
+    "nome": "Doenças Negligenciadas",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 16
+  },
+  {
+    "id": "colo-curto-e-incompetencia-istmocervical",
+    "nome": "Colo Curto e Incompetência Istmocervical",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 16
+  },
+  {
+    "id": "hipotireoidismo-em-pediatria",
+    "nome": "Hipotireoidismo em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 16
+  },
+  {
+    "id": "nutrologia-em-pediatria",
+    "nome": "Nutrologia em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 16
+  },
+  {
+    "id": "aneurisma-de-aorta",
+    "nome": "Aneurisma de Aorta",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 16
+  },
+  {
+    "id": "osteoporose",
+    "nome": "Osteoporose",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 17
+  },
+  {
+    "id": "puerperio",
+    "nome": "Puerpério",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 17
+  },
+  {
+    "id": "imunodeficiencias-em-pediatria",
+    "nome": "Imunodeficiências em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 17
+  },
+  {
+    "id": "registro-de-saude-orientado-por-problemas",
+    "nome": "Registro de Saúde Orientado por Problemas",
+    "area": "Preventiva",
+    "prio": "Média",
+    "bloco": 17
+  },
+  {
+    "id": "sepse-neonatal",
+    "nome": "Sepse Neonatal",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 18
+  },
+  {
+    "id": "abordagem-familiar-e-comunitaria",
+    "nome": "Abordagem Familiar e Comunitária",
+    "area": "Preventiva",
+    "prio": "Média",
+    "bloco": 18
+  },
+  {
+    "id": "trombose-venosa-profunda",
+    "nome": "Trombose Venosa Profunda",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 18
+  },
+  {
+    "id": "adrenal",
+    "nome": "Adrenal",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 19
+  },
+  {
+    "id": "sindrome-de-cushing",
+    "nome": "Síndrome de Cushing",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 19
+  },
+  {
+    "id": "nodulo-pulmonar",
+    "nome": "Nódulo Pulmonar",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 19
+  },
+  {
+    "id": "cancer-de-mama-doenca-invasiva",
+    "nome": "Câncer de Mama: Doença Invasiva",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 19
+  },
+  {
+    "id": "isquemia-de-membros-inferiores",
+    "nome": "Isquemia de Membros Inferiores",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 19
+  },
+  {
+    "id": "outros-disturbios-hidroeletroliticos",
+    "nome": "Outros Distúrbios Hidroeletrolíticos",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 20
+  },
+  {
+    "id": "doenca-renal-cronica",
+    "nome": "Doença Renal Crônica",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 20
+  },
+  {
+    "id": "cancer-de-ovario",
+    "nome": "Câncer de Ovário",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 20
+  },
+  {
+    "id": "itu-em-pediatria",
+    "nome": "ITU em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 20
+  },
+  {
+    "id": "sepse-pediatrica",
+    "nome": "Sepse Pediátrica",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 20
+  },
+  {
+    "id": "choque-e-drogas-vasoativas-em-pediatria",
+    "nome": "Choque e Drogas Vasoativas em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 20
+  },
+  {
+    "id": "pneumoconioses",
+    "nome": "Pneumoconioses",
+    "area": "Preventiva",
+    "prio": "Média",
+    "bloco": 20
+  },
+  {
+    "id": "cancer-de-endometrio",
+    "nome": "Câncer de Endométrio",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 21
+  },
+  {
+    "id": "outras-intercorrencias-clinicas-na-gestacao",
+    "nome": "Outras Intercorrências Clínicas na Gestação",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 21
+  },
+  {
+    "id": "malformacoes-congenitas",
+    "nome": "Malformações Congênitas",
+    "area": "Pediatria",
+    "prio": "Média",
+    "bloco": 21
+  },
+  {
+    "id": "videolaparoscopia",
+    "nome": "Videolaparoscopia",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 21
+  },
+  {
+    "id": "insuficiencia-venosa-cronica",
+    "nome": "Insuficiência Venosa Crônica",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 21
+  },
+  {
+    "id": "tecnicas-de-reproducao-assistida",
+    "nome": "Técnicas de Reprodução Assistida",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 22
+  },
+  {
+    "id": "cuidado-a-saude-lgbtqiapn",
+    "nome": "Cuidado à Saúde LGBTQIAPN+",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 22
+  },
+  {
+    "id": "intoxicacoes-pairo-e-burnout",
+    "nome": "Intoxicações, PAIRO e Burnout",
+    "area": "Preventiva",
+    "prio": "Média",
+    "bloco": 22
+  },
+  {
+    "id": "hiperaldosteronismo-primario",
+    "nome": "Hiperaldosteronismo Primário",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 23
+  },
+  {
+    "id": "oncohematologia",
+    "nome": "Oncohematologia",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 23
+  },
+  {
+    "id": "emergencias-psiquiatricas",
+    "nome": "Emergências Psiquiátricas",
+    "area": "Preventiva",
+    "prio": "Média",
+    "bloco": 23
+  },
+  {
+    "id": "anomalias-congenitas-de-cabeca-e-pescoco",
+    "nome": "Anomalias Congênitas de Cabeça e Pescoço",
+    "area": "Cirurgia",
+    "prio": "Média",
+    "bloco": 23
+  },
+  {
+    "id": "oftalmologia-para-o-generalista",
+    "nome": "Oftalmologia para o Generalista",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 25
+  },
+  {
+    "id": "trombofilias-na-gestacao-e-puerperio",
+    "nome": "Trombofilias na Gestação e Puerpério",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 25
+  },
+  {
+    "id": "doenca-hemolitica-perinatal",
+    "nome": "Doença Hemolítica Perinatal",
+    "area": "GO",
+    "prio": "Média",
+    "bloco": 25
+  },
+  {
+    "id": "saude-do-trabalhador",
+    "nome": "Saúde do Trabalhador",
+    "area": "Preventiva",
+    "prio": "Média",
+    "bloco": 25
+  },
+  {
+    "id": "bucofaringolaringologia",
+    "nome": "Bucofaringolaringologia",
+    "area": "Clínica Médica",
+    "prio": "Média",
+    "bloco": 26
+  },
+  {
+    "id": "transtornos-relacionados-a-substancias-alcool",
+    "nome": "Transtornos Relacionados a Substâncias - Álcool",
+    "area": "Preventiva",
+    "prio": "Média",
+    "bloco": 26
+  },
+  {
+    "id": "doenca-renal-cronica-e-lesao-renal-agudo",
+    "nome": "Doença Renal Crônica e Lesão Renal Agudo",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 2
+  },
+  {
+    "id": "trauma-medidas-auxiliares-e-fast",
+    "nome": "Trauma: Medidas Auxiliares e FAST",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 2
+  },
+  {
+    "id": "trauma-musculoesqueletico",
+    "nome": "Trauma Musculoesquelético",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 4
+  },
+  {
+    "id": "trauma-de-pescoco",
+    "nome": "Trauma de Pescoço",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 4
+  },
+  {
+    "id": "politrauma-e-afogamento",
+    "nome": "Politrauma e Afogamento",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 5
+  },
+  {
+    "id": "queimaduras-em-pediatria",
+    "nome": "Queimaduras em Pediatria",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 5
+  },
+  {
+    "id": "priapismo",
+    "nome": "Priapismo",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 5
+  },
+  {
+    "id": "doencas-autoinflamatorias",
+    "nome": "Doenças Autoinflamatórias",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 6
+  },
+  {
+    "id": "covid-em-pediatria",
+    "nome": "COVID em Pediatria",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 6
+  },
+  {
+    "id": "avaliacao-de-enzimas-hepaticas-e-dhem",
+    "nome": "Avaliação de Enzimas Hepáticas e DHEM",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 8
+  },
+  {
+    "id": "abscesso-hepatico",
+    "nome": "Abscesso Hepático",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 8
+  },
+  {
+    "id": "hemoterapia",
+    "nome": "Hemoterapia",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 9
+  },
+  {
+    "id": "hernias-incisionais-e-outras-hernias",
+    "nome": "Hérnias Incisionais e Outras Hérnias",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 11
+  },
+  {
+    "id": "dhem-doenca-hepatica-esteatotica-metabolica",
+    "nome": "DHEM - Doença Hepática Esteatótica Metabólica",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 12
+  },
+  {
+    "id": "cardiopatias-na-gravidez",
+    "nome": "Cardiopatias na Gravidez",
+    "area": "GO",
+    "prio": "Baixa",
+    "bloco": 14
+  },
+  {
+    "id": "sindrome-maniaca",
+    "nome": "Síndrome Maníaca",
+    "area": "Preventiva",
+    "prio": "Baixa",
+    "bloco": 14
+  },
+  {
+    "id": "via-aerea-intubacao-e-vni",
+    "nome": "Via Aérea, Intubação e VNI",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 15
+  },
+  {
+    "id": "ventilacao-mecanica",
+    "nome": "Ventilação Mecânica",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 15
+  },
+  {
+    "id": "infeccoes-nosocomiais",
+    "nome": "Infecções Nosocomiais",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 15
+  },
+  {
+    "id": "hiv-em-pediatria",
+    "nome": "HIV em Pediatria",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 15
+  },
+  {
+    "id": "diferencas-no-desenvolvimento-sexual",
+    "nome": "Diferenças no Desenvolvimento Sexual",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 16
+  },
+  {
+    "id": "carcinoma-hepatocelular",
+    "nome": "Carcinoma Hepatocelular",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 16
+  },
+  {
+    "id": "esclerose-sistemica",
+    "nome": "Esclerose Sistêmica",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 17
+  },
+  {
+    "id": "doenca-de-sjogren",
+    "nome": "Doença de Sjögren",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 17
+  },
+  {
+    "id": "miopatias-autoimunes",
+    "nome": "Miopatias Autoimunes",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 17
+  },
+  {
+    "id": "doencas-da-vulva-e-da-vagina",
+    "nome": "Doenças da Vulva e da Vagina",
+    "area": "GO",
+    "prio": "Baixa",
+    "bloco": 18
+  },
+  {
+    "id": "outras-doencas-neonatais",
+    "nome": "Outras Doenças Neonatais",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 18
+  },
+  {
+    "id": "ortopedia-geral",
+    "nome": "Ortopedia Geral",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 18
+  },
+  {
+    "id": "doenca-pulmonar-intersticial",
+    "nome": "Doença Pulmonar Intersticial",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 19
+  },
+  {
+    "id": "sindrome-psicotica",
+    "nome": "Síndrome Psicótica",
+    "area": "Preventiva",
+    "prio": "Baixa",
+    "bloco": 19
+  },
+  {
+    "id": "psicofarmacologia",
+    "nome": "Psicofarmacologia",
+    "area": "Preventiva",
+    "prio": "Baixa",
+    "bloco": 19
+  },
+  {
+    "id": "oncocirurgia-geral",
+    "nome": "Oncocirurgia Geral",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 19
+  },
+  {
+    "id": "tumores-anexiais",
+    "nome": "Tumores Anexiais",
+    "area": "GO",
+    "prio": "Baixa",
+    "bloco": 20
+  },
+  {
+    "id": "sedoanalgesia-e-sequencia-rapida-de-intubacao",
+    "nome": "Sedoanalgesia e Sequência Rápida de Intubação",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 20
+  },
+  {
+    "id": "saude-socioecologica",
+    "nome": "Saúde Socioecológica",
+    "area": "Preventiva",
+    "prio": "Baixa",
+    "bloco": 20
+  },
+  {
+    "id": "pancreatite-cronica",
+    "nome": "Pancreatite Crônica",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 20
+  },
+  {
+    "id": "cancer-de-pulmao",
+    "nome": "Câncer de Pulmão",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 20
+  },
+  {
+    "id": "cec-de-cabeca-e-pescoco",
+    "nome": "CEC de Cabeça e Pescoço",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 22
+  },
+  {
+    "id": "doencas-traqueais-e-bronquiectasias",
+    "nome": "Doenças Traqueais e Bronquiectasias",
+    "area": "Cirurgia",
+    "prio": "Baixa",
+    "bloco": 22
+  },
+  {
+    "id": "feocromocitoma",
+    "nome": "Feocromocitoma",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 23
+  },
+  {
+    "id": "prolactinomas",
+    "nome": "Prolactinomas",
+    "area": "Clínica Médica",
+    "prio": "Baixa",
+    "bloco": 23
+  },
+  {
+    "id": "cirurgia-ginecologica-principios",
+    "nome": "Cirurgia Ginecológica: Princípios",
+    "area": "GO",
+    "prio": "Baixa",
+    "bloco": 23
+  },
+  {
+    "id": "transtornos-psiquiatricos-na-gestacao-e-pos-part",
+    "nome": "Transtornos Psiquiátricos na Gestação e Pós-Parto",
+    "area": "GO",
+    "prio": "Baixa",
+    "bloco": 23
+  },
+  {
+    "id": "medicina-fetal",
+    "nome": "Medicina Fetal",
+    "area": "GO",
+    "prio": "Baixa",
+    "bloco": 24
+  },
+  {
+    "id": "otites-rinossinusites-e-epistaxe",
+    "nome": "Otites, Rinossinusites e Epistaxe",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 24
+  },
+  {
+    "id": "rinites-e-afeccoes-da-laringe-e-faringe",
+    "nome": "Rinites e Afecções da Laringe e Faringe",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 24
+  },
+  {
+    "id": "oftalmopediatria",
+    "nome": "Oftalmopediatria",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 25
+  },
+  {
+    "id": "outras-urgencias-ginecologicas",
+    "nome": "Outras Urgências Ginecológicas",
+    "area": "GO",
+    "prio": "Baixa",
+    "bloco": 26
+  },
+  {
+    "id": "malformacoes-do-sistema-nervoso",
+    "nome": "Malformações do Sistema Nervoso",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 26
+  },
+  {
+    "id": "doencas-neuromusculares-na-infancia",
+    "nome": "Doenças Neuromusculares na Infância",
+    "area": "Pediatria",
+    "prio": "Baixa",
+    "bloco": 26
+  },
+  {
+    "id": "trauma-populacoes-especiais",
+    "nome": "Trauma: Populações Especiais",
+    "area": "Cirurgia",
+    "prio": "Bônus",
+    "bloco": 2
+  },
+  {
+    "id": "fios-de-sutura",
+    "nome": "Fios de Sutura",
+    "area": "Cirurgia",
+    "prio": "Bônus",
+    "bloco": 6
+  },
+  {
+    "id": "anestesicos-locais",
+    "nome": "Anestésicos Locais",
+    "area": "Cirurgia",
+    "prio": "Bônus",
+    "bloco": 6
+  },
+  {
+    "id": "neoplasias-cisticas-pancreaticas",
+    "nome": "Neoplasias Císticas Pancreáticas",
+    "area": "Cirurgia",
+    "prio": "Bônus",
+    "bloco": 20
+  },
+  {
+    "id": "transtornos-alimentares-e-de-personalidade",
+    "nome": "Transtornos Alimentares e de Personalidade",
+    "area": "Preventiva",
+    "prio": "Bônus",
+    "bloco": 24
+  },
+  {
+    "id": "endoscopia-diagnostica",
+    "nome": "Endoscopia Diagnóstica",
+    "area": "Cirurgia",
+    "prio": "Bônus",
+    "bloco": 24
+  },
+  {
+    "id": "cabeca-e-pescoco-tireoide-e-paratireoide",
+    "nome": "Cabeça e Pescoço: Tireoide e Paratireoide",
+    "area": "Cirurgia",
+    "prio": "Bônus",
+    "bloco": 24
+  },
+  {
+    "id": "neurocirurgia",
+    "nome": "Neurocirurgia",
+    "area": "Cirurgia",
+    "prio": "Bônus",
+    "bloco": 24
+  },
+  {
+    "id": "anestesiologia",
+    "nome": "Anestesiologia",
+    "area": "Cirurgia",
+    "prio": "Bônus",
+    "bloco": 25
+  },
+  {
+    "id": "cirurgia-cardiaca",
+    "nome": "Cirurgia Cardíaca",
+    "area": "Cirurgia",
+    "prio": "Bônus",
+    "bloco": 26
+  }
+]

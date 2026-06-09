@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "anemias-hipoproliferativas-ii__anemia-doenca-cronica",
+    "entidade": "Anemia da doença crônica",
+    "area": "Clínica Médica",
+    "subtopico": "Anemias Hipoproliferativas II",
+    "sindrome": "Síndrome anêmica hipoproliferativa inflamatória",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Anemia ferropriva",
+        "feature": "ferritina elevada em contexto inflamatório favorece sequestro funcional de ferro"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "anemias-hipoproliferativas-ii__anemia-doenca-cronica-typical",
+      "scriptId": "anemias-hipoproliferativas-ii__anemia-doenca-cronica",
+      "presentation": "typical",
+      "vignette": "paciente com artrite inflamatória ativa, fadiga, anemia normocítica leve, ferritina elevada e ferro sérico baixo",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "anemia associada a inflamação sistêmica persistente",
+        "sindromeCorreta": "Síndrome anêmica hipoproliferativa inflamatória",
+        "opcoes": [
+          "Síndrome anêmica hipoproliferativa inflamatória",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome anêmica hipoproliferativa inflamatória; ferritina elevada em contexto inflamatório favorece sequestro funcional de ferro.",
+        "diferenciaisDaSindrome": [
+          "Anemia ferropriva",
+          "Anemia megaloblástica por deficiência de B12",
+          "Talassemia menor"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Anemia ferropriva",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Anemia megaloblástica por deficiência de B12",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Talassemia menor",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Anemia da doença crônica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Anemia da doença crônica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "anemias-hipoproliferativas-ii__anemia-doenca-cronica-atypical",
+      "scriptId": "anemias-hipoproliferativas-ii__anemia-doenca-cronica",
+      "presentation": "atypical",
+      "vignette": "paciente com artrite inflamatória ativa, fadiga, anemia normocítica leve, ferritina elevada e ferro sérico baixo Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "anemia associada a inflamação sistêmica persistente com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome anêmica hipoproliferativa inflamatória",
+        "opcoes": [
+          "Síndrome anêmica hipoproliferativa inflamatória",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome anêmica hipoproliferativa inflamatória; ferritina elevada em contexto inflamatório favorece sequestro funcional de ferro.",
+        "diferenciaisDaSindrome": [
+          "Anemia ferropriva",
+          "Anemia megaloblástica por deficiência de B12",
+          "Talassemia menor"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Anemia ferropriva",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Anemia megaloblástica por deficiência de B12",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Talassemia menor",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Anemia da doença crônica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Anemia da doença crônica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.407Z"
+  }
+}

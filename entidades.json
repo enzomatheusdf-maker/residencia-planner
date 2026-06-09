@@ -1,0 +1,3042 @@
+[
+  {
+    "cid": "anemias-hipoproliferativas-i__anemia-ferropriva",
+    "entidade": "Anemia ferropriva",
+    "sindrome": "Síndrome anêmica microcítica",
+    "incidencia": "alta",
+    "temaId": "anemias-hipoproliferativas-i",
+    "temaNome": "Anemias Hipoproliferativas I",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "assistencia-ao-pre-natal__pre-natal-baixo-risco",
+    "entidade": "Gestação de baixo risco em início de pré-natal",
+    "sindrome": "Síndrome de gestação inicial sem sinais de alto risco",
+    "incidencia": "alta",
+    "temaId": "assistencia-ao-pre-natal",
+    "temaNome": "Assistência ao Pré-Natal",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "aleitamento-materno__mastite-puerperal",
+    "entidade": "Mastite puerperal",
+    "sindrome": "Síndrome mamária puerperal febril",
+    "incidencia": "alta",
+    "temaId": "aleitamento-materno",
+    "temaNome": "Aleitamento Materno",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "introducao-ao-trauma-e-atendimento-inicial__choque-hemorragico-trauma",
+    "entidade": "Choque hemorrágico no trauma",
+    "sindrome": "Síndrome de choque no politrauma",
+    "incidencia": "alta",
+    "temaId": "introducao-ao-trauma-e-atendimento-inicial",
+    "temaNome": "Introdução ao Trauma e Atendimento Inicial",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "neurovascular-i-ait-e-avci__ataque-isquemico-transitorio",
+    "entidade": "Ataque isquêmico transitório",
+    "sindrome": "Síndrome neurológica focal transitória",
+    "incidencia": "alta",
+    "temaId": "neurovascular-i-ait-e-avci",
+    "temaNome": "Neurovascular I: AIT e AVCi",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "neurovascular-i-ait-e-avci__avc-isquemico",
+    "entidade": "AVC isquêmico",
+    "sindrome": "Síndrome neurológica focal aguda",
+    "incidencia": "alta",
+    "temaId": "neurovascular-i-ait-e-avci",
+    "temaNome": "Neurovascular I: AIT e AVCi",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "nefrologia-pediatrica__sindrome-nefrotica",
+    "entidade": "Síndrome nefrótica idiopática",
+    "sindrome": "Síndrome edematosa com proteinúria",
+    "incidencia": "alta",
+    "temaId": "nefrologia-pediatrica",
+    "temaNome": "Nefrologia Pediátrica",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "nefrologia-pediatrica__glomerulonefrite-pos-estreptococica",
+    "entidade": "Glomerulonefrite pós-estreptocócica",
+    "sindrome": "Síndrome nefrítica aguda",
+    "incidencia": "alta",
+    "temaId": "nefrologia-pediatrica",
+    "temaNome": "Nefrologia Pediátrica",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "trauma-de-torax__pneumotorax-hipertensivo",
+    "entidade": "Pneumotórax hipertensivo traumático",
+    "sindrome": "Síndrome de choque obstrutivo no trauma torácico",
+    "incidencia": "alta",
+    "temaId": "trauma-de-torax",
+    "temaNome": "Trauma de Tórax",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "trauma-de-torax__hemotorax-macico",
+    "entidade": "Hemotórax maciço",
+    "sindrome": "Síndrome hemorrágica intratorácica traumática",
+    "incidencia": "alta",
+    "temaId": "trauma-de-torax",
+    "temaNome": "Trauma de Tórax",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "sifilis__sifilis-primaria",
+    "entidade": "Sífilis primária",
+    "sindrome": "Síndrome de úlcera genital indolor",
+    "incidencia": "alta",
+    "temaId": "sifilis",
+    "temaNome": "Sífilis",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "sifilis__sifilis-secundaria",
+    "entidade": "Sífilis secundária",
+    "sindrome": "Síndrome exantemática palmoplantar com sintomas sistêmicos",
+    "incidencia": "alta",
+    "temaId": "sifilis",
+    "temaNome": "Sífilis",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "corrimentos-vaginais__vaginose-bacteriana",
+    "entidade": "Vaginose bacteriana",
+    "sindrome": "Síndrome de corrimento vaginal com odor",
+    "incidencia": "alta",
+    "temaId": "corrimentos-vaginais",
+    "temaNome": "Corrimentos Vaginais",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "corrimentos-vaginais__candidiase-vulvovaginal",
+    "entidade": "Candidíase vulvovaginal",
+    "sindrome": "Síndrome vulvovaginal pruriginosa",
+    "incidencia": "alta",
+    "temaId": "corrimentos-vaginais",
+    "temaNome": "Corrimentos Vaginais",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "alergia-alimentar-refluxo-e-constipacao__alergia-proteina-leite-vaca",
+    "entidade": "Alergia à proteína do leite de vaca",
+    "sindrome": "Síndrome gastrointestinal/alérgica do lactente",
+    "incidencia": "alta",
+    "temaId": "alergia-alimentar-refluxo-e-constipacao",
+    "temaNome": "Alergia Alimentar, Refluxo e Constipação",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "alergia-alimentar-refluxo-e-constipacao__constipacao-funcional",
+    "entidade": "Constipação funcional",
+    "sindrome": "Síndrome de constipação crônica sem alarme",
+    "incidencia": "alta",
+    "temaId": "alergia-alimentar-refluxo-e-constipacao",
+    "temaNome": "Alergia Alimentar, Refluxo e Constipação",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "trauma-abdominal__lesao-esplenica",
+    "entidade": "Lesão esplênica traumática",
+    "sindrome": "Síndrome hemorrágica abdominal pós-trauma",
+    "incidencia": "alta",
+    "temaId": "trauma-abdominal",
+    "temaNome": "Trauma Abdominal",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "trauma-abdominal__peritonite-traumatica",
+    "entidade": "Perfuração de víscera oca traumática",
+    "sindrome": "Síndrome peritoneal pós-trauma",
+    "incidencia": "alta",
+    "temaId": "trauma-abdominal",
+    "temaNome": "Trauma Abdominal",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "assistencia-ao-parto__distocia-de-ombro",
+    "entidade": "Distocia de ombro",
+    "sindrome": "Emergência mecânica do parto vaginal",
+    "incidencia": "alta",
+    "temaId": "assistencia-ao-parto",
+    "temaNome": "Assistência ao Parto",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "assistencia-ao-parto__trabalho-de-parto-ativo",
+    "entidade": "Trabalho de parto ativo",
+    "sindrome": "Síndrome de parto em fase ativa",
+    "incidencia": "alta",
+    "temaId": "assistencia-ao-parto",
+    "temaNome": "Assistência ao Parto",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "crescimento-e-baixa-estatura__baixa-estatura-familiar",
+    "entidade": "Baixa estatura familiar",
+    "sindrome": "Síndrome de baixa estatura proporcional com velocidade normal",
+    "incidencia": "alta",
+    "temaId": "crescimento-e-baixa-estatura",
+    "temaNome": "Crescimento e Baixa Estatura",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "crescimento-e-baixa-estatura__deficiencia-hormonio-crescimento",
+    "entidade": "Deficiência de hormônio do crescimento",
+    "sindrome": "Síndrome de baixa estatura com velocidade reduzida",
+    "incidencia": "alta",
+    "temaId": "crescimento-e-baixa-estatura",
+    "temaNome": "Crescimento e Baixa Estatura",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "trauma-cranioencefalico__hematoma-epidural",
+    "entidade": "Hematoma epidural traumático",
+    "sindrome": "Síndrome de deterioração neurológica pós-trauma",
+    "incidencia": "alta",
+    "temaId": "trauma-cranioencefalico",
+    "temaNome": "Trauma Cranioencefálico",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "trauma-cranioencefalico__hipertensao-intracraniana-traumatica",
+    "entidade": "Hipertensão intracraniana traumática",
+    "sindrome": "Síndrome de hipertensão intracraniana aguda",
+    "incidencia": "alta",
+    "temaId": "trauma-cranioencefalico",
+    "temaNome": "Trauma Cranioencefálico",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "dor-toracica-coronariana__iam-com-supra",
+    "entidade": "Infarto agudo do miocárdio com supra de ST",
+    "sindrome": "Síndrome coronariana aguda com supra",
+    "incidencia": "alta",
+    "temaId": "dor-toracica-coronariana",
+    "temaNome": "Dor Torácica Coronariana",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "dor-toracica-coronariana__angina-instavel",
+    "entidade": "Angina instável",
+    "sindrome": "Síndrome coronariana aguda sem supra",
+    "incidencia": "alta",
+    "temaId": "dor-toracica-coronariana",
+    "temaNome": "Dor Torácica Coronariana",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "amenorreia-primaria__sindrome-de-turner",
+    "entidade": "Síndrome de Turner",
+    "sindrome": "Síndrome de amenorreia primária com hipogonadismo hipergonadotrófico",
+    "incidencia": "alta",
+    "temaId": "amenorreia-primaria",
+    "temaNome": "Amenorreia Primária",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "amenorreia-primaria__agenesia-mulleriana",
+    "entidade": "Agenesia mülleriana",
+    "sindrome": "Síndrome de amenorreia primária com caracteres sexuais presentes",
+    "incidencia": "alta",
+    "temaId": "amenorreia-primaria",
+    "temaNome": "Amenorreia Primária",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "diarreia-aguda-em-pediatria__gastroenterite-aguda-com-desidratacao",
+    "entidade": "Gastroenterite aguda com desidratação",
+    "sindrome": "Síndrome diarreica aguda com desidratação",
+    "incidencia": "alta",
+    "temaId": "diarreia-aguda-em-pediatria",
+    "temaNome": "Diarreia Aguda em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "diarreia-aguda-em-pediatria__disenteria-bacteriana",
+    "entidade": "Disenteria bacteriana",
+    "sindrome": "Síndrome disentérica aguda",
+    "incidencia": "alta",
+    "temaId": "diarreia-aguda-em-pediatria",
+    "temaNome": "Diarreia Aguda em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "amenorreia-secundaria__gestacao-inicial",
+    "entidade": "Gestação inicial",
+    "sindrome": "Síndrome de amenorreia secundária fisiológica",
+    "incidencia": "alta",
+    "temaId": "amenorreia-secundaria",
+    "temaNome": "Amenorreia Secundária",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "amenorreia-secundaria__insuficiencia-ovariana-prematura",
+    "entidade": "Insuficiência ovariana prematura",
+    "sindrome": "Síndrome de amenorreia secundária hipergonadotrófica",
+    "incidencia": "alta",
+    "temaId": "amenorreia-secundaria",
+    "temaNome": "Amenorreia Secundária",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "pneumonias-em-pediatria__pneumonia-bacteriana-tipica",
+    "entidade": "Pneumonia bacteriana típica",
+    "sindrome": "Síndrome de consolidação pulmonar febril",
+    "incidencia": "alta",
+    "temaId": "pneumonias-em-pediatria",
+    "temaNome": "Pneumonias em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "pneumonias-em-pediatria__pneumonia-atipica",
+    "entidade": "Pneumonia atípica",
+    "sindrome": "Síndrome respiratória subaguda com dissociação clínico-radiológica",
+    "incidencia": "alta",
+    "temaId": "pneumonias-em-pediatria",
+    "temaNome": "Pneumonias em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "bronquiolite-e-coqueluche__bronquiolite-viral",
+    "entidade": "Bronquiolite viral aguda",
+    "sindrome": "Síndrome obstrutiva viral do lactente",
+    "incidencia": "alta",
+    "temaId": "bronquiolite-e-coqueluche",
+    "temaNome": "Bronquiolite e Coqueluche",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "bronquiolite-e-coqueluche__coqueluche",
+    "entidade": "Coqueluche",
+    "sindrome": "Síndrome de tosse paroxística prolongada",
+    "incidencia": "alta",
+    "temaId": "bronquiolite-e-coqueluche",
+    "temaNome": "Bronquiolite e Coqueluche",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "apendicite-aguda__apendicite-aguda",
+    "entidade": "Apendicite aguda",
+    "sindrome": "Síndrome de abdome agudo inflamatório em fossa ilíaca direita",
+    "incidencia": "alta",
+    "temaId": "apendicite-aguda",
+    "temaNome": "Apendicite Aguda",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "infeccoes-e-gravidez__toxoplasmose-gestacional",
+    "entidade": "Toxoplasmose gestacional",
+    "sindrome": "Síndrome infecciosa gestacional com risco fetal",
+    "incidencia": "alta",
+    "temaId": "infeccoes-e-gravidez",
+    "temaNome": "Infecções e Gravidez",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "infeccoes-e-gravidez__sifilis-na-gestacao",
+    "entidade": "Sífilis na gestação",
+    "sindrome": "Síndrome de IST gestacional com transmissão vertical evitável",
+    "incidencia": "alta",
+    "temaId": "infeccoes-e-gravidez",
+    "temaNome": "Infecções e Gravidez",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "infeccoes-e-gravidez__itu-na-gestacao",
+    "entidade": "Infecção urinária na gestação",
+    "sindrome": "Síndrome urinária gestacional",
+    "incidencia": "alta",
+    "temaId": "infeccoes-e-gravidez",
+    "temaNome": "Infecções e Gravidez",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "infeccoes-congenitas__toxoplasmose-congenita",
+    "entidade": "Toxoplasmose congênita",
+    "sindrome": "Síndrome TORCH com acometimento ocular/neurológico",
+    "incidencia": "alta",
+    "temaId": "infeccoes-congenitas",
+    "temaNome": "Infecções Congênitas",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "infeccoes-congenitas__sifilis-congenita",
+    "entidade": "Sífilis congênita",
+    "sindrome": "Síndrome infecciosa congênita multissistêmica",
+    "incidencia": "alta",
+    "temaId": "infeccoes-congenitas",
+    "temaNome": "Infecções Congênitas",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "infeccoes-congenitas__citomegalovirus-congenito",
+    "entidade": "Citomegalovírus congênito",
+    "sindrome": "Síndrome TORCH com microcefalia e calcificações periventriculares",
+    "incidencia": "alta",
+    "temaId": "infeccoes-congenitas",
+    "temaNome": "Infecções Congênitas",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "urgencias-da-vesicula-biliar__colecistite-aguda",
+    "entidade": "Colecistite aguda",
+    "sindrome": "Síndrome dolorosa biliar inflamatória",
+    "incidencia": "alta",
+    "temaId": "urgencias-da-vesicula-biliar",
+    "temaNome": "Urgências da Vesícula Biliar",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "urgencias-da-vesicula-biliar__colangite-aguda",
+    "entidade": "Colangite aguda",
+    "sindrome": "Síndrome infecciosa biliar obstrutiva",
+    "incidencia": "alta",
+    "temaId": "urgencias-da-vesicula-biliar",
+    "temaNome": "Urgências da Vesícula Biliar",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "urgencias-da-vesicula-biliar__coledocolitiase",
+    "entidade": "Coledocolitíase",
+    "sindrome": "Síndrome colestática obstrutiva por cálculo",
+    "incidencia": "alta",
+    "temaId": "urgencias-da-vesicula-biliar",
+    "temaNome": "Urgências da Vesícula Biliar",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "abortamento__ameaca-de-abortamento",
+    "entidade": "Ameaça de abortamento",
+    "sindrome": "Síndrome de sangramento no primeiro trimestre com colo fechado",
+    "incidencia": "alta",
+    "temaId": "abortamento",
+    "temaNome": "Abortamento",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "abortamento__abortamento-incompleto",
+    "entidade": "Abortamento incompleto",
+    "sindrome": "Síndrome de abortamento com restos ovulares",
+    "incidencia": "alta",
+    "temaId": "abortamento",
+    "temaNome": "Abortamento",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "abortamento__abortamento-infectado",
+    "entidade": "Abortamento infectado",
+    "sindrome": "Síndrome séptica pós-abortamento",
+    "incidencia": "alta",
+    "temaId": "abortamento",
+    "temaNome": "Abortamento",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "gestacao-ectopica__gestacao-ectopica-tubaria",
+    "entidade": "Gestação ectópica tubária",
+    "sindrome": "Síndrome de dor pélvica e sangramento no primeiro trimestre",
+    "incidencia": "alta",
+    "temaId": "gestacao-ectopica",
+    "temaNome": "Gestação Ectópica",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "dermatoses-e-infeccoes-de-partes-moles__impetigo",
+    "entidade": "Impetigo",
+    "sindrome": "Síndrome de infecção cutânea superficial crostosa",
+    "incidencia": "alta",
+    "temaId": "dermatoses-e-infeccoes-de-partes-moles",
+    "temaNome": "Dermatoses e Infecções de Partes Moles",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "dermatoses-e-infeccoes-de-partes-moles__celulite-bacteriana",
+    "entidade": "Celulite bacteriana",
+    "sindrome": "Síndrome infecciosa cutânea profunda não purulenta",
+    "incidencia": "alta",
+    "temaId": "dermatoses-e-infeccoes-de-partes-moles",
+    "temaNome": "Dermatoses e Infecções de Partes Moles",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "dermatoses-e-infeccoes-de-partes-moles__escabiose",
+    "entidade": "Escabiose",
+    "sindrome": "Síndrome pruriginosa contagiosa familiar",
+    "incidencia": "alta",
+    "temaId": "dermatoses-e-infeccoes-de-partes-moles",
+    "temaNome": "Dermatoses e Infecções de Partes Moles",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "diverticulite-aguda__diverticulite-nao-complicada",
+    "entidade": "Diverticulite aguda não complicada",
+    "sindrome": "Síndrome de dor inflamatória em fossa ilíaca esquerda",
+    "incidencia": "alta",
+    "temaId": "diverticulite-aguda",
+    "temaNome": "Diverticulite Aguda",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "diverticulite-aguda__diverticulite-complicada",
+    "entidade": "Diverticulite aguda complicada",
+    "sindrome": "Síndrome de abdome inflamatório com coleção/peritonite",
+    "incidencia": "alta",
+    "temaId": "diverticulite-aguda",
+    "temaNome": "Diverticulite Aguda",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "cirrose-hepatica-i__ascite-cirrotica",
+    "entidade": "Ascite cirrótica",
+    "sindrome": "Síndrome ascítica por hipertensão portal",
+    "incidencia": "alta",
+    "temaId": "cirrose-hepatica-i",
+    "temaNome": "Cirrose Hepática I",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "cirrose-hepatica-i__peritonite-bacteriana-espontanea",
+    "entidade": "Peritonite bacteriana espontânea",
+    "sindrome": "Síndrome infecciosa em paciente cirrótico com ascite",
+    "incidencia": "alta",
+    "temaId": "cirrose-hepatica-i",
+    "temaNome": "Cirrose Hepática I",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "pac-pneumonia-adquirida-na-comunidade__pneumonia-comunitaria",
+    "entidade": "Pneumonia adquirida na comunidade",
+    "sindrome": "Síndrome de consolidação pulmonar adquirida na comunidade",
+    "incidencia": "alta",
+    "temaId": "pac-pneumonia-adquirida-na-comunidade",
+    "temaNome": "PAC - Pneumonia Adquirida na Comunidade",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "pac-pneumonia-adquirida-na-comunidade__pneumonia-comunitaria-grave",
+    "entidade": "Pneumonia adquirida na comunidade grave",
+    "sindrome": "Síndrome pneumônica comunitária com gravidade sistêmica",
+    "incidencia": "alta",
+    "temaId": "pac-pneumonia-adquirida-na-comunidade",
+    "temaNome": "PAC - Pneumonia Adquirida na Comunidade",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "descolamento-prematuro-de-placenta__descolamento-prematuro-placenta",
+    "entidade": "Descolamento prematuro de placenta",
+    "sindrome": "Síndrome hemorrágica dolorosa da segunda metade da gestação",
+    "incidencia": "alta",
+    "temaId": "descolamento-prematuro-de-placenta",
+    "temaNome": "Descolamento Prematuro de Placenta",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "anemia-ferropriva-e-talassemia__talassemia-menor",
+    "entidade": "Talassemia menor",
+    "sindrome": "Síndrome anêmica microcítica familiar",
+    "incidencia": "alta",
+    "temaId": "anemia-ferropriva-e-talassemia",
+    "temaNome": "Anemia Ferropriva e Talassemia",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "abdome-agudo-obstrutivo__obstrucao-por-bridas",
+    "entidade": "Obstrução intestinal por bridas",
+    "sindrome": "Síndrome de obstrução intestinal mecânica",
+    "incidencia": "alta",
+    "temaId": "abdome-agudo-obstrutivo",
+    "temaNome": "Abdome Agudo Obstrutivo",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "abdome-agudo-obstrutivo__volvo-sigmoide",
+    "entidade": "Volvo de sigmoide",
+    "sindrome": "Síndrome de obstrução colônica em alça fechada",
+    "incidencia": "alta",
+    "temaId": "abdome-agudo-obstrutivo",
+    "temaNome": "Abdome Agudo Obstrutivo",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "has-ambulatorial-e-emergencias__urgencia-hipertensiva",
+    "entidade": "Urgência hipertensiva",
+    "sindrome": "Síndrome pressórica grave sem lesão aguda de órgão-alvo",
+    "incidencia": "alta",
+    "temaId": "has-ambulatorial-e-emergencias",
+    "temaNome": "HAS: Ambulatorial e Emergências",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "has-ambulatorial-e-emergencias__emergencia-hipertensiva-eap",
+    "entidade": "Emergência hipertensiva com edema agudo de pulmão",
+    "sindrome": "Síndrome pressórica grave com lesão aguda de órgão-alvo",
+    "incidencia": "alta",
+    "temaId": "has-ambulatorial-e-emergencias",
+    "temaNome": "HAS: Ambulatorial e Emergências",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "sindromes-hipertensivas-na-gestacao__pre-eclampsia",
+    "entidade": "Pré-eclâmpsia",
+    "sindrome": "Síndrome hipertensiva específica da gestação",
+    "incidencia": "alta",
+    "temaId": "sindromes-hipertensivas-na-gestacao",
+    "temaNome": "Síndromes Hipertensivas na Gestação",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "sindromes-hipertensivas-na-gestacao__eclampsia",
+    "entidade": "Eclâmpsia",
+    "sindrome": "Síndrome hipertensiva gestacional com crise convulsiva",
+    "incidencia": "alta",
+    "temaId": "sindromes-hipertensivas-na-gestacao",
+    "temaNome": "Síndromes Hipertensivas na Gestação",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "sindromes-hipertensivas-na-gestacao__sindrome-hellp",
+    "entidade": "Síndrome HELLP",
+    "sindrome": "Síndrome hipertensiva gestacional com disfunção hepato-hematológica",
+    "incidencia": "alta",
+    "temaId": "sindromes-hipertensivas-na-gestacao",
+    "temaNome": "Síndromes Hipertensivas na Gestação",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "sangramento-uterino-anormal__mioma-submucoso",
+    "entidade": "Mioma submucoso",
+    "sindrome": "Síndrome de sangramento uterino estrutural",
+    "incidencia": "alta",
+    "temaId": "sangramento-uterino-anormal",
+    "temaNome": "Sangramento Uterino Anormal",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "sangramento-uterino-anormal__sangramento-anovulatorio",
+    "entidade": "Sangramento anovulatório",
+    "sindrome": "Síndrome de sangramento uterino não estrutural",
+    "incidencia": "alta",
+    "temaId": "sangramento-uterino-anormal",
+    "temaNome": "Sangramento Uterino Anormal",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "diabetes-na-gestacao__diabetes-gestacional",
+    "entidade": "Diabetes mellitus gestacional",
+    "sindrome": "Síndrome hiperglicêmica diagnosticada na gestação",
+    "incidencia": "alta",
+    "temaId": "diabetes-na-gestacao",
+    "temaNome": "Diabetes na Gestação",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "doencas-exantematicas__sarampo",
+    "entidade": "Sarampo",
+    "sindrome": "Síndrome febril exantemática com pródromo respiratório",
+    "incidencia": "alta",
+    "temaId": "doencas-exantematicas",
+    "temaNome": "Doenças Exantemáticas",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "doencas-exantematicas__varicela",
+    "entidade": "Varicela",
+    "sindrome": "Síndrome febril exantemática vesicular",
+    "incidencia": "alta",
+    "temaId": "doencas-exantematicas",
+    "temaNome": "Doenças Exantemáticas",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "doencas-exantematicas__escarlatina",
+    "entidade": "Escarlatina",
+    "sindrome": "Síndrome febril exantemática com faringoamigdalite",
+    "incidencia": "alta",
+    "temaId": "doencas-exantematicas",
+    "temaNome": "Doenças Exantemáticas",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "doencas-exantematicas__exantema-subito",
+    "entidade": "Exantema súbito",
+    "sindrome": "Síndrome febril exantemática pós-defervescência",
+    "incidencia": "alta",
+    "temaId": "doencas-exantematicas",
+    "temaNome": "Doenças Exantemáticas",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "urgencias-endoscopicas__hemorragia-digestiva-alta",
+    "entidade": "Hemorragia digestiva alta",
+    "sindrome": "Síndrome hemorrágica digestiva proximal",
+    "incidencia": "alta",
+    "temaId": "urgencias-endoscopicas",
+    "temaNome": "Urgências Endoscópicas",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "urgencias-endoscopicas__impactacao-alimentar-esofagica",
+    "entidade": "Impactação alimentar esofágica",
+    "sindrome": "Síndrome de obstrução esofágica aguda",
+    "incidencia": "alta",
+    "temaId": "urgencias-endoscopicas",
+    "temaNome": "Urgências Endoscópicas",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "dislipidemias__hipercolesterolemia-familiar",
+    "entidade": "Hipercolesterolemia familiar",
+    "sindrome": "Síndrome dislipidêmica hereditária aterogênica",
+    "incidencia": "alta",
+    "temaId": "dislipidemias",
+    "temaNome": "Dislipidemias",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "uroginecologia-e-incontinencia-urinaria__incontinencia-esforco",
+    "entidade": "Incontinência urinária de esforço",
+    "sindrome": "Síndrome de perda urinária aos esforços",
+    "incidencia": "alta",
+    "temaId": "uroginecologia-e-incontinencia-urinaria",
+    "temaNome": "Uroginecologia e Incontinência Urinária",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "uroginecologia-e-incontinencia-urinaria__bexiga-hiperativa",
+    "entidade": "Bexiga hiperativa",
+    "sindrome": "Síndrome de urgência miccional",
+    "incidencia": "alta",
+    "temaId": "uroginecologia-e-incontinencia-urinaria",
+    "temaNome": "Uroginecologia e Incontinência Urinária",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "peconhentos-raiva-e-tetano__escorpionismo",
+    "entidade": "Escorpionismo",
+    "sindrome": "Síndrome toxínica por animal peçonhento",
+    "incidencia": "alta",
+    "temaId": "peconhentos-raiva-e-tetano",
+    "temaNome": "Peçonhentos, Raiva e Tétano",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "peconhentos-raiva-e-tetano__acidente-botropico",
+    "entidade": "Acidente botrópico",
+    "sindrome": "Síndrome hemorrágica por envenenamento ofídico",
+    "incidencia": "alta",
+    "temaId": "peconhentos-raiva-e-tetano",
+    "temaNome": "Peçonhentos, Raiva e Tétano",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "peconhentos-raiva-e-tetano__tetano",
+    "entidade": "Tétano",
+    "sindrome": "Síndrome neuromuscular espástica infecciosa",
+    "incidencia": "alta",
+    "temaId": "peconhentos-raiva-e-tetano",
+    "temaNome": "Peçonhentos, Raiva e Tétano",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "tuberculose-clinica-e-diagnostico__tuberculose-pulmonar",
+    "entidade": "Tuberculose pulmonar",
+    "sindrome": "Síndrome respiratória crônica consumptiva",
+    "incidencia": "alta",
+    "temaId": "tuberculose-clinica-e-diagnostico",
+    "temaNome": "Tuberculose: Clínica e Diagnóstico",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "tuberculose-clinica-e-diagnostico__tuberculose-pleural",
+    "entidade": "Tuberculose pleural",
+    "sindrome": "Síndrome pleural subaguda linfocítica",
+    "incidencia": "alta",
+    "temaId": "tuberculose-clinica-e-diagnostico",
+    "temaNome": "Tuberculose: Clínica e Diagnóstico",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "convulsao-na-emergencia-e-convulsao-febril__convulsao-febril-simples",
+    "entidade": "Convulsão febril simples",
+    "sindrome": "Síndrome convulsiva febril benigna da infância",
+    "incidencia": "alta",
+    "temaId": "convulsao-na-emergencia-e-convulsao-febril",
+    "temaNome": "Convulsão na Emergência e Convulsão Febril",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "convulsao-na-emergencia-e-convulsao-febril__estado-mal-epileptico",
+    "entidade": "Estado de mal epiléptico",
+    "sindrome": "Síndrome convulsiva prolongada",
+    "incidencia": "alta",
+    "temaId": "convulsao-na-emergencia-e-convulsao-febril",
+    "temaNome": "Convulsão na Emergência e Convulsão Febril",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "taquiarritmias__taquicardia-supraventricular-paroxistica",
+    "entidade": "Taquicardia supraventricular paroxística",
+    "sindrome": "Síndrome taquicárdica regular de QRS estreito",
+    "incidencia": "alta",
+    "temaId": "taquiarritmias",
+    "temaNome": "Taquiarritmias",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "taquiarritmias__fibrilacao-atrial-alta-resposta",
+    "entidade": "Fibrilação atrial com alta resposta ventricular",
+    "sindrome": "Síndrome taquicárdica irregular de QRS estreito",
+    "incidencia": "alta",
+    "temaId": "taquiarritmias",
+    "temaNome": "Taquiarritmias",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "taquiarritmias__taquicardia-ventricular-monomorfica",
+    "entidade": "Taquicardia ventricular monomórfica",
+    "sindrome": "Síndrome taquicárdica regular de QRS largo",
+    "incidencia": "alta",
+    "temaId": "taquiarritmias",
+    "temaNome": "Taquiarritmias",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "kawasaki-vasculite-por-iga-e-febre-reumatica__kawasaki",
+    "entidade": "Doença de Kawasaki",
+    "sindrome": "Síndrome febril mucocutânea vasculítica",
+    "incidencia": "alta",
+    "temaId": "kawasaki-vasculite-por-iga-e-febre-reumatica",
+    "temaNome": "Kawasaki, Vasculite por IgA e Febre Reumática",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "kawasaki-vasculite-por-iga-e-febre-reumatica__vasculite-iga",
+    "entidade": "Vasculite por IgA",
+    "sindrome": "Síndrome purpúrica vasculítica da infância",
+    "incidencia": "alta",
+    "temaId": "kawasaki-vasculite-por-iga-e-febre-reumatica",
+    "temaNome": "Kawasaki, Vasculite por IgA e Febre Reumática",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "kawasaki-vasculite-por-iga-e-febre-reumatica__febre-reumatica",
+    "entidade": "Febre reumática aguda",
+    "sindrome": "Síndrome inflamatória pós-estreptocócica",
+    "incidencia": "alta",
+    "temaId": "kawasaki-vasculite-por-iga-e-febre-reumatica",
+    "temaNome": "Kawasaki, Vasculite por IgA e Febre Reumática",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "meningite-e-encefalite-em-pediatria__meningite-bacteriana",
+    "entidade": "Meningite bacteriana",
+    "sindrome": "Síndrome meníngea febril grave",
+    "incidencia": "alta",
+    "temaId": "meningite-e-encefalite-em-pediatria",
+    "temaNome": "Meningite e Encefalite em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "meningite-e-encefalite-em-pediatria__encefalite-herpetica",
+    "entidade": "Encefalite herpética",
+    "sindrome": "Síndrome encefalítica febril focal",
+    "incidencia": "alta",
+    "temaId": "meningite-e-encefalite-em-pediatria",
+    "temaNome": "Meningite e Encefalite em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "ortopedia-pediatrica__sinovite-transitoria-quadril",
+    "entidade": "Sinovite transitória do quadril",
+    "sindrome": "Síndrome de claudicação dolorosa benigna",
+    "incidencia": "alta",
+    "temaId": "ortopedia-pediatrica",
+    "temaNome": "Ortopedia Pediátrica",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "ortopedia-pediatrica__epifisiolise-femoral-proximal",
+    "entidade": "Epifisiólise femoral proximal",
+    "sindrome": "Síndrome de claudicação do adolescente",
+    "incidencia": "alta",
+    "temaId": "ortopedia-pediatrica",
+    "temaNome": "Ortopedia Pediátrica",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "figado-nodulos-hepaticos__hemangioma-hepatico",
+    "entidade": "Hemangioma hepático",
+    "sindrome": "Síndrome de nódulo hepático benigno incidental",
+    "incidencia": "alta",
+    "temaId": "figado-nodulos-hepaticos",
+    "temaNome": "Fígado: Nódulos Hepáticos",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "figado-nodulos-hepaticos__carcinoma-hepatocelular",
+    "entidade": "Carcinoma hepatocelular",
+    "sindrome": "Síndrome de nódulo hepático maligno em hepatopata",
+    "incidencia": "alta",
+    "temaId": "figado-nodulos-hepaticos",
+    "temaNome": "Fígado: Nódulos Hepáticos",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "injuria-renal-aguda__ira-pre-renal",
+    "entidade": "Injúria renal aguda pré-renal",
+    "sindrome": "Síndrome azotêmica por hipoperfusão renal",
+    "incidencia": "alta",
+    "temaId": "injuria-renal-aguda",
+    "temaNome": "Injúria Renal Aguda",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "injuria-renal-aguda__necrose-tubular-aguda",
+    "entidade": "Necrose tubular aguda",
+    "sindrome": "Síndrome azotêmica renal intrínseca",
+    "incidencia": "alta",
+    "temaId": "injuria-renal-aguda",
+    "temaNome": "Injúria Renal Aguda",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "trabalho-de-parto-prematuro__trabalho-parto-prematuro",
+    "entidade": "Trabalho de parto prematuro",
+    "sindrome": "Síndrome de contrações uterinas prematuras com modificação cervical",
+    "incidencia": "alta",
+    "temaId": "trabalho-de-parto-prematuro",
+    "temaNome": "Trabalho de Parto Prematuro",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "litiase-renal-cirurgica__colica-renal-ureteral",
+    "entidade": "Cólica renal por cálculo ureteral",
+    "sindrome": "Síndrome dolorosa ureteral obstrutiva",
+    "incidencia": "alta",
+    "temaId": "litiase-renal-cirurgica",
+    "temaNome": "Litíase Renal Cirúrgica",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "litiase-renal-cirurgica__pielonefrite-obstrutiva",
+    "entidade": "Pielonefrite obstrutiva",
+    "sindrome": "Síndrome urinária alta infectada com obstrução",
+    "incidencia": "alta",
+    "temaId": "litiase-renal-cirurgica",
+    "temaNome": "Litíase Renal Cirúrgica",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "lupus-eritematoso-sistemico__lupus-sistemico",
+    "entidade": "Lúpus eritematoso sistêmico",
+    "sindrome": "Síndrome autoimune multissistêmica",
+    "incidencia": "alta",
+    "temaId": "lupus-eritematoso-sistemico",
+    "temaNome": "Lúpus Eritematoso Sistêmico",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "intoxicacoes-exogenas__intoxicacao-organofosforado",
+    "entidade": "Intoxicação por organofosforado",
+    "sindrome": "Síndrome colinérgica tóxica",
+    "incidencia": "alta",
+    "temaId": "intoxicacoes-exogenas",
+    "temaNome": "Intoxicações Exógenas",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "intoxicacoes-exogenas__intoxicacao-monoxido-carbono",
+    "entidade": "Intoxicação por monóxido de carbono",
+    "sindrome": "Síndrome hipóxica tóxica ambiental",
+    "incidencia": "alta",
+    "temaId": "intoxicacoes-exogenas",
+    "temaNome": "Intoxicações Exógenas",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "intoxicacoes-exogenas__intoxicacao-paracetamol",
+    "entidade": "Intoxicação por paracetamol",
+    "sindrome": "Síndrome hepatotóxica por sobredose medicamentosa",
+    "incidencia": "alta",
+    "temaId": "intoxicacoes-exogenas",
+    "temaNome": "Intoxicações Exógenas",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "hemorragia-pos-parto__atonia-uterina",
+    "entidade": "Atonia uterina",
+    "sindrome": "Síndrome hemorrágica puerperal por falha de contração",
+    "incidencia": "alta",
+    "temaId": "hemorragia-pos-parto",
+    "temaNome": "Hemorragia Pós-Parto",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "hemorragia-pos-parto__laceracao-canal-parto",
+    "entidade": "Laceração do canal de parto",
+    "sindrome": "Síndrome hemorrágica puerperal traumática",
+    "incidencia": "alta",
+    "temaId": "hemorragia-pos-parto",
+    "temaNome": "Hemorragia Pós-Parto",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "hemorragia-pos-parto__retencao-placentaria",
+    "entidade": "Retenção placentária",
+    "sindrome": "Síndrome hemorrágica puerperal por tecido retido",
+    "incidencia": "alta",
+    "temaId": "hemorragia-pos-parto",
+    "temaNome": "Hemorragia Pós-Parto",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "asma-em-pediatria__exacerbacao-asmatica",
+    "entidade": "Exacerbação asmática",
+    "sindrome": "Síndrome obstrutiva recorrente da criança",
+    "incidencia": "alta",
+    "temaId": "asma-em-pediatria",
+    "temaNome": "Asma em Pediatria",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "hipotireoidismo__hipotireoidismo-primario",
+    "entidade": "Hipotireoidismo primário",
+    "sindrome": "Síndrome metabólica hipofuncionante tireoidiana",
+    "incidencia": "alta",
+    "temaId": "hipotireoidismo",
+    "temaNome": "Hipotireoidismo",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "desconforto-respiratorio-neonatal__taquipneia-transitoria-rn",
+    "entidade": "Taquipneia transitória do recém-nascido",
+    "sindrome": "Síndrome respiratória neonatal precoce autolimitada",
+    "incidencia": "alta",
+    "temaId": "desconforto-respiratorio-neonatal",
+    "temaNome": "Desconforto Respiratório Neonatal",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "desconforto-respiratorio-neonatal__sindrome-desconforto-rn",
+    "entidade": "Síndrome do desconforto respiratório do recém-nascido",
+    "sindrome": "Síndrome respiratória neonatal por imaturidade pulmonar",
+    "incidencia": "alta",
+    "temaId": "desconforto-respiratorio-neonatal",
+    "temaNome": "Desconforto Respiratório Neonatal",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "desconforto-respiratorio-neonatal__aspiracao-meconial",
+    "entidade": "Síndrome de aspiração meconial",
+    "sindrome": "Síndrome respiratória neonatal aspirativa",
+    "incidencia": "alta",
+    "temaId": "desconforto-respiratorio-neonatal",
+    "temaNome": "Desconforto Respiratório Neonatal",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "sindrome-de-fournier__fasciite-necrosante-perineal",
+    "entidade": "Fasciíte necrosante perineal",
+    "sindrome": "Síndrome infecciosa necrosante perineal",
+    "incidencia": "alta",
+    "temaId": "sindrome-de-fournier",
+    "temaNome": "Síndrome de Fournier",
+    "area": "Cirurgia",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "tromboembolismo-pulmonar__embolia-pulmonar",
+    "entidade": "Tromboembolismo pulmonar",
+    "sindrome": "Síndrome dispneica vascular aguda",
+    "incidencia": "alta",
+    "temaId": "tromboembolismo-pulmonar",
+    "temaNome": "Tromboembolismo Pulmonar",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "neoplasias-pediatricas__leucemia-linfoide-aguda",
+    "entidade": "Leucemia linfoide aguda",
+    "sindrome": "Síndrome infiltrativa hematológica da infância",
+    "incidencia": "alta",
+    "temaId": "neoplasias-pediatricas",
+    "temaNome": "Neoplasias Pediátricas",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "neoplasias-pediatricas__tumor-wilms",
+    "entidade": "Tumor de Wilms",
+    "sindrome": "Síndrome de massa abdominal renal da infância",
+    "incidencia": "alta",
+    "temaId": "neoplasias-pediatricas",
+    "temaNome": "Neoplasias Pediátricas",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "infeccao-do-trato-urinario-itu__cistite-aguda",
+    "entidade": "Cistite aguda",
+    "sindrome": "Síndrome urinária baixa infecciosa",
+    "incidencia": "alta",
+    "temaId": "infeccao-do-trato-urinario-itu",
+    "temaNome": "Infecção do Trato Urinário (ITU)",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "infeccao-do-trato-urinario-itu__pielonefrite-aguda",
+    "entidade": "Pielonefrite aguda",
+    "sindrome": "Síndrome urinária alta infecciosa",
+    "incidencia": "alta",
+    "temaId": "infeccao-do-trato-urinario-itu",
+    "temaNome": "Infecção do Trato Urinário (ITU)",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "tuberculose-e-hanseniase-na-aps__hanseniase-tuberculoide",
+    "entidade": "Hanseníase tuberculoide",
+    "sindrome": "Síndrome dermatoneurológica crônica",
+    "incidencia": "alta",
+    "temaId": "tuberculose-e-hanseniase-na-aps",
+    "temaNome": "Tuberculose e Hanseníase na APS",
+    "area": "Preventiva",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "insuficiencia-cognitiva-e-demencias__doenca-alzheimer",
+    "entidade": "Doença de Alzheimer",
+    "sindrome": "Síndrome demencial cortical progressiva",
+    "incidencia": "alta",
+    "temaId": "insuficiencia-cognitiva-e-demencias",
+    "temaNome": "Insuficiência Cognitiva e Demências",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "insuficiencia-cognitiva-e-demencias__demencia-vascular",
+    "entidade": "Demência vascular",
+    "sindrome": "Síndrome demencial associada a doença cerebrovascular",
+    "incidencia": "alta",
+    "temaId": "insuficiencia-cognitiva-e-demencias",
+    "temaNome": "Insuficiência Cognitiva e Demências",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "hiperplasia-endometrial__hiperplasia-com-atipia",
+    "entidade": "Hiperplasia endometrial com atipia",
+    "sindrome": "Síndrome de sangramento pós-menopausa com lesão endometrial",
+    "incidencia": "alta",
+    "temaId": "hiperplasia-endometrial",
+    "temaNome": "Hiperplasia Endometrial",
+    "area": "GO",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "cirurgia-pediatrica-no-ps__hernia-inguinal-encarcerada",
+    "entidade": "Hérnia inguinal encarcerada",
+    "sindrome": "Síndrome de massa inguinal dolorosa irredutível",
+    "incidencia": "alta",
+    "temaId": "cirurgia-pediatrica-no-ps",
+    "temaNome": "Cirurgia Pediátrica no PS",
+    "area": "Pediatria",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "arboviroses-tropicais__dengue",
+    "entidade": "Dengue",
+    "sindrome": "Síndrome febril aguda arboviral",
+    "incidencia": "alta",
+    "temaId": "arboviroses-tropicais",
+    "temaNome": "Arboviroses Tropicais",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "arboviroses-tropicais__chikungunya",
+    "entidade": "Chikungunya",
+    "sindrome": "Síndrome febril arboviral artrálgica",
+    "incidencia": "alta",
+    "temaId": "arboviroses-tropicais",
+    "temaNome": "Arboviroses Tropicais",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "arboviroses-tropicais__zika",
+    "entidade": "Zika",
+    "sindrome": "Síndrome exantemática arboviral leve",
+    "incidencia": "alta",
+    "temaId": "arboviroses-tropicais",
+    "temaNome": "Arboviroses Tropicais",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "hepatites-virais__hepatite-a-aguda",
+    "entidade": "Hepatite A aguda",
+    "sindrome": "Síndrome ictérica hepatocelular aguda",
+    "incidencia": "alta",
+    "temaId": "hepatites-virais",
+    "temaNome": "Hepatites Virais",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "hepatites-virais__hepatite-b-aguda",
+    "entidade": "Hepatite B aguda",
+    "sindrome": "Síndrome ictérica hepatocelular por transmissão parenteral/sexual",
+    "incidencia": "alta",
+    "temaId": "hepatites-virais",
+    "temaNome": "Hepatites Virais",
+    "area": "Clínica Médica",
+    "prio": "Diamante"
+  },
+  {
+    "cid": "anemias-hipoproliferativas-ii__anemia-doenca-cronica",
+    "entidade": "Anemia da doença crônica",
+    "sindrome": "Síndrome anêmica hipoproliferativa inflamatória",
+    "incidencia": "alta",
+    "temaId": "anemias-hipoproliferativas-ii",
+    "temaNome": "Anemias Hipoproliferativas II",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "anemias-hipoproliferativas-ii__anemia-megaloblastica-b12",
+    "entidade": "Anemia megaloblástica por deficiência de B12",
+    "sindrome": "Síndrome anêmica macrocítica carencial",
+    "incidencia": "alta",
+    "temaId": "anemias-hipoproliferativas-ii",
+    "temaNome": "Anemias Hipoproliferativas II",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "alteracoes-no-neurodesenvolvimento-tea-e-tdah__tea",
+    "entidade": "Transtorno do espectro autista",
+    "sindrome": "Síndrome do neurodesenvolvimento sociocomunicativa",
+    "incidencia": "alta",
+    "temaId": "alteracoes-no-neurodesenvolvimento-tea-e-tdah",
+    "temaNome": "Alterações no Neurodesenvolvimento - TEA e TDAH",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "alteracoes-no-neurodesenvolvimento-tea-e-tdah__tdah",
+    "entidade": "Transtorno de déficit de atenção e hiperatividade",
+    "sindrome": "Síndrome do neurodesenvolvimento atencional",
+    "incidencia": "alta",
+    "temaId": "alteracoes-no-neurodesenvolvimento-tea-e-tdah",
+    "temaNome": "Alterações no Neurodesenvolvimento - TEA e TDAH",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "trauma-vias-aereas__obstrucao-via-aerea-trauma-face",
+    "entidade": "Obstrução de via aérea por trauma de face",
+    "sindrome": "Síndrome de via aérea traumática ameaçada",
+    "incidencia": "alta",
+    "temaId": "trauma-vias-aereas",
+    "temaNome": "Trauma: Vias Aéreas",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "neurovascular-ii-hsa-e-avch__hemorragia-subaracnoidea",
+    "entidade": "Hemorragia subaracnoidea aneurismática",
+    "sindrome": "Síndrome cefaleica hemorrágica súbita",
+    "incidencia": "alta",
+    "temaId": "neurovascular-ii-hsa-e-avch",
+    "temaNome": "Neurovascular II: HSA e AVCh",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "neurovascular-ii-hsa-e-avch__hemorragia-intraparenquimatosa",
+    "entidade": "Hemorragia intraparenquimatosa hipertensiva",
+    "sindrome": "Síndrome neurológica focal hemorrágica",
+    "incidencia": "alta",
+    "temaId": "neurovascular-ii-hsa-e-avch",
+    "temaNome": "Neurovascular II: HSA e AVCh",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "dispepsia-e-drge__doenca-refluxo-gastroesofagico",
+    "entidade": "Doença do refluxo gastroesofágico",
+    "sindrome": "Síndrome esofágica por refluxo ácido",
+    "incidencia": "alta",
+    "temaId": "dispepsia-e-drge",
+    "temaNome": "Dispepsia e DRGE",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "dispepsia-e-drge__dispepsia-funcional",
+    "entidade": "Dispepsia funcional",
+    "sindrome": "Síndrome dispéptica sem alarme",
+    "incidencia": "alta",
+    "temaId": "dispepsia-e-drge",
+    "temaNome": "Dispepsia e DRGE",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "ulcera-peptica-h-pylori-e-gastrite-atrofica__ulcera-duodenal",
+    "entidade": "Úlcera duodenal",
+    "sindrome": "Síndrome ulcerosa péptica",
+    "incidencia": "alta",
+    "temaId": "ulcera-peptica-h-pylori-e-gastrite-atrofica",
+    "temaNome": "Úlcera Péptica, H. pylori e Gastrite Atrófica",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "ulcera-peptica-h-pylori-e-gastrite-atrofica__gastrite-h-pylori",
+    "entidade": "Gastrite associada a Helicobacter pylori",
+    "sindrome": "Síndrome dispéptica infecciosa crônica",
+    "incidencia": "alta",
+    "temaId": "ulcera-peptica-h-pylori-e-gastrite-atrofica",
+    "temaNome": "Úlcera Péptica, H. pylori e Gastrite Atrófica",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "doenca-inflamatoria-pelvica-aguda__dip-aguda",
+    "entidade": "Doença inflamatória pélvica aguda",
+    "sindrome": "Síndrome infecciosa pélvica ascendente",
+    "incidencia": "alta",
+    "temaId": "doenca-inflamatoria-pelvica-aguda",
+    "temaNome": "Doença Inflamatória Pélvica Aguda",
+    "area": "GO",
+    "prio": "Alta"
+  },
+  {
+    "cid": "ulceras-genitais__herpes-genital",
+    "entidade": "Herpes genital",
+    "sindrome": "Síndrome ulcerativa genital dolorosa vesicular",
+    "incidencia": "alta",
+    "temaId": "ulceras-genitais",
+    "temaNome": "Úlceras Genitais",
+    "area": "GO",
+    "prio": "Alta"
+  },
+  {
+    "cid": "artrite-reumatoide__artrite-reumatoide",
+    "entidade": "Artrite reumatoide",
+    "sindrome": "Síndrome de poliartrite inflamatória simétrica",
+    "incidencia": "alta",
+    "temaId": "artrite-reumatoide",
+    "temaNome": "Artrite Reumatoide",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "espondiloartrites__espondilite-anquilosante",
+    "entidade": "Espondilite anquilosante",
+    "sindrome": "Síndrome de lombalgia inflamatória axial",
+    "incidencia": "alta",
+    "temaId": "espondiloartrites",
+    "temaNome": "Espondiloartrites",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "puberdade__puberdade-precoce-central",
+    "entidade": "Puberdade precoce central",
+    "sindrome": "Síndrome puberal precoce isossexual",
+    "incidencia": "alta",
+    "temaId": "puberdade",
+    "temaNome": "Puberdade",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "trauma-de-pelve__fratura-pelvica-instavel",
+    "entidade": "Fratura pélvica instável",
+    "sindrome": "Síndrome hemorrágica traumática pélvica",
+    "incidencia": "alta",
+    "temaId": "trauma-de-pelve",
+    "temaNome": "Trauma de Pelve",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "queimaduras__queimadura-espessura-parcial",
+    "entidade": "Queimadura de espessura parcial",
+    "sindrome": "Síndrome de lesão térmica cutânea bolhosa",
+    "incidencia": "alta",
+    "temaId": "queimaduras",
+    "temaNome": "Queimaduras",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "queimaduras__lesao-inalatoria",
+    "entidade": "Lesão inalatória por queimadura",
+    "sindrome": "Síndrome de injúria de via aérea por fumaça",
+    "incidencia": "alta",
+    "temaId": "queimaduras",
+    "temaNome": "Queimaduras",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "escroto-agudo__torcao-testicular",
+    "entidade": "Torção testicular",
+    "sindrome": "Síndrome escrotal isquêmica aguda",
+    "incidencia": "alta",
+    "temaId": "escroto-agudo",
+    "temaNome": "Escroto Agudo",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "escroto-agudo__epididimite-aguda",
+    "entidade": "Epididimite aguda",
+    "sindrome": "Síndrome escrotal infecciosa",
+    "incidencia": "alta",
+    "temaId": "escroto-agudo",
+    "temaNome": "Escroto Agudo",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "disturbios-do-sodio__hiponatremia-sintomatica",
+    "entidade": "Hiponatremia sintomática",
+    "sindrome": "Síndrome hipo-osmolar neurológica",
+    "incidencia": "alta",
+    "temaId": "disturbios-do-sodio",
+    "temaNome": "Distúrbios do Sódio",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "disturbios-do-potassio__hipercalemia",
+    "entidade": "Hipercalemia",
+    "sindrome": "Síndrome eletrolítica arritmogênica",
+    "incidencia": "alta",
+    "temaId": "disturbios-do-potassio",
+    "temaNome": "Distúrbios do Potássio",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "disturbios-do-potassio__hipocalemia",
+    "entidade": "Hipocalemia",
+    "sindrome": "Síndrome eletrolítica neuromuscular",
+    "incidencia": "alta",
+    "temaId": "disturbios-do-potassio",
+    "temaNome": "Distúrbios do Potássio",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "sindrome-dos-ovarios-policisticos__sop",
+    "entidade": "Síndrome dos ovários policísticos",
+    "sindrome": "Síndrome hiperandrogênica anovulatória",
+    "incidencia": "alta",
+    "temaId": "sindrome-dos-ovarios-policisticos",
+    "temaNome": "Síndrome dos Ovários Policísticos",
+    "area": "GO",
+    "prio": "Alta"
+  },
+  {
+    "cid": "infeccoes-de-vias-aereas-superiores-ivas__rinofaringite-viral",
+    "entidade": "Rinofaringite viral",
+    "sindrome": "Síndrome catarral viral alta",
+    "incidencia": "alta",
+    "temaId": "infeccoes-de-vias-aereas-superiores-ivas",
+    "temaNome": "Infecções de Vias Aéreas Superiores (IVAS)",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "infeccoes-de-vias-aereas-superiores-ivas__amigdalite-estreptococica",
+    "entidade": "Faringoamigdalite estreptocócica",
+    "sindrome": "Síndrome faríngea bacteriana",
+    "incidencia": "alta",
+    "temaId": "infeccoes-de-vias-aereas-superiores-ivas",
+    "temaNome": "Infecções de Vias Aéreas Superiores (IVAS)",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "anemias-hemoliticas__anemia-hemolitica-autoimune",
+    "entidade": "Anemia hemolítica autoimune",
+    "sindrome": "Síndrome hemolítica adquirida",
+    "incidencia": "alta",
+    "temaId": "anemias-hemoliticas",
+    "temaNome": "Anemias Hemolíticas",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "anemias-hemoliticas__esferocitose-hereditaria",
+    "entidade": "Esferocitose hereditária",
+    "sindrome": "Síndrome hemolítica hereditária extravascular",
+    "incidencia": "alta",
+    "temaId": "anemias-hemoliticas",
+    "temaNome": "Anemias Hemolíticas",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "rotura-prematura-de-membranas-ovulares__rpmo-pretermo",
+    "entidade": "Rotura prematura pré-termo de membranas",
+    "sindrome": "Síndrome de perda líquida amniótica antes do termo",
+    "incidencia": "alta",
+    "temaId": "rotura-prematura-de-membranas-ovulares",
+    "temaNome": "Rotura Prematura de Membranas Ovulares",
+    "area": "GO",
+    "prio": "Alta"
+  },
+  {
+    "cid": "ictericia-e-colestase-neonatal__ictericia-fisiologica",
+    "entidade": "Icterícia fisiológica neonatal",
+    "sindrome": "Síndrome ictérica neonatal indireta benigna",
+    "incidencia": "alta",
+    "temaId": "ictericia-e-colestase-neonatal",
+    "temaNome": "Icterícia e Colestase Neonatal",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "ictericia-e-colestase-neonatal__atresia-biliar",
+    "entidade": "Atresia biliar",
+    "sindrome": "Síndrome colestática neonatal obstrutiva",
+    "incidencia": "alta",
+    "temaId": "ictericia-e-colestase-neonatal",
+    "temaNome": "Icterícia e Colestase Neonatal",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cancer-de-esofago__carcinoma-espinocelular-esofago",
+    "entidade": "Carcinoma espinocelular de esôfago",
+    "sindrome": "Síndrome disfágica esofágica progressiva",
+    "incidencia": "alta",
+    "temaId": "cancer-de-esofago",
+    "temaNome": "Câncer de Esôfago",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cefaleias__migranea",
+    "entidade": "Migrânea",
+    "sindrome": "Síndrome cefaleica primária episódica",
+    "incidencia": "alta",
+    "temaId": "cefaleias",
+    "temaNome": "Cefaleias",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cefaleias__cefaleia-tensional",
+    "entidade": "Cefaleia tensional",
+    "sindrome": "Síndrome cefaleica primária opressiva",
+    "incidencia": "alta",
+    "temaId": "cefaleias",
+    "temaNome": "Cefaleias",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "dermatite-atopica-e-lesoes-benignas-do-rn__dermatite-atopica",
+    "entidade": "Dermatite atópica",
+    "sindrome": "Síndrome eczematosa crônica pruriginosa",
+    "incidencia": "alta",
+    "temaId": "dermatite-atopica-e-lesoes-benignas-do-rn",
+    "temaNome": "Dermatite Atópica e Lesões Benignas do RN",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "pancreatite-aguda__pancreatite-biliar",
+    "entidade": "Pancreatite aguda biliar",
+    "sindrome": "Síndrome epigástrica pancreática aguda",
+    "incidencia": "alta",
+    "temaId": "pancreatite-aguda",
+    "temaNome": "Pancreatite Aguda",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cirrose-hepatica-ii__encefalopatia-hepatica",
+    "entidade": "Encefalopatia hepática",
+    "sindrome": "Síndrome neuropsiquiátrica do hepatopata",
+    "incidencia": "alta",
+    "temaId": "cirrose-hepatica-ii",
+    "temaNome": "Cirrose Hepática II",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cirrose-hepatica-ii__hemorragia-varicosa",
+    "entidade": "Hemorragia varicosa esofágica",
+    "sindrome": "Síndrome hemorrágica digestiva por hipertensão portal",
+    "incidencia": "alta",
+    "temaId": "cirrose-hepatica-ii",
+    "temaNome": "Cirrose Hepática II",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "derrame-pleural__derrame-parapneumonico",
+    "entidade": "Derrame parapneumônico",
+    "sindrome": "Síndrome pleural infecciosa aguda",
+    "incidencia": "alta",
+    "temaId": "derrame-pleural",
+    "temaNome": "Derrame Pleural",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "derrame-pleural__derrame-maligno",
+    "entidade": "Derrame pleural maligno",
+    "sindrome": "Síndrome pleural neoplásica",
+    "incidencia": "alta",
+    "temaId": "derrame-pleural",
+    "temaNome": "Derrame Pleural",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "placenta-previa__placenta-previa",
+    "entidade": "Placenta prévia",
+    "sindrome": "Síndrome hemorrágica indolor da segunda metade da gestação",
+    "incidencia": "alta",
+    "temaId": "placenta-previa",
+    "temaNome": "Placenta Prévia",
+    "area": "GO",
+    "prio": "Alta"
+  },
+  {
+    "cid": "anemia-falciforme__crise-vaso-oclusiva",
+    "entidade": "Crise vaso-oclusiva falciforme",
+    "sindrome": "Síndrome dolorosa vaso-oclusiva",
+    "incidencia": "alta",
+    "temaId": "anemia-falciforme",
+    "temaNome": "Anemia Falciforme",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "anemia-falciforme__sindrome-toracica-aguda",
+    "entidade": "Síndrome torácica aguda falciforme",
+    "sindrome": "Síndrome pulmonar aguda em hemoglobinopatia",
+    "incidencia": "alta",
+    "temaId": "anemia-falciforme",
+    "temaNome": "Anemia Falciforme",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "hemostasia-e-disturbios-hemorragicos-em-pediatri__hemofilia-a",
+    "entidade": "Hemofilia A",
+    "sindrome": "Síndrome hemorrágica por coagulopatia hereditária",
+    "incidencia": "alta",
+    "temaId": "hemostasia-e-disturbios-hemorragicos-em-pediatri",
+    "temaNome": "Hemostasia e Distúrbios Hemorrágicos em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "hemostasia-e-disturbios-hemorragicos-em-pediatri__pti",
+    "entidade": "Púrpura trombocitopênica imune",
+    "sindrome": "Síndrome purpúrica plaquetária adquirida",
+    "incidencia": "alta",
+    "temaId": "hemostasia-e-disturbios-hemorragicos-em-pediatri",
+    "temaNome": "Hemostasia e Distúrbios Hemorrágicos em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "abdome-agudo-perfurativo-vascular-e-hemorragico__ulcera-perfurada",
+    "entidade": "Úlcera péptica perfurada",
+    "sindrome": "Síndrome de abdome agudo perfurativo",
+    "incidencia": "alta",
+    "temaId": "abdome-agudo-perfurativo-vascular-e-hemorragico",
+    "temaNome": "Abdome Agudo Perfurativo, Vascular e Hemorrágico",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "abdome-agudo-perfurativo-vascular-e-hemorragico__isquemia-mesenterica",
+    "entidade": "Isquemia mesentérica aguda",
+    "sindrome": "Síndrome de abdome agudo vascular",
+    "incidencia": "alta",
+    "temaId": "abdome-agudo-perfurativo-vascular-e-hemorragico",
+    "temaNome": "Abdome Agudo Perfurativo, Vascular e Hemorrágico",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cancer-de-estomago__adenocarcinoma-gastrico",
+    "entidade": "Adenocarcinoma gástrico",
+    "sindrome": "Síndrome dispéptica neoplásica",
+    "incidencia": "alta",
+    "temaId": "cancer-de-estomago",
+    "temaNome": "Câncer de Estômago",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "insuficiencia-cardiaca__ic-descompensada",
+    "entidade": "Insuficiência cardíaca descompensada",
+    "sindrome": "Síndrome congestiva cardiorrespiratória",
+    "incidencia": "alta",
+    "temaId": "insuficiencia-cardiaca",
+    "temaNome": "Insuficiência Cardíaca",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "asma__exacerbacao-asmatica-adulto",
+    "entidade": "Exacerbação asmática no adulto",
+    "sindrome": "Síndrome obstrutiva reversível",
+    "incidencia": "alta",
+    "temaId": "asma",
+    "temaNome": "Asma",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "dpoc__exacerbacao-dpoc",
+    "entidade": "Exacerbação de DPOC",
+    "sindrome": "Síndrome obstrutiva crônica exacerbada",
+    "incidencia": "alta",
+    "temaId": "dpoc",
+    "temaNome": "DPOC",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cardiopatias-congenitas__tetralogia-fallot",
+    "entidade": "Tetralogia de Fallot",
+    "sindrome": "Síndrome cianótica congênita",
+    "incidencia": "alta",
+    "temaId": "cardiopatias-congenitas",
+    "temaNome": "Cardiopatias Congênitas",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cardiopatias-congenitas__comunicacao-interventricular",
+    "entidade": "Comunicação interventricular",
+    "sindrome": "Síndrome de shunt esquerda-direita",
+    "incidencia": "alta",
+    "temaId": "cardiopatias-congenitas",
+    "temaNome": "Cardiopatias Congênitas",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "emergencias-hiperglicemicas-cad-e-ehh__cetoacidose-diabetica",
+    "entidade": "Cetoacidose diabética",
+    "sindrome": "Síndrome hiperglicêmica cetótica acidótica",
+    "incidencia": "alta",
+    "temaId": "emergencias-hiperglicemicas-cad-e-ehh",
+    "temaNome": "Emergências Hiperglicêmicas - CAD e EHH",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "emergencias-hiperglicemicas-cad-e-ehh__estado-hiperosmolar",
+    "entidade": "Estado hiperosmolar hiperglicêmico",
+    "sindrome": "Síndrome hiperglicêmica hiperosmolar",
+    "incidencia": "alta",
+    "temaId": "emergencias-hiperglicemicas-cad-e-ehh",
+    "temaNome": "Emergências Hiperglicêmicas - CAD e EHH",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "endometriose__endometriose",
+    "entidade": "Endometriose",
+    "sindrome": "Síndrome de dor pélvica cíclica",
+    "incidencia": "alta",
+    "temaId": "endometriose",
+    "temaNome": "Endometriose",
+    "area": "GO",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cad-em-pediatria__cetoacidose-diabetica-pediatrica",
+    "entidade": "Cetoacidose diabética pediátrica",
+    "sindrome": "Síndrome hiperglicêmica cetótica pediátrica",
+    "incidencia": "alta",
+    "temaId": "cad-em-pediatria",
+    "temaNome": "CAD em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "prolapso-genital__prolapso-uterino",
+    "entidade": "Prolapso uterino",
+    "sindrome": "Síndrome de descenso de órgão pélvico",
+    "incidencia": "alta",
+    "temaId": "prolapso-genital",
+    "temaNome": "Prolapso Genital",
+    "area": "GO",
+    "prio": "Alta"
+  },
+  {
+    "cid": "triagens-neonatais__hipotireoidismo-congenito",
+    "entidade": "Hipotireoidismo congênito",
+    "sindrome": "Síndrome endócrina neonatal detectável por triagem",
+    "incidencia": "alta",
+    "temaId": "triagens-neonatais",
+    "temaNome": "Triagens Neonatais",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "restricao-de-crescimento-intrauterino__rciu-placentaria",
+    "entidade": "Restrição de crescimento intrauterino placentária",
+    "sindrome": "Síndrome de crescimento fetal restrito por insuficiência placentária",
+    "incidencia": "alta",
+    "temaId": "restricao-de-crescimento-intrauterino",
+    "temaNome": "Restrição de Crescimento Intrauterino",
+    "area": "GO",
+    "prio": "Alta"
+  },
+  {
+    "cid": "tuberculose-em-pediatria__tuberculose-primaria",
+    "entidade": "Tuberculose primária na infância",
+    "sindrome": "Síndrome respiratória subaguda em criança contactante",
+    "incidencia": "alta",
+    "temaId": "tuberculose-em-pediatria",
+    "temaNome": "Tuberculose em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "hiperplasia-prostatica-benigna__hpb",
+    "entidade": "Hiperplasia prostática benigna",
+    "sindrome": "Síndrome obstrutiva urinária baixa do homem idoso",
+    "incidencia": "alta",
+    "temaId": "hiperplasia-prostatica-benigna",
+    "temaNome": "Hiperplasia Prostática Benigna",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "meningites-e-encefalites__meningite-bacteriana-adulto",
+    "entidade": "Meningite bacteriana no adulto",
+    "sindrome": "Síndrome meníngea febril grave",
+    "incidencia": "alta",
+    "temaId": "meningites-e-encefalites",
+    "temaNome": "Meningites e Encefalites",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "bradiarritmias__bloqueio-av-total",
+    "entidade": "Bloqueio atrioventricular total",
+    "sindrome": "Síndrome bradiarrítmica sintomática",
+    "incidencia": "alta",
+    "temaId": "bradiarritmias",
+    "temaNome": "Bradiarritmias",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "sincope__sincope-vasovagal",
+    "entidade": "Síncope vasovagal",
+    "sindrome": "Síndrome sincopal reflexa",
+    "incidencia": "alta",
+    "temaId": "sincope",
+    "temaNome": "Síncope",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "artrite-idiopatica-juvenil__aij",
+    "entidade": "Artrite idiopática juvenil",
+    "sindrome": "Síndrome artrítica crônica da infância",
+    "incidencia": "alta",
+    "temaId": "artrite-idiopatica-juvenil",
+    "temaNome": "Artrite Idiopática Juvenil",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "sindrome-depressiva__episodio-depressivo-maior",
+    "entidade": "Episódio depressivo maior",
+    "sindrome": "Síndrome depressiva unipolar",
+    "incidencia": "alta",
+    "temaId": "sindrome-depressiva",
+    "temaNome": "Síndrome Depressiva",
+    "area": "Preventiva",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cancer-colorretal-e-sindromes-associadas__adenocarcinoma-colorretal",
+    "entidade": "Adenocarcinoma colorretal",
+    "sindrome": "Síndrome neoplásica colorretal",
+    "incidencia": "alta",
+    "temaId": "cancer-colorretal-e-sindromes-associadas",
+    "temaNome": "Câncer Colorretal e Síndromes Associadas",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "doencas-orificiais-e-cec-de-canal-anal__fissura-anal",
+    "entidade": "Fissura anal",
+    "sindrome": "Síndrome dolorosa anal fissurária",
+    "incidencia": "alta",
+    "temaId": "doencas-orificiais-e-cec-de-canal-anal",
+    "temaNome": "Doenças Orificiais e CEC de Canal Anal",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "doencas-orificiais-e-cec-de-canal-anal__hemorroida-interna",
+    "entidade": "Hemorroida interna",
+    "sindrome": "Síndrome de sangramento anal indolor",
+    "incidencia": "alta",
+    "temaId": "doencas-orificiais-e-cec-de-canal-anal",
+    "temaNome": "Doenças Orificiais e CEC de Canal Anal",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "sdra-sindrome-do-desconforto-respiratorio__sdra",
+    "entidade": "Síndrome do desconforto respiratório agudo",
+    "sindrome": "Síndrome hipoxêmica pulmonar inflamatória",
+    "incidencia": "alta",
+    "temaId": "sdra-sindrome-do-desconforto-respiratorio",
+    "temaNome": "SDRA - Síndrome do Desconforto Respiratório",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "choque-em-uti__choque-septico",
+    "entidade": "Choque séptico",
+    "sindrome": "Síndrome circulatória distributiva infecciosa",
+    "incidencia": "alta",
+    "temaId": "choque-em-uti",
+    "temaNome": "Choque em UTI",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "choque-em-uti__choque-hipovolemico",
+    "entidade": "Choque hipovolêmico",
+    "sindrome": "Síndrome circulatória por perda de volume",
+    "incidencia": "alta",
+    "temaId": "choque-em-uti",
+    "temaNome": "Choque em UTI",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "diarreia-aguda-e-colite-pseudomembranosa__colite-pseudomembranosa",
+    "entidade": "Colite pseudomembranosa",
+    "sindrome": "Síndrome diarreica pós-antibiótico",
+    "incidencia": "alta",
+    "temaId": "diarreia-aguda-e-colite-pseudomembranosa",
+    "temaNome": "Diarreia Aguda e Colite Pseudomembranosa",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "hiperplasia-adrenal-congenita__hac-classica",
+    "entidade": "Hiperplasia adrenal congênita clássica",
+    "sindrome": "Síndrome adrenal congênita virilizante/perdedora de sal",
+    "incidencia": "alta",
+    "temaId": "hiperplasia-adrenal-congenita",
+    "temaNome": "Hiperplasia Adrenal Congênita",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "glomerulopatias__nefropatia-iga",
+    "entidade": "Nefropatia por IgA",
+    "sindrome": "Síndrome nefrítica recorrente pós-mucosa",
+    "incidencia": "alta",
+    "temaId": "glomerulopatias",
+    "temaNome": "Glomerulopatias",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "fibrose-cistica__fibrose-cistica",
+    "entidade": "Fibrose cística",
+    "sindrome": "Síndrome multissistêmica exócrina hereditária",
+    "incidencia": "alta",
+    "temaId": "fibrose-cistica",
+    "temaNome": "Fibrose Cística",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "adenocarcinoma-de-pancreas__adenocarcinoma-pancreas",
+    "entidade": "Adenocarcinoma de pâncreas",
+    "sindrome": "Síndrome colestática neoplásica pancreática",
+    "incidencia": "alta",
+    "temaId": "adenocarcinoma-de-pancreas",
+    "temaNome": "Adenocarcinoma de Pâncreas",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "hiv-e-doencas-oportunistas__pneumocistose",
+    "entidade": "Pneumocistose",
+    "sindrome": "Síndrome pneumônica oportunista subaguda",
+    "incidencia": "alta",
+    "temaId": "hiv-e-doencas-oportunistas",
+    "temaNome": "HIV e Doenças Oportunistas",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "hipertireoidismo-e-tireoidite__doenca-graves",
+    "entidade": "Doença de Graves",
+    "sindrome": "Síndrome tireotóxica autoimune",
+    "incidencia": "alta",
+    "temaId": "hipertireoidismo-e-tireoidite",
+    "temaNome": "Hipertireoidismo e Tireoidite",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "parasitoses-intestinais__giardiase",
+    "entidade": "Giardíase",
+    "sindrome": "Síndrome diarreica crônica malabsortiva",
+    "incidencia": "alta",
+    "temaId": "parasitoses-intestinais",
+    "temaNome": "Parasitoses Intestinais",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "depressao-e-delirium-no-idoso__delirium",
+    "entidade": "Delirium",
+    "sindrome": "Síndrome confusional aguda",
+    "incidencia": "alta",
+    "temaId": "depressao-e-delirium-no-idoso",
+    "temaNome": "Depressão e Delirium no Idoso",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "otologia__otite-media-aguda",
+    "entidade": "Otite média aguda",
+    "sindrome": "Síndrome otálgica infecciosa média",
+    "incidencia": "alta",
+    "temaId": "otologia",
+    "temaNome": "Otologia",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "rinologia__rinossinusite-aguda",
+    "entidade": "Rinossinusite aguda",
+    "sindrome": "Síndrome rinossinusal inflamatória aguda",
+    "incidencia": "alta",
+    "temaId": "rinologia",
+    "temaNome": "Rinologia",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "has-em-pediatria__hipertensao-secundaria-renal",
+    "entidade": "Hipertensão secundária renal na infância",
+    "sindrome": "Síndrome hipertensiva secundária pediátrica",
+    "incidencia": "alta",
+    "temaId": "has-em-pediatria",
+    "temaNome": "HAS em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "arboviroses-em-pediatria__dengue-sinais-alarme",
+    "entidade": "Dengue com sinais de alarme na criança",
+    "sindrome": "Síndrome febril arboviral com risco de gravidade",
+    "incidencia": "alta",
+    "temaId": "arboviroses-em-pediatria",
+    "temaNome": "Arboviroses em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "sindrome-metabolica-e-obesidade__sindrome-metabolica",
+    "entidade": "Síndrome metabólica",
+    "sindrome": "Síndrome cardiometabólica de resistência insulínica",
+    "incidencia": "alta",
+    "temaId": "sindrome-metabolica-e-obesidade",
+    "temaNome": "Síndrome Metabólica e Obesidade",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cirurgia-bariatrica__sindrome-dumping",
+    "entidade": "Síndrome de dumping pós-bariátrica",
+    "sindrome": "Síndrome pós-prandial pós-gastrectomia/bariátrica",
+    "incidencia": "alta",
+    "temaId": "cirurgia-bariatrica",
+    "temaNome": "Cirurgia Bariátrica",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "cardiologia-na-aps__angina-estavel",
+    "entidade": "Angina estável",
+    "sindrome": "Síndrome coronariana crônica aos esforços",
+    "incidencia": "alta",
+    "temaId": "cardiologia-na-aps",
+    "temaNome": "Cardiologia na APS",
+    "area": "Preventiva",
+    "prio": "Alta"
+  },
+  {
+    "cid": "uropediatria-e-hernias-em-pediatria__criptorquidia",
+    "entidade": "Criptorquidia",
+    "sindrome": "Síndrome de testículo não palpável em bolsa",
+    "incidencia": "alta",
+    "temaId": "uropediatria-e-hernias-em-pediatria",
+    "temaNome": "Uropediatria e Hérnias em Pediatria",
+    "area": "Pediatria",
+    "prio": "Alta"
+  },
+  {
+    "cid": "diagnosticos-diferenciais-das-massas-cervicais__cisto-tireoglosso",
+    "entidade": "Cisto do ducto tireoglosso",
+    "sindrome": "Síndrome de massa cervical congênita mediana",
+    "incidencia": "alta",
+    "temaId": "diagnosticos-diferenciais-das-massas-cervicais",
+    "temaNome": "Diagnósticos Diferenciais das Massas Cervicais",
+    "area": "Cirurgia",
+    "prio": "Alta"
+  },
+  {
+    "cid": "doencas-virais-e-pandemicas__influenza",
+    "entidade": "Influenza",
+    "sindrome": "Síndrome gripal sistêmica aguda",
+    "incidencia": "alta",
+    "temaId": "doencas-virais-e-pandemicas",
+    "temaNome": "Doenças Virais e Pandêmicas",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "doencas-virais-e-pandemicas__covid-19",
+    "entidade": "COVID-19",
+    "sindrome": "Síndrome respiratória viral pandêmica",
+    "incidencia": "alta",
+    "temaId": "doencas-virais-e-pandemicas",
+    "temaNome": "Doenças Virais e Pandêmicas",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "ictericias-febris-e-febre-maculosa__leptospirose",
+    "entidade": "Leptospirose",
+    "sindrome": "Síndrome febril ictérica por zoonose hídrica",
+    "incidencia": "alta",
+    "temaId": "ictericias-febris-e-febre-maculosa",
+    "temaNome": "Icterícias Febris e Febre Maculosa",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "ictericias-febris-e-febre-maculosa__febre-maculosa",
+    "entidade": "Febre maculosa",
+    "sindrome": "Síndrome febril exantemática por carrapato",
+    "incidencia": "alta",
+    "temaId": "ictericias-febris-e-febre-maculosa",
+    "temaNome": "Icterícias Febris e Febre Maculosa",
+    "area": "Clínica Médica",
+    "prio": "Alta"
+  },
+  {
+    "cid": "febre-sem-sinais-localizatorios__itu-oculta-lactente",
+    "entidade": "Infecção urinária oculta no lactente febril",
+    "sindrome": "Síndrome febril sem foco com bacteriúria",
+    "incidencia": "alta",
+    "temaId": "febre-sem-sinais-localizatorios",
+    "temaNome": "Febre sem Sinais Localizatórios",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "diarreia-cronica-e-doencas-funcionais__doenca-celiaca",
+    "entidade": "Doença celíaca",
+    "sindrome": "Síndrome disabsortiva crônica imunomediada",
+    "incidencia": "alta",
+    "temaId": "diarreia-cronica-e-doencas-funcionais",
+    "temaNome": "Diarreia Crônica e Doenças Funcionais",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "trauma-urologico__ruptura-uretra-posterior",
+    "entidade": "Ruptura de uretra posterior",
+    "sindrome": "Síndrome urológica traumática pélvica",
+    "incidencia": "alta",
+    "temaId": "trauma-urologico",
+    "temaNome": "Trauma Urológico",
+    "area": "Cirurgia",
+    "prio": "Média"
+  },
+  {
+    "cid": "artrites-microcristalinas-gota-e-cppd__gota",
+    "entidade": "Gota",
+    "sindrome": "Síndrome monoartrítica microcristalina",
+    "incidencia": "alta",
+    "temaId": "artrites-microcristalinas-gota-e-cppd",
+    "temaNome": "Artrites Microcristalinas - Gota e CPPD",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "osteoartrite__gonartrose",
+    "entidade": "Osteoartrite de joelho",
+    "sindrome": "Síndrome articular mecânica degenerativa",
+    "incidencia": "alta",
+    "temaId": "osteoartrite",
+    "temaNome": "Osteoartrite",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "fibromialgia__fibromialgia",
+    "entidade": "Fibromialgia",
+    "sindrome": "Síndrome dolorosa crônica centralizada",
+    "incidencia": "alta",
+    "temaId": "fibromialgia",
+    "temaNome": "Fibromialgia",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "obesidade-e-sindrome-metabolica__obesidade-infantil",
+    "entidade": "Obesidade infantil",
+    "sindrome": "Síndrome nutricional por excesso de adiposidade",
+    "incidencia": "alta",
+    "temaId": "obesidade-e-sindrome-metabolica",
+    "temaNome": "Obesidade e Síndrome Metabólica",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "desnutricao-e-vitaminas__raquitismo-carencial",
+    "entidade": "Raquitismo carencial",
+    "sindrome": "Síndrome osteometabólica carencial",
+    "incidencia": "alta",
+    "temaId": "desnutricao-e-vitaminas",
+    "temaNome": "Desnutrição e Vitaminas",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "trauma-raquimedular__trauma-raquimedular",
+    "entidade": "Trauma raquimedular",
+    "sindrome": "Síndrome neurológica medular traumática",
+    "incidencia": "alta",
+    "temaId": "trauma-raquimedular",
+    "temaNome": "Trauma Raquimedular",
+    "area": "Cirurgia",
+    "prio": "Média"
+  },
+  {
+    "cid": "dor-toracica-nao-coronariana__pericardite-aguda",
+    "entidade": "Pericardite aguda",
+    "sindrome": "Síndrome dolorosa pericárdica",
+    "incidencia": "alta",
+    "temaId": "dor-toracica-nao-coronariana",
+    "temaNome": "Dor Torácica Não Coronariana",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "tce-e-hipertensao-intracraniana-em-pediatria__hipertensao-intracraniana",
+    "entidade": "Hipertensão intracraniana pós-traumática",
+    "sindrome": "Síndrome de pressão intracraniana elevada após trauma",
+    "incidencia": "alta",
+    "temaId": "tce-e-hipertensao-intracraniana-em-pediatria",
+    "temaNome": "TCE e Hipertensão Intracraniana em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "reacoes-alergicas__anafilaxia",
+    "entidade": "Anafilaxia",
+    "sindrome": "Síndrome alérgica sistêmica grave",
+    "incidencia": "alta",
+    "temaId": "reacoes-alergicas",
+    "temaNome": "Reações Alérgicas",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "hiperprolactinemia__hiperprolactinemia-medicamentosa",
+    "entidade": "Hiperprolactinemia medicamentosa",
+    "sindrome": "Síndrome hiperprolactinêmica secundária",
+    "incidencia": "alta",
+    "temaId": "hiperprolactinemia",
+    "temaNome": "Hiperprolactinemia",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "cicatrizacao-e-lesoes-por-pressao__lesao-pressao-sacral",
+    "entidade": "Lesão por pressão sacral",
+    "sindrome": "Síndrome de lesão cutânea por pressão prolongada",
+    "incidencia": "alta",
+    "temaId": "cicatrizacao-e-lesoes-por-pressao",
+    "temaNome": "Cicatrização e Lesões por Pressão",
+    "area": "Cirurgia",
+    "prio": "Média"
+  },
+  {
+    "cid": "oncologia-emergencias-e-cuidados-paliativos__compressao-medular",
+    "entidade": "Compressão medular metastática",
+    "sindrome": "Síndrome neurológica compressiva oncológica",
+    "incidencia": "alta",
+    "temaId": "oncologia-emergencias-e-cuidados-paliativos",
+    "temaNome": "Oncologia: Emergências e Cuidados Paliativos",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "doenca-trofoblastica-gestacional__mola-hidatiforme",
+    "entidade": "Mola hidatiforme",
+    "sindrome": "Síndrome trofoblástica gestacional proliferativa",
+    "incidencia": "alta",
+    "temaId": "doenca-trofoblastica-gestacional",
+    "temaNome": "Doença Trofoblástica Gestacional",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "disfagia-e-acalasia__acalasia",
+    "entidade": "Acalasia",
+    "sindrome": "Síndrome disfágica motora esofágica",
+    "incidencia": "alta",
+    "temaId": "disfagia-e-acalasia",
+    "temaNome": "Disfagia e Acalasia",
+    "area": "Cirurgia",
+    "prio": "Média"
+  },
+  {
+    "cid": "coagulacao-e-hemostasia__coagulacao-intravascular-disseminada",
+    "entidade": "Coagulação intravascular disseminada",
+    "sindrome": "Síndrome hemorrágica trombo-hemorrágica sistêmica",
+    "incidencia": "alta",
+    "temaId": "coagulacao-e-hemostasia",
+    "temaNome": "Coagulação e Hemostasia",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "outros-sangramentos-da-2-metade-da-gestacao__vasa-previa",
+    "entidade": "Vasa prévia",
+    "sindrome": "Síndrome hemorrágica fetal intraparto",
+    "incidencia": "alta",
+    "temaId": "outros-sangramentos-da-2-metade-da-gestacao",
+    "temaNome": "Outros Sangramentos da 2ª Metade da Gestação",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "miocardite-sincope-e-ic-em-pediatria__miocardite-aguda",
+    "entidade": "Miocardite aguda",
+    "sindrome": "Síndrome miocárdica inflamatória pediátrica",
+    "incidencia": "alta",
+    "temaId": "miocardite-sincope-e-ic-em-pediatria",
+    "temaNome": "Miocardite, Síncope e IC em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "sindrome-compartimental-intra-abdominal__sindrome-compartimental",
+    "entidade": "Síndrome compartimental intra-abdominal",
+    "sindrome": "Síndrome de hipertensão intra-abdominal com disfunção orgânica",
+    "incidencia": "alta",
+    "temaId": "sindrome-compartimental-intra-abdominal",
+    "temaNome": "Síndrome Compartimental Intra-Abdominal",
+    "area": "Cirurgia",
+    "prio": "Média"
+  },
+  {
+    "cid": "disturbios-metabolicos-neonatais__hipoglicemia-neonatal",
+    "entidade": "Hipoglicemia neonatal",
+    "sindrome": "Síndrome metabólica neonatal hipoglicêmica",
+    "incidencia": "alta",
+    "temaId": "disturbios-metabolicos-neonatais",
+    "temaNome": "Distúrbios Metabólicos Neonatais",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "ingestao-e-aspiracao-de-corpo-estranho-e-brue__aspiracao-corpo-estranho",
+    "entidade": "Aspiração de corpo estranho",
+    "sindrome": "Síndrome obstrutiva respiratória súbita por aspiração",
+    "incidencia": "alta",
+    "temaId": "ingestao-e-aspiracao-de-corpo-estranho-e-brue",
+    "temaNome": "Ingestão e Aspiração de Corpo Estranho e BRUE",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "uro-oncologia__cancer-bexiga",
+    "entidade": "Câncer de bexiga",
+    "sindrome": "Síndrome hematúrica urológica neoplásica",
+    "incidencia": "alta",
+    "temaId": "uro-oncologia",
+    "temaNome": "Uro-Oncologia",
+    "area": "Cirurgia",
+    "prio": "Média"
+  },
+  {
+    "cid": "vasculites__arterite-celulas-gigantes",
+    "entidade": "Arterite de células gigantes",
+    "sindrome": "Síndrome vasculítica craniana do idoso",
+    "incidencia": "alta",
+    "temaId": "vasculites",
+    "temaNome": "Vasculites",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "sofrimento-fetal-cronico__insuficiencia-placentaria-cronica",
+    "entidade": "Insuficiência placentária crônica",
+    "sindrome": "Síndrome de comprometimento fetal crônico",
+    "incidencia": "alta",
+    "temaId": "sofrimento-fetal-cronico",
+    "temaNome": "Sofrimento Fetal Crônico",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "gemelaridade__transfusao-feto-fetal",
+    "entidade": "Síndrome de transfusão feto-fetal",
+    "sindrome": "Síndrome de desequilíbrio hemodinâmico em gestação monocoriônica",
+    "incidencia": "alta",
+    "temaId": "gemelaridade",
+    "temaNome": "Gemelaridade",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "doencas-valvares__estenose-aortica",
+    "entidade": "Estenose aórtica",
+    "sindrome": "Síndrome valvar obstrutiva sistólica",
+    "incidencia": "alta",
+    "temaId": "doencas-valvares",
+    "temaNome": "Doenças Valvares",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "lesoes-benignas-da-mama__fibroadenoma",
+    "entidade": "Fibroadenoma mamário",
+    "sindrome": "Síndrome nodular mamária benigna",
+    "incidencia": "alta",
+    "temaId": "lesoes-benignas-da-mama",
+    "temaNome": "Lesões Benignas da Mama",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "osteomielite-e-artrite-septica__osteomielite-aguda",
+    "entidade": "Osteomielite aguda",
+    "sindrome": "Síndrome infecciosa óssea hematogênica",
+    "incidencia": "alta",
+    "temaId": "osteomielite-e-artrite-septica",
+    "temaNome": "Osteomielite e Artrite Séptica",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "osteomielite-e-artrite-septica__artrite-septica",
+    "entidade": "Artrite séptica",
+    "sindrome": "Síndrome monoartrítica infecciosa",
+    "incidencia": "alta",
+    "temaId": "osteomielite-e-artrite-septica",
+    "temaNome": "Osteomielite e Artrite Séptica",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "sindrome-ansiosa__transtorno-panico",
+    "entidade": "Transtorno de pânico",
+    "sindrome": "Síndrome ansiosa paroxística",
+    "incidencia": "alta",
+    "temaId": "sindrome-ansiosa",
+    "temaNome": "Síndrome Ansiosa",
+    "area": "Preventiva",
+    "prio": "Média"
+  },
+  {
+    "cid": "doenca-inflamatoria-intestinal-dii__doenca-crohn",
+    "entidade": "Doença de Crohn",
+    "sindrome": "Síndrome inflamatória intestinal transmural",
+    "incidencia": "alta",
+    "temaId": "doenca-inflamatoria-intestinal-dii",
+    "temaNome": "Doença Inflamatória Intestinal (DII)",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "doenca-inflamatoria-intestinal-dii__retocolite-ulcerativa",
+    "entidade": "Retocolite ulcerativa",
+    "sindrome": "Síndrome colítica inflamatória crônica",
+    "incidencia": "alta",
+    "temaId": "doenca-inflamatoria-intestinal-dii",
+    "temaNome": "Doença Inflamatória Intestinal (DII)",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "doencas-negligenciadas__doenca-chagas-cronica",
+    "entidade": "Doença de Chagas crônica",
+    "sindrome": "Síndrome cardiomiopática/parassitária crônica",
+    "incidencia": "alta",
+    "temaId": "doencas-negligenciadas",
+    "temaNome": "Doenças Negligenciadas",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "colo-curto-e-incompetencia-istmocervical__incompetencia-istmocervical",
+    "entidade": "Incompetência istmocervical",
+    "sindrome": "Síndrome de perda gestacional indolor no segundo trimestre",
+    "incidencia": "alta",
+    "temaId": "colo-curto-e-incompetencia-istmocervical",
+    "temaNome": "Colo Curto e Incompetência Istmocervical",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "hipotireoidismo-em-pediatria__tireoidite-hashimoto",
+    "entidade": "Tireoidite de Hashimoto na infância",
+    "sindrome": "Síndrome tireoidiana autoimune hipofuncionante",
+    "incidencia": "alta",
+    "temaId": "hipotireoidismo-em-pediatria",
+    "temaNome": "Hipotireoidismo em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "aneurisma-de-aorta__aneurisma-aorta-abdominal",
+    "entidade": "Aneurisma de aorta abdominal",
+    "sindrome": "Síndrome aneurismática abdominal",
+    "incidencia": "alta",
+    "temaId": "aneurisma-de-aorta",
+    "temaNome": "Aneurisma de Aorta",
+    "area": "Cirurgia",
+    "prio": "Média"
+  },
+  {
+    "cid": "osteoporose__fratura-fragilidade",
+    "entidade": "Fratura por fragilidade osteoporótica",
+    "sindrome": "Síndrome de fragilidade óssea",
+    "incidencia": "alta",
+    "temaId": "osteoporose",
+    "temaNome": "Osteoporose",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "puerperio__endometrite-puerperal",
+    "entidade": "Endometrite puerperal",
+    "sindrome": "Síndrome infecciosa uterina puerperal",
+    "incidencia": "alta",
+    "temaId": "puerperio",
+    "temaNome": "Puerpério",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "sepse-neonatal__sepse-neonatal-precoce",
+    "entidade": "Sepse neonatal precoce",
+    "sindrome": "Síndrome infecciosa sistêmica neonatal precoce",
+    "incidencia": "alta",
+    "temaId": "sepse-neonatal",
+    "temaNome": "Sepse Neonatal",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "trombose-venosa-profunda__tvp",
+    "entidade": "Trombose venosa profunda",
+    "sindrome": "Síndrome trombótica venosa de membro inferior",
+    "incidencia": "alta",
+    "temaId": "trombose-venosa-profunda",
+    "temaNome": "Trombose Venosa Profunda",
+    "area": "Cirurgia",
+    "prio": "Média"
+  },
+  {
+    "cid": "adrenal__insuficiencia-adrenal-primaria",
+    "entidade": "Insuficiência adrenal primária",
+    "sindrome": "Síndrome adrenal hipofuncionante primária",
+    "incidencia": "alta",
+    "temaId": "adrenal",
+    "temaNome": "Adrenal",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "sindrome-de-cushing__sindrome-cushing",
+    "entidade": "Síndrome de Cushing",
+    "sindrome": "Síndrome hipercortisolêmica",
+    "incidencia": "alta",
+    "temaId": "sindrome-de-cushing",
+    "temaNome": "Síndrome de Cushing",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "cancer-de-mama-doenca-invasiva__carcinoma-mama-invasivo",
+    "entidade": "Carcinoma invasivo de mama",
+    "sindrome": "Síndrome nodular mamária maligna",
+    "incidencia": "alta",
+    "temaId": "cancer-de-mama-doenca-invasiva",
+    "temaNome": "Câncer de Mama: Doença Invasiva",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "isquemia-de-membros-inferiores__isquemia-aguda-membro",
+    "entidade": "Isquemia aguda de membro inferior",
+    "sindrome": "Síndrome arterial obstrutiva aguda",
+    "incidencia": "alta",
+    "temaId": "isquemia-de-membros-inferiores",
+    "temaNome": "Isquemia de Membros Inferiores",
+    "area": "Cirurgia",
+    "prio": "Média"
+  },
+  {
+    "cid": "doenca-renal-cronica__doenca-renal-cronica",
+    "entidade": "Doença renal crônica",
+    "sindrome": "Síndrome urêmica crônica",
+    "incidencia": "alta",
+    "temaId": "doenca-renal-cronica",
+    "temaNome": "Doença Renal Crônica",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "cancer-de-ovario__carcinoma-epitelial-ovario",
+    "entidade": "Carcinoma epitelial de ovário",
+    "sindrome": "Síndrome abdominal neoplásica ovariana",
+    "incidencia": "alta",
+    "temaId": "cancer-de-ovario",
+    "temaNome": "Câncer de Ovário",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "itu-em-pediatria__itu-febril-lactente",
+    "entidade": "Infecção urinária febril no lactente",
+    "sindrome": "Síndrome urinária febril pediátrica",
+    "incidencia": "alta",
+    "temaId": "itu-em-pediatria",
+    "temaNome": "ITU em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "sepse-pediatrica__sepse-pediatrica",
+    "entidade": "Sepse pediátrica",
+    "sindrome": "Síndrome infecciosa sistêmica pediátrica",
+    "incidencia": "alta",
+    "temaId": "sepse-pediatrica",
+    "temaNome": "Sepse Pediátrica",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "choque-e-drogas-vasoativas-em-pediatria__choque-septico-pediatrico",
+    "entidade": "Choque séptico pediátrico",
+    "sindrome": "Síndrome circulatória infecciosa pediátrica",
+    "incidencia": "alta",
+    "temaId": "choque-e-drogas-vasoativas-em-pediatria",
+    "temaNome": "Choque e Drogas Vasoativas em Pediatria",
+    "area": "Pediatria",
+    "prio": "Média"
+  },
+  {
+    "cid": "pneumoconioses__silicose",
+    "entidade": "Silicose",
+    "sindrome": "Síndrome pulmonar intersticial ocupacional",
+    "incidencia": "alta",
+    "temaId": "pneumoconioses",
+    "temaNome": "Pneumoconioses",
+    "area": "Preventiva",
+    "prio": "Média"
+  },
+  {
+    "cid": "cancer-de-endometrio__adenocarcinoma-endometrio",
+    "entidade": "Câncer de endométrio",
+    "sindrome": "Síndrome de sangramento pós-menopausa maligno",
+    "incidencia": "alta",
+    "temaId": "cancer-de-endometrio",
+    "temaNome": "Câncer de Endométrio",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "insuficiencia-venosa-cronica__insuficiencia-venosa-cronica",
+    "entidade": "Insuficiência venosa crônica",
+    "sindrome": "Síndrome venosa crônica de membros inferiores",
+    "incidencia": "alta",
+    "temaId": "insuficiencia-venosa-cronica",
+    "temaNome": "Insuficiência Venosa Crônica",
+    "area": "Cirurgia",
+    "prio": "Média"
+  },
+  {
+    "cid": "hiperaldosteronismo-primario__hiperaldosteronismo-primario",
+    "entidade": "Hiperaldosteronismo primário",
+    "sindrome": "Síndrome hipertensiva mineralocorticoide",
+    "incidencia": "alta",
+    "temaId": "hiperaldosteronismo-primario",
+    "temaNome": "Hiperaldosteronismo Primário",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "oncohematologia__linfoma-hodgkin",
+    "entidade": "Linfoma de Hodgkin",
+    "sindrome": "Síndrome linfoproliferativa com sintomas B",
+    "incidencia": "alta",
+    "temaId": "oncohematologia",
+    "temaNome": "Oncohematologia",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "oftalmologia-para-o-generalista__glaucoma-agudo",
+    "entidade": "Glaucoma agudo de ângulo fechado",
+    "sindrome": "Síndrome ocular hipertensiva aguda",
+    "incidencia": "alta",
+    "temaId": "oftalmologia-para-o-generalista",
+    "temaNome": "Oftalmologia para o Generalista",
+    "area": "Clínica Médica",
+    "prio": "Média"
+  },
+  {
+    "cid": "doenca-hemolitica-perinatal__doenca-hemolitica-rh",
+    "entidade": "Doença hemolítica perinatal por incompatibilidade Rh",
+    "sindrome": "Síndrome hemolítica fetal/neonatal imune",
+    "incidencia": "alta",
+    "temaId": "doenca-hemolitica-perinatal",
+    "temaNome": "Doença Hemolítica Perinatal",
+    "area": "GO",
+    "prio": "Média"
+  },
+  {
+    "cid": "transtornos-relacionados-a-substancias-alcool__abstinencia-alcoolica",
+    "entidade": "Abstinência alcoólica",
+    "sindrome": "Síndrome autonômica de retirada de álcool",
+    "incidencia": "alta",
+    "temaId": "transtornos-relacionados-a-substancias-alcool",
+    "temaNome": "Transtornos Relacionados a Substâncias - Álcool",
+    "area": "Preventiva",
+    "prio": "Média"
+  },
+  {
+    "cid": "priapismo__priapismo-isquemico",
+    "entidade": "Priapismo isquêmico",
+    "sindrome": "Síndrome urológica isquêmica peniana",
+    "incidencia": "alta",
+    "temaId": "priapismo",
+    "temaNome": "Priapismo",
+    "area": "Cirurgia",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "covid-em-pediatria__covid-pediatrico",
+    "entidade": "COVID-19 em pediatria",
+    "sindrome": "Síndrome respiratória viral pediátrica",
+    "incidencia": "alta",
+    "temaId": "covid-em-pediatria",
+    "temaNome": "COVID em Pediatria",
+    "area": "Pediatria",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "abscesso-hepatico__abscesso-hepatico-piogenico",
+    "entidade": "Abscesso hepático piogênico",
+    "sindrome": "Síndrome infecciosa hepática supurativa",
+    "incidencia": "alta",
+    "temaId": "abscesso-hepatico",
+    "temaNome": "Abscesso Hepático",
+    "area": "Cirurgia",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "sindrome-maniaca__episodio-maniaco",
+    "entidade": "Episódio maníaco",
+    "sindrome": "Síndrome de elevação patológica do humor",
+    "incidencia": "alta",
+    "temaId": "sindrome-maniaca",
+    "temaNome": "Síndrome Maníaca",
+    "area": "Preventiva",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "infeccoes-nosocomiais__pneumonia-associada-ventilacao",
+    "entidade": "Pneumonia associada à ventilação mecânica",
+    "sindrome": "Síndrome pneumônica hospitalar associada a dispositivo",
+    "incidencia": "alta",
+    "temaId": "infeccoes-nosocomiais",
+    "temaNome": "Infecções Nosocomiais",
+    "area": "Clínica Médica",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "hiv-em-pediatria__hiv-pediatrico",
+    "entidade": "HIV pediátrico",
+    "sindrome": "Síndrome de imunodeficiência viral na infância",
+    "incidencia": "alta",
+    "temaId": "hiv-em-pediatria",
+    "temaNome": "HIV em Pediatria",
+    "area": "Pediatria",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "doenca-pulmonar-intersticial__fibrose-pulmonar-idiopatica",
+    "entidade": "Fibrose pulmonar idiopática",
+    "sindrome": "Síndrome intersticial pulmonar fibrosante",
+    "incidencia": "alta",
+    "temaId": "doenca-pulmonar-intersticial",
+    "temaNome": "Doença Pulmonar Intersticial",
+    "area": "Clínica Médica",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "sindrome-psicotica__primeiro-surto-psicotico",
+    "entidade": "Primeiro surto psicótico",
+    "sindrome": "Síndrome psicótica aguda",
+    "incidencia": "alta",
+    "temaId": "sindrome-psicotica",
+    "temaNome": "Síndrome Psicótica",
+    "area": "Preventiva",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "pancreatite-cronica__pancreatite-cronica",
+    "entidade": "Pancreatite crônica",
+    "sindrome": "Síndrome pancreática crônica dolorosa e malabsortiva",
+    "incidencia": "alta",
+    "temaId": "pancreatite-cronica",
+    "temaNome": "Pancreatite Crônica",
+    "area": "Cirurgia",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "cancer-de-pulmao__cancer-pulmao",
+    "entidade": "Câncer de pulmão",
+    "sindrome": "Síndrome respiratória neoplásica",
+    "incidencia": "alta",
+    "temaId": "cancer-de-pulmao",
+    "temaNome": "Câncer de Pulmão",
+    "area": "Cirurgia",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "feocromocitoma__feocromocitoma",
+    "entidade": "Feocromocitoma",
+    "sindrome": "Síndrome adrenérgica paroxística",
+    "incidencia": "alta",
+    "temaId": "feocromocitoma",
+    "temaNome": "Feocromocitoma",
+    "area": "Clínica Médica",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "prolactinomas__prolactinoma",
+    "entidade": "Prolactinoma",
+    "sindrome": "Síndrome hipofisária hiperprolactinêmica",
+    "incidencia": "alta",
+    "temaId": "prolactinomas",
+    "temaNome": "Prolactinomas",
+    "area": "Clínica Médica",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "doencas-da-vulva-e-da-vagina__liquen-escleroso-vulvar",
+    "entidade": "Líquen escleroso vulvar",
+    "sindrome": "Síndrome dermatológica vulvar atrófica pruriginosa",
+    "incidencia": "alta",
+    "temaId": "doencas-da-vulva-e-da-vagina",
+    "temaNome": "Doenças da Vulva e da Vagina",
+    "area": "GO",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "ortopedia-geral__fratura-colo-femur",
+    "entidade": "Fratura de colo de fêmur",
+    "sindrome": "Síndrome traumática do quadril no idoso",
+    "incidencia": "alta",
+    "temaId": "ortopedia-geral",
+    "temaNome": "Ortopedia Geral",
+    "area": "Cirurgia",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "tumores-anexiais__cisto-ovariano-funcional",
+    "entidade": "Cisto ovariano funcional",
+    "sindrome": "Síndrome anexial benigna funcional",
+    "incidencia": "alta",
+    "temaId": "tumores-anexiais",
+    "temaNome": "Tumores Anexiais",
+    "area": "GO",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "cec-de-cabeca-e-pescoco__cec-orofaringe",
+    "entidade": "Carcinoma espinocelular de orofaringe",
+    "sindrome": "Síndrome tumoral de vias aerodigestivas superiores",
+    "incidencia": "alta",
+    "temaId": "cec-de-cabeca-e-pescoco",
+    "temaNome": "CEC de Cabeça e Pescoço",
+    "area": "Cirurgia",
+    "prio": "Baixa"
+  },
+  {
+    "cid": "doencas-traqueais-e-bronquiectasias__bronquiectasias",
+    "entidade": "Bronquiectasias",
+    "sindrome": "Síndrome supurativa brônquica crônica",
+    "incidencia": "alta",
+    "temaId": "doencas-traqueais-e-bronquiectasias",
+    "temaNome": "Doenças Traqueais e Bronquiectasias",
+    "area": "Cirurgia",
+    "prio": "Baixa"
+  }
+]

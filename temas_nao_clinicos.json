@@ -1,0 +1,57 @@
+[
+  {
+    "temaId": "indicadores-de-saude",
+    "nome": "Indicadores de Saúde",
+    "motivo": "Tema conceitual/epidemiológico sem entidade clínica diagnosticável única."
+  },
+  {
+    "temaId": "anatomia-pelvica-feminina",
+    "nome": "Anatomia Pélvica Feminina",
+    "motivo": "Tema anatômico de base, melhor convertido em cards conceituais do que caso clínico."
+  },
+  {
+    "temaId": "testes-diagnosticos",
+    "nome": "Testes Diagnósticos",
+    "motivo": "Tema metodológico sem doença/condição clínica atômica."
+  },
+  {
+    "temaId": "determinacao-social-do-processo-saude-doenca",
+    "nome": "Determinação Social do Processo Saúde-Doença",
+    "motivo": "Tema conceitual de saúde coletiva."
+  },
+  {
+    "temaId": "redes-de-atencao-a-saude",
+    "nome": "Redes de Atenção à Saúde",
+    "motivo": "Tema administrativo/organizacional."
+  },
+  {
+    "temaId": "atencao-primaria-a-saude",
+    "nome": "Atenção Primária à Saúde",
+    "motivo": "Tema de organização do cuidado, não diagnóstico clínico atômico."
+  },
+  {
+    "temaId": "classificacao-dos-estudos-epidemiologicos",
+    "nome": "Classificação dos Estudos Epidemiológicos",
+    "motivo": "Tema metodológico."
+  },
+  {
+    "temaId": "estudos-longitudinais-coorte-e-caso-controle",
+    "nome": "Estudos Longitudinais: Coorte e Caso-Controle",
+    "motivo": "Tema metodológico/epidemiológico sem entidade clínica diagnosticável única."
+  },
+  {
+    "temaId": "antibioticos",
+    "nome": "Antibióticos",
+    "motivo": "Tema farmacológico transversal; melhor como cards/questões de conduta do que illness script atômico."
+  },
+  {
+    "temaId": "historia-e-principios-do-sus",
+    "nome": "História e Princípios do SUS",
+    "motivo": "Tema conceitual de saúde coletiva."
+  },
+  {
+    "temaId": "legislacao-do-sus-i",
+    "nome": "Legislação do SUS I",
+    "motivo": "Tema normativo/administrativo."
+  }
+]

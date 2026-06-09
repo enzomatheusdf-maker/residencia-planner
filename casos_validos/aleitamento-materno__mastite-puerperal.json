@@ -1,0 +1,170 @@
+{
+  "script": {
+    "id": "aleitamento-materno__mastite-puerperal",
+    "entidade": "Mastite puerperal",
+    "area": "Pediatria",
+    "subtopico": "Aleitamento Materno",
+    "sindrome": "Síndrome mamária puerperal febril",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "fissura mamilar",
+      "estase láctea",
+      "pega inadequada"
+    ],
+    "fault": "Estase e trauma mamilar favorecem inflamação e infecção bacteriana da mama no puerpério.",
+    "consequences": [
+      "dor local",
+      "eritema",
+      "febre",
+      "risco de abscesso"
+    ],
+    "management": [
+      "manter esvaziamento da mama",
+      "corrigir pega",
+      "analgesia",
+      "antibiótico se quadro infeccioso"
+    ],
+    "redFlags": [
+      "flutuação local",
+      "toxemia",
+      "não melhora em 48 horas"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Diferenciar ingurgitamento de infecção",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Evitar suspensão desnecessária do aleitamento",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem massa flutuante no exame inicial"
+    ],
+    "discriminators": [
+      {
+        "vs": "Abscesso mamário",
+        "feature": "flutuação e persistência apesar de antibiótico sugerem coleção"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "mandar suspender amamentação sem indicação"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "aleitamento-materno__mastite-puerperal-typical",
+      "scriptId": "aleitamento-materno__mastite-puerperal",
+      "presentation": "typical",
+      "vignette": "Puérpera no 18º dia pós-parto apresenta dor em mama esquerda, febre e área triangular eritematosa. O bebê tem pega rasa e há fissura no mamilo.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "puérpera lactante com febre, dor focal e eritema mamário",
+        "sindromeCorreta": "Síndrome mamária puerperal febril",
+        "opcoes": [
+          "Síndrome mamária puerperal febril",
+          "Síndrome gripal",
+          "Dermatite de contato"
+        ],
+        "justificativa": "Dor focal, febre e eritema em lactante definem síndrome mamária infecciosa.",
+        "diferenciaisDaSindrome": [
+          "ingurgitamento mamário",
+          "abscesso mamário",
+          "candidíase mamilar"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "ingurgitamento mamário",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "abscesso mamário",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "candidíase mamilar",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "manter esvaziamento da mama",
+        "corrigir pega",
+        "analgesia"
+      ],
+      "diagnosticoFinal": "Mastite puerperal",
+      "justificativa": "Dor focal, febre e eritema em lactante definem síndrome mamária infecciosa. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "aleitamento-materno__mastite-puerperal-atypical",
+      "scriptId": "aleitamento-materno__mastite-puerperal",
+      "presentation": "atypical",
+      "vignette": "Mulher amamentando há 6 semanas relata calafrios e dor profunda em uma mama, com pouca alteração cutânea inicial. O lactente passou a mamar por intervalos longos à noite.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "lactante com sintomas sistêmicos e dor mamária após estase láctea",
+        "sindromeCorreta": "Síndrome mamária puerperal febril",
+        "opcoes": [
+          "Síndrome mamária puerperal febril",
+          "Síndrome ansiosa puerperal",
+          "Dor torácica pleurítica"
+        ],
+        "justificativa": "Estase seguida de febre/calafrios aponta para inflamação/infeção mamária.",
+        "diferenciaisDaSindrome": [
+          "ingurgitamento",
+          "abscesso inicial",
+          "dor musculoesquelética"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "ingurgitamento",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "abscesso inicial",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "dor musculoesquelética",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "manter esvaziamento da mama",
+        "corrigir pega",
+        "analgesia"
+      ],
+      "diagnosticoFinal": "Mastite puerperal",
+      "justificativa": "Estase seguida de febre/calafrios aponta para inflamação/infeção mamária. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.346Z"
+  }
+}

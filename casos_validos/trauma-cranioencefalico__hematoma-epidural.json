@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "trauma-cranioencefalico__hematoma-epidural",
+    "entidade": "Hematoma epidural traumático",
+    "area": "Cirurgia",
+    "subtopico": "Trauma Cranioencefálico",
+    "sindrome": "Síndrome de deterioração neurológica pós-trauma",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "fator de risco clínico compatível",
+      "contexto epidemiológico provável"
+    ],
+    "fault": "sangramento arterial entre crânio e dura",
+    "consequences": [
+      "sintomas cardinais",
+      "risco de complicação se não reconhecido"
+    ],
+    "management": [
+      "confirmar diagnóstico sindrômico",
+      "avaliar gravidade",
+      "instituir conduta inicial adequada"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar confundíveis da mesma apresentação",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que aponte para confundível principal"
+    ],
+    "discriminators": [
+      {
+        "vs": "Concussão simples",
+        "feature": "piora após intervalo lúcido e anisocoria favorecem hematoma expansivo"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "ancorar no primeiro diagnóstico sem comparar diferenciais da síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "trauma-cranioencefalico__hematoma-epidural-typical",
+      "scriptId": "trauma-cranioencefalico__hematoma-epidural",
+      "presentation": "typical",
+      "vignette": "Jovem bate a têmpora, melhora inicialmente e depois evolui com cefaleia intensa, vômitos e anisocoria.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "TCE com intervalo lúcido e deterioração neurológica",
+        "sindromeCorreta": "Síndrome de deterioração neurológica pós-trauma",
+        "opcoes": [
+          "Síndrome de deterioração neurológica pós-trauma",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "Os achados centrais definem a síndrome e orientam os diferenciais mais próximos.",
+        "diferenciaisDaSindrome": [
+          "Concussão simples",
+          "Hipertensão intracraniana traumática",
+          "AVC isquêmico"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Concussão simples",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Hipertensão intracraniana traumática",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "AVC isquêmico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar diagnóstico sindrômico",
+        "avaliar gravidade",
+        "instituir conduta inicial adequada"
+      ],
+      "diagnosticoFinal": "Hematoma epidural traumático",
+      "justificativa": "Os achados centrais definem a síndrome e orientam os diferenciais mais próximos. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "trauma-cranioencefalico__hematoma-epidural-atypical",
+      "scriptId": "trauma-cranioencefalico__hematoma-epidural",
+      "presentation": "atypical",
+      "vignette": "Jovem bate a têmpora, melhora inicialmente e depois evolui com cefaleia intensa, vômitos e anisocoria. Em apresentação menos clássica, os achados são discretos e o principal erro é ignorar o padrão sindrômico.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "TCE com intervalo lúcido e deterioração neurológica com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de deterioração neurológica pós-trauma",
+        "opcoes": [
+          "Síndrome de deterioração neurológica pós-trauma",
+          "Síndrome inespecífica",
+          "Quadro funcional isolado"
+        ],
+        "justificativa": "Mesmo com menor exuberância, o conjunto ainda pertence à mesma síndrome clínica.",
+        "diferenciaisDaSindrome": [
+          "Concussão simples",
+          "diagnóstico alternativo da mesma síndrome",
+          "causa não orgânica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Concussão simples",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "diagnóstico alternativo da mesma síndrome",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "causa não orgânica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar diagnóstico sindrômico",
+        "avaliar gravidade",
+        "instituir conduta inicial adequada"
+      ],
+      "diagnosticoFinal": "Hematoma epidural traumático",
+      "justificativa": "Mesmo com menor exuberância, o conjunto ainda pertence à mesma síndrome clínica. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.260Z"
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "sepse-pediatrica__sepse-pediatrica",
+    "entidade": "Sepse pediátrica",
+    "area": "Pediatria",
+    "subtopico": "Sepse Pediátrica",
+    "sindrome": "Síndrome infecciosa sistêmica pediátrica",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Infecção localizada sem disfunção",
+        "feature": "oligúria e perfusão ruim indicam disfunção sistêmica"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "sepse-pediatrica__sepse-pediatrica-typical",
+      "scriptId": "sepse-pediatrica__sepse-pediatrica",
+      "presentation": "typical",
+      "vignette": "criança com pneumonia evolui com sonolência, extremidades frias, taquicardia, enchimento capilar lento e oligúria",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "infecção com sinais de hipoperfusão em criança",
+        "sindromeCorreta": "Síndrome infecciosa sistêmica pediátrica",
+        "opcoes": [
+          "Síndrome infecciosa sistêmica pediátrica",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome infecciosa sistêmica pediátrica; oligúria e perfusão ruim indicam disfunção sistêmica.",
+        "diferenciaisDaSindrome": [
+          "Infecção localizada sem disfunção",
+          "Vaginose bacteriana",
+          "Candidíase vulvovaginal"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Infecção localizada sem disfunção",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Vaginose bacteriana",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Candidíase vulvovaginal",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Sepse pediátrica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Sepse pediátrica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "sepse-pediatrica__sepse-pediatrica-atypical",
+      "scriptId": "sepse-pediatrica__sepse-pediatrica",
+      "presentation": "atypical",
+      "vignette": "criança com pneumonia evolui com sonolência, extremidades frias, taquicardia, enchimento capilar lento e oligúria Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "infecção com sinais de hipoperfusão em criança com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome infecciosa sistêmica pediátrica",
+        "opcoes": [
+          "Síndrome infecciosa sistêmica pediátrica",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome infecciosa sistêmica pediátrica; oligúria e perfusão ruim indicam disfunção sistêmica.",
+        "diferenciaisDaSindrome": [
+          "Infecção localizada sem disfunção",
+          "Vaginose bacteriana",
+          "Candidíase vulvovaginal"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Infecção localizada sem disfunção",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Vaginose bacteriana",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Candidíase vulvovaginal",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Sepse pediátrica",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Sepse pediátrica. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.201Z"
+  }
+}

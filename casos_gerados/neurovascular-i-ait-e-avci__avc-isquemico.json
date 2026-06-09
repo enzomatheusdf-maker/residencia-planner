@@ -1,0 +1,171 @@
+{
+  "script": {
+    "id": "neurovascular-i-ait-e-avci__avc-isquemico",
+    "entidade": "AVC isquêmico",
+    "area": "Clínica Médica",
+    "subtopico": "Neurovascular I: AIT e AVCi",
+    "sindrome": "Síndrome neurológica focal aguda",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "hipertensão",
+      "diabetes",
+      "fibrilação atrial",
+      "aterosclerose"
+    ],
+    "fault": "Oclusão arterial cerebral causa hipoperfusão focal e déficit neurológico súbito persistente.",
+    "consequences": [
+      "hemiparesia",
+      "afasia",
+      "negligência",
+      "risco de edema"
+    ],
+    "management": [
+      "definir horário de início",
+      "TC sem contraste",
+      "glicemia",
+      "avaliar trombólise/trombectomia"
+    ],
+    "redFlags": [
+      "rebaixamento",
+      "cefaleia explosiva",
+      "janela terapêutica"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Diferenciar de hemorragia com imagem",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Não perder janela de reperfusão",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem hipoglicemia explicando déficit"
+    ],
+    "discriminators": [
+      {
+        "vs": "Paralisia de Todd",
+        "feature": "ausência de crise e déficit em território vascular favorecem isquemia"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "disponibilidade",
+        "armadilha": "atribuir fala alterada a confusão metabólica sem exame neurológico focal"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "neurovascular-i-ait-e-avci__avc-isquemico-typical",
+      "scriptId": "neurovascular-i-ait-e-avci__avc-isquemico",
+      "presentation": "typical",
+      "vignette": "Homem de 64 anos iniciou há 70 minutos desvio de rima, fraqueza em hemicorpo direito e dificuldade para nomear objetos. Glicemia capilar 112 mg/dL.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "déficit neurológico focal súbito persistente em janela terapêutica",
+        "sindromeCorreta": "Síndrome neurológica focal aguda",
+        "opcoes": [
+          "Síndrome neurológica focal aguda",
+          "Síndrome confusional metabólica",
+          "Síndrome vestibular periférica"
+        ],
+        "justificativa": "Instalação súbita, focalidade e persistência indicam evento cerebrovascular agudo.",
+        "diferenciaisDaSindrome": [
+          "hemorragia intracraniana",
+          "hipoglicemia",
+          "crise epiléptica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "hemorragia intracraniana",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "hipoglicemia",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "crise epiléptica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "definir horário de início",
+        "TC sem contraste",
+        "glicemia"
+      ],
+      "diagnosticoFinal": "AVC isquêmico",
+      "justificativa": "Instalação súbita, focalidade e persistência indicam evento cerebrovascular agudo. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "neurovascular-i-ait-e-avci__avc-isquemico-atypical",
+      "scriptId": "neurovascular-i-ait-e-avci__avc-isquemico",
+      "presentation": "atypical",
+      "vignette": "Mulher de 78 anos acorda com desatenção ao lado esquerdo, queda ao tentar levantar e olhar desviado. Família não sabe o horário exato em que ficou bem pela última vez.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "déficit focal ao despertar com provável acometimento hemisférico direito",
+        "sindromeCorreta": "Síndrome neurológica focal aguda",
+        "opcoes": [
+          "Síndrome neurológica focal aguda",
+          "Delirium hipoativo",
+          "Vertigem periférica"
+        ],
+        "justificativa": "Negligência e desvio ocular são sinais corticais de evento vascular.",
+        "diferenciaisDaSindrome": [
+          "AVC hemorrágico",
+          "tumor com sangramento",
+          "encefalopatia metabólica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "AVC hemorrágico",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "tumor com sangramento",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "encefalopatia metabólica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "definir horário de início",
+        "TC sem contraste",
+        "glicemia"
+      ],
+      "diagnosticoFinal": "AVC isquêmico",
+      "justificativa": "Negligência e desvio ocular são sinais corticais de evento vascular. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.031Z"
+  }
+}

@@ -1,0 +1,169 @@
+{
+  "script": {
+    "id": "sifilis__sifilis-secundaria",
+    "entidade": "Sífilis secundária",
+    "area": "Clínica Médica",
+    "subtopico": "Sífilis",
+    "sindrome": "Síndrome exantemática palmoplantar com sintomas sistêmicos",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "sífilis primária não tratada",
+      "exposição sexual",
+      "HIV"
+    ],
+    "fault": "Disseminação hematogênica do treponema gera manifestações cutâneo-mucosas e sistêmicas.",
+    "consequences": [
+      "rash palmoplantar",
+      "placas mucosas",
+      "condiloma plano",
+      "linfonodomegalia"
+    ],
+    "management": [
+      "confirmar sorologia",
+      "penicilina benzatina",
+      "rastrear HIV/hepatites",
+      "notificar/tratar parcerias"
+    ],
+    "redFlags": [
+      "gestação",
+      "sintomas neurológicos/oculares"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Pensar em sífilis no rash palmoplantar",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Rastrear coinfecções",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem pródromo respiratório típico de virose exantemática infantil"
+    ],
+    "discriminators": [
+      {
+        "vs": "Exantema viral",
+        "feature": "acometimento de palmas/plantas e lesões mucosas favorecem sífilis"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "tratar como alergia medicamentosa sem história sexual e sorologia"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "sifilis__sifilis-secundaria-typical",
+      "scriptId": "sifilis__sifilis-secundaria",
+      "presentation": "typical",
+      "vignette": "Homem de 34 anos tem manchas difusas inclusive em palmas e plantas, febre baixa e placas esbranquiçadas em mucosa oral. Refere ferida genital que sumiu meses antes.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "adulto com exantema palmoplantar e lesões mucosas após úlcera prévia",
+        "sindromeCorreta": "Síndrome exantemática palmoplantar com sintomas sistêmicos",
+        "opcoes": [
+          "Síndrome exantemática palmoplantar com sintomas sistêmicos",
+          "Urticária aguda",
+          "Celulite bacteriana"
+        ],
+        "justificativa": "Rash palmoplantar e lesões mucosas são padrão de disseminação treponêmica.",
+        "diferenciaisDaSindrome": [
+          "exantema viral",
+          "farmacodermia",
+          "pitiríase rósea"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "exantema viral",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "farmacodermia",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "pitiríase rósea",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar sorologia",
+        "penicilina benzatina",
+        "rastrear HIV/hepatites"
+      ],
+      "diagnosticoFinal": "Sífilis secundária",
+      "justificativa": "Rash palmoplantar e lesões mucosas são padrão de disseminação treponêmica. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "sifilis__sifilis-secundaria-atypical",
+      "scriptId": "sifilis__sifilis-secundaria",
+      "presentation": "atypical",
+      "vignette": "Gestante no segundo trimestre apresenta alopecia em clareira, mal-estar e pápulas úmidas em região perianal. Não lembra de úlcera genital.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "gestante com lesões mucocutâneas disseminadas e risco fetal",
+        "sindromeCorreta": "Síndrome exantemática palmoplantar com sintomas sistêmicos",
+        "opcoes": [
+          "Síndrome exantemática palmoplantar com sintomas sistêmicos",
+          "Dermatite seborreica isolada",
+          "Candidíase cutânea"
+        ],
+        "justificativa": "Condiloma plano e alopecia em clareira sugerem fase sistêmica da infecção.",
+        "diferenciaisDaSindrome": [
+          "HPV",
+          "psoríase",
+          "micose superficial"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "HPV",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "psoríase",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "micose superficial",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar sorologia",
+        "penicilina benzatina",
+        "rastrear HIV/hepatites"
+      ],
+      "diagnosticoFinal": "Sífilis secundária",
+      "justificativa": "Condiloma plano e alopecia em clareira sugerem fase sistêmica da infecção. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.205Z"
+  }
+}

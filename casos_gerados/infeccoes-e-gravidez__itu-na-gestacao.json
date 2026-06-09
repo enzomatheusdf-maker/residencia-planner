@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "infeccoes-e-gravidez__itu-na-gestacao",
+    "entidade": "Infecção urinária na gestação",
+    "area": "GO",
+    "subtopico": "Infecções e Gravidez",
+    "sindrome": "Síndrome urinária gestacional",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "fator de risco ou faixa etária típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Pielonefrite gestacional",
+        "feature": "ausência de febre/dor lombar favorece cistite baixa"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "infeccoes-e-gravidez__itu-na-gestacao-typical",
+      "scriptId": "infeccoes-e-gravidez__itu-na-gestacao",
+      "presentation": "typical",
+      "vignette": "gestante com disúria, polaciúria, dor suprapúbica e urocultura positiva, sem febre ou dor lombar",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "gestante com sintomas urinários baixos e risco obstétrico associado",
+        "sindromeCorreta": "Síndrome urinária gestacional",
+        "opcoes": [
+          "Síndrome urinária gestacional",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome urinária gestacional; ausência de febre/dor lombar favorece cistite baixa.",
+        "diferenciaisDaSindrome": [
+          "Pielonefrite gestacional",
+          "Sífilis na gestação",
+          "Toxoplasmose gestacional"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Pielonefrite gestacional",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Sífilis na gestação",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Toxoplasmose gestacional",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Infecção urinária na gestação",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Infecção urinária na gestação. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "infeccoes-e-gravidez__itu-na-gestacao-atypical",
+      "scriptId": "infeccoes-e-gravidez__itu-na-gestacao",
+      "presentation": "atypical",
+      "vignette": "gestante com disúria, polaciúria, dor suprapúbica e urocultura positiva, sem febre ou dor lombar Na apresentação menos clássica, a intensidade dos achados é menor, mas o padrão sindrômico permanece reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "gestante com sintomas urinários baixos e risco obstétrico associado com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome urinária gestacional",
+        "opcoes": [
+          "Síndrome urinária gestacional",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome urinária gestacional; ausência de febre/dor lombar favorece cistite baixa.",
+        "diferenciaisDaSindrome": [
+          "Pielonefrite gestacional",
+          "Sífilis na gestação",
+          "Toxoplasmose gestacional"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Pielonefrite gestacional",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Sífilis na gestação",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Toxoplasmose gestacional",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Infecção urinária na gestação",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Infecção urinária na gestação. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.916Z"
+  }
+}

@@ -1,7 +1,9 @@
 // src/constants/illnessScripts.js
 // Banco de Illness Scripts (esquemas de doenças) de raciocínio clínico.
 
-export const illnessScripts = [
+import { generatedIllnessScripts } from "./generatedClinicalCases";
+
+const baseIllnessScripts = [
   {
     id: "apendicite-classica",
     area: "Cirurgia",
@@ -348,3 +350,5 @@ export const illnessScripts = [
     }
   }
 ];
+
+export const illnessScripts = [...baseIllnessScripts, ...generatedIllnessScripts];

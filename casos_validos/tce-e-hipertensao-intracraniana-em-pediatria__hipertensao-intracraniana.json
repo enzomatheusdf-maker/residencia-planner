@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "tce-e-hipertensao-intracraniana-em-pediatria__hipertensao-intracraniana",
+    "entidade": "Hipertensão intracraniana pós-traumática",
+    "area": "Pediatria",
+    "subtopico": "TCE e Hipertensão Intracraniana em Pediatria",
+    "sindrome": "Síndrome de pressão intracraniana elevada após trauma",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Concussão simples",
+        "feature": "vômitos em jato, sonolência e anisocoria indicam complicação expansiva"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "tce-e-hipertensao-intracraniana-em-pediatria__hipertensao-intracraniana-typical",
+      "scriptId": "tce-e-hipertensao-intracraniana-em-pediatria__hipertensao-intracraniana",
+      "presentation": "typical",
+      "vignette": "criança após queda apresenta cefaleia progressiva, vômitos em jato, sonolência e anisocoria",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "piora neurológica tardia com sinais de hipertensão intracraniana",
+        "sindromeCorreta": "Síndrome de pressão intracraniana elevada após trauma",
+        "opcoes": [
+          "Síndrome de pressão intracraniana elevada após trauma",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de pressão intracraniana elevada após trauma; vômitos em jato, sonolência e anisocoria indicam complicação expansiva.",
+        "diferenciaisDaSindrome": [
+          "Concussão simples",
+          "AVC isquêmico",
+          "Hemorragia intraparenquimatosa hipertensiva"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Concussão simples",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "AVC isquêmico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Hemorragia intraparenquimatosa hipertensiva",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Hipertensão intracraniana pós-traumática",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Hipertensão intracraniana pós-traumática. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "tce-e-hipertensao-intracraniana-em-pediatria__hipertensao-intracraniana-atypical",
+      "scriptId": "tce-e-hipertensao-intracraniana-em-pediatria__hipertensao-intracraniana",
+      "presentation": "atypical",
+      "vignette": "criança após queda apresenta cefaleia progressiva, vômitos em jato, sonolência e anisocoria Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "piora neurológica tardia com sinais de hipertensão intracraniana com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de pressão intracraniana elevada após trauma",
+        "opcoes": [
+          "Síndrome de pressão intracraniana elevada após trauma",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de pressão intracraniana elevada após trauma; vômitos em jato, sonolência e anisocoria indicam complicação expansiva.",
+        "diferenciaisDaSindrome": [
+          "Concussão simples",
+          "AVC isquêmico",
+          "Hemorragia intraparenquimatosa hipertensiva"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Concussão simples",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "AVC isquêmico",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Hemorragia intraparenquimatosa hipertensiva",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Hipertensão intracraniana pós-traumática",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Hipertensão intracraniana pós-traumática. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.247Z"
+  }
+}

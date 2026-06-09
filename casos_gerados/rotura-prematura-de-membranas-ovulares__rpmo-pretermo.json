@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "rotura-prematura-de-membranas-ovulares__rpmo-pretermo",
+    "entidade": "Rotura prematura pré-termo de membranas",
+    "area": "GO",
+    "subtopico": "Rotura Prematura de Membranas Ovulares",
+    "sindrome": "Síndrome de perda líquida amniótica antes do termo",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "faixa etária, fator de risco ou exposição típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura conforme protocolo local"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Incontinência urinária",
+        "feature": "saída contínua de líquido claro e achado ao exame favorecem origem amniótica"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "rotura-prematura-de-membranas-ovulares__rpmo-pretermo-typical",
+      "scriptId": "rotura-prematura-de-membranas-ovulares__rpmo-pretermo",
+      "presentation": "typical",
+      "vignette": "gestante de 32 semanas relata saída súbita de líquido claro vaginal, sem contrações regulares, com exame sugerindo líquido amniótico",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "perda de líquido antes do termo sem trabalho de parto estabelecido",
+        "sindromeCorreta": "Síndrome de perda líquida amniótica antes do termo",
+        "opcoes": [
+          "Síndrome de perda líquida amniótica antes do termo",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de perda líquida amniótica antes do termo; saída contínua de líquido claro e achado ao exame favorecem origem amniótica.",
+        "diferenciaisDaSindrome": [
+          "Incontinência urinária",
+          "Gestação ectópica tubária",
+          "Doença inflamatória pélvica aguda"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Incontinência urinária",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gestação ectópica tubária",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Doença inflamatória pélvica aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Rotura prematura pré-termo de membranas",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Rotura prematura pré-termo de membranas. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "rotura-prematura-de-membranas-ovulares__rpmo-pretermo-atypical",
+      "scriptId": "rotura-prematura-de-membranas-ovulares__rpmo-pretermo",
+      "presentation": "atypical",
+      "vignette": "gestante de 32 semanas relata saída súbita de líquido claro vaginal, sem contrações regulares, com exame sugerindo líquido amniótico Na apresentação menos clássica, os achados aparecem de forma parcial, mas a síndrome guarda-chuva continua reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "perda de líquido antes do termo sem trabalho de parto estabelecido com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome de perda líquida amniótica antes do termo",
+        "opcoes": [
+          "Síndrome de perda líquida amniótica antes do termo",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome de perda líquida amniótica antes do termo; saída contínua de líquido claro e achado ao exame favorecem origem amniótica.",
+        "diferenciaisDaSindrome": [
+          "Incontinência urinária",
+          "Gestação ectópica tubária",
+          "Doença inflamatória pélvica aguda"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Incontinência urinária",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gestação ectópica tubária",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Doença inflamatória pélvica aguda",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Rotura prematura pré-termo de membranas",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Rotura prematura pré-termo de membranas. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.188Z"
+  }
+}

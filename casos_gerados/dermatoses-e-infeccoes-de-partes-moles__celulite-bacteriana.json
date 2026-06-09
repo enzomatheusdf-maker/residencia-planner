@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "dermatoses-e-infeccoes-de-partes-moles__celulite-bacteriana",
+    "entidade": "Celulite bacteriana",
+    "area": "Pediatria",
+    "subtopico": "Dermatoses e Infecções de Partes Moles",
+    "sindrome": "Síndrome infecciosa cutânea profunda não purulenta",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "contexto clínico compatível",
+      "fator de risco ou faixa etária típica"
+    ],
+    "fault": "Processo fisiopatológico central compatível com a entidade e sua síndrome de apresentação.",
+    "consequences": [
+      "manifestação cardinal da síndrome",
+      "risco de complicação se o padrão não for reconhecido"
+    ],
+    "management": [
+      "representar o problema",
+      "comparar diferenciais da síndrome",
+      "definir conduta inicial segura"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico específico.",
+        "expectedAction": "Traduzir a vinheta em representação do problema e síndrome guarda-chuva.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar o confundível principal.",
+        "expectedAction": "Usar a pista discriminadora para separar diagnósticos próximos.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que explique melhor o quadro por outro grupo sindrômico"
+    ],
+    "discriminators": [
+      {
+        "vs": "Erisipela",
+        "feature": "bordas mal delimitadas e acometimento mais profundo favorecem celulite"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "fechar diagnóstico sem comparar diferenciais da mesma síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "dermatoses-e-infeccoes-de-partes-moles__celulite-bacteriana-typical",
+      "scriptId": "dermatoses-e-infeccoes-de-partes-moles__celulite-bacteriana",
+      "presentation": "typical",
+      "vignette": "criança com placa dolorosa, quente, eritematosa e mal delimitada em perna após escoriação",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "inflamação cutânea profunda com porta de entrada e dor local",
+        "sindromeCorreta": "Síndrome infecciosa cutânea profunda não purulenta",
+        "opcoes": [
+          "Síndrome infecciosa cutânea profunda não purulenta",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome infecciosa cutânea profunda não purulenta; bordas mal delimitadas e acometimento mais profundo favorecem celulite.",
+        "diferenciaisDaSindrome": [
+          "Erisipela",
+          "Escabiose",
+          "Impetigo"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Erisipela",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Escabiose",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Impetigo",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Celulite bacteriana",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Celulite bacteriana. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "dermatoses-e-infeccoes-de-partes-moles__celulite-bacteriana-atypical",
+      "scriptId": "dermatoses-e-infeccoes-de-partes-moles__celulite-bacteriana",
+      "presentation": "atypical",
+      "vignette": "criança com placa dolorosa, quente, eritematosa e mal delimitada em perna após escoriação Na apresentação menos clássica, a intensidade dos achados é menor, mas o padrão sindrômico permanece reconhecível.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "inflamação cutânea profunda com porta de entrada e dor local com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome infecciosa cutânea profunda não purulenta",
+        "opcoes": [
+          "Síndrome infecciosa cutânea profunda não purulenta",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "A combinação de achados aponta para Síndrome infecciosa cutânea profunda não purulenta; bordas mal delimitadas e acometimento mais profundo favorecem celulite.",
+        "diferenciaisDaSindrome": [
+          "Erisipela",
+          "Escabiose",
+          "Impetigo"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Erisipela",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Escabiose",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Impetigo",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "avaliar gravidade",
+        "confirmar a síndrome com exame dirigido",
+        "solicitar exame complementar conforme risco"
+      ],
+      "diagnosticoFinal": "Celulite bacteriana",
+      "justificativa": "A representação do problema e a pista discriminadora favorecem Celulite bacteriana. Rascunho para revisão humana antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.630Z"
+  }
+}

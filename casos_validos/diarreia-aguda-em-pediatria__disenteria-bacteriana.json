@@ -1,0 +1,166 @@
+{
+  "script": {
+    "id": "diarreia-aguda-em-pediatria__disenteria-bacteriana",
+    "entidade": "Disenteria bacteriana",
+    "area": "Pediatria",
+    "subtopico": "Diarreia Aguda em Pediatria",
+    "sindrome": "Síndrome disentérica aguda",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "fator de risco clínico compatível",
+      "contexto epidemiológico provável"
+    ],
+    "fault": "invasão/inflamação colônica por bactéria enteroinvasiva",
+    "consequences": [
+      "sintomas cardinais",
+      "risco de complicação se não reconhecido"
+    ],
+    "management": [
+      "confirmar diagnóstico sindrômico",
+      "avaliar gravidade",
+      "instituir conduta inicial adequada"
+    ],
+    "redFlags": [
+      "instabilidade clínica",
+      "sinais de gravidade",
+      "falha de resposta inicial"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Determinar a síndrome antes do diagnóstico",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Comparar confundíveis da mesma apresentação",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem achado dominante que aponte para confundível principal"
+    ],
+    "discriminators": [
+      {
+        "vs": "Gastroenterite viral",
+        "feature": "sangue, muco e febre favorecem colite invasiva"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "fechamento_precoce",
+        "armadilha": "ancorar no primeiro diagnóstico sem comparar diferenciais da síndrome"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "diarreia-aguda-em-pediatria__disenteria-bacteriana-typical",
+      "scriptId": "diarreia-aguda-em-pediatria__disenteria-bacteriana",
+      "presentation": "typical",
+      "vignette": "Criança de 5 anos apresenta febre, dor abdominal e evacuações frequentes com muco e sangue há 24 horas.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "criança febril com diarreia sanguinolenta e dor abdominal",
+        "sindromeCorreta": "Síndrome disentérica aguda",
+        "opcoes": [
+          "Síndrome disentérica aguda",
+          "Síndrome infecciosa inespecífica",
+          "Síndrome funcional sem alarme"
+        ],
+        "justificativa": "Os achados centrais definem a síndrome e orientam os diferenciais mais próximos.",
+        "diferenciaisDaSindrome": [
+          "Gastroenterite viral",
+          "Gastroenterite aguda com desidratação",
+          "Sepse pediátrica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Gastroenterite viral",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "Gastroenterite aguda com desidratação",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "Sepse pediátrica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar diagnóstico sindrômico",
+        "avaliar gravidade",
+        "instituir conduta inicial adequada"
+      ],
+      "diagnosticoFinal": "Disenteria bacteriana",
+      "justificativa": "Os achados centrais definem a síndrome e orientam os diferenciais mais próximos. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "diarreia-aguda-em-pediatria__disenteria-bacteriana-atypical",
+      "scriptId": "diarreia-aguda-em-pediatria__disenteria-bacteriana",
+      "presentation": "atypical",
+      "vignette": "Criança de 5 anos apresenta febre, dor abdominal e evacuações frequentes com muco e sangue há 24 horas. Em apresentação menos clássica, os achados são discretos e o principal erro é ignorar o padrão sindrômico.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "criança febril com diarreia sanguinolenta e dor abdominal com sinais menos exuberantes",
+        "sindromeCorreta": "Síndrome disentérica aguda",
+        "opcoes": [
+          "Síndrome disentérica aguda",
+          "Síndrome inespecífica",
+          "Quadro funcional isolado"
+        ],
+        "justificativa": "Mesmo com menor exuberância, o conjunto ainda pertence à mesma síndrome clínica.",
+        "diferenciaisDaSindrome": [
+          "Gastroenterite viral",
+          "diagnóstico alternativo da mesma síndrome",
+          "causa não orgânica"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "Gastroenterite viral",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "diagnóstico alternativo da mesma síndrome",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "causa não orgânica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar diagnóstico sindrômico",
+        "avaliar gravidade",
+        "instituir conduta inicial adequada"
+      ],
+      "diagnosticoFinal": "Disenteria bacteriana",
+      "justificativa": "Mesmo com menor exuberância, o conjunto ainda pertence à mesma síndrome clínica. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:40:59.683Z"
+  }
+}

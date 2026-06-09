@@ -1,0 +1,170 @@
+{
+  "script": {
+    "id": "nefrologia-pediatrica__sindrome-nefrotica",
+    "entidade": "Síndrome nefrótica idiopática",
+    "area": "Pediatria",
+    "subtopico": "Nefrologia Pediátrica",
+    "sindrome": "Síndrome edematosa com proteinúria",
+    "incidenciaEnamed": "alta",
+    "enabling": [
+      "idade pré-escolar",
+      "doença de lesões mínimas",
+      "infecção viral recente"
+    ],
+    "fault": "Aumento da permeabilidade glomerular leva a proteinúria maciça, hipoalbuminemia e edema.",
+    "consequences": [
+      "edema periorbitário",
+      "ascite",
+      "risco trombótico",
+      "infecções"
+    ],
+    "management": [
+      "confirmar proteinúria",
+      "avaliar albumina e função renal",
+      "corticoterapia quando indicado",
+      "orientar sinais de gravidade"
+    ],
+    "redFlags": [
+      "hematúria importante",
+      "hipertensão grave",
+      "queda de função renal"
+    ],
+    "keyFeatures": [
+      {
+        "prompt": "Separar síndrome nefrótica de nefrítica",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      },
+      {
+        "prompt": "Reconhecer sinais atípicos",
+        "expectedAction": "Definir a síndrome, comparar diferenciais próximos e escolher a conduta inicial segura.",
+        "isCritical": true
+      }
+    ],
+    "pertinentNegatives": [
+      "sem hipertensão ou hematúria exuberante"
+    ],
+    "discriminators": [
+      {
+        "vs": "Glomerulonefrite aguda",
+        "feature": "proteinúria maciça e edema sem hematúria importante favorecem síndrome nefrótica"
+      }
+    ],
+    "commonErrors": [
+      {
+        "tipo": "ancoragem",
+        "armadilha": "tratar edema como alergia por ser periorbitário"
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "nefrologia-pediatrica__sindrome-nefrotica-typical",
+      "scriptId": "nefrologia-pediatrica__sindrome-nefrotica",
+      "presentation": "typical",
+      "vignette": "Menino de 4 anos acorda há uma semana com olhos inchados e agora apresenta edema em pernas. Urina sem sangue visível. PA normal e fita urinária com proteína 4+.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "pré-escolar com edema progressivo e proteinúria intensa sem sinais nefríticos dominantes",
+        "sindromeCorreta": "Síndrome edematosa com proteinúria",
+        "opcoes": [
+          "Síndrome edematosa com proteinúria",
+          "Síndrome nefrítica hipertensiva",
+          "Síndrome alérgica"
+        ],
+        "justificativa": "Edema com proteinúria intensa define síndrome nefrótica provável.",
+        "diferenciaisDaSindrome": [
+          "glomerulonefrite",
+          "insuficiência cardíaca",
+          "hepatopatia"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "glomerulonefrite",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "insuficiência cardíaca",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "hepatopatia",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar proteinúria",
+        "avaliar albumina e função renal",
+        "corticoterapia quando indicado"
+      ],
+      "diagnosticoFinal": "Síndrome nefrótica idiopática",
+      "justificativa": "Edema com proteinúria intensa define síndrome nefrótica provável. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    },
+    {
+      "id": "nefrologia-pediatrica__sindrome-nefrotica-atypical",
+      "scriptId": "nefrologia-pediatrica__sindrome-nefrotica",
+      "presentation": "atypical",
+      "vignette": "Criança de 7 anos retorna por aumento abdominal e espuma na urina após quadro viral. Exame mostra edema discreto, albumina baixa e creatinina normal.",
+      "determinacaoSindromica": {
+        "prompt": "Antes do diagnóstico específico, qual síndrome melhor representa este quadro?",
+        "problemRepresentation": "criança com hipoalbuminemia e perda urinária de proteína após infecção",
+        "sindromeCorreta": "Síndrome edematosa com proteinúria",
+        "opcoes": [
+          "Síndrome edematosa com proteinúria",
+          "Ascite por hepatopatia",
+          "Síndrome diarréica"
+        ],
+        "justificativa": "Proteinúria e albumina baixa explicam edema/ascite.",
+        "diferenciaisDaSindrome": [
+          "enteropatia perdedora de proteínas",
+          "hepatopatia crônica",
+          "glomerulonefrite"
+        ]
+      },
+      "differentials": [
+        {
+          "dx": "enteropatia perdedora de proteínas",
+          "plausibilidade": "alta",
+          "pista": "principal confundível nomeado a comparar dentro da mesma apresentação sindrômica"
+        },
+        {
+          "dx": "hepatopatia crônica",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        },
+        {
+          "dx": "glomerulonefrite",
+          "plausibilidade": "media",
+          "pista": "diferencial nomeado da mesma síndrome ou apresentação clínica próxima"
+        }
+      ],
+      "workupChave": [
+        "confirmar proteinúria",
+        "avaliar albumina e função renal",
+        "corticoterapia quando indicado"
+      ],
+      "diagnosticoFinal": "Síndrome nefrótica idiopática",
+      "justificativa": "Proteinúria e albumina baixa explicam edema/ascite. A decisão final deve ser revisada por humano antes de publicação.",
+      "expertReasoningTrace": [
+        "Representar o problema com qualificadores semânticos.",
+        "Escolher a síndrome guarda-chuva.",
+        "Comparar diferenciais da mesma síndrome antes de fechar diagnóstico."
+      ],
+      "_revisar": "Rascunho gerado localmente pelo Codex; diferenciais nomeados foram endurecidos por regra sindrômica e exigem revisão médica antes de publicar."
+    }
+  ],
+  "_hardening": {
+    "differentials": "placeholders genericos substituidos por diagnosticos nomeados por subtopico/sindrome/catalogo local",
+    "reviewedAt": "2026-06-07T19:41:00.016Z"
+  }
+}
