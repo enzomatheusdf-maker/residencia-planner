@@ -658,7 +658,7 @@ describe("FSRS Core Logic Test Suite", () => {
     expect(lastHist.interleavingCandidateIds).toContain("t2");
   });
 
-  test("recalcAfterMark stores canonical shadow without changing official Lite date", () => {
+  test("recalcAfterMark uses canonical FSRS as official schedule when topic context is present", () => {
     const today = todayStr();
     const initialRev = buildRev(today, "GO");
     initialRev.d1 = {
@@ -668,20 +668,51 @@ describe("FSRS Core Logic Test Suite", () => {
       scheduledAt: today,
       date: today,
     };
+    const fakeShadow = {
+      enabled: true,
+      adapterVersion: "topic-as-card-v1",
+      officialPolicy: "official_scheduler_with_lite_fallback",
+      package: "ts-fsrs",
+      input: {
+        temaId: "tema-shadow",
+        reviewedAt: today,
+      },
+      output: {
+        due: addDays(today, 5),
+        scheduledDays: 5,
+        stability: 8.5,
+        difficulty: 0.42,
+        state: "Review",
+      },
+      replay: {
+        eventCount: 1,
+      },
+      comparison: {
+        liteIntervalAfter: 3,
+        canonicalIntervalAfter: 5,
+      },
+    };
 
     const updated = recalcAfterMark(initialRev, "d1", 0.9, 0.90, 180, "GO", {
       tema: { id: "tema-shadow", nome: "Tema Shadow" },
+      buildFsrsCanonicalShadow: () => fakeShadow,
     });
     const lastHist = updated.reviewHistory[updated.reviewHistory.length - 1];
 
     expect(lastHist.fsrsCanonicalShadow).toBeTruthy();
     expect(lastHist.fsrsCanonicalShadow.enabled).toBe(true);
     expect(lastHist.fsrsCanonicalShadow.input.temaId).toBe("tema-shadow");
-    expect(updated.d4.date).toBe(addDays(today, lastHist.intervalAfter));
+    expect(lastHist.source).toBe("ts-fsrs");
+    expect(lastHist.fsrsCanonicalOfficial.applied).toBe(true);
+    expect(lastHist.intervalAfter).toBe(5);
+    expect(lastHist.liteIntervalAfter).not.toBeNull();
+    expect(updated.d4.S).toBe(8.5);
+    expect(updated.d4.D).toBe(0.42);
+    expect(updated.d4.date).toBe(addDays(today, 5));
     expect(updated.d4.date).toBe(updated.d4.scheduledAt);
   });
 
-  test("recalcAfterMark keeps official review when canonical shadow fails", () => {
+  test("recalcAfterMark falls back to Lite schedule when canonical FSRS fails", () => {
     const today = todayStr();
     const initialRev = buildRev(today, "GO");
     initialRev.d1 = {
@@ -693,6 +724,7 @@ describe("FSRS Core Logic Test Suite", () => {
     };
 
     const updated = recalcAfterMark(initialRev, "d1", 0.9, 0.90, 180, "GO", {
+      tema: { id: "tema-shadow-fail", nome: "Tema Shadow Fail", rev: initialRev },
       buildFsrsCanonicalShadow: () => {
         throw new Error("shadow unavailable");
       },
@@ -700,6 +732,9 @@ describe("FSRS Core Logic Test Suite", () => {
     const lastHist = updated.reviewHistory[updated.reviewHistory.length - 1];
 
     expect(updated.d4.date).toBe(addDays(today, lastHist.intervalAfter));
+    expect(lastHist.source).toBe("fsrs-lite-fallback");
+    expect(lastHist.fsrsCanonicalOfficial.applied).toBe(false);
+    expect(lastHist.fsrsCanonicalOfficial.fallbackReason).toBe("canonical_adapter_error");
     expect(lastHist.fsrsCanonicalShadow.failed).toBe(true);
     expect(lastHist.fsrsCanonicalShadow.error).toContain("shadow unavailable");
   });

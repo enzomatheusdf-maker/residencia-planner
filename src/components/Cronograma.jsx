@@ -42,28 +42,111 @@ function formatShortDate(date) {
   return `${day}/${month}`;
 }
 
+function getCatalogEntryRaw(entry) {
+  return entry && typeof entry === "object" && Object.prototype.hasOwnProperty.call(entry, "raw")
+    ? entry.raw
+    : entry;
+}
+
+function parseBlockNumber(value) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  const match = String(value || "").match(/bloco\s*(\d+)/i);
+  return match ? Number(match[1]) : null;
+}
+
+function normalizeCourseLocation(location) {
+  if (!location) return null;
+  const sourceBlockNumber = parseBlockNumber(location.sourceBlockNumber || location.blockNumber || location.sourceBlockName);
+  const weekNumber = parseBlockNumber(location.weekNumber || location.weekName);
+  const sourceBlockName = location.sourceBlockName || (sourceBlockNumber ? `Bloco ${sourceBlockNumber}` : "");
+  const weekName = location.weekName || (weekNumber ? `Semana ${weekNumber}` : "");
+  const blockLabel = sourceBlockNumber ? `Bloco ${sourceBlockNumber}` : sourceBlockName;
+  const weekLabel = weekNumber ? `Semana ${weekNumber}` : weekName;
+  const label = location.label || [blockLabel, weekLabel].filter(Boolean).join(" / ");
+  if (!label) return null;
+  return {
+    ...location,
+    sourceBlockNumber,
+    sourceBlockName,
+    weekNumber,
+    weekName,
+    label,
+    title: location.title || [sourceBlockName, weekName].filter(Boolean).join(" · ") || label,
+  };
+}
+
+function createCourseLocation({ sourceBlockNumber, sourceBlockName, weekNumber, weekName }) {
+  return normalizeCourseLocation({
+    sourceBlockNumber,
+    sourceBlockName,
+    weekNumber,
+    weekName,
+  });
+}
+
+function getCourseLocationFromEntry(entry, block, tema = null) {
+  return normalizeCourseLocation(tema?.courseLocation)
+    || normalizeCourseLocation(entry?.courseLocation)
+    || createCourseLocation({
+      sourceBlockNumber: parseBlockNumber(block?.originalBlocks?.[0] || block?.nome || block?.b) || block?.b,
+      sourceBlockName: block?.originalBlocks?.[0] || block?.nome || `Bloco ${block?.b}`,
+      weekNumber: block?.b,
+      weekName: block?.nome || `Semana ${block?.b}`,
+    });
+}
+
+function CourseLocationBadge({ location }) {
+  const normalized = normalizeCourseLocation(location);
+  if (!normalized) return null;
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded border border-sky-400/20 bg-sky-400/10 px-1.5 py-0.5 text-[8.5px] font-bold text-sky-300 shrink-0"
+      title={normalized.title}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Calendar size={10} />
+      {normalized.label}
+    </span>
+  );
+}
+
 function redistributeCatalogByWeeklyLimit(blocks = [], topicsPerWeek = 6) {
   const weeklyLimit = normalizeWeeklyTopicLimit(topicsPerWeek);
   const entries = [];
   blocks.forEach((block) => {
     (block.t || []).forEach((entry) => {
-      entries.push({ entry, sourceName: block.nome || `Bloco ${block.b}` });
+      entries.push({
+        entry: getCatalogEntryRaw(entry),
+        sourceName: block.nome || `Bloco ${block.b}`,
+        sourceBlockNumber: parseBlockNumber(block.b || block.nome),
+      });
     });
   });
   const redistributed = [];
   for (let index = 0; index < entries.length; index += weeklyLimit) {
     const slice = entries.slice(index, index + weeklyLimit);
+    const weekNumber = Math.floor(index / weeklyLimit) + 1;
+    const weekName = `Semana ${weekNumber} · ${slice.length} tema${slice.length > 1 ? "s" : ""}`;
     redistributed.push({
-      b: Math.floor(index / weeklyLimit) + 1,
-      nome: `Semana ${Math.floor(index / weeklyLimit) + 1} · ${slice.length} tema${slice.length > 1 ? "s" : ""}`,
+      b: weekNumber,
+      nome: weekName,
       originalBlocks: [...new Set(slice.map((item) => item.sourceName))],
-      t: slice.map((item) => item.entry),
+      t: slice.map((item) => ({
+        raw: item.entry,
+        courseLocation: createCourseLocation({
+          sourceBlockNumber: item.sourceBlockNumber,
+          sourceBlockName: item.sourceName,
+          weekNumber,
+          weekName,
+        }),
+      })),
     });
   }
   return redistributed;
 }
 
-export function CronoCard({ tema, onStep, onEdit, onIniciarTema, plat = "res" }) {
+export function CronoCard({ tema, onStep, onEdit, onIniciarTema, plat = "res", courseLocation = null }) {
   const esp     = ESP_COLORS[tema.esp] || "#94a3b8";
   const dominioStatus = getDominioPrevioStatus(tema);
   const semanticNextReview = getNextReviewForTema(tema);
@@ -76,6 +159,7 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema, plat = "res" })
   const imp     = IMPORTANCIA[tema.importancia || "ALTA"];
   const dominioPrevio = tema?.dominioPrevio || {};
   const enamedBadge = plat === "res" ? getEnamedContextBadge(tema.esp, tema.nome) : null;
+  const resolvedCourseLocation = normalizeCourseLocation(tema?.courseLocation) || normalizeCourseLocation(courseLocation);
   const isValidadoPrevio = dominioStatus.isValidated || dominioPrevio.status === "validado_previo";
   const acertoValidacao = dominioStatus.acerto != null ? Math.round(dominioStatus.acerto * 100) : null;
 
@@ -117,6 +201,7 @@ export function CronoCard({ tema, onStep, onEdit, onIniciarTema, plat = "res" })
                   Hot {enamedBadge.questoes ? `~${enamedBadge.questoes}q` : `${enamedBadge.pctAbsoluto}%`}
                 </span>
               )}
+              <CourseLocationBadge location={resolvedCourseLocation} />
               {hasVies && (
                 <span
                   className="text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/25 px-2 py-0.5 rounded font-medium flex items-center gap-1"
@@ -303,7 +388,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
   }, [meta, planPriorityUi, setMeta, showPlanPanel]);
   const medcofTemas = useMemo(
     () => (resolveCatalogo("res", getDefaultCronogramaId("res")) || []).flatMap((bl) =>
-      (bl.t || []).map((entry) => ({ nome: parseCatalogEntry(entry).nome }))
+      (bl.t || []).map((entry) => ({ nome: parseCatalogEntry(getCatalogEntryRaw(entry)).nome }))
     ),
     []
   );
@@ -349,14 +434,16 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
     const byName = new Map();
     displayCat.forEach((block) => {
       (block.t || []).forEach((entry) => {
-        const { nome, esp, prio, subs } = parseCatalogEntry(entry);
+        const { nome, esp, prio, subs } = parseCatalogEntry(getCatalogEntryRaw(entry));
+        const courseLocation = getCourseLocationFromEntry(entry, block);
         const base = {
           nome,
           esp,
           prio,
           importancia: prioToImportancia(prio),
           parentTopic: null,
-          blockName: block.nome || `Bloco ${block.b}`,
+          blockName: courseLocation?.sourceBlockName || block.nome || `Bloco ${block.b}`,
+          courseLocation,
           subCount: subs.length,
         };
         if (!byName.has(nome)) byName.set(nome, base);
@@ -370,7 +457,8 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
               prio,
               importancia: prioToImportancia(prio),
               parentTopic: nome,
-              blockName: block.nome || `Bloco ${block.b}`,
+              blockName: courseLocation?.sourceBlockName || block.nome || `Bloco ${block.b}`,
+              courseLocation,
               subCount: 0,
             });
           }
@@ -436,6 +524,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
       unstarted: true,
       d0: todayStr(),
       parentTopic: payload.parentTopic || null,
+      courseLocation: normalizeCourseLocation(payload.courseLocation) || null,
     };
     addTema(plat, newTema);
     setTemaValidando(newTema);
@@ -629,6 +718,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                           ~{enamedBadge.questoes || 0}q ENAMED
                                         </span>
                                       )}
+                                      <CourseLocationBadge location={tema?.courseLocation || item.courseLocation} />
                                     </div>
                                     <h3 className="mt-1 text-[12px] font-bold text-gray-100 leading-snug" title={item.nome}>{item.shortName || item.nome}</h3>
                                     {attemptsCount > 0 && (
@@ -655,7 +745,15 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                         if (next?.stepKey) onStep(tema.id, next.stepKey);
                                         return;
                                       }
-                                      onIniciarTema({ nome: item.nome, esp: item.esp, prio: item.prio, importancia: item.importancia, parentTopic: item.parentTopic, obs: item.blockName });
+                                      onIniciarTema({
+                                        nome: item.nome,
+                                        esp: item.esp,
+                                        prio: item.prio,
+                                        importancia: item.importancia,
+                                        parentTopic: item.parentTopic,
+                                        obs: item.blockName,
+                                        courseLocation: item.courseLocation,
+                                      });
                                     }}
                                     className="flex-1 rounded-xl bg-blue-600/15 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/20 px-2 py-1.5 text-[10px] font-black transition-colors"
                                   >
@@ -663,7 +761,15 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => beginDomainValidation(tema || { nome: item.nome, esp: item.esp, prio: item.prio, importancia: item.importancia, parentTopic: item.parentTopic, obs: item.blockName })}
+                                    onClick={() => beginDomainValidation(tema || {
+                                      nome: item.nome,
+                                      esp: item.esp,
+                                      prio: item.prio,
+                                      importancia: item.importancia,
+                                      parentTopic: item.parentTopic,
+                                      obs: item.blockName,
+                                      courseLocation: item.courseLocation,
+                                    })}
                                     className="flex-1 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 px-2 py-1.5 text-[10px] font-black transition-colors"
                                   >
                                     Já domino
@@ -819,7 +925,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
 
           {displayCat.map((bl) => {
             const blTemas = bl.t.filter((entry) => {
-              const { nome, subs, prio: topPrio } = parseCatalogEntry(entry);
+              const { nome, subs, prio: topPrio } = parseCatalogEntry(getCatalogEntryRaw(entry));
               const nameMatches = !q || nome.toLowerCase().includes(q.toLowerCase());
               const subMatches = !q || subs.some(s => s.toLowerCase().includes(q.toLowerCase()));
               if (!nameMatches && !subMatches) return false;
@@ -869,7 +975,9 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                 {isOpen && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                     {blTemas.map((entry) => {
-                      const { nome: topNome, esp, prio: topPrio, subs } = parseCatalogEntry(entry);
+                      const { nome: topNome, esp, prio: topPrio, subs } = parseCatalogEntry(getCatalogEntryRaw(entry));
+                      const parentTema = temaMap.get(topNome);
+                      const courseLocation = getCourseLocationFromEntry(entry, bl, parentTema);
                       const hasSubs = subs.length > 0;
 
                       if (hasSubs) {
@@ -886,7 +994,10 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div>
-                                  <span className="text-[10px] uppercase tracking-[0.25em] text-gray-500">{esp}</span>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[10px] uppercase tracking-[0.25em] text-gray-500">{esp}</span>
+                                    <CourseLocationBadge location={courseLocation} />
+                                  </div>
                                   <h3 className="text-base font-semibold text-gray-100 mt-1">{topNome}</h3>
                                 </div>
                                 <ChevronDown
@@ -914,6 +1025,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                   const subName = `${topNome} — ${sub}`;
                                   const subTema = temas.find(t => (t.parentTopic === topNome && (t.nome === subName || t.nome === sub)) || t.nome === subName);
                                   const isStarted = subTema && !subTema.unstarted;
+                                  const subCourseLocation = normalizeCourseLocation(subTema?.courseLocation) || courseLocation;
 
                                   if (isStarted) {
                                     const semanticNext = getNextReviewForTema(subTema);
@@ -926,7 +1038,10 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                     return (
                                       <div key={sub} className="p-4 flex items-center justify-between gap-3 hover:bg-white/[0.01] transition-colors">
                                         <div className="min-w-0 flex-1">
-                                          <p className="text-xs font-semibold text-gray-200">{sub}</p>
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <p className="text-xs font-semibold text-gray-200">{sub}</p>
+                                            <CourseLocationBadge location={subCourseLocation} />
+                                          </div>
                                           <div className="flex items-center gap-3 mt-2">
                                             <div className="flex gap-1 max-w-[120px] flex-1">
                                               {STEPS.map((s) => (
@@ -971,7 +1086,10 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                   return (
                                     <div key={sub} className="p-4 flex items-center justify-between gap-3 hover:bg-white/[0.01] transition-colors">
                                       <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-medium text-gray-400">{sub}</p>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <p className="text-xs font-medium text-gray-400">{sub}</p>
+                                          <CourseLocationBadge location={subCourseLocation} />
+                                        </div>
                                         <div className="mt-2">
                                           <RetrievabilitySpark tema={subTema || { id: `sub_${topNome}_${sub}`, nome: subName, esp, unstarted: true }} />
                                         </div>
@@ -979,7 +1097,14 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                       <div className="flex flex-col gap-1 shrink-0">
                                         <button
                                           type="button"
-                                          onClick={() => onIniciarTema(subTema || { nome: subName, esp, prio: topPrio, parentTopic: topNome })}
+                                          onClick={() => onIniciarTema(subTema || {
+                                            nome: subName,
+                                            esp,
+                                            prio: topPrio,
+                                            parentTopic: topNome,
+                                            obs: courseLocation?.sourceBlockName || courseLocation?.label || `${bl.nome || "MEDCOF Bloco " + bl.b}`,
+                                            courseLocation,
+                                          })}
                                           className="px-2.5 py-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white text-[10px] font-black transition-all border border-blue-500/10 cursor-pointer"
                                         >
                                           Iniciar revisão
@@ -988,7 +1113,14 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                           type="button"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            beginDomainValidation(subTema || { nome: subName, esp, prio: topPrio, parentTopic: topNome });
+                                            beginDomainValidation(subTema || {
+                                              nome: subName,
+                                              esp,
+                                              prio: topPrio,
+                                              parentTopic: topNome,
+                                              obs: courseLocation?.sourceBlockName || courseLocation?.label || `${bl.nome || "MEDCOF Bloco " + bl.b}`,
+                                              courseLocation,
+                                            });
                                           }}
                                           className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-200 text-[10px] font-black transition-all border border-white/10 flex items-center justify-center gap-1 cursor-pointer"
                                           title="Use se você já estudou este tema. O app cria validação curta: 15+ questões e 80%+ para entrar no ciclo de revisão."
@@ -1006,16 +1138,25 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                       }
 
                       const tema = temaMap.get(topNome);
-                      if (tema && !tema.unstarted) return <CronoCard key={topNome} tema={tema} plat={plat} onStep={onStep} onEdit={onEdit} onIniciarTema={onIniciarTema} />;
+                      const simpleCourseLocation = getCourseLocationFromEntry(entry, bl, tema);
+                      if (tema && !tema.unstarted) return <CronoCard key={topNome} tema={tema} plat={plat} courseLocation={simpleCourseLocation} onStep={onStep} onEdit={onEdit} onIniciarTema={onIniciarTema} />;
 
                       const espC  = ESP_COLORS[esp] || "#94a3b8";
                       const currentPrio = tema ? tema.prio : topPrio;
                       const currentImp = tema ? (tema.importancia || prioToImportancia(topPrio)) : prioToImportancia(topPrio);
+                      const basePayload = {
+                        nome: topNome,
+                        esp,
+                        prio: currentPrio,
+                        importancia: currentImp,
+                        obs: simpleCourseLocation?.sourceBlockName || simpleCourseLocation?.label || `${bl.nome || "MEDCOF Bloco " + bl.b}`,
+                        courseLocation: simpleCourseLocation,
+                      };
 
                       return (
                         <div
                           key={topNome}
-                          onClick={() => onEdit(tema || { nome: topNome, esp, prio: currentPrio, importancia: currentImp, obs: `${bl.nome || "MEDCOF Bloco " + bl.b}`, unstarted: true })}
+                          onClick={() => onEdit(tema || { ...basePayload, unstarted: true })}
                           className="bg-[var(--surface-1)]/60 hover:bg-[var(--surface-1)]/80 hover:border-white/10 cursor-pointer rounded-3xl p-5 flex flex-col gap-4 border border-white/5 border-dashed transition-all"
                           style={{ borderLeft: `4px dashed ${espC}` }}
                         >
@@ -1028,6 +1169,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                   {IMPORTANCIA[currentImp].label}
                                 </span>
                               )}
+                              <CourseLocationBadge location={tema?.courseLocation || simpleCourseLocation} />
                             </div>
                             <p className="text-[14px] font-semibold text-gray-300 line-clamp-2 mt-1.5">{topNome}</p>
                             {tema && (
@@ -1045,7 +1187,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onIniciarTema(tema || { nome: topNome, esp, prio: currentPrio, importancia: currentImp, obs: `${bl.nome || "MEDCOF Bloco " + bl.b}` });
+                                onIniciarTema(tema || basePayload);
                               }}
                               className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-blue-600/20 text-[12px] font-bold text-blue-400 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                             >
@@ -1055,7 +1197,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                beginDomainValidation(tema || { nome: topNome, esp, prio: currentPrio, importancia: currentImp, obs: `${bl.nome || "MEDCOF Bloco " + bl.b}` });
+                                beginDomainValidation(tema || basePayload);
                               }}
                               className="flex-1 py-2 rounded-xl bg-black/25 border border-white/10 hover:bg-white/10 text-[12px] font-bold text-gray-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                               title="Use se você já estudou este tema. O app cria validação curta: 15+ questões e 80%+ para entrar no ciclo de revisão."

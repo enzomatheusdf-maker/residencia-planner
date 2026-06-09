@@ -8,6 +8,7 @@ import {
 import {
   buildFsrsCanonicalShadow,
   compareLiteVsCanonical,
+  getCanonicalScheduleOverride,
   mapLiteRatingToCanonical,
 } from "./fsrsCanonicalShadow";
 
@@ -120,11 +121,11 @@ describe("fsrsCanonicalShadow", () => {
       latestReviewedAt: "2026-06-04",
       latestStepKey: "d4",
     });
-    expect(first.officialPolicy).toBe("observer_only_never_writes_official_schedule");
+    expect(first.officialPolicy).toBe("official_scheduler_with_lite_fallback");
     expect(first.output.scheduledDays).not.toBeNull();
   });
 
-  test("shadow replay remains observational and does not change official Lite dates", () => {
+  test("canonical replay can drive official scheduling when topic context is present", () => {
     const today = todayStr();
     const initialRev = buildRev(today, "GO");
     initialRev.d1 = {
@@ -142,7 +143,32 @@ describe("fsrsCanonicalShadow", () => {
 
     expect(lastHist.fsrsCanonicalShadow).toBeTruthy();
     expect(lastHist.fsrsCanonicalShadow.replay.eventCount).toBe(1);
+    expect(lastHist.source).toBe("ts-fsrs");
+    expect(lastHist.fsrsCanonicalOfficial.applied).toBe(true);
+    expect(lastHist.liteIntervalAfter).not.toBeNull();
+    expect(updated.d4.date).toBe(lastHist.fsrsCanonicalOfficial.due);
     expect(updated.d4.date).toBe(addDays(today, lastHist.intervalAfter));
     expect(updated.d4.date).toBe(updated.d4.scheduledAt);
+  });
+
+  test("extracts a bounded official schedule override from canonical shadow", () => {
+    const shadow = buildFsrsCanonicalShadow({
+      tema: { id: "tema-override", nome: "Tema Override" },
+      stepKey: "d1",
+      acerto: 0.9,
+      ratingLite: "good",
+      effectiveRating: "good",
+      scheduledAt: "2026-06-01",
+      reviewedAt: "2026-06-01",
+      atrasoDias: 0,
+      phaseBefore: "learning",
+      liteIntervalAfter: 4,
+    });
+
+    const override = getCanonicalScheduleOverride(shadow, { minInterval: 1, maxInterval: 180 });
+    expect(override.interval).toBeGreaterThanOrEqual(1);
+    expect(override.due).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(override.S).not.toBeNull();
+    expect(override.D).not.toBeNull();
   });
 });

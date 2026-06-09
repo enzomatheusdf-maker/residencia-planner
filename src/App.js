@@ -1240,13 +1240,19 @@ export default function App() {
                 onNavigationTargetConsumed={() => setPlanNavigationTarget(null)}
                 onIniciarTema={(temaConfig) => {
                   if (!checkWorkloadAndWarn()) return;
+                  const startPatch = {
+                    unstarted: false,
+                    d0: todayStr(),
+                    ...(temaConfig.obs ? { obs: temaConfig.obs } : {}),
+                    ...(temaConfig.courseLocation ? { courseLocation: temaConfig.courseLocation } : {}),
+                  };
                   if (temaConfig.id) {
-                    updateTema(plat, temaConfig.id, { unstarted: false, d0: todayStr() });
+                    updateTema(plat, temaConfig.id, startPatch);
                     handleStudyTrigger(temaConfig.id, "d0");
                   } else {
                     const existing = temas.find(t => t.nome === temaConfig.nome);
                     if (existing) {
-                      updateTema(plat, existing.id, { unstarted: false, d0: todayStr() });
+                      updateTema(plat, existing.id, startPatch);
                       handleStudyTrigger(existing.id, "d0");
                     } else {
                       const novoId = Date.now();
@@ -1267,13 +1273,19 @@ export default function App() {
                 onSubViewTargetConsumed={() => setVestCronoSubViewTarget(null)}
                 onIniciarTema={(temaConfig) => {
                   if (!checkWorkloadAndWarn()) return;
+                  const startPatch = {
+                    unstarted: false,
+                    d0: todayStr(),
+                    ...(temaConfig.obs ? { obs: temaConfig.obs } : {}),
+                    ...(temaConfig.courseLocation ? { courseLocation: temaConfig.courseLocation } : {}),
+                  };
                   if (temaConfig.id) {
-                    updateTema(plat, temaConfig.id, { unstarted: false, d0: todayStr() });
+                    updateTema(plat, temaConfig.id, startPatch);
                     handleStudyTrigger(temaConfig.id, "d0");
                   } else {
                     const existing = temas.find(t => t.nome === temaConfig.nome);
                     if (existing) {
-                      updateTema(plat, existing.id, { unstarted: false, d0: todayStr() });
+                      updateTema(plat, existing.id, startPatch);
                       handleStudyTrigger(existing.id, "d0");
                     } else {
                       const novoId = Date.now();
@@ -1414,6 +1426,7 @@ export default function App() {
               prio: catalogItem.prio || "Média",
               importancia: prioToImportancia(catalogItem.prio),
               obs: catalogItem.blockName,
+              courseLocation: catalogItem.courseLocation || null,
               pico: "",
               ankiDeck: "",
               id: novoId,

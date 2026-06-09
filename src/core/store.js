@@ -1499,8 +1499,8 @@ export const useStore = create(
             return t;
           });
 
-          // 5. Spacing via FSRS-Lite (reuse recalcAfterMark)
-          const revAnterior = anterior.rev || buildRev(hoje);
+          // 5. Spacing via FSRS (reuse recalcAfterMark)
+          const revAnterior = anterior.rev || buildRev(hoje, area);
           const STEP_SEQUENCE = ["d0", "d1", "d4", "d7", "d21", "manutencao"];
           let stepKey = STEP_SEQUENCE.find(key => revAnterior[key] && !revAnterior[key].done && revAnterior[key].date) || "d0";
 
@@ -1512,11 +1512,23 @@ export const useStore = create(
             [stepKey]: {
               ...revAnterior[stepKey],
               done: true,
+              acerto: acertoValue,
+              completedAt: hoje,
+              scheduledAt: revAnterior[stepKey]?.scheduledAt || revAnterior[stepKey]?.date || hoje,
               reviewedAt: hoje
             }
           };
 
-          const nextRev = recalcAfterMark(markedRev, stepKey, acertoValue, desiredRetention, maxInterval, area);
+          const nextRev = recalcAfterMark(markedRev, stepKey, acertoValue, desiredRetention, maxInterval, area, {
+            tema: {
+              id: `clinical:${casoId}`,
+              nome: subtopic,
+              esp: area,
+              rev: revAnterior,
+            },
+            forceCanonicalOfficial: true,
+            history: nextEvents,
+          });
           const nextStepKey = STEP_SEQUENCE.find(key => nextRev[key] && !nextRev[key].done && nextRev[key].date) || "manutencao";
           const proximaData = nextRev[nextStepKey]?.date || addDays(hoje, 7);
           const S = nextRev[nextStepKey]?.S || nextRev.manutencao?.S || 21;

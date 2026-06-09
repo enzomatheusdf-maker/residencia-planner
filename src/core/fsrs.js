@@ -1,12 +1,14 @@
 // src/core/fsrs.js
-// FSRS-Lite core rules, date math, and database constants
+// FSRS scheduling rules, date math, and database constants
 
 import { recommendDesiredRetention } from "./retentionPolicy";
 import { MACRO_PESO_ENAMED } from "../constants/enamedIncidencia";
 import { FSRS_CANONICAL_SHADOW_ENABLED } from "./devFlags";
 import {
   FSRS_CANONICAL_ADAPTER_VERSION,
+  FSRS_CANONICAL_OFFICIAL_POLICY,
   buildFsrsCanonicalShadow,
+  getCanonicalScheduleOverride,
 } from "./fsrsCanonicalShadow";
 
 export const todayStr = () => {
@@ -178,7 +180,7 @@ export const isDueSoon = (s) => {
   return d > 0 && d <= 2;
 };
 
-// ─── FSRS-LITE ENGINE ────────────────────────────────────────────────────────
+// ─── FSRS-LITE FALLBACK ENGINE ───────────────────────────────────────────────
 export const FSRS_DECAY = -0.5;
 export const FSRS_FACTOR = 0.9 ** (1 / FSRS_DECAY) - 1;
 export const DESIRED_RETENTION = 0.90;
@@ -256,43 +258,119 @@ export function appendReviewHistory(rev = {}, event, limit = 100) {
   return [...history, normalized].slice(-limit);
 }
 
-function withCanonicalShadow(historyEvent, context = {}) {
-  if (!FSRS_CANONICAL_SHADOW_ENABLED) return historyEvent;
+function shouldUseCanonicalOfficial(context = {}) {
+  if (context.disableCanonicalOfficial) return false;
+  return !!(context.forceCanonicalOfficial || context.tema);
+}
+
+function shouldBuildCanonicalShadow(context = {}, options = {}) {
+  return !!(options.forceBuild || shouldUseCanonicalOfficial(context) || FSRS_CANONICAL_SHADOW_ENABLED);
+}
+
+function buildCanonicalHistoryEvent(historyEvent, context = {}, options = {}) {
+  const eligibleForOfficial = options.allowOfficialOverride !== false && shouldUseCanonicalOfficial(context);
+  if (!shouldBuildCanonicalShadow(context, { forceBuild: eligibleForOfficial })) {
+    return { historyEvent, override: null };
+  }
 
   try {
     const buildShadow = context.buildFsrsCanonicalShadow || buildFsrsCanonicalShadow;
+    const shadow = buildShadow({
+      tema: context.tema,
+      stepKey: historyEvent.stepKey,
+      acerto: historyEvent.acerto,
+      ratingLite: historyEvent.rating,
+      effectiveRating: historyEvent.effectiveRating,
+      rawRatingFromAcerto: historyEvent.rating,
+      matureLapseAppliedByLite: !!context.matureLapseAppliedByLite,
+      scheduledAt: historyEvent.scheduledAt,
+      reviewedAt: historyEvent.reviewedAt,
+      atrasoDias: historyEvent.atrasoDias,
+      phaseBefore: historyEvent.phaseBefore,
+      liteIntervalAfter: historyEvent.liteIntervalAfter ?? historyEvent.intervalAfter,
+    });
+    const override = eligibleForOfficial
+      ? getCanonicalScheduleOverride(shadow, { minInterval: 1, maxInterval: options.maxInterval })
+      : null;
+    const fallbackReason = options.fallbackReason
+      || (!eligibleForOfficial ? "observer_only" : "canonical_schedule_unavailable");
     return {
-      ...historyEvent,
-      fsrsCanonicalShadow: buildShadow({
-        tema: context.tema,
-        stepKey: historyEvent.stepKey,
-        acerto: historyEvent.acerto,
-        ratingLite: historyEvent.rating,
-        effectiveRating: historyEvent.effectiveRating,
-        rawRatingFromAcerto: historyEvent.rating,
-        matureLapseAppliedByLite: !!context.matureLapseAppliedByLite,
-        scheduledAt: historyEvent.scheduledAt,
-        reviewedAt: historyEvent.reviewedAt,
-        atrasoDias: historyEvent.atrasoDias,
-        phaseBefore: historyEvent.phaseBefore,
-        liteIntervalAfter: historyEvent.intervalAfter,
-      }),
+      historyEvent: {
+        ...historyEvent,
+        fsrsCanonicalShadow: shadow,
+        fsrsCanonicalOfficial: {
+          policy: FSRS_CANONICAL_OFFICIAL_POLICY,
+          applied: !!override,
+          intervalAfter: override?.interval ?? null,
+          due: override?.due ?? null,
+          fallbackReason: override ? null : fallbackReason,
+        },
+      },
+      override,
     };
   } catch (error) {
     return {
-      ...historyEvent,
-      fsrsCanonicalShadow: {
-        enabled: true,
-        failed: true,
-        adapterVersion: FSRS_CANONICAL_ADAPTER_VERSION,
-        error: String(error?.message || error).slice(0, 160),
+      historyEvent: {
+        ...historyEvent,
+        fsrsCanonicalShadow: {
+          enabled: true,
+          failed: true,
+          adapterVersion: FSRS_CANONICAL_ADAPTER_VERSION,
+          officialPolicy: FSRS_CANONICAL_OFFICIAL_POLICY,
+          error: String(error?.message || error).slice(0, 160),
+        },
+        fsrsCanonicalOfficial: shouldUseCanonicalOfficial(context) ? {
+          policy: FSRS_CANONICAL_OFFICIAL_POLICY,
+          applied: false,
+          intervalAfter: null,
+          due: null,
+          fallbackReason: "canonical_adapter_error",
+        } : undefined,
       },
+      override: null,
     };
   }
 }
 
-function appendReviewHistoryWithShadow(rev = {}, historyEvent, context = {}, limit = 100) {
-  return appendReviewHistory(rev, withCanonicalShadow(historyEvent, context), limit);
+function finalizeOfficialHistoryEvent(historyEvent, override = null, fallbackSource = "fsrs-lite-fallback") {
+  if (!historyEvent?.fsrsCanonicalOfficial) return historyEvent;
+  if (!override) {
+    const fallbackReason = historyEvent.fsrsCanonicalOfficial?.fallbackReason;
+    const shouldMarkFallback = fallbackReason
+      && fallbackReason !== "observer_only"
+      && fallbackReason !== "again_relearning_policy";
+    return {
+      ...historyEvent,
+      source: shouldMarkFallback ? fallbackSource : (historyEvent.source || fallbackSource),
+      fsrsCanonicalOfficial: {
+        ...historyEvent.fsrsCanonicalOfficial,
+        applied: false,
+      },
+    };
+  }
+
+  return {
+    ...historyEvent,
+    source: "ts-fsrs",
+    intervalAfter: override.interval,
+    S_after: override.S ?? historyEvent.S_after,
+    D_after: override.D ?? historyEvent.D_after,
+    fsrsCanonicalOfficial: {
+      ...historyEvent.fsrsCanonicalOfficial,
+      applied: true,
+      intervalAfter: override.interval,
+      due: override.due,
+      rawScheduledDays: override.rawScheduledDays,
+    },
+  };
+}
+
+function resolvePreparedSchedule(historyEvent, context = {}, options = {}) {
+  const prepared = buildCanonicalHistoryEvent(historyEvent, context, options);
+  return {
+    ...prepared,
+    officialEvent: finalizeOfficialHistoryEvent(prepared.historyEvent, prepared.override, options.fallbackSource),
+  };
 }
 
 export function inferPhaseFromStep(stepKey, manutencao = false) {
@@ -804,7 +882,12 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
       phaseAfter: targetPhase,
       intervalAfter: policy.delayDays,
     };
-    nextRev.reviewHistory = appendReviewHistoryWithShadow(nextRev, historyEvent, canonicalShadowContext, 100);
+    const prepared = resolvePreparedSchedule(historyEvent, canonicalShadowContext, {
+      allowOfficialOverride: false,
+      fallbackReason: "again_relearning_policy",
+      fallbackSource: "fsrs-lite",
+    });
+    nextRev.reviewHistory = appendReviewHistory(nextRev, prepared.officialEvent, 100);
     return nextRev;
   }
 
@@ -816,22 +899,34 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
     const history = shadowContext?.history || rev.reviewHistory || [];
     const policyResult = recommendDesiredRetention({ examPhase, overload, history });
     const maintenanceRetention = getRetencaoArea(esp, policyResult.desiredRetention);
-    const nextInt = maintenanceInterval(S_new, maintenanceRetention, D_new, prevInterval, maxInterval);
+    const liteNextInt = maintenanceInterval(S_new, maintenanceRetention, D_new, prevInterval, maxInterval);
     const baseDate = rev.manutencao.date >= now ? rev.manutencao.date : now;
+    const prepared = resolvePreparedSchedule({
+      ...historyBase,
+      phaseAfter: "maintenance",
+      intervalAfter: liteNextInt,
+      liteIntervalAfter: liteNextInt,
+      intervalBefore: prevInterval || null,
+    }, canonicalShadowContext, { maxInterval, fallbackSource: "fsrs-lite-fallback" });
+    const official = prepared.override;
+    const nextInt = official?.interval ?? liteNextInt;
     const nextDate = addDays(baseDate, nextInt);
+    const nextDue = official?.due || nextDate;
+    const officialS = official?.S ?? S_new;
+    const officialD = official?.D ?? D_new;
     const nextRev = {
       ...rev,
       phase: "maintenance",
       relearning: (wasRelearning && (rating === "good" || rating === "easy")) ? null : rev.relearning,
       manutencao: {
         done: false,
-        date: nextDate,
-        scheduledAt: nextDate,
+        date: nextDue,
+        scheduledAt: nextDue,
         reviewedAt: null,
         acerto: null,
         questoes: null,
-        S: S_new,
-        D: D_new,
+        S: officialS,
+        D: officialD,
         interval: nextInt,
         phase: "maintenance",
       },
@@ -840,12 +935,7 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
         schedulerWarning: null,
       },
     };
-    nextRev.reviewHistory = appendReviewHistoryWithShadow(nextRev, {
-      ...historyBase,
-      phaseAfter: "maintenance",
-      intervalAfter: nextInt,
-      intervalBefore: prevInterval || null,
-    }, canonicalShadowContext, 100);
+    nextRev.reviewHistory = appendReviewHistory(nextRev, prepared.officialEvent, 100);
     return nextRev;
   }
 
@@ -856,23 +946,36 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
     const history = shadowContext?.history || rev.reviewHistory || [];
     const policyResult = recommendDesiredRetention({ examPhase, overload, history });
     const maintenanceRetention = getRetencaoArea(esp, policyResult.desiredRetention);
-    const nextInt = maintenanceInterval(S_new, maintenanceRetention, D_new, 0, maxInterval);
+    const liteNextInt = maintenanceInterval(S_new, maintenanceRetention, D_new, 0, maxInterval);
     const baseDate = rev.d21.date >= now ? rev.d21.date : now;
+    const phaseAfter = (wasRelearning && (rating === "good" || rating === "easy")) ? "maintenance" : "review";
+    const prepared = resolvePreparedSchedule({
+      ...historyBase,
+      phaseAfter,
+      intervalAfter: liteNextInt,
+      liteIntervalAfter: liteNextInt,
+      intervalBefore: null,
+    }, canonicalShadowContext, { maxInterval, fallbackSource: "fsrs-lite-fallback" });
+    const official = prepared.override;
+    const nextInt = official?.interval ?? liteNextInt;
     const nextDate = addDays(baseDate, nextInt);
+    const nextDue = official?.due || nextDate;
+    const officialS = official?.S ?? S_new;
+    const officialD = official?.D ?? D_new;
     const nextRev = {
       ...rev,
-      phase: (wasRelearning && (rating === "good" || rating === "easy")) ? "maintenance" : "review",
+      phase: phaseAfter,
       relearning: (wasRelearning && (rating === "good" || rating === "easy")) ? null : rev.relearning,
-      d21: { ...rev.d21, S: S_new, D: D_new, phase: "review" },
+      d21: { ...rev.d21, S: officialS, D: officialD, phase: "review" },
       manutencao: {
         done: false,
-        date: nextDate,
-        scheduledAt: nextDate,
+        date: nextDue,
+        scheduledAt: nextDue,
         reviewedAt: null,
         acerto: null,
         questoes: null,
-        S: S_new,
-        D: D_new,
+        S: officialS,
+        D: officialD,
         interval: nextInt,
         phase: "maintenance",
       },
@@ -881,19 +984,14 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
         schedulerWarning: null,
       },
     };
-    nextRev.reviewHistory = appendReviewHistoryWithShadow(nextRev, {
-      ...historyBase,
-      phaseAfter: nextRev.phase,
-      intervalAfter: nextInt,
-      intervalBefore: null,
-    }, canonicalShadowContext, 100);
+    nextRev.reviewHistory = appendReviewHistory(nextRev, prepared.officialEvent, 100);
     return nextRev;
   }
 
   const doneIdx = STEPS.findIndex((s) => s.key === doneKey);
   const nextStep = STEPS[doneIdx + 1];
   if (!nextStep) return rev;
-  const interval = getAdaptiveLearningInterval({
+  const liteInterval = getAdaptiveLearningInterval({
     doneKey,
     S: S_new,
     D: D_new,
@@ -906,26 +1004,33 @@ export function recalcAfterMark(rev, doneKey, acerto, desiredRetention = 0.90, m
     maxInterval,
   }) ?? nextInterval(S_new, nextStep.offset, desiredRetention, maxInterval, D_new);
   const baseDate = rev[doneKey].date >= now ? rev[doneKey].date : now;
-  const nextDate = addDays(baseDate, interval);
   const phaseAfter = (wasRelearning && (rating === "good" || rating === "easy"))
     ? inferPhaseFromStep(nextStep.key)
     : (rev.phase || inferPhaseFromStep(nextStep.key));
+  const prepared = resolvePreparedSchedule({
+    ...historyBase,
+    phaseAfter,
+    intervalAfter: liteInterval,
+    liteIntervalAfter: liteInterval,
+  }, canonicalShadowContext, { maxInterval, fallbackSource: "fsrs-lite-fallback" });
+  const official = prepared.override;
+  const interval = official?.interval ?? liteInterval;
+  const nextDate = addDays(baseDate, interval);
+  const nextDue = official?.due || nextDate;
+  const officialS = official?.S ?? S_new;
+  const officialD = official?.D ?? D_new;
   const nextRev = {
     ...rev,
     phase: phaseAfter,
     relearning: (wasRelearning && (rating === "good" || rating === "easy")) ? null : rev.relearning,
-    [doneKey]: { ...rev[doneKey], S: S_new, D: D_new, phase: inferPhaseFromStep(doneKey) },
-    [nextStep.key]: { ...rev[nextStep.key], date: nextDate, scheduledAt: nextDate, phase: inferPhaseFromStep(nextStep.key) },
+    [doneKey]: { ...rev[doneKey], S: officialS, D: officialD, phase: inferPhaseFromStep(doneKey) },
+    [nextStep.key]: { ...rev[nextStep.key], date: nextDue, scheduledAt: nextDue, S: officialS, D: officialD, phase: inferPhaseFromStep(nextStep.key) },
     meta: {
       ...(rev.meta || {}),
       schedulerWarning: null,
     },
   };
-  nextRev.reviewHistory = appendReviewHistoryWithShadow(nextRev, {
-    ...historyBase,
-    phaseAfter,
-    intervalAfter: interval,
-  }, canonicalShadowContext, 100);
+  nextRev.reviewHistory = appendReviewHistory(nextRev, prepared.officialEvent, 100);
   return nextRev;
 }
 

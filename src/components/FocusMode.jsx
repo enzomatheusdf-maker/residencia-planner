@@ -110,13 +110,24 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
       }
       console.warn("FocusMode: targetedItem sem tema correspondente", currentTarget);
     }
+    const savedSession = meta?.activeFocusSession;
+    if (savedSession?.temaId && savedSession?.stepKey && (!savedSession.plat || savedSession.plat === plat)) {
+      const savedTema = temas.find(x => String(x.id) === String(savedSession.temaId));
+      const savedStep = savedTema?.rev?.[savedSession.stepKey];
+      if (savedTema && savedStep && !savedStep.done && !savedStep.skipped && !savedStep.skippeadoPorDominio) {
+        const stillQueued = intelligentQueue.some((item) => (
+          String(item.temaId) === String(savedTema.id) && item.stepKey === savedSession.stepKey
+        ));
+        if (stillQueued) return { tema: savedTema, stepKey: savedSession.stepKey };
+      }
+    }
     if (intelligentQueue.length > 0) {
       const top = intelligentQueue[0];
       const t = temas.find(x => x.id === top.temaId);
       if (t) return { tema: t, stepKey: top.stepKey };
     }
     return null;
-  }, [currentTarget, intelligentQueue, temas, tourStep, plat]);
+  }, [currentTarget, intelligentQueue, meta?.activeFocusSession, temas, tourStep, plat]);
 
   const activeReviewItemThemeId = activeReviewItem?.tema?.id;
   const activeReviewItemStepKey = activeReviewItem?.stepKey;
@@ -244,6 +255,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
         lastCompletedFocusSessionAt: completedAt,
         lastCompletedFocusThemeId: temaId,
         lastCompletedFocusStepKey: stepKey,
+        activeFocusSession: null,
       },
     }));
     
@@ -530,6 +542,156 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
     setModoReduzidoAtivo(false);
     setExhaustionConfirmed(false);
   };
+
+  const focusSessionKey = tema?.id && stepKey ? `${plat}:${tema.id}:${stepKey}` : "";
+  const savedFocusSession = meta?.activeFocusSession || null;
+  const hydratedFocusTargetRef = useRef("");
+  const skipNextFocusPersistRef = useRef(false);
+  const currentStepRecord = tema?.rev?.[stepKey] || {};
+  const canPersistActiveFocusSession =
+    !!focusSessionKey &&
+    tourStep !== "focus" &&
+    !currentStepRecord.done &&
+    !currentStepRecord.skipped &&
+    !currentStepRecord.skippeadoPorDominio;
+
+  useEffect(() => {
+    if (!focusSessionKey || tourStep === "focus") return;
+    if (hydratedFocusTargetRef.current === focusSessionKey) return;
+
+    const savedKey = savedFocusSession?.temaId && savedFocusSession?.stepKey
+      ? `${savedFocusSession.plat || plat}:${savedFocusSession.temaId}:${savedFocusSession.stepKey}`
+      : "";
+    const matchesSavedSession = savedKey === focusSessionKey;
+    skipNextFocusPersistRef.current = matchesSavedSession;
+
+    if (matchesSavedSession) {
+      const safeD0StepIdx = Math.min(
+        Math.max(Number(savedFocusSession.d0StepIdx) || 0, 0),
+        Math.max(stepDefs.length - 1, 0)
+      );
+      setStartedD0(!!savedFocusSession.startedD0);
+      setD0StepIdx(safeD0StepIdx);
+      setExpandedJustification(!!savedFocusSession.expandedJustification);
+      setShowD0StatsForm(!!savedFocusSession.showD0StatsForm);
+      setShowSelfEvalD1(!!savedFocusSession.showSelfEvalD1);
+      setD1Fields(savedFocusSession.d1Fields && typeof savedFocusSession.d1Fields === "object" ? savedFocusSession.d1Fields : {});
+      setD1ForgotFields(savedFocusSession.d1ForgotFields && typeof savedFocusSession.d1ForgotFields === "object" ? savedFocusSession.d1ForgotFields : {});
+      setQuestoes(savedFocusSession.questoes ?? "");
+      setAcertos(savedFocusSession.acertos ?? "");
+      setPrevisao(savedFocusSession.previsao ?? "");
+      setClinicalSelfScore(savedFocusSession.clinicalSelfScore ?? null);
+      setRevelado(!!savedFocusSession.revelado);
+      setErros(Array.isArray(savedFocusSession.erros) ? savedFocusSession.erros : []);
+      setInterleaved(!!savedFocusSession.interleaved);
+      setComoFoi(savedFocusSession.comoFoi ?? null);
+      setShowDetails(!!savedFocusSession.showDetails);
+      setAnsiedade(savedFocusSession.ansiedade || "Normal");
+      setCansaco(savedFocusSession.cansaco || "Normal");
+      setConfianca(savedFocusSession.confianca || "Média");
+      setFoco(savedFocusSession.foco || "Normal");
+      setC1(Number.isFinite(Number(savedFocusSession.c1)) ? Number(savedFocusSession.c1) : 160);
+      setC2(Number.isFinite(Number(savedFocusSession.c2)) ? Number(savedFocusSession.c2) : 160);
+      setC3(Number.isFinite(Number(savedFocusSession.c3)) ? Number(savedFocusSession.c3) : 160);
+      setC4(Number.isFinite(Number(savedFocusSession.c4)) ? Number(savedFocusSession.c4) : 160);
+      setC5(Number.isFinite(Number(savedFocusSession.c5)) ? Number(savedFocusSession.c5) : 160);
+      setModoReduzidoAtivo(!!savedFocusSession.modoReduzidoAtivo);
+      setExhaustionConfirmed(!!savedFocusSession.exhaustionConfirmed);
+      setPico(savedFocusSession.pico ?? tema?.pico ?? "");
+      setAnkiDeck(savedFocusSession.ankiDeck ?? tema?.ankiDeck ?? "");
+    } else {
+      resetSessionStates();
+    }
+
+    hydratedFocusTargetRef.current = focusSessionKey;
+  }, [focusSessionKey, plat, savedFocusSession, stepDefs.length, tema?.ankiDeck, tema?.pico, tourStep]);
+
+  useEffect(() => {
+    if (!canPersistActiveFocusSession) return;
+    if (skipNextFocusPersistRef.current) {
+      skipNextFocusPersistRef.current = false;
+      return;
+    }
+
+    const updatedAt = new Date().toISOString();
+    useStore.setState((state) => ({
+      meta: {
+        ...state.meta,
+        lastFocusSessionAt: updatedAt,
+        lastFocusThemeId: tema.id,
+        lastFocusStepKey: stepKey,
+        activeFocusSession: {
+          plat,
+          temaId: tema.id,
+          stepKey,
+          startedD0,
+          d0StepIdx,
+          expandedJustification,
+          showD0StatsForm,
+          showSelfEvalD1,
+          d1Fields,
+          d1ForgotFields,
+          questoes,
+          acertos,
+          previsao,
+          clinicalSelfScore,
+          revelado,
+          erros,
+          interleaved,
+          comoFoi,
+          showDetails,
+          ansiedade,
+          cansaco,
+          confianca,
+          foco,
+          c1,
+          c2,
+          c3,
+          c4,
+          c5,
+          modoReduzidoAtivo,
+          exhaustionConfirmed,
+          pico,
+          ankiDeck,
+          updatedAt,
+        },
+      },
+    }));
+  }, [
+    acertos,
+    ansiedade,
+    ankiDeck,
+    c1,
+    c2,
+    c3,
+    c4,
+    c5,
+    canPersistActiveFocusSession,
+    cansaco,
+    clinicalSelfScore,
+    comoFoi,
+    confianca,
+    d0StepIdx,
+    d1Fields,
+    d1ForgotFields,
+    erros,
+    expandedJustification,
+    exhaustionConfirmed,
+    foco,
+    interleaved,
+    pico,
+    plat,
+    previsao,
+    questoes,
+    revelado,
+    showD0StatsForm,
+    showDetails,
+    showSelfEvalD1,
+    startedD0,
+    stepKey,
+    tema,
+    modoReduzidoAtivo,
+  ]);
 
   const currentStepDef = stepDefs[d0StepIdx];
   const espColor = tema ? (ESP_COLORS[tema.esp] || "#8b5cf6") : "#8b5cf6";

@@ -1,7 +1,7 @@
 import { createEmptyCard, fsrs, Rating } from "ts-fsrs";
 
 export const FSRS_CANONICAL_ADAPTER_VERSION = "topic-as-card-v1";
-export const FSRS_CANONICAL_OFFICIAL_POLICY = "observer_only_never_writes_official_schedule";
+export const FSRS_CANONICAL_OFFICIAL_POLICY = "official_scheduler_with_lite_fallback";
 
 const DAY_MS = 86_400_000;
 
@@ -57,6 +57,12 @@ function toIsoDate(value) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return date.toISOString().slice(0, 10);
+}
+
+function isoDateAfter(dateStr, days) {
+  const base = toReviewDate(dateStr);
+  base.setDate(base.getDate() + Math.round(days));
+  return toIsoDate(base);
 }
 
 function serializeNumber(value) {
@@ -227,5 +233,28 @@ export function buildFsrsCanonicalShadow({
       latestStepKey: latestEvent.stepKey || null,
     },
     warnings: ["topic_as_card_adapter_not_authoritative"],
+  };
+}
+
+export function getCanonicalScheduleOverride(shadow, { minInterval = 1, maxInterval = null } = {}) {
+  if (!shadow || shadow.failed || !shadow.output) return null;
+
+  const rawInterval = Number(shadow.output.scheduledDays);
+  if (!Number.isFinite(rawInterval)) return null;
+
+  let interval = Math.max(minInterval, Math.round(rawInterval));
+  const cap = Number(maxInterval);
+  if (Number.isFinite(cap) && cap > 0) {
+    interval = Math.min(interval, cap);
+  }
+
+  const reviewedAt = shadow.input?.reviewedAt || null;
+  return {
+    interval,
+    due: reviewedAt ? isoDateAfter(reviewedAt, interval) : shadow.output.due || null,
+    S: shadow.output.stability,
+    D: shadow.output.difficulty,
+    state: shadow.output.state || null,
+    rawScheduledDays: rawInterval,
   };
 }

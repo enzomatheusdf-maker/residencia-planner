@@ -86,6 +86,7 @@ export function buildReviewPreview({ tema, stepKey, acerto, meta = {} }) {
   const overload = false;
   const history = tema.rev?.reviewHistory || [];
   const nextRev = recalcAfterMark(revMarked, stepKey, acerto, desiredRetention, maxInterval, tema.esp, {
+    tema,
     examPhase,
     overload,
     history,

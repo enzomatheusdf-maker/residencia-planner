@@ -1,6 +1,6 @@
 // src/components/RaciocinioClinico.jsx
 import React, { useMemo, useState } from "react";
-import { Brain, ClipboardList, MessageSquareText, Stethoscope, Eye, CalendarDays, Pill, AlertTriangle, Plus, RefreshCw } from "lucide-react";
+import { Brain, ClipboardList, MessageSquareText, Stethoscope, Eye, CalendarDays, Pill, AlertTriangle, Plus, RefreshCw, Search, Filter, X } from "lucide-react";
 import { CASOS_CLINICOS } from "../constants/casosClinicos";
 import { useStore } from "../core/store";
 import { Textarea, Field, Input } from "./Primitives";
@@ -227,6 +227,10 @@ export default function RaciocinioClinico() {
   const [generationPresentation, setGenerationPresentation] = useState("typical");
   const [generatedCaseDraft, setGeneratedCaseDraft] = useState(null);
   const [generatedDraftReviewed, setGeneratedDraftReviewed] = useState(false);
+  const [caseSearch, setCaseSearch] = useState("");
+  const [caseAreaFilter, setCaseAreaFilter] = useState("all");
+  const [caseDifficultyFilter, setCaseDifficultyFilter] = useState("all");
+  const [caseStatusFilter, setCaseStatusFilter] = useState("all");
 
   // Drill 0 Recall state
   const [drillStep, setDrillStep] = useState("idle"); // idle, direction, despejo, mapeamento, autoavaliacao
@@ -473,6 +477,54 @@ export default function RaciocinioClinico() {
 
   const customCases = useMemo(() => Array.isArray(meta?.clinicalCustomCases) ? meta.clinicalCustomCases : [], [meta?.clinicalCustomCases]);
   const allCases = useMemo(() => [...CASOS_CLINICOS, ...customCases].map(normalizeClinicalCase), [customCases]);
+  const caseAreaOptions = useMemo(() => (
+    Array.from(new Set(allCases.map((item) => item.area || "Geral")))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b))
+  ), [allCases]);
+  const caseDifficultyOptions = useMemo(() => (
+    Array.from(new Set(allCases.map((item) => item.dificuldade || "")))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b))
+  ), [allCases]);
+  const filteredCases = useMemo(() => {
+    const query = normalizeClinicalText(caseSearch);
+    const hoje = todayStr();
+    return allCases.filter((item) => {
+      if (caseAreaFilter !== "all" && item.area !== caseAreaFilter) return false;
+      if (caseDifficultyFilter !== "all" && item.dificuldade !== caseDifficultyFilter) return false;
+
+      const progress = casosProgresso[item.id] || {};
+      if (caseStatusFilter === "due" && !(progress.proximaData && progress.proximaData <= hoje)) return false;
+      if (caseStatusFilter === "seen" && !(progress.vistos > 0)) return false;
+      if (caseStatusFilter === "new" && progress.vistos > 0) return false;
+
+      if (query) {
+        const haystack = normalizeClinicalText([
+          item.tema,
+          item.diagnosticoFinal,
+          item.area,
+          item.subarea,
+          item.id,
+        ].filter(Boolean).join(" "));
+        if (!haystack.includes(query)) return false;
+      }
+
+      return true;
+    });
+  }, [allCases, caseSearch, caseAreaFilter, caseDifficultyFilter, caseStatusFilter, casosProgresso]);
+  const hasCaseFilters = Boolean(
+    caseSearch.trim()
+    || caseAreaFilter !== "all"
+    || caseDifficultyFilter !== "all"
+    || caseStatusFilter !== "all"
+  );
+  const resetCaseFilters = () => {
+    setCaseSearch("");
+    setCaseAreaFilter("all");
+    setCaseDifficultyFilter("all");
+    setCaseStatusFilter("all");
+  };
   const recommendedDrill = useMemo(() => selectNextDrill({
     scripts: allCases,
     casosProgresso,
@@ -985,7 +1037,7 @@ export default function RaciocinioClinico() {
         </div>
       </Card>
 
-      <div className="grid gap-3 lg:grid-cols-[260px_1fr]">
+      <div className="grid gap-3 lg:grid-cols-[300px_minmax(0,1fr)]">
         {casosFeitos === 0 && (
           <EmptyState
             icon={Stethoscope}
@@ -1024,64 +1076,156 @@ export default function RaciocinioClinico() {
             className="lg:col-span-2"
           />
         )}
-        <div className="flex flex-col gap-2">
-          {allCases.map((item) => {
-            const ativo = item.id === caso.id;
-            const p = casosProgresso[item.id];
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  setActiveCasoId(item.id);
-                  setScriptAberto(false);
-                  setSctRevelado(false);
-                  setAnamneseRevelada(false);
-                  setConductaRevelada(false);
-                  setConductaRespostas({});
-                  setConductaAvisoAceito(false);
-                  setDrillBStep("diagnostico");
-                  setLeadDiagnosis("");
-                  setConfidence(5);
-                  setApoiaItems([]);
-                  setContraItems([]);
-                  setFaltaItems([]);
-                  setCustomItemText("");
-                  setAutoExplanation("");
-                  setDrillBScore(null);
-                  setFlashcardCreated(false);
-                  setContrastStarted(false);
-                  setDrillAStep("diagnostico");
-                  setDrillAHypothesis("");
-                  setDrillAConfidence(5);
-                  setDrillAKeyFeatureAnswer("");
-                  setDrillAScore(null);
-                  setDrillCStep("jogo");
-                  setDrillCAssignments({});
-                  setDrillCSelectedCaseId(null);
-                  setDrillCScore(null);
-                }}
-                className="w-full text-left transition-all"
-                style={{ background: "transparent", border: 0, padding: 0 }}
-              >
-                <Card interactive selected={ativo} style={{ padding: 12 }}>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] font-black text-gray-100">{item.tema}</span>
-                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${dificuldadeClass(item.dificuldade)}`}>
-                      {item.dificuldade}
-                    </span>
-                  </div>
-                  <p className="text-[10.5px] text-gray-500 mt-1">{item.area} · {item.subarea}</p>
-                  {p?.proximaData && (
-                    <p className="text-[10px] text-blue-300 mt-2 flex items-center gap-1">
-                      <CalendarDays size={11} /> reencontro {fmtRelativo(p.proximaData)}
-                    </p>
+        <aside className="min-h-0 lg:sticky lg:top-3 lg:max-h-[calc(100dvh-132px)]">
+          <div className="flex min-h-0 flex-col gap-2 lg:max-h-[calc(100dvh-132px)]">
+            <Card className="shrink-0 space-y-2" style={{ padding: 12 }}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Filter size={14} className="text-blue-300" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">Temas</span>
+                </div>
+                <span className="text-[10px] font-bold tabular-nums text-gray-500">
+                  {filteredCases.length}/{allCases.length}
+                </span>
+              </div>
+              <div className="relative">
+                <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                <Input
+                  value={caseSearch}
+                  onChange={(event) => setCaseSearch(event.target.value)}
+                  placeholder="Pesquisar tema, area, diagnostico..."
+                  className="pl-9 pr-8 text-[12px]"
+                />
+                {caseSearch && (
+                  <button
+                    type="button"
+                    aria-label="Limpar pesquisa"
+                    onClick={() => setCaseSearch("")}
+                    className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-lg border border-transparent bg-transparent text-gray-600 transition-colors hover:border-white/10 hover:text-gray-300"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <select
+                  value={caseAreaFilter}
+                  onChange={(event) => setCaseAreaFilter(event.target.value)}
+                  className="w-full cursor-pointer rounded-xl border border-white/10 bg-black px-3 py-2 text-[12px] text-white outline-none transition-colors focus:border-blue-500"
+                >
+                  <option value="all">Todas as areas</option>
+                  {caseAreaOptions.map((area) => (
+                    <option key={area} value={area}>{area}</option>
+                  ))}
+                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={caseDifficultyFilter}
+                    onChange={(event) => setCaseDifficultyFilter(event.target.value)}
+                    className="w-full cursor-pointer rounded-xl border border-white/10 bg-black px-3 py-2 text-[12px] text-white outline-none transition-colors focus:border-blue-500"
+                  >
+                    <option value="all">Dificuldade</option>
+                    {caseDifficultyOptions.map((difficulty) => (
+                      <option key={difficulty} value={difficulty}>{difficulty}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={caseStatusFilter}
+                    onChange={(event) => setCaseStatusFilter(event.target.value)}
+                    className="w-full cursor-pointer rounded-xl border border-white/10 bg-black px-3 py-2 text-[12px] text-white outline-none transition-colors focus:border-blue-500"
+                  >
+                    <option value="all">Todos</option>
+                    <option value="due">Vencidos</option>
+                    <option value="seen">Vistos</option>
+                    <option value="new">Novos</option>
+                  </select>
+                </div>
+              </div>
+              {hasCaseFilters && (
+                <button
+                  type="button"
+                  onClick={resetCaseFilters}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-bold text-gray-300 transition-colors hover:bg-white/10"
+                >
+                  <X size={13} /> Limpar filtros
+                </button>
+              )}
+            </Card>
+
+            <div className="min-h-[280px] space-y-2 overflow-y-auto pr-1 lg:min-h-0 lg:flex-1">
+              {filteredCases.map((item) => {
+                const ativo = item.id === caso.id;
+                const p = casosProgresso[item.id];
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveCasoId(item.id);
+                      setScriptAberto(false);
+                      setSctRevelado(false);
+                      setAnamneseRevelada(false);
+                      setConductaRevelada(false);
+                      setConductaRespostas({});
+                      setConductaAvisoAceito(false);
+                      setDrillBStep("diagnostico");
+                      setLeadDiagnosis("");
+                      setConfidence(5);
+                      setApoiaItems([]);
+                      setContraItems([]);
+                      setFaltaItems([]);
+                      setCustomItemText("");
+                      setAutoExplanation("");
+                      setDrillBScore(null);
+                      setFlashcardCreated(false);
+                      setContrastStarted(false);
+                      setDrillAStep("diagnostico");
+                      setDrillAHypothesis("");
+                      setDrillAConfidence(5);
+                      setDrillAKeyFeatureAnswer("");
+                      setDrillAScore(null);
+                      setDrillCStep("jogo");
+                      setDrillCAssignments({});
+                      setDrillCSelectedCaseId(null);
+                      setDrillCScore(null);
+                    }}
+                    className="w-full text-left transition-all"
+                    style={{ background: "transparent", border: 0, padding: 0 }}
+                  >
+                    <Card interactive selected={ativo} style={{ padding: 12 }}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="min-w-0 flex-1 text-[12px] font-black leading-snug text-gray-100">{item.tema}</span>
+                        <span className={`shrink-0 text-[9px] font-black uppercase px-2 py-0.5 rounded border ${dificuldadeClass(item.dificuldade)}`}>
+                          {item.dificuldade}
+                        </span>
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-[10.5px] leading-snug text-gray-500">{item.area} · {item.subarea}</p>
+                      {p?.proximaData && (
+                        <p className="text-[10px] text-blue-300 mt-2 flex items-center gap-1">
+                          <CalendarDays size={11} /> reencontro {fmtRelativo(p.proximaData)}
+                        </p>
+                      )}
+                    </Card>
+                  </button>
+                );
+              })}
+              {filteredCases.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-6 text-center">
+                  <p className="text-[12px] font-bold text-gray-300">Nenhum tema encontrado</p>
+                  {hasCaseFilters && (
+                    <button
+                      type="button"
+                      onClick={resetCaseFilters}
+                      className="mt-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-bold text-gray-300 transition-colors hover:bg-white/10"
+                    >
+                      Limpar filtros
+                    </button>
                   )}
-                </Card>
-              </button>
-            );
-          })}
-        </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </aside>
 
         <Card className="flex flex-col gap-4" style={{ padding: 18 }}>
           <div>

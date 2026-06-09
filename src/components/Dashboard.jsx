@@ -1110,8 +1110,44 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     };
   }, [ankiLog]);
 
+  const resumeFocusTarget = useMemo(() => {
+    const savedSession = meta?.activeFocusSession;
+    const candidate = savedSession?.temaId && savedSession?.stepKey
+      ? savedSession
+      : meta?.lastFocusThemeId && meta?.lastFocusStepKey
+      ? {
+        plat,
+        temaId: meta.lastFocusThemeId,
+        stepKey: meta.lastFocusStepKey,
+      }
+      : null;
+    if (!candidate) return null;
+    if (candidate.plat && candidate.plat !== plat) return null;
+
+    const tema = temasFiltrados.find((t) => String(t.id) === String(candidate.temaId));
+    const stepKey = candidate.stepKey;
+    const stepRecord = tema?.rev?.[stepKey];
+    if (!tema || !stepRecord) return null;
+    if (stepRecord.done || stepRecord.skipped || stepRecord.skippeadoPorDominio) return null;
+
+    const stillInQueue = allPendingSorted.some((item) => (
+      String(item.temaId) === String(tema.id) && item.stepKey === stepKey
+    ));
+    if (!stillInQueue) return null;
+
+    return {
+      temaId: tema.id,
+      stepKey,
+      temaNome: tema.nome,
+      resumed: true,
+    };
+  }, [allPendingSorted, meta?.activeFocusSession, meta?.lastFocusStepKey, meta?.lastFocusThemeId, plat, temasFiltrados]);
+
   // ZONA 1 Target Foco
   const topFilaItem = useMemo(() => {
+    if (resumeFocusTarget) {
+      return resumeFocusTarget;
+    }
     // If we have items in the optimal FSRS retrievability window, prioritize them!
     const optimalFila = [...overdue, ...today_].filter(item => {
       const tema = temasFiltrados.find(t => t.id === item.temaId);
@@ -1149,7 +1185,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       };
     }
     return null;
-  }, [filaInteligente, overdue, today_, temasFiltrados]);
+  }, [filaInteligente, overdue, resumeFocusTarget, today_, temasFiltrados]);
 
 
   const activeDecisionSnapshot = decisionSnapshot?.plat === plat ? decisionSnapshot : null;
@@ -1209,16 +1245,21 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     const subtitle = action.subtitle
       || action.reason
       || mentorTodayPlan.slice(1).join(" ");
+    const shouldResumeSession =
+      resumeFocusTarget &&
+      (action.type === "fila_do_dia" || action.target?.action === "close_today_queue" || action.ctaView === "focus");
     return {
       eyebrow: "Comando do dia",
       title: action.title || "Manter consistência leve",
-      subtitle: subtitle || "Sem urgência crítica detectada. Siga o plano com ritmo sustentável.",
-      primaryLabel: action.cta || "Executar ação",
+      subtitle: shouldResumeSession
+        ? `Retomar ${resumeFocusTarget.temaNome} na etapa ${String(resumeFocusTarget.stepKey).toUpperCase()}.`
+        : subtitle || "Sem urgência crítica detectada. Siga o plano com ritmo sustentável.",
+      primaryLabel: shouldResumeSession ? "Retomar sessão" : action.cta || "Executar ação",
       secondaryLabel: "Ver por quê",
       tone,
       action,
     };
-  }, [hasPendingClosure, mentorNextAction, mentorTodayPlan]);
+  }, [hasPendingClosure, mentorNextAction, mentorTodayPlan, resumeFocusTarget]);
 
   const runMentorPrimaryAction = useCallback(() => {
     if (hasPendingClosure) {
