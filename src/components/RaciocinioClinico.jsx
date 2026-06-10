@@ -449,6 +449,8 @@ export default function RaciocinioClinico() {
     };
 
     const result = scoreClinicalReasoningSession(userAnswers, activeScript);
+    const motivosErro = result.errosDetectados || [];
+    const dominantError = motivosErro[0] || (result.score < 80 ? "clinical_reasoning_gap" : null);
     setDrillBScore(result);
     setDrillBStep("reveal");
 
@@ -458,10 +460,12 @@ export default function RaciocinioClinico() {
       confianca: confidence,
       acertou: result.score >= 70,
       vistos: (progresso.vistos || 0) + 1,
-      dominantError: result.errosDetectados?.[0] || (result.score < 80 ? "clinical_reasoning_gap" : null),
+      motivosErro,
+      dominantError,
+      errors: { motivosErro, dominantError },
       meta: {
         drillType: "B",
-        errosDetectados: result.errosDetectados || [],
+        errosDetectados: motivosErro,
         leadDiagnosis,
       },
     });
@@ -758,6 +762,8 @@ export default function RaciocinioClinico() {
     const score = (isHypothesisCorrect ? 50 : 0) + (isKeyFeatureCorrect ? 50 : 0);
     const prediction = drillAConfidence / 10;
     const accuracy = score / 100;
+    const dominantError = score < 70 ? (drillAConfidence >= 8 ? "overconfidence" : "clinical_reasoning_gap") : null;
+    const motivosErro = dominantError ? [dominantError] : [];
 
     registrar({
       fase1Acerto: score,
@@ -766,7 +772,9 @@ export default function RaciocinioClinico() {
       vistos: (progresso.vistos || 0) + 1,
       questoes: 1,
       tags: ["drillA", "calibration", "key_feature"],
-      dominantError: score < 70 ? (drillAConfidence >= 8 ? "overconfidence" : "clinical_reasoning_gap") : null,
+      motivosErro,
+      dominantError,
+      errors: { motivosErro, dominantError },
       meta: {
         drillType: "A",
         hypothesis: drillAHypothesis,
@@ -809,6 +817,8 @@ export default function RaciocinioClinico() {
     });
 
     const score = Math.round((correct / confusableDrillItems.length) * 100);
+    const dominantError = score < 100 ? "discrimination_gap" : null;
+    const motivosErro = dominantError ? [dominantError] : [];
 
     registrar({
       sctAcerto: score,
@@ -816,7 +826,9 @@ export default function RaciocinioClinico() {
       vistos: (progresso.vistos || 0) + 1,
       questoes: confusableDrillItems.length,
       tags: ["drillC", "discrimination", "confusable_set"],
-      dominantError: score < 100 ? "discrimination_gap" : null,
+      motivosErro,
+      dominantError,
+      errors: { motivosErro, dominantError },
       meta: {
         drillType: "C",
         confusableSetKey: activeConfusableSet.key,
@@ -956,7 +968,16 @@ export default function RaciocinioClinico() {
       return sum + Math.max(0, 100 - diff * 25);
     }, 0);
     const sctAcerto = Math.round(score / total);
-    registrar({ sctAcerto, confianca: sctAcerto >= 75 ? 4 : 2, acertou: sctAcerto >= 75 });
+    const dominantError = sctAcerto < 80 ? "clinical_reasoning_gap" : null;
+    const motivosErro = dominantError ? [dominantError] : [];
+    registrar({
+      sctAcerto,
+      confianca: sctAcerto >= 75 ? 4 : 2,
+      acertou: sctAcerto >= 75,
+      motivosErro,
+      dominantError,
+      errors: { motivosErro, dominantError },
+    });
     abrirFechamento({
       outcome: sctAcerto >= 80 ? "bom" : sctAcerto >= 60 ? "medio" : "ruim",
       mainIssue: sctAcerto < 80 ? "raciocinio" : "nenhum",
@@ -968,11 +989,20 @@ export default function RaciocinioClinico() {
     setAnamneseRevelada(true);
     const totalPerguntas = caso.anamnese.roteiro.reduce((sum, bloco) => sum + bloco.perguntasChave.length, 0);
     const marcadas = Object.values(anamneseChecks).filter(Boolean).length;
-    registrar({ anamneseCobertura: totalPerguntas ? Math.round((marcadas / totalPerguntas) * 100) : 0, acertou: marcadas >= Math.ceil(totalPerguntas * 0.6) });
+    const anamneseOk = marcadas >= Math.ceil(totalPerguntas * 0.6);
+    const dominantError = anamneseOk ? null : "clinical_reasoning_gap";
+    const motivosErro = dominantError ? [dominantError] : [];
+    registrar({
+      anamneseCobertura: totalPerguntas ? Math.round((marcadas / totalPerguntas) * 100) : 0,
+      acertou: anamneseOk,
+      motivosErro,
+      dominantError,
+      errors: { motivosErro, dominantError },
+    });
     abrirFechamento({
-      outcome: marcadas >= Math.ceil(totalPerguntas * 0.6) ? "bom" : "medio",
-      mainIssue: marcadas >= Math.ceil(totalPerguntas * 0.6) ? "nenhum" : "raciocinio",
-      nextAdjustment: marcadas >= Math.ceil(totalPerguntas * 0.6) ? "manter" : "caso",
+      outcome: anamneseOk ? "bom" : "medio",
+      mainIssue: anamneseOk ? "nenhum" : "raciocinio",
+      nextAdjustment: anamneseOk ? "manter" : "caso",
     });
   };
 
@@ -984,10 +1014,15 @@ export default function RaciocinioClinico() {
       String(conductaRespostas[f.key] || "").trim().length >= 5
     ).length;
     const managementScore = Math.round((preenchidos / CONDUTA_FIELDS.length) * 100);
+    const dominantError = managementScore < 80 ? "clinical_reasoning_gap" : null;
+    const motivosErro = dominantError ? [dominantError] : [];
     registrar({
       managementScore,
       acertou: managementScore >= 60,
       confianca: managementScore >= 75 ? 4 : 2,
+      motivosErro,
+      dominantError,
+      errors: { motivosErro, dominantError },
     });
     abrirFechamento({
       outcome: managementScore >= 80 ? "bom" : managementScore >= 60 ? "medio" : "ruim",

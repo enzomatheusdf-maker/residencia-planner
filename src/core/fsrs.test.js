@@ -265,6 +265,34 @@ describe("FSRS Core Logic Test Suite", () => {
     expect(rev2.d1.D).toBeGreaterThan(0.5);
   });
 
+  test("D1 brain dump with severe gaps repeats D1 without reopening D0", () => {
+    const today = todayStr();
+    const initialRev = buildRev(today, "GO");
+    const marked = {
+      ...initialRev,
+      d0: {
+        ...initialRev.d0,
+        done: true,
+        reviewedAt: today,
+        acerto: 0.9,
+      },
+      d1: {
+        ...initialRev.d1,
+        done: true,
+        reviewedAt: today,
+        acerto: 0.4,
+      },
+    };
+
+    const updated = recalcAfterMark(marked, "d1", 0.4);
+
+    expect(updated.d0.done).toBe(true);
+    expect(updated.d1.done).toBe(false);
+    expect(updated.d1.date).toBe(addDays(today, 1));
+    expect(updated.d4.done).toBe(false);
+    expect(updated.d4.date >= addDays(updated.d1.date, 3)).toBe(true);
+  });
+
   test("D7 with again common repeats D7 tomorrow", () => {
     const today = todayStr();
     const initialRev = buildRev(today, "GO");

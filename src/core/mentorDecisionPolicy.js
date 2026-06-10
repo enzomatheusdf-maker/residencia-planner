@@ -1,4 +1,5 @@
 import { OPERATIONAL_MODE } from "./operationalMode";
+import { getDomainTestAgendaMeta } from "./domainTest";
 
 function buildAction(partial = {}) {
   const type = partial.type || "manutencao";
@@ -116,6 +117,27 @@ function canSuggestInterleavingBlock(context = {}) {
     && Number(context.consolidatedCorpus || 0) >= 2;
 }
 
+function buildDomainTestRecoveryCopy(item = {}) {
+  const meta = getDomainTestAgendaMeta(item.domainTestClassification);
+  if (!meta) {
+    return {
+      title: item.temaNome ? `Recuperar ${item.temaNome}` : "Recuperar tema em reaprendizado",
+      subtitle: "Tema instavel detectado; recuperacao vem antes de expansao.",
+      reason: "Reaprendizado ativo deve ser tratado antes de abrir conteudo novo.",
+      explain: "Recuperar em 24-48h reduz custo cognitivo futuro.",
+      cta: "Recuperar agora",
+    };
+  }
+
+  return {
+    title: item.temaNome ? `${meta.mentorTitle}: ${item.temaNome}` : meta.mentorTitle,
+    subtitle: meta.mentorSubtitle,
+    reason: meta.mentorReason,
+    explain: meta.mentorExplain,
+    cta: meta.mentorCta,
+  };
+}
+
 function collectingSuffix(context = {}) {
   return context?.scheduler?.trueRetentionCollecting
     ? "Retenção longa ainda coletando; priorizo carga, atrasos e desempenho recente."
@@ -213,18 +235,19 @@ export function decideMentorAction(context = {}) {
 
   if (shouldRecover && Number(scheduler.relearningCount || 0) > 0) {
     const item = scheduler.relearningItems?.[0] || {};
+    const domainCopy = buildDomainTestRecoveryCopy(item);
     return buildAction({
       type: "relearning",
       priority: 94,
-      title: item.temaNome ? `Recuperar ${item.temaNome}` : "Recuperar tema em reaprendizado",
-      subtitle: "Tema instável detectado; recuperação vem antes de expansão.",
-      reason: "Reaprendizado ativo deve ser tratado antes de abrir conteúdo novo.",
+      title: domainCopy.title,
+      subtitle: domainCopy.subtitle,
+      reason: domainCopy.reason,
       explain: [
-        "Houve queda recente em revisão espaçada.",
-        "Recuperar em 24-48h reduz custo cognitivo futuro.",
+        domainCopy.explain,
+        item.domainTestAgendaLabel ? `Classificacao do Teste de Dominio: ${item.domainTestAgendaLabel}.` : "Houve queda recente em revisao espacada.",
         collectingNote || "Abrir tema novo agora aumenta risco de sobrecarga.",
       ].filter(Boolean),
-      cta: "Recuperar agora",
+      cta: domainCopy.cta,
       ctaView: "focus",
       estimatedMinutes: 20,
       confidence: 0.9,
@@ -234,6 +257,9 @@ export function decideMentorAction(context = {}) {
         stepKey: item.targetStep || "d4",
         phase: "relearning",
         temaNome: item.temaNome || null,
+        domainTestClassification: item.domainTestClassification || null,
+        domainTestStatus: item.domainTestStatus || null,
+        domainTestConduta: item.domainTestConduta || null,
       },
     });
   }
@@ -302,6 +328,34 @@ export function decideMentorAction(context = {}) {
       confidence: 0.85,
       safety: "ok",
       target: { action: "close_today_queue" },
+    });
+  }
+
+  if (context.recommendedSimulation && canSuggestNewTopic(context)) {
+    const sim = context.recommendedSimulation;
+    const rec = sim.simRecommendation || {};
+    return buildAction({
+      type: "simulation",
+      priority: 82,
+      title: rec.titulo || sim.temaNome || "Fazer simulado recomendado",
+      subtitle: rec.frequenciaRecomendada ? `Frequencia: ${rec.frequenciaRecomendada}.` : "Fila segura; simulado entra como proxima acao.",
+      reason: rec.justificativa || "O simulado calibra desempenho e revela gargalos para o proximo ciclo.",
+      explain: [
+        rec.descricao || "Use prova cronometrada, corrija erros e converta achados em plano.",
+        `Data sugerida: ${sim.originalDate || sim.date || context.today}.`,
+        "Se houver fadiga alta, reduza escopo em vez de forcar prova completa.",
+      ],
+      cta: "Abrir simulados",
+      ctaView: "sims",
+      estimatedMinutes: sim.estimatedMinutes || 120,
+      confidence: 0.78,
+      safety: "ok",
+      target: {
+        action: "simulation",
+        recommended: true,
+        date: sim.originalDate || sim.date || context.today,
+        tipo: rec.tipo || null,
+      },
     });
   }
 

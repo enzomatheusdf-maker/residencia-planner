@@ -6,6 +6,7 @@ import React, { useMemo, useState } from "react";
 import { Activity, BarChart3, CalendarDays, Clock, Target } from "lucide-react";
 import AgendaTaskItem from "./AgendaTaskItem";
 import { estimateTaskMinutes } from "../core/agendaEngine";
+import { getDomainTestAgendaMeta } from "../core/domainTest";
 import { getEnamedContextBadge } from "../core/enamedIntel";
 import { getRetrievability } from "../core/fsrs";
 import { getAgendaTaskLabel, getAgendaTaskTarget } from "../core/planExecution";
@@ -46,6 +47,9 @@ function DetailMetric({ icon: Icon, label, value }) {
 
 function getAcaoRecomendada(item, review, enamedBadge, retrievability) {
   if (!item) return null;
+  const domainMeta = getDomainTestAgendaMeta(item.domainTestClassification);
+  if (item.domainTestRecommendation) return item.domainTestRecommendation;
+  if (domainMeta?.detailRecommendation) return domainMeta.detailRecommendation;
   const R = parseFloat(retrievability) || null;
   const isOverdue = item.overdue;
   const isHotEnamed = enamedBadge?.nivel === "alto";
@@ -83,6 +87,7 @@ function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, o
     : null;
   const acaoRecomendada = getAcaoRecomendada(item, review, enamedBadge, retrievability);
   const desempenhoTema = getDesempenhoTema(tema);
+  const domainMeta = getDomainTestAgendaMeta(item?.domainTestClassification);
 
   function handleStart() {
     if (onStartTask) {
@@ -130,7 +135,7 @@ function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, o
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <DetailMetric icon={Clock} label="Tempo" value={`${estimateTaskMinutes(item)} min`} />
-          <DetailMetric icon={CalendarDays} label="Etapa" value={item.stepKey ? item.stepKey.toUpperCase() : item.type} />
+          <DetailMetric icon={CalendarDays} label="Etapa" value={item.domainTestStepLabel || domainMeta?.stepLabel || (item.stepKey ? item.stepKey.toUpperCase() : item.type)} />
           <DetailMetric icon={Activity} label="Retenção FSRS" value={retrievability} />
           <DetailMetric icon={Target} label="Estabilidade/Dificuldade" value={review ? `S ${review.S ?? "-"} · D ${review.D ?? "-"}` : null} />
         </div>
@@ -167,6 +172,12 @@ function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, o
           <Card style={{ padding: 16, borderColor: "rgba(59,130,246,.22)", background: "var(--med-blue-soft)" }}>
             <Badge tone="blue">Ação recomendada</Badge>
             <p className="text-[12px] text-gray-200 leading-relaxed">{acaoRecomendada}</p>
+            {domainMeta && (
+              <p className="mt-2 text-[11px] text-gray-400">
+                Teste de Dominio: {item.domainTestAgendaLabel || domainMeta.agendaLabel}
+                {item.domainTestConduta ? ` · ${item.domainTestConduta}` : ""}
+              </p>
+            )}
           </Card>
         )}
 

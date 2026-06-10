@@ -1,6 +1,7 @@
 import React from "react";
 import { Info, Play } from "lucide-react";
 import { estimateTaskMinutes } from "../core/agendaEngine";
+import { getDomainTestAgendaMeta } from "../core/domainTest";
 import { getAgendaTaskLabel, getAgendaTaskTarget } from "../core/planExecution";
 import { Badge, Button, Card } from "./ui";
 
@@ -24,14 +25,16 @@ const TYPE_TONES = {
   weekly: "neutral",
 };
 
-function StepBadge({ stepKey, phase }) {
-  const label = phase === "relearning" ? "Releitura" : (stepKey || "").toUpperCase();
+function StepBadge({ stepKey, phase, domainTestClassification }) {
+  const domainMeta = getDomainTestAgendaMeta(domainTestClassification);
+  const label = domainMeta?.stepLabel || (phase === "relearning" ? "Releitura" : (stepKey || "").toUpperCase());
   return <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide">{label}</span>;
 }
 
 export default function AgendaTaskItem({ item, onStartTask, onOpenPlan, onOpenDetails }) {
   const tone = TYPE_TONES[item.type] || TYPE_TONES.review;
-  const typeLabel = TYPE_LABELS[item.type] || item.type;
+  const domainMeta = getDomainTestAgendaMeta(item.domainTestClassification);
+  const typeLabel = item.domainTestAgendaLabel || domainMeta?.agendaLabel || TYPE_LABELS[item.type] || item.type;
   const mins = estimateTaskMinutes(item);
   const target = getAgendaTaskTarget(item);
   const label = getAgendaTaskLabel(item);
@@ -51,7 +54,7 @@ export default function AgendaTaskItem({ item, onStartTask, onOpenPlan, onOpenDe
           <p className="text-[12px] font-black leading-snug text-white truncate">{item.temaNome || "Topico"}</p>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-[10px] opacity-70">{item.area}</span>
-            {item.stepKey && <StepBadge stepKey={item.stepKey} phase={item.phase} />}
+            {item.stepKey && <StepBadge stepKey={item.stepKey} phase={item.phase} domainTestClassification={item.domainTestClassification} />}
           </div>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1 text-right">

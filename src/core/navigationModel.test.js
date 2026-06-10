@@ -49,6 +49,23 @@ test("stats/database/guide and safety tools are exposed in more", () => {
   expect(views).not.toContain(NAV_VIEW.LAUNCH_CHECKLIST);
 });
 
+test("Anki usa o mesmo contrato no desktop e no menu mobile", () => {
+  const desktopAnki = getPrimaryNavItems("res").find((item) => item.view === NAV_VIEW.ANKI);
+  const mobileAnki = getMoreNavItems("res", { mobile: true }).find((item) => item.view === NAV_VIEW.ANKI);
+
+  expect(desktopAnki).toMatchObject({
+    view: NAV_VIEW.ANKI,
+    label: "Anki Audit",
+    description: "Auditoria operacional diaria do Anki.",
+  });
+  expect(mobileAnki).toMatchObject({
+    view: NAV_VIEW.ANKI,
+    label: desktopAnki.label,
+    description: desktopAnki.description,
+  });
+  expect(getMoreNavItems("res").map((item) => item.view)).not.toContain(NAV_VIEW.ANKI);
+});
+
 test("legacy view labels still resolve", () => {
   expect(normalizeView("dashboard")).toBe("dash");
   expect(resolveViewLabel("simulados")).toBe("Simulados");

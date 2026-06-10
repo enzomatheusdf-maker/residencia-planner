@@ -12,16 +12,19 @@ import { buildActionInboxFromDecisionCore, buildDecisionCoreSnapshot } from "./d
 import { appendLearningEvent, createLearningEvent, getTemaStatsFromLearningEvents } from "./learningEvent";
 import { dominantErrorType } from "./errorTaxonomy";
 import { getReadinessData } from "./readiness";
+import { estimateReadinessForecast } from "./forecast";
+import { createForecastBacktestRecord } from "./readinessValidation";
 import { isExhaustionDetected } from "./mentor";
 import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } from "./onboarding";
 import { getAnonymousStorageKey, getOrCreateAnonymousSessionId } from "./userScope";
 import {
+  applyDomainTestToTema,
   applyDominioPrevioToTema,
   criarValidacaoDominioPrevio,
   isTemaNaoIniciado,
 } from "./domainValidation";
 import { agendarReencontro, clinicalCaseMatch } from "./illnessScript";
-import { CASOS_CLINICOS } from "../constants/casosClinicos";
+import { CLINICAL_CASES_INDEX } from "../constants/clinicalCasesIndex";
 import { updateBayesianMastery } from "./mastery";
 import { rebalanceWorkloadForToday } from "./workloadRebalance";
 
@@ -277,6 +280,25 @@ function buildDecisionSnapshotOptions(state = {}, today = todayStr()) {
     lowEnergy: hasLowEnergySignal(state),
     exhaustionDetected: isExhaustionDetected(getLearningTemaStats(state, plat), doneReviews),
   };
+}
+
+function normalizeClinicalErrorPayload(payload = {}) {
+  const nestedErrors = payload.errors && typeof payload.errors === "object" ? payload.errors : {};
+  const candidateLists = [
+    payload.motivosErro,
+    nestedErrors.motivosErro,
+    payload.errosDetectados,
+    payload.meta?.errosDetectados,
+  ];
+  const motivosErro = Array.from(new Set(
+    candidateLists
+      .flatMap((list) => (Array.isArray(list) ? list : []))
+      .filter(Boolean)
+      .map(String)
+  ));
+  const dominantError = nestedErrors.dominantError || payload.dominantError || motivosErro[0] || null;
+
+  return { motivosErro, dominantError };
 }
 
 export const useStore = create(
@@ -1019,7 +1041,7 @@ export const useStore = create(
           // casado, nada é semeado e o comportamento é o skip simples atual.
           let casosProgresso = s[platKey].casosProgresso || {};
           if (validatedTema?.status === "validado_previo" && s.meta?.modulos?.raciocinioClinico) {
-            const caso = clinicalCaseMatch(validatedTema, CASOS_CLINICOS);
+            const caso = clinicalCaseMatch(validatedTema, CLINICAL_CASES_INDEX);
             if (caso?.id && !casosProgresso[caso.id]) {
               const pct = Number.isFinite(Number(validatedTema.dominioPrevio?.percentual))
                 ? Number(validatedTema.dominioPrevio.percentual)
@@ -1032,6 +1054,55 @@ export const useStore = create(
                   temaId: validatedTema.id,
                   temaNome: validatedTema.nome,
                   origem: "ja_domino",
+                  S: seed.S,
+                  intervalo: seed.intervalo,
+                  proximaData: seed.proximaData,
+                  vistos: 0,
+                  criadoEm: todayStr(),
+                },
+              };
+            }
+          }
+
+          return {
+            [platKey]: {
+              ...s[platKey],
+              temas: temasAtualizados,
+              casosProgresso,
+            },
+          };
+        });
+        const rebuild = get().rebuildActionInboxForToday;
+        if (typeof rebuild === "function") rebuild();
+        return result;
+      },
+
+      aplicarDomainTestResultado: (platKey, temaId, domainTestRecord) => {
+        let result = null;
+        set((s) => {
+          let validatedTema = null;
+          const temasAtualizados = s[platKey].temas.map((t) => {
+            if (t.id !== temaId) return t;
+            validatedTema = applyDomainTestToTema(t, domainTestRecord);
+            result = validatedTema?.dominioPrevio || null;
+            return validatedTema;
+          });
+
+          let casosProgresso = s[platKey].casosProgresso || {};
+          if (validatedTema?.status === "validado_previo" && s.meta?.modulos?.raciocinioClinico) {
+            const caso = clinicalCaseMatch(validatedTema, CLINICAL_CASES_INDEX);
+            if (caso?.id && !casosProgresso[caso.id]) {
+              const pct = Number.isFinite(Number(validatedTema.dominioPrevio?.percentual))
+                ? Number(validatedTema.dominioPrevio.percentual)
+                : Number(domainTestRecord?.questionBlock?.percent || 0);
+              const seed = agendarReencontro({}, pct);
+              casosProgresso = {
+                ...casosProgresso,
+                [caso.id]: {
+                  casoId: caso.id,
+                  temaId: validatedTema.id,
+                  temaNome: validatedTema.nome,
+                  origem: "domain_test",
                   S: seed.S,
                   intervalo: seed.intervalo,
                   proximaData: seed.proximaData,
@@ -1160,7 +1231,7 @@ export const useStore = create(
           // sem caso casado, só o relapso FSRS + Brain Dump acontece (nada é semeado).
           let casosProgresso = s[platKey].casosProgresso || {};
           if (relapsedTema && s.meta?.modulos?.raciocinioClinico) {
-            const caso = clinicalCaseMatch(relapsedTema, CASOS_CLINICOS);
+            const caso = clinicalCaseMatch(relapsedTema, CLINICAL_CASES_INDEX);
             if (caso?.id && !casosProgresso[caso.id]) {
               const pct = Number.isFinite(Number(acerto))
                 ? Math.round((Number(acerto) <= 1 ? Number(acerto) * 100 : Number(acerto)))
@@ -1299,6 +1370,20 @@ export const useStore = create(
           const newSim = { questoesErradas: [], statusCorrecao: "pendente", porArea: [], ...sim, id: Date.now() };
           let updatedTemas = [...s[platKey].temas];
           const hoje = todayStr();
+          const previousForecast = estimateReadinessForecast({
+            temas: s[platKey].temas || [],
+            temaStats: getLearningTemaStats(s, platKey),
+            simulados: s[platKey].simulados || [],
+            meta: s.meta || {},
+            plat: platKey,
+            today: hoje,
+          });
+          const forecastBacktest = createForecastBacktestRecord({
+            forecast: previousForecast,
+            simulado: newSim,
+            plat: platKey,
+            recordedAt: hoje,
+          });
 
           const erradas = newSim.questoesErradas || [];
           erradas.forEach(q => {
@@ -1335,6 +1420,15 @@ export const useStore = create(
           });
 
           return {
+            meta: forecastBacktest
+              ? {
+                ...s.meta,
+                forecastBacktests: [
+                  ...((s.meta?.forecastBacktests || []).filter((record) => record?.simuladoId !== newSim.id)),
+                  forecastBacktest,
+                ].slice(-30),
+              }
+              : s.meta,
             [platKey]: {
               ...s[platKey],
               simulados: [...s[platKey].simulados, newSim],
@@ -1459,13 +1553,19 @@ export const useStore = create(
           const hoje = todayStr();
 
           // 1. Find case info
-          const caso = CASOS_CLINICOS.find(c => c.id === casoId) || {};
+          const caso = CLINICAL_CASES_INDEX.find(c => c.id === casoId) || {};
           const subtopic = caso.subarea || caso.subtopic || caso.tema || "Geral";
           const area = caso.area || "Outro";
 
           // 2. Score normalization (0.0 to 1.0)
-          const scoreVal = payload.fase2Acerto ?? payload.fase1Acerto ?? payload.sctAcerto ?? (payload.acertou ? 100 : 0);
+          const scoreVal = payload.fase2Acerto
+            ?? payload.fase1Acerto
+            ?? payload.sctAcerto
+            ?? payload.anamneseCobertura
+            ?? payload.managementScore
+            ?? (payload.acertou ? 100 : 0);
           const acertoValue = Math.max(0, Math.min(1, scoreVal / 100));
+          const clinicalErrors = normalizeClinicalErrorPayload(payload);
 
           // 3. Log Learning Event
           const nextEvents = appendLearningEvent(s.learningEvents || [], {
@@ -1481,7 +1581,9 @@ export const useStore = create(
             previsao: payload.confianca !== undefined ? (payload.confianca / 10) : null,
             questoes: payload.questoes ?? 1,
             tags: Array.isArray(payload.tags) ? payload.tags : [],
-            dominantError: payload.dominantError || null,
+            motivosErro: clinicalErrors.motivosErro,
+            dominantError: clinicalErrors.dominantError,
+            errors: clinicalErrors,
             meta: payload.meta && typeof payload.meta === "object" ? payload.meta : {},
           });
 
@@ -1543,6 +1645,9 @@ export const useStore = create(
                 [casoId]: {
                   ...anterior,
                   ...payload,
+                  motivosErro: clinicalErrors.motivosErro,
+                  dominantError: clinicalErrors.dominantError,
+                  errors: clinicalErrors,
                   rev: nextRev,
                   S: S,
                   vistos: payload.vistos ?? ((anterior.vistos || 0) + 1),

@@ -17,7 +17,12 @@ import { getReadinessData } from "./core/readiness";
 import { describeCurrentReviewTransition } from "./core/reviewOutcome";
 import { exportMedrevBackup } from "./core/backup";
 import { buildAuthSession, getInitialAuthSession, assertActiveUserScope } from "./core/authSession";
-import { getAnonymousStorageKey, getOrCreateAnonymousSessionId, getUserScopedStorageKey } from "./core/userScope";
+import {
+  assertOwnerUidMatchesScope,
+  getAnonymousStorageKey,
+  getOrCreateAnonymousSessionId,
+  getUserScopedStorageKey,
+} from "./core/userScope";
 import { applyOnboardingChoice, getOnboardingDefaults, isOnboardingComplete } from "./core/onboarding";
 import { shouldShowOnboardingV2 } from "./core/onboardingGate";
 import { featureEnabled } from "./core/platformFeatures";
@@ -470,8 +475,17 @@ export default function App() {
           const dados = resultado.dados || {};
           const currentState = useStore.getState();
           const remoteTime = dados.updatedAt || 0;
+          let remoteScopeValid = true;
 
-          if (remoteTime > localTime) {
+          try {
+            assertOwnerUidMatchesScope(dados.ownerUid || dados.uid, uid, "remote user state");
+          } catch (scopeError) {
+            remoteScopeValid = false;
+            console.error("Dados remotos ignorados por escopo divergente:", scopeError);
+            if (showToastStore) showToastStore("Dados da nuvem ignorados por escopo divergente.");
+          }
+
+          if (remoteScopeValid && remoteTime > localTime) {
             if (Math.abs(remoteTime - localTime) > 24 * 60 * 60 * 1000) {
               showToastStore("Dados da nuvem mais recentes - atualizando.");
             }
@@ -1113,12 +1127,16 @@ export default function App() {
         onOpenLoja={() => setLojaOpen(true)}
         onLogout={async () => {
           const activeUid = authSession.uid || usuarioLogado?.uid || null;
+          const activeScopeKey = activeUid ? getUserScopedStorageKey(activeUid) : null;
           if (activeUid) {
             const state = useStore.getState();
             const stateToSave = buildStateToSync(state, activeUid);
             await sincronizarComFirebase(activeUid, stateToSave);
           }
-          await fazerLogout();
+          const logoutResult = await fazerLogout();
+          if (logoutResult?.sucesso && activeScopeKey && typeof window !== "undefined") {
+            window.localStorage.removeItem(activeScopeKey);
+          }
         }}
       />
 

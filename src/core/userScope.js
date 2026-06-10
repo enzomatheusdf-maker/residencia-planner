@@ -1,7 +1,7 @@
 const APP_PREFIX = "medrev";
 const USER_STATE_SUFFIX = "store";
-const ANON_FALLBACK_SESSION = "default";
 const USER_COLLECTION = "usuarios";
+let runtimeAnonymousSessionId = "";
 
 function normalizeEnvironmentToken(value) {
   return String(value || "").trim().toLowerCase();
@@ -17,6 +17,28 @@ export function assertUid(uid) {
     throw new Error("Missing authenticated user uid");
   }
   return normalized;
+}
+
+function createAnonymousSessionId() {
+  return `anon-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getRuntimeAnonymousSessionId() {
+  if (!runtimeAnonymousSessionId) {
+    runtimeAnonymousSessionId = createAnonymousSessionId();
+  }
+  return runtimeAnonymousSessionId;
+}
+
+export function assertOwnerUidMatchesScope(ownerUid, scopedUid, context = "user state") {
+  const owner = normalizeUid(ownerUid);
+  const scoped = assertUid(scopedUid);
+
+  if (!owner) return scoped;
+  if (owner !== scoped) {
+    throw new Error(`Owner scope mismatch in ${context}: owner=${owner} scoped=${scoped}`);
+  }
+  return scoped;
 }
 
 export function getAppEnvironment() {
@@ -40,19 +62,19 @@ export function getUserScopedStorageKey(uid, env = getAppEnvironment()) {
 }
 
 export function getAnonymousStorageKey(sessionId, env = getAppEnvironment()) {
-  const normalized = String(sessionId || "").trim() || ANON_FALLBACK_SESSION;
+  const normalized = String(sessionId || "").trim() || getRuntimeAnonymousSessionId();
   return `${APP_PREFIX}:${env}:anonymous:${normalized}:${USER_STATE_SUFFIX}`;
 }
 
 export function getOrCreateAnonymousSessionId(env = getAppEnvironment(), storage = null) {
   const store = storage || (typeof window !== "undefined" ? window.sessionStorage : null);
-  if (!store) return ANON_FALLBACK_SESSION;
+  if (!store) return getRuntimeAnonymousSessionId();
 
   const sessionKey = `${APP_PREFIX}:${env}:anonymous:session_id`;
   const existing = String(store.getItem(sessionKey) || "").trim();
   if (existing) return existing;
 
-  const generated = `anon-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  const generated = createAnonymousSessionId();
   store.setItem(sessionKey, generated);
   return generated;
 }

@@ -3,6 +3,8 @@
 // Puro (sem UI, sem store). Aceita `_today` para facilitar testes.
 
 import { STEP_ESTIMATED_MINUTES, todayStr, addDays, diffDays } from "./fsrs";
+import { getDomainTestAgendaMeta, normalizeDomainTestClassificationLabel } from "./domainTest";
+import { getRecommendedSimuladoAgendaItem } from "./simStrategy";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -24,9 +26,33 @@ function isPendingReview(review) {
   return review && !review.done && !review.skipped && review.skipReason !== "dominio_previo" && !review.skippeadoPorDominio;
 }
 
-function makeReviewItem(tema, stepKey, review, horizonDate, today) {
+function getDomainTestInfo(tema = {}, review = {}, relearning = null) {
+  const classification = normalizeDomainTestClassificationLabel(
+    review.domainTestClassification
+      || relearning?.domainTestClassification
+      || tema.domainTest?.classification
+      || tema.dominioPrevio?.classification
+  );
+  const meta = getDomainTestAgendaMeta(classification);
+  if (!meta) return {};
+  return {
+    domainTestClassification: classification,
+    domainTestStatus: tema.dominioPrevio?.status || relearning?.recommendationStatus || null,
+    domainTestId: review.domainTestId || relearning?.domainTestId || tema.domainTest?.id || tema.dominioPrevio?.domainTestId || null,
+    domainTestAgendaLabel: meta.agendaLabel,
+    domainTestStepLabel: meta.stepLabel,
+    domainTestTaskLabel: meta.taskLabel,
+    domainTestRecommendation: meta.detailRecommendation,
+    domainTestConduta: tema.dominioPrevio?.conduta || relearning?.conduta || null,
+  };
+}
+
+function makeReviewItem(tema, stepKey, review, horizonDate, today, options = {}) {
   if (!isPendingReview(review) || !review.date || review.date > horizonDate) return null;
   const overdue = review.date < today;
+  const domainTestInfo = getDomainTestInfo(tema, review);
+  const type = options.type || (overdue ? "overdue" : "review");
+  const estimatedMinutes = options.estimatedMinutes ?? (STEP_ESTIMATED_MINUTES[stepKey] ?? STEP_ESTIMATED_MINUTES.d4);
   return {
     id: `${tema.id}-${stepKey}`,
     temaId: tema.id,
@@ -37,10 +63,19 @@ function makeReviewItem(tema, stepKey, review, horizonDate, today) {
     date: overdue ? today : review.date,
     originalDate: review.date,
     overdue,
-    estimatedMinutes: STEP_ESTIMATED_MINUTES[stepKey] ?? STEP_ESTIMATED_MINUTES.d4,
-    type: overdue ? "overdue" : "review",
+    estimatedMinutes,
+    type,
     priority: tema.importancia || "ALTA",
-    target: { temaId: tema.id, stepKey },
+    target: {
+      action: stepKey === "d0" ? "start_topic" : "review",
+      temaId: tema.id,
+      stepKey,
+      ...(domainTestInfo.domainTestClassification ? {
+        domainTestClassification: domainTestInfo.domainTestClassification,
+        domainTestStatus: domainTestInfo.domainTestStatus,
+      } : {}),
+    },
+    ...domainTestInfo,
   };
 }
 
@@ -63,11 +98,25 @@ function collectReviewItems(temas = [], horizonDate, today) {
   temas.forEach((tema) => {
     if (tema.unstarted) return;
     const rev = tema.rev || {};
+    const domainTestInfo = getDomainTestInfo(tema, rev.d0);
+    const shouldCollectDomainTestD0 =
+      domainTestInfo.domainTestClassification === "treat_as_new"
+      || rev.d0?.source === "domain_test_treat_as_new";
+
+    if (shouldCollectDomainTestD0) {
+      const d0Item = makeReviewItem(tema, "d0", rev.d0, horizonDate, today, {
+        type: (tema.importancia || "").toUpperCase() === "CRITICA" ? "d0_critical" : "new_topic",
+        estimatedMinutes: STEP_ESTIMATED_MINUTES.d0,
+      });
+      if (d0Item) items.push(d0Item);
+      if (isPendingReview(rev.d0)) return;
+    }
 
     // Relearning has priority over regular review scheduling.
     const rl = rev.relearning;
     if (rl && !rl.done && rl.date && rl.date <= horizonDate) {
       const overdue = rl.date < today;
+      const rlDomainTestInfo = getDomainTestInfo(tema, {}, rl);
       items.push({
         id: `${tema.id}-relearning`,
         temaId: tema.id,
@@ -81,7 +130,17 @@ function collectReviewItems(temas = [], horizonDate, today) {
         estimatedMinutes: STEP_ESTIMATED_MINUTES.relearning,
         type: "relearning",
         priority: tema.importancia || "ALTA",
-        target: { temaId: tema.id, stepKey: rl.targetStep || "d1" },
+        target: {
+          action: "review",
+          temaId: tema.id,
+          stepKey: rl.targetStep || "d1",
+          phase: "relearning",
+          ...(rlDomainTestInfo.domainTestClassification ? {
+            domainTestClassification: rlDomainTestInfo.domainTestClassification,
+            domainTestStatus: rlDomainTestInfo.domainTestStatus,
+          } : {}),
+        },
+        ...rlDomainTestInfo,
       });
       return;
     }
@@ -103,11 +162,17 @@ function collectScheduledD0Items(scheduledTopics = [], temas = [], horizonDate, 
   const startedIds = new Set(
     temas.filter((t) => !t.unstarted && t.rev?.d0?.done).map((t) => t.id)
   );
+  const domainTestD0Ids = new Set(
+    temas
+      .filter((t) => !t.unstarted && getDomainTestInfo(t, t.rev?.d0).domainTestClassification === "treat_as_new")
+      .map((t) => t.id)
+  );
 
   return scheduledTopics
     .filter((st) => {
       if (!st.scheduledDate || st.scheduledDate > horizonDate) return false;
       if (startedIds.has(st.temaId)) return false;
+      if (domainTestD0Ids.has(st.temaId)) return false;
       return true;
     })
     .map((st) => {
@@ -224,8 +289,16 @@ export function buildAgendaItems(
   const reviewItems = collectReviewItems(temas, horizonDate, today);
   const d0Items = collectScheduledD0Items(scheduledTopics, temas, horizonDate, today);
   const simItems = collectSimulados(simulados, horizonDate, today);
+  const recommendedSim = getRecommendedSimuladoAgendaItem({
+    dataProva: planSetup?.dataProva || planSetup?.examDate || planSetup?.targetDate,
+    simulados,
+    temas,
+    plat,
+    today,
+    horizonDate,
+  });
 
-  return [...reviewItems, ...d0Items, ...simItems];
+  return [...reviewItems, ...d0Items, ...simItems, recommendedSim].filter(Boolean);
 }
 
 // ─── Public: buildAgendaMonth ─────────────────────────────────────────────────

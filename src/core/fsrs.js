@@ -408,9 +408,13 @@ export function resolveAgainPolicy(stepKey, acerto, context = {}) {
       : { targetStep: "d4", delayDays: 1, phaseAfter: "learning", severity, shouldPushFuture: false };
   }
   if (stepKey === "d1") {
-    return severe
-      ? { targetStep: "d0", delayDays: 1, phaseAfter: "learning", severity, shouldPushFuture: true }
-      : { targetStep: "d1", delayDays: 1, phaseAfter: "learning", severity, shouldPushFuture: false };
+    return {
+      targetStep: "d1",
+      delayDays: 1,
+      phaseAfter: "learning",
+      severity,
+      shouldPushFuture: severe,
+    };
   }
   return { targetStep: "d0", delayDays: 1, phaseAfter: "learning", severity, shouldPushFuture: false };
 }

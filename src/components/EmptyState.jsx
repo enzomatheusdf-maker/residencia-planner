@@ -8,6 +8,11 @@ export default function EmptyState({
   secondaryAction,
   className = "",
 }) {
+  const primaryVariant = primaryAction?.variant || "primary";
+  const primaryClassName = primaryVariant === "secondary" || primaryVariant === "ghost"
+    ? "px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 text-[12px] font-bold border border-white/10 cursor-pointer"
+    : "px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white text-[12px] font-bold border-none cursor-pointer";
+
   return (
     <div className={`bg-[var(--surface-1)] border border-white/8 rounded-2xl p-6 text-center space-y-3 ${className}`.trim()}>
       {Icon && (
@@ -25,7 +30,7 @@ export default function EmptyState({
             <button
               type="button"
               onClick={primaryAction.onClick}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white text-[12px] font-bold border-none cursor-pointer"
+              className={primaryClassName}
             >
               {primaryAction.label}
             </button>

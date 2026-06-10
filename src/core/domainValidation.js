@@ -1,7 +1,8 @@
 // src/core/domainValidation.js
 // Lógica de validação de domínio prévio (puramente funcional).
 
-import { STEPS, S_BASE, addDays, todayStr, getAreaPrior, inferPhaseFromStep } from "./fsrs";
+import { STEPS, S_BASE, addDays, todayStr, getAreaPrior, inferPhaseFromStep, buildRev } from "./fsrs";
+import { getDomainTestRecommendation } from "./domainTest";
 
 export const DOMINIO_PREVIO_MIN_QUESTOES = 15;
 export const DOMINIO_PREVIO_MIN_ACERTO = 80;
@@ -23,7 +24,15 @@ function isSkippedReview(step = {}) {
 
 export function isTemaNaoIniciado(tema = {}) {
   const dp = tema.dominioPrevio || tema.validacaoDominio || {};
-  if (["validacao_pendente", "validado_previo", "reprovado"].includes(dp.status)) return false;
+  if ([
+    "validacao_pendente",
+    "validado_previo",
+    "reprovado",
+    "rescue_needed",
+    "treat_as_new",
+    "fragile_base",
+    "detail_noise",
+  ].includes(dp.status)) return false;
 
   const status = String(tema.status || "").toLowerCase();
   const hasFsrsSignal = Boolean(
@@ -366,6 +375,327 @@ export function buildRevComFalhaDominio(d0, esp, validacao, total, acertos) {
     : null;
 
   return rev;
+}
+
+function finiteNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, finiteNumber(value, 0)));
+}
+
+function clampFraction(value) {
+  return Math.max(0, Math.min(1, finiteNumber(value, 0)));
+}
+
+function normalizeDomainTestApplication(domainTestRecord = {}) {
+  const recommendation = getDomainTestRecommendation(
+    domainTestRecord?.classification?.label || domainTestRecord?.recommendation?.label
+  );
+  const questionBlock = domainTestRecord?.questionBlock || {};
+  const total = finiteNumber(questionBlock.total ?? domainTestRecord.total, 0);
+  const correct = finiteNumber(questionBlock.correct ?? domainTestRecord.correct ?? domainTestRecord.acertos, 0);
+  const percent = Number.isFinite(Number(questionBlock.percent))
+    ? clampPercent(questionBlock.percent)
+    : clampPercent(total > 0 ? Math.round((correct / total) * 100) : 0);
+  const brainDumpScore = clampPercent(domainTestRecord?.brainDump?.score ?? domainTestRecord.brainDumpScore);
+  const acertoFrac = clampFraction(percent / 100);
+  const now = todayStr();
+  const id = domainTestRecord.id || `domain_test_${Date.now()}`;
+
+  return {
+    id,
+    label: recommendation.label,
+    recommendation,
+    total,
+    correct,
+    percent,
+    acertoFrac,
+    brainDumpScore,
+    today: now,
+    record: {
+      ...domainTestRecord,
+      id,
+      appliedAt: now,
+      questionBlock: {
+        ...questionBlock,
+        total,
+        correct,
+        percent,
+        errorTypes: questionBlock.errorTypes || {},
+      },
+      brainDump: {
+        ...(domainTestRecord.brainDump || {}),
+        score: brainDumpScore,
+      },
+      classification: {
+        label: recommendation.label,
+        recommendedAction: recommendation.recommendedAction,
+        fsrsEntry: recommendation.fsrsEntry,
+      },
+      recommendation,
+    },
+  };
+}
+
+function buildDomainTestHistoryEvent(app, rating = "diagnostic") {
+  return {
+    id: `domain_test_${app.id}_${Date.now()}`,
+    stepKey: "domain_test",
+    reviewedAt: app.today,
+    source: "domain_test",
+    rating,
+    acerto: app.acertoFrac,
+    questoes: app.total,
+    official: app.label === "consolidated",
+    domainTestId: app.id,
+    classification: app.label,
+    fsrsEntry: app.recommendation.fsrsEntry,
+  };
+}
+
+function appendDomainTestRecord(tema = {}, record) {
+  const previous = Array.isArray(tema.domainTests) ? tema.domainTests : [];
+  return [...previous, record].slice(-10);
+}
+
+function buildDomainTestDominioPrevio(app) {
+  const isConsolidated = app.label === "consolidated";
+  const firstReview = isConsolidated ? "d21" : null;
+  const nextStep = app.label === "treat_as_new" ? "d0" : app.label === "consolidated" ? null : "d1";
+
+  return {
+    status: isConsolidated ? "validado_previo" : app.recommendation.status,
+    iniciadoEm: app.record.createdAt?.slice?.(0, 10) || app.today,
+    validadoEm: app.today,
+    validatedAt: app.today,
+    metodo: "domain_test",
+    source: "ja_domino_domain_test",
+    domainTestId: app.id,
+    classification: app.label,
+    recommendedAction: app.recommendation.recommendedAction,
+    fsrsEntry: app.recommendation.fsrsEntry,
+    recommendationStatus: app.recommendation.status,
+    conduta: app.recommendation.conduta,
+    questoesAlvo: 20,
+    total: app.total,
+    questoes: app.total,
+    acertos: app.correct,
+    percentual: app.percent,
+    acerto: app.acertoFrac,
+    brainDumpScore: app.brainDumpScore,
+    errorTypes: app.record.questionBlock?.errorTypes || {},
+    observacao: app.recommendation.message,
+    validado: isConsolidated,
+    intervaloInicial: isConsolidated ? 21 : null,
+    proximaRevisao: isConsolidated ? addDays(app.today, 21) : null,
+    primeiraRevisao: firstReview,
+    primeiraRevisaoLabel: firstReview ? getStepLabel(firstReview) : null,
+    primeiraRevisaoDate: firstReview ? addDays(app.today, 21) : null,
+    proximaEtapa: nextStep,
+    proximaEtapaLabel: nextStep ? getStepLabel(nextStep) : null,
+  };
+}
+
+function buildConsolidatedDomainTestRev(tema, app) {
+  const rev = buildRevComDominio(tema.d0 || app.today, tema.esp, tema.importancia, "alto", app.percent)
+    || buildRev(app.today, tema.esp);
+  const history = Array.isArray(rev.reviewHistory) ? rev.reviewHistory : [];
+  const d21Date = addDays(app.today, 21);
+
+  return {
+    ...rev,
+    d0: {
+      ...(rev.d0 || {}),
+      source: "domain_test",
+      domainTestId: app.id,
+      domainTestClassification: app.label,
+      acerto: app.acertoFrac,
+      questoes: app.total,
+      reviewedAt: app.today,
+      completedAt: app.today,
+      skippeadoPorDominio: true,
+    },
+    d1: {
+      ...(rev.d1 || {}),
+      source: "domain_test",
+      domainTestId: app.id,
+      domainTestClassification: app.label,
+      skipped: true,
+      skipReason: "domain_test_consolidated",
+    },
+    d4: {
+      ...(rev.d4 || {}),
+      source: "domain_test",
+      domainTestId: app.id,
+      domainTestClassification: app.label,
+      skipped: true,
+      skipReason: "domain_test_consolidated",
+    },
+    d7: {
+      ...(rev.d7 || {}),
+      source: "domain_test",
+      domainTestId: app.id,
+      domainTestClassification: app.label,
+      skipped: true,
+      skipReason: "domain_test_consolidated",
+      done: true,
+      reviewedAt: app.today,
+      completedAt: app.today,
+      acerto: app.acertoFrac,
+    },
+    d21: {
+      ...(rev.d21 || {}),
+      date: d21Date,
+      scheduledAt: d21Date,
+      done: false,
+      skipped: false,
+      skipReason: null,
+      source: "domain_test",
+      domainTestId: app.id,
+      domainTestClassification: app.label,
+    },
+    phase: "learning",
+    relearning: null,
+    reviewHistory: [...history, buildDomainTestHistoryEvent(app, "easy")].slice(-100),
+  };
+}
+
+function getDomainTestRecoveryProtocol(label) {
+  if (label === "fragile_base") {
+    return {
+      conceptualReview: true,
+      brainDump: true,
+      questions: true,
+      origem: "domain_test_fragile_base",
+    };
+  }
+  if (label === "detail_noise") {
+    return {
+      patternLog: true,
+      avoidCardExplosion: true,
+      questions: true,
+      origem: "domain_test_detail_noise",
+    };
+  }
+  return {
+    directedReview: true,
+    brainDump: true,
+    questions: true,
+    origem: "domain_test_rescue",
+  };
+}
+
+function buildRecoveryDomainTestRev(tema, app) {
+  const rev = buildRev(app.today, tema.esp);
+  const reason = `domain_test_${app.label}`;
+  const protocol = getDomainTestRecoveryProtocol(app.label);
+
+  rev.d0 = {
+    ...rev.d0,
+    date: app.today,
+    scheduledAt: app.today,
+    reviewedAt: app.today,
+    completedAt: app.today,
+    done: false,
+    skipped: true,
+    skipReason: reason,
+    acerto: app.acertoFrac,
+    questoes: app.total,
+    source: "domain_test",
+    domainTestId: app.id,
+    domainTestClassification: app.label,
+  };
+  rev.d1 = {
+    ...rev.d1,
+    date: app.today,
+    scheduledAt: app.today,
+    done: false,
+    skipped: false,
+    skipReason: null,
+    phase: "relearning",
+    source: "domain_test",
+    domainTestId: app.id,
+    domainTestClassification: app.label,
+  };
+  rev.phase = "relearning";
+  rev.relearning = {
+    date: app.today,
+    startedAt: app.today,
+    done: false,
+    reason,
+    targetStep: "d1",
+    severity: app.label === "rescue" ? "moderate" : "focused",
+    protocol,
+    domainTestClassification: app.label,
+    domainTestId: app.id,
+    recommendationStatus: app.recommendation.status,
+    conduta: app.recommendation.conduta,
+  };
+  rev.reviewHistory = [buildDomainTestHistoryEvent(app, "diagnostic")];
+
+  return rev;
+}
+
+function buildTreatAsNewDomainTestRev(tema, app) {
+  const rev = buildRev(app.today, tema.esp);
+  rev.d0 = {
+    ...rev.d0,
+    date: app.today,
+    scheduledAt: app.today,
+    done: false,
+    skipped: false,
+    skipReason: null,
+    source: "domain_test_treat_as_new",
+    domainTestId: app.id,
+    domainTestClassification: app.label,
+  };
+  rev.reviewHistory = [buildDomainTestHistoryEvent(app, "again")];
+  return rev;
+}
+
+function buildDomainTestRev(tema, app) {
+  if (app.label === "consolidated") return buildConsolidatedDomainTestRev(tema, app);
+  if (app.label === "treat_as_new") return buildTreatAsNewDomainTestRev(tema, app);
+  return buildRecoveryDomainTestRev(tema, app);
+}
+
+export function applyDomainTestToTema(tema, domainTestRecord, options = {}) {
+  if (!tema || !domainTestRecord) return tema;
+
+  const app = normalizeDomainTestApplication(domainTestRecord);
+  const dominioPrevio = buildDomainTestDominioPrevio(app);
+  const nextDomainTests = appendDomainTestRecord(tema, app.record);
+  const nextRev = buildDomainTestRev(tema, app);
+  const nextStatus = app.label === "consolidated"
+    ? "validado_previo"
+    : app.label === "treat_as_new"
+      ? "novo"
+      : app.recommendation.status;
+
+  return {
+    ...tema,
+    status: nextStatus,
+    unstarted: false,
+    dominio: app.label === "consolidated"
+      ? {
+        questoes: app.total,
+        acertos: app.correct,
+        pctAcerto: app.percent,
+        classificacao: "alto",
+        domainClassification: app.label,
+        validadoEm: app.today,
+        source: "domain_test",
+      }
+      : tema.dominio,
+    dominioPrevio,
+    domainTest: app.record,
+    domainTests: nextDomainTests,
+    rev: nextRev,
+    parentTopic: tema.parentTopic || options.parentTopic || null,
+  };
 }
 
 function normalizeAcertoInput(rawAcertos, total) {

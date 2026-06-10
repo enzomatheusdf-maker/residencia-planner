@@ -66,6 +66,14 @@ const LEGACY_ERROR_MAP = Object.freeze({
   memoria: ERROR_TYPE.MEMORY,
   confianca_mal_calibrada: ERROR_TYPE.CONFIDENCE_MISMATCH,
   // novos aliases uteis
+  clinical_reasoning_gap: ERROR_TYPE.REASONING,
+  premature_closure: ERROR_TYPE.REASONING,
+  anchoring: ERROR_TYPE.REASONING,
+  low_score: ERROR_TYPE.CONTENT,
+  overconfidence: ERROR_TYPE.CONFIDENCE_MISMATCH,
+  discrimination_gap: ERROR_TYPE.DIFFERENTIAL,
+  information_gathering_gap: ERROR_TYPE.PROBLEM_REPRESENTATION,
+  management_gap: ERROR_TYPE.MANAGEMENT,
   representacao_problema: ERROR_TYPE.PROBLEM_REPRESENTATION,
   diferencial: ERROR_TYPE.DIFFERENTIAL,
   incerteza_sct: ERROR_TYPE.SCT_UNCERTAINTY,
@@ -140,4 +148,3 @@ export function dominantErrorType(errors = []) {
   const summary = summarizeErrors(errors);
   return Object.entries(summary).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 }
-

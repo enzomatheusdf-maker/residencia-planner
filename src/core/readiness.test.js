@@ -76,6 +76,28 @@ describe("readiness forecast integration", () => {
     }));
   });
 
+  test("P3 what-if e opt-in e nao aparece no readiness padrao", () => {
+    const base = getReadinessData({
+      temas: [makeTema("a", "Clinica Medica", 0.8)],
+      simulados: [{ pct: 76, totalQuestions: 100 }],
+      meta: { dataProva: "2026-09-13" },
+      plat: "res",
+    });
+    const optedIn = getReadinessData({
+      temas: [makeTema("a", "Clinica Medica", 0.8)],
+      simulados: [{ pct: 76, totalQuestions: 100 }],
+      meta: { dataProva: "2026-09-13", featureFlags: { p3WhatIf: true } },
+      plat: "res",
+    });
+
+    expect(base.p3WhatIf).toBeNull();
+    expect(optedIn.p3WhatIf).toEqual(expect.objectContaining({
+      enabled: true,
+      version: "p3_what_if_v1",
+      scenarios: expect.any(Array),
+    }));
+  });
+
   test("cobertura usa temas realmente vistos, nao apenas temas importados", () => {
     const result = getReadinessData({
       temas: [

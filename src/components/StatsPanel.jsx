@@ -18,7 +18,7 @@ import {
 import {
   evaluateMetric, formatMetricValue, METRIC_STATUS,
 } from "../core/metricsRegistry";
-import { compareReadinessToSimulado, createReadinessSnapshot } from "../core/readinessValidation";
+import { compareReadinessToSimulado, createReadinessSnapshot, summarizeForecastBacktests } from "../core/readinessValidation";
 import { calcPrevisaoDesempenho, CONFIDENCE_LABEL } from "../core/forecast";
 import { safeTrackEvent } from "../core/telemetry";
 import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
@@ -26,7 +26,7 @@ import { saldoRitmo } from "../core/volume";
 import { getEnamedIntel } from "../core/enamedIntel";
 import { calculateClinicalReasoningScoreDetailed, summarizeClinicalCompetence } from "../core/clinicalReasoningScoring";
 import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
-import { CASOS_CLINICOS } from "../constants/casosClinicos";
+import { CLINICAL_CASES_INDEX } from "../constants/clinicalCasesIndex";
 import EnamedMapa from "./EnamedMapa";
 import AdvancedSection from "./AdvancedSection";
 import MetricCard from "./MetricCard";
@@ -225,6 +225,10 @@ export default function StatsPanel({ setView = null }) {
       latestSimulado || {}
     );
   }, [plat, readinessData.score, simulados]);
+  const forecastBacktestSummary = useMemo(() => {
+    const records = (meta?.forecastBacktests || []).filter((record) => !record?.plat || record.plat === plat);
+    return summarizeForecastBacktests(records);
+  }, [meta?.forecastBacktests, plat]);
 
   useEffect(() => {
     if (readinessData.score == null) return;
@@ -569,7 +573,7 @@ export default function StatsPanel({ setView = null }) {
   // P4-A: usa fonte canonica de clinicalReasoningScoring.js
   const clinicalCases = useMemo(() => {
     const customCases = Array.isArray(meta?.clinicalCustomCases) ? meta.clinicalCustomCases : [];
-    return [...CASOS_CLINICOS, ...customCases];
+    return [...CLINICAL_CASES_INDEX, ...customCases];
   }, [meta?.clinicalCustomCases]);
 
   const raciocinioStats = useMemo(() => {
@@ -789,6 +793,35 @@ export default function StatsPanel({ setView = null }) {
                 ? `Preparo estimado acima do resultado real — erro de ${readinessValidation.absoluteError} pts. Aumente a frequência de simulados.`
                 : `Preparo estimado abaixo do resultado real — erro de ${readinessValidation.absoluteError} pts. Bom sinal de crescimento.`}
             </p>
+            <div className="mt-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[10px] font-black uppercase tracking-wider text-gray-500">Backtest do forecast</p>
+                <Badge tone={
+                  forecastBacktestSummary.status === "alinhado" ? "green" :
+                  forecastBacktestSummary.status === "observando" ? "blue" :
+                  forecastBacktestSummary.status === "recalibrar" ? "amber" :
+                  "neutral"
+                }>
+                  {forecastBacktestSummary.n} amostra{forecastBacktestSummary.n === 1 ? "" : "s"}
+                </Badge>
+              </div>
+              <p className="mt-2 text-[12px] text-gray-300">
+                {forecastBacktestSummary.n === 0
+                  ? "Ainda sem backtest persistido. O proximo simulado registrado vai comparar o forecast anterior com o resultado real."
+                  : `Erro medio absoluto: ${forecastBacktestSummary.meanAbsoluteError} pts. ${
+                    forecastBacktestSummary.status === "alinhado"
+                      ? "Modelo alinhado para uso como sinal interno."
+                      : forecastBacktestSummary.status === "observando"
+                        ? "Modelo em observacao; use a banda de confianca."
+                        : "Modelo precisa de mais simulados antes de orientar decisoes fortes."
+                  }`}
+              </p>
+              {forecastBacktestSummary.latest && (
+                <p className="mt-1 text-[10px] text-gray-500">
+                  Ultimo: estimado {forecastBacktestSummary.latest.estimated}% vs real {forecastBacktestSummary.latest.actual}%.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* KPIs adicionais */}

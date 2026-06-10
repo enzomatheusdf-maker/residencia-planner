@@ -1,11 +1,12 @@
 import { STEPS, todayStr, diffDays, getWorkloadProjection, getEstimatedMinutesForStep } from "./fsrs";
 import { buildAgendaItems, getAgendaDaySummary } from "./agendaEngine";
 import { getFirstActionAfterOnboarding } from "./onboardingEngine";
-import { CASOS_CLINICOS } from "../constants/casosClinicos";
+import { CLINICAL_CASES_INDEX } from "../constants/clinicalCasesIndex";
 import { calcTrueRetentionDetailed } from "../hooks/useMetrics";
 import { dominantErrorType, summarizeErrors } from "./errorTaxonomy";
 import { getCorrectiveAction } from "./errorActionMap";
 import { getReviewDisplayLabel } from "./domainValidation";
+import { getDomainTestAgendaMeta, normalizeDomainTestClassificationLabel } from "./domainTest";
 import { deriveOperationalMode } from "./operationalMode";
 import { estimateStudentMastery } from "./mastery";
 import { getTemaStatsFromLearningEvents } from "./learningEvent";
@@ -48,7 +49,7 @@ function collectClinicalCaseSignals(casosProgresso = {}, today = todayStr()) {
   const due = Object.entries(casosProgresso)
     .filter(([, item]) => item?.proximaData && item.proximaData <= today)
     .map(([casoId, item]) => {
-      const match = CASOS_CLINICOS.find(c => c.id === casoId);
+      const match = CLINICAL_CASES_INDEX.find(c => c.id === casoId);
       return {
         casoId,
         proximaData: item.proximaData,
@@ -80,6 +81,26 @@ function workloadLevelByMinutes(minutes = 0) {
   return "ok";
 }
 
+function getDomainTestInfo(tema = {}, step = {}, relearning = null) {
+  const classification = normalizeDomainTestClassificationLabel(
+    step.domainTestClassification
+      || relearning?.domainTestClassification
+      || tema.domainTest?.classification
+      || tema.dominioPrevio?.classification
+  );
+  const meta = getDomainTestAgendaMeta(classification);
+  if (!meta) return {};
+  return {
+    domainTestClassification: classification,
+    domainTestStatus: tema.dominioPrevio?.status || relearning?.recommendationStatus || null,
+    domainTestId: step.domainTestId || relearning?.domainTestId || tema.domainTest?.id || tema.dominioPrevio?.domainTestId || null,
+    domainTestAgendaLabel: meta.agendaLabel,
+    domainTestTaskLabel: meta.taskLabel,
+    domainTestStepLabel: meta.stepLabel,
+    domainTestConduta: tema.dominioPrevio?.conduta || relearning?.conduta || null,
+  };
+}
+
 function maxWorkloadLevel(a = "ok", b = "ok") {
   const rank = { ok: 0, moderate: 1, high: 2 };
   return (rank[b] || 0) > (rank[a] || 0) ? b : a;
@@ -89,7 +110,7 @@ function maxWorkloadLevel(a = "ok", b = "ok") {
  * Analisa erros recentes (revisoes + simulados) e retorna o tipo dominante
  * com sua acao corretiva quando houver amostra suficiente.
  */
-function collectDominantErrorSignal(temas = [], simulados = [], plat = "res") {
+function collectDominantErrorSignal(temas = [], simulados = [], plat = "res", learningEvents = []) {
   const fromReviews = temas.flatMap((tema) =>
     STEPS.flatMap((step) => {
       const review = tema.rev?.[step.key];
@@ -108,7 +129,23 @@ function collectDominantErrorSignal(temas = [], simulados = [], plat = "res") {
       tempoExcedido: Boolean(q.tempoExcedido),
     }))
   );
-  const allErrors = [...fromReviews, ...fromSimulados];
+  const fromClinicalEvents = (learningEvents || [])
+    .filter((event) => event?.source === "clinical_drill" && (!event.plat || event.plat === plat))
+    .flatMap((event) => {
+      const motivos = Array.isArray(event.errors?.motivosErro)
+        ? event.errors.motivosErro
+        : Array.isArray(event.motivosErro)
+          ? event.motivosErro
+          : [];
+      const dominant = event.errors?.dominantError || event.dominantError || null;
+      const types = Array.from(new Set([...motivos, dominant].filter(Boolean)));
+      return types.map((tipoErro) => ({
+        tipoErro,
+        acertou: false,
+        source: "clinical_drill",
+      }));
+    });
+  const allErrors = [...fromReviews, ...fromSimulados, ...fromClinicalEvents];
   const dominant = dominantErrorType(allErrors);
   const total = allErrors.length;
   const summary = summarizeErrors(allErrors);
@@ -150,16 +187,30 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
   let computedDueMinutes = 0;
   const dueItems = [];
   const relearningItems = [];
+  const domainTestCounts = {};
+  const domainTestItems = [];
 
   for (const tema of temas) {
     if (!tema || tema.unstarted) continue;
     const rev = tema.rev || {};
+    const temaDomainTestInfo = getDomainTestInfo(tema);
+    if (temaDomainTestInfo.domainTestClassification) {
+      domainTestCounts[temaDomainTestInfo.domainTestClassification] =
+        (domainTestCounts[temaDomainTestInfo.domainTestClassification] || 0) + 1;
+      domainTestItems.push({
+        temaId: tema.id,
+        temaNome: tema.nome,
+        esp: tema.esp,
+        ...temaDomainTestInfo,
+      });
+    }
     const history = Array.isArray(rev.reviewHistory) ? rev.reviewHistory : [];
     reviewHistoryEvents += history.length;
     if (rev.meta?.schedulerWarning === "missing_rating") {
       missingRatingWarnings += 1;
     }
     if (rev.phase === "relearning" || rev.relearning?.startedAt) {
+      const relearningDomainTestInfo = getDomainTestInfo(tema, {}, rev.relearning);
       relearningItems.push({
         temaId: tema.id,
         temaNome: tema.nome,
@@ -167,6 +218,7 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
         fromStep: rev.relearning?.fromStep || null,
         targetStep: rev.relearning?.targetStep || null,
         startedAt: rev.relearning?.startedAt || null,
+        ...relearningDomainTestInfo,
       });
     }
 
@@ -184,6 +236,7 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
       if (step.done || !step.date) continue;
 
       if (step.date < today) {
+        const domainTestInfo = getDomainTestInfo(tema, step);
         computedDueMinutes += getEstimatedMinutesForStep(stepKey, step);
         overdueCount += 1;
         const delayDays = Math.max(0, diffDays(step.date, today));
@@ -197,8 +250,10 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
           date: step.date,
           delayDays,
           phase: step.phase || null,
+          ...domainTestInfo,
         });
       } else if (step.date === today) {
+        const domainTestInfo = getDomainTestInfo(tema, step);
         computedDueMinutes += getEstimatedMinutesForStep(stepKey, step);
         dueTodayCount += 1;
         dueItems.push({
@@ -210,6 +265,7 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
           date: step.date,
           delayDays: 0,
           phase: step.phase || null,
+          ...domainTestInfo,
         });
       }
     }
@@ -238,6 +294,8 @@ export function collectMentorSchedulerSignals(temas = [], options = {}) {
     nextDueItem,
     relearningCount: relearningItems.length,
     relearningItems,
+    domainTestCounts,
+    domainTestItems,
     missingRatingWarnings,
     missingReviewedAtCount,
     reviewHistoryEvents,
@@ -298,16 +356,17 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     context: { plat, operationalMode },
   });
   const pendingExamAnalysis = Boolean(simulados.length > 0 && !latestEnamed);
-  const errorSignal = collectDominantErrorSignal(temas, simulados, plat);
+  const errorSignal = collectDominantErrorSignal(temas, simulados, plat, state.learningEvents || []);
   const consolidatedCorpus = countConsolidatedCorpusAreas(temas);
 
   // ── Onboarding v2 signals ──────────────────────────────────────────────────
   const planSetup = meta?.planSetup || null;
   const scheduledTopics = (state.calendarProvider?.scheduledTopics) || [];
   const agendaItems = planSetup?.completedAt
-    ? buildAgendaItems(temas, scheduledTopics, simulados, planSetup, plat, 30, today)
+    ? buildAgendaItems(temas, scheduledTopics, simulados, { ...planSetup, dataProva: meta?.dataProva }, plat, 30, today)
     : [];
   const agendaTodaySummary = getAgendaDaySummary(agendaItems, today);
+  const recommendedSimulation = (agendaTodaySummary.items || []).find((item) => item.type === "simulation" && item.recommended) || null;
   const firstAction = (planSetup?.completedAt && temas.length === 0)
     ? getFirstActionAfterOnboarding(scheduledTopics, planSetup, today)
     : null;
@@ -336,6 +395,7 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     enamed: latestEnamed,
     weakSubject: weakSubject || null,
     pendingExamAnalysis,
+    recommendedSimulation,
     clinical,
     readinessData: extras.readinessData || null,
     userAvailableMinutes,

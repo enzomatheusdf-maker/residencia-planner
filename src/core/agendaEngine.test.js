@@ -247,12 +247,105 @@ describe("buildAgendaItems", () => {
     expect(rl.phase).toBe("relearning");
   });
 
+  it("puts treat_as_new domain test into agenda as D0", () => {
+    const tema = makeTema({
+      dominioPrevio: { status: "treat_as_new", classification: "treat_as_new" },
+      domainTest: { classification: { label: "treat_as_new" } },
+      rev: {
+        d0: {
+          date: TODAY,
+          scheduledAt: TODAY,
+          done: false,
+          phase: "learning",
+          source: "domain_test_treat_as_new",
+          domainTestClassification: "treat_as_new",
+        },
+      },
+    });
+    const items = buildAgendaItems([tema], [], [], {}, "res", 30, TODAY);
+    const d0 = items.find((i) => i.temaId === "tema-1" && i.stepKey === "d0");
+    expect(d0).toBeTruthy();
+    expect(d0.type).toBe("new_topic");
+    expect(d0.domainTestClassification).toBe("treat_as_new");
+    expect(d0.domainTestAgendaLabel).toBe("D0 normal");
+    expect(d0.target.action).toBe("start_topic");
+  });
+
+  it("labels rescue domain test relearning as directed rescue", () => {
+    const tema = makeTema({
+      dominioPrevio: { status: "rescue_needed", classification: "rescue", conduta: "revisao_dirigida_mais_questoes" },
+      domainTest: { classification: { label: "rescue" } },
+      rev: {
+        d0: { date: TODAY, done: false, skipped: true, skipReason: "domain_test_rescue" },
+        d1: { date: TODAY, done: false, scheduledAt: TODAY, phase: "relearning" },
+        phase: "relearning",
+        relearning: {
+          date: TODAY,
+          done: false,
+          targetStep: "d1",
+          domainTestClassification: "rescue",
+          conduta: "revisao_dirigida_mais_questoes",
+        },
+      },
+    });
+    const items = buildAgendaItems([tema], [], [], {}, "res", 30, TODAY);
+    const rl = items.find((i) => i.type === "relearning" && i.temaId === "tema-1");
+    expect(rl).toBeTruthy();
+    expect(rl.domainTestClassification).toBe("rescue");
+    expect(rl.domainTestAgendaLabel).toBe("Resgate dirigido");
+    expect(rl.domainTestTaskLabel).toBe("Revisao dirigida");
+    expect(rl.target.domainTestClassification).toBe("rescue");
+  });
+
+  it("keeps consolidated domain test out of D0 and exposes D21 metadata", () => {
+    const tema = makeTema({
+      dominioPrevio: { status: "validado_previo", validado: true, classification: "consolidated", primeiraRevisao: "d21", primeiraRevisaoDate: TODAY },
+      domainTest: { classification: { label: "consolidated" } },
+      rev: {
+        d0: { date: TODAY, done: true, skipped: true, skippeadoPorDominio: true, domainTestClassification: "consolidated" },
+        d1: { date: TODAY, done: true, skipped: true, skipReason: "domain_test_consolidated" },
+        d4: { date: TODAY, done: true, skipped: true, skipReason: "domain_test_consolidated" },
+        d7: { date: TODAY, done: true, skipped: true, skipReason: "domain_test_consolidated" },
+        d21: { date: TODAY, scheduledAt: TODAY, done: false, phase: "review", source: "domain_test", domainTestClassification: "consolidated" },
+      },
+    });
+    const items = buildAgendaItems([tema], [], [], {}, "res", 30, TODAY);
+    expect(items.some((i) => i.temaId === "tema-1" && i.stepKey === "d0")).toBe(false);
+    const d21 = items.find((i) => i.temaId === "tema-1" && i.stepKey === "d21");
+    expect(d21).toBeTruthy();
+    expect(d21.domainTestClassification).toBe("consolidated");
+    expect(d21.domainTestAgendaLabel).toBe("Dominio consolidado");
+  });
+
   it("includes simulados", () => {
     const simulados = [{ id: "sim-1", date: NEAR, nome: "ENAMED 2026", done: false }];
     const items = buildAgendaItems([], [], simulados, {}, "res", 30, TODAY);
     const sim = items.find((i) => i.type === "simulation");
     expect(sim).toBeTruthy();
     expect(sim.estimatedMinutes).toBe(120);
+  });
+
+  it("adds recommended baseline simulado when exam date exists and no simulado was done", () => {
+    const items = buildAgendaItems(
+      [makeTema()],
+      [],
+      [],
+      { dataProva: "2026-10-25" },
+      "res",
+      30,
+      TODAY
+    );
+    const sim = items.find((i) => i.type === "simulation" && i.recommended);
+    expect(sim).toBeTruthy();
+    expect(sim.date).toBe(TODAY);
+    expect(sim.target).toMatchObject({ action: "simulation", recommended: true, tipo: "Baseline" });
+  });
+
+  it("does not duplicate recommended simulado when an open scheduled simulado exists", () => {
+    const simulados = [{ id: "sim-1", date: NEAR, nome: "ENAMED 2026", done: false }];
+    const items = buildAgendaItems([makeTema()], [], simulados, { dataProva: "2026-10-25" }, "res", 30, TODAY);
+    expect(items.filter((i) => i.type === "simulation")).toHaveLength(1);
+    expect(items.some((i) => i.recommended)).toBe(false);
   });
 
   it("is platform-neutral (vest items not filtered here)", () => {

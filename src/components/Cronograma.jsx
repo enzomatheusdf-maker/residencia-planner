@@ -17,7 +17,7 @@ import {
 import { getEnamedContextBadge } from "../core/enamedIntel";
 import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
 import CalendarProviderSelector from "./CalendarProviderSelector";
-import { ModalValidarDominio } from "./Modals";
+import DomainTestModal from "./DomainTestModal";
 import RetrievabilitySpark from "./RetrievabilitySpark";
 import EmptyState from "./EmptyState";
 import AgendaMonthGrid from "./AgendaMonthGrid";
@@ -278,8 +278,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
     meta,
   } = useStore();
   const setMeta = useStore((s) => s.setMeta);
-  const iniciarValidacaoDominioPrevio = useStore((s) => s.iniciarValidacaoDominioPrevio);
-  const validarDominio = useStore((s) => s.validarDominio);
+  const aplicarDomainTestResultado = useStore((s) => s.aplicarDomainTestResultado);
   const showToast = useStore((s) => s.showToast);
   const temas = useStore((s) => s[plat].temas);
   const planos = getCronogramasByPlat(plat);
@@ -1123,7 +1122,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                             });
                                           }}
                                           className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-200 text-[10px] font-black transition-all border border-white/10 flex items-center justify-center gap-1 cursor-pointer"
-                                          title="Use se você já estudou este tema. O app cria validação curta: 15+ questões e 80%+ para entrar no ciclo de revisão."
+                                          title="Use se voce ja estudou este tema. O app abre o Teste de Dominio: Brain Dump de 8 minutos + 20-30 questoes."
                                         >
                                           <BadgeCheck size={11} /> Já domino
                                         </button>
@@ -1200,7 +1199,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                 beginDomainValidation(tema || basePayload);
                               }}
                               className="flex-1 py-2 rounded-xl bg-black/25 border border-white/10 hover:bg-white/10 text-[12px] font-bold text-gray-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                              title="Use se você já estudou este tema. O app cria validação curta: 15+ questões e 80%+ para entrar no ciclo de revisão."
+                              title="Use se voce ja estudou este tema. O app abre o Teste de Dominio: Brain Dump de 8 minutos + 20-30 questoes."
                             >
                               <BadgeCheck size={13} /> Já domino
                             </button>
@@ -1208,7 +1207,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                           <p className="text-[10px] text-gray-500 leading-relaxed">
                             Use se você já estudou este tema.
                             {" "}
-                            <InfoTooltip texto="O app cria uma validação curta: 15+ questões e 80%+ para pular exposição inicial e entrar no ciclo de revisão." />
+                            <InfoTooltip texto="O app abre o Teste de Dominio: Brain Dump de 8 minutos, autocorrecao e 20-30 questoes antes de decidir a conduta." />
                           </p>
                         </div>
                       );
@@ -1247,21 +1246,21 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
         </React.Suspense>
       )}
       {temaValidando && (
-        <ModalValidarDominio
+        <DomainTestModal
+          open
           tema={temaValidando}
-          onConfirm={({ questoes, acertos }) => {
-            const resultado = validarDominio(plat, temaValidando.id, { questoes, acertos });
+          source="ja_domino"
+          onApply={(domainTestRecord) => {
+            const resultado = aplicarDomainTestResultado(plat, temaValidando.id, domainTestRecord);
             if (showToast) {
-              showToast(resultado?.observacao || "Validação de domínio registrada para este tema.");
+              showToast(resultado?.observacao || domainTestRecord?.recommendation?.message || "Teste de dominio registrado para este tema.");
             }
             setTemaValidando(null);
           }}
-          onStartLater={() => {
-            iniciarValidacaoDominioPrevio(plat, temaValidando.id);
-            if (showToast) showToast("Validação marcada como pendente para este tema.");
-            setTemaValidando(null);
+          onSaveDraft={() => {
+            if (showToast) showToast("Rascunho do teste de dominio salvo localmente.");
           }}
-          onCancel={() => setTemaValidando(null)}
+          onClose={() => setTemaValidando(null)}
         />
       )}
     </div>

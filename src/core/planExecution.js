@@ -1,3 +1,5 @@
+import { getDomainTestAgendaMeta } from "./domainTest";
+
 export const PLAN_EXECUTION_STATES = {
   NO_PLAN: "no_plan",
   PLAN_READY_UNACCEPTED: "plan_ready_unaccepted",
@@ -22,6 +24,8 @@ export function getAgendaTaskTarget(item = {}) {
 }
 
 export function getAgendaTaskLabel(item = {}) {
+  const domainMeta = getDomainTestAgendaMeta(item.domainTestClassification);
+  if (domainMeta?.taskLabel) return domainMeta.taskLabel;
   if (item.type === "simulation") return "Registrar simulado";
   if (item.type === "new_topic" || item.type === "d0_critical") return "Estudar tema";
   if (item.type === "review" || item.type === "overdue" || item.type === "relearning") return "Revisar";

@@ -1,4 +1,5 @@
 import {
+  applyDomainTestToTema,
   applyDominioPrevioToTema,
   calcularDominioPrevio,
   DOMINIO_PREVIO_MIN_QUESTOES,
@@ -294,5 +295,125 @@ describe("dominio previo", () => {
     expect(queue[0].stepKey).toBe("d21");
     expect(queue[0].step.label).toBe("D21");
     expect(queue.some((item) => item.stepKey === "d1")).toBe(false);
+  });
+});
+
+describe("domain test scheduling", () => {
+  function makeTema() {
+    const today = todayStr();
+    return {
+      id: "tema-domain-test",
+      nome: "Choque",
+      esp: "Cirurgia",
+      prio: "Alta",
+      importancia: "ALTA",
+      d0: today,
+      unstarted: true,
+      rev: buildRev(today, "Cirurgia"),
+    };
+  }
+
+  function makeDomainTestRecord(label, overrides = {}) {
+    const total = overrides.total ?? 20;
+    const correct = overrides.correct ?? 18;
+    const percent = overrides.percent ?? Math.round((correct / total) * 100);
+    return {
+      id: `dt_${label}`,
+      createdAt: `${todayStr()}T10:00:00.000Z`,
+      source: "ja_domino",
+      brainDump: {
+        score: overrides.brainDumpScore ?? 90,
+        checklist: {},
+        textByField: {},
+      },
+      questionBlock: {
+        total,
+        correct,
+        percent,
+        errorTypes: overrides.errorTypes || {},
+        notes: "",
+      },
+      classification: { label },
+    };
+  }
+
+  test("consolidated domain test schedules D21 and skips early reviews", () => {
+    const updated = applyDomainTestToTema(
+      makeTema(),
+      makeDomainTestRecord("consolidated", { correct: 16, percent: 80, brainDumpScore: 75 })
+    );
+
+    expect(updated.status).toBe("validado_previo");
+    expect(updated.unstarted).toBe(false);
+    expect(updated.dominioPrevio.status).toBe("validado_previo");
+    expect(updated.dominioPrevio.primeiraRevisao).toBe("d21");
+    expect(updated.rev.d0.skippeadoPorDominio).toBe(true);
+    expect(updated.rev.d1.skipped).toBe(true);
+    expect(updated.rev.d7.skipped).toBe(true);
+    expect(updated.rev.d21.done).toBe(false);
+    expect(updated.rev.d21.date).toBe(addDays(todayStr(), 21));
+
+    const next = getNextReviewForTema(updated);
+    expect(next.stepKey).toBe("d21");
+    expect(next.label).toBe("D21");
+  });
+
+  test("rescue domain test creates directed relearning without completing D0", () => {
+    const updated = applyDomainTestToTema(
+      makeTema(),
+      makeDomainTestRecord("rescue", { correct: 14, percent: 70, brainDumpScore: 80 })
+    );
+
+    expect(updated.status).toBe("rescue_needed");
+    expect(updated.dominioPrevio.status).toBe("rescue_needed");
+    expect(updated.rev.d0.done).toBe(false);
+    expect(updated.rev.d0.skipped).toBe(true);
+    expect(updated.rev.relearning.targetStep).toBe("d1");
+    expect(updated.rev.relearning.protocol.directedReview).toBe(true);
+    expect(updated.rev.d1.date).toBe(todayStr());
+  });
+
+  test("treat_as_new domain test enters normal D0 today", () => {
+    const updated = applyDomainTestToTema(
+      makeTema(),
+      makeDomainTestRecord("treat_as_new", { correct: 11, percent: 55, brainDumpScore: 50 })
+    );
+
+    expect(updated.status).toBe("novo");
+    expect(updated.dominioPrevio.status).toBe("treat_as_new");
+    expect(updated.rev.d0.date).toBe(todayStr());
+    expect(updated.rev.d0.done).toBe(false);
+    expect(updated.rev.d0.skipped).toBe(false);
+    expect(updated.rev.relearning).toBeNull();
+  });
+
+  test("fragile_base domain test schedules conceptual recovery", () => {
+    const updated = applyDomainTestToTema(
+      makeTema(),
+      makeDomainTestRecord("fragile_base", { correct: 18, percent: 90, brainDumpScore: 25 })
+    );
+
+    expect(updated.status).toBe("fragile_base");
+    expect(updated.rev.relearning.targetStep).toBe("d1");
+    expect(updated.rev.relearning.protocol.conceptualReview).toBe(true);
+    expect(updated.rev.d0.skipped).toBe(true);
+  });
+
+  test("detail_noise domain test records pattern without card explosion", () => {
+    const updated = applyDomainTestToTema(
+      makeTema(),
+      makeDomainTestRecord("detail_noise", {
+        correct: 16,
+        percent: 80,
+        brainDumpScore: 80,
+        errorTypes: { irrelevantDetail: 4, content: 1 },
+      })
+    );
+
+    expect(updated.status).toBe("detail_noise");
+    expect(updated.dominioPrevio.conduta).toBe("registrar_padrao_de_erro");
+    expect(updated.rev.relearning.protocol.patternLog).toBe(true);
+    expect(updated.rev.relearning.protocol.avoidCardExplosion).toBe(true);
+    expect(updated.domainTest.classification.label).toBe("detail_noise");
   });
 });

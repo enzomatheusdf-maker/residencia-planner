@@ -5,7 +5,8 @@ import { getStepDefinitions, getBrainDumpFields } from "../constants/stepDefinit
 import { ESP_COLORS, DEMO_TEMA_ID } from "../core/fsrs";
 import { useStore } from "../core/store";
 import { TourBalloon, ProgressiveTooltip } from "./Primitives";
-import { ModalValidarDominio, StructuredErrorsList } from "./Modals";
+import { StructuredErrorsList } from "./Modals";
+import DomainTestModal from "./DomainTestModal";
 import SessionClosureModal from "./SessionClosureModal";
 import { isTemaNaoIniciado } from "../core/domainValidation";
 import { getMentorPhrase, getRecentPhrases, trackRecentPhrase, isExhaustionDetected } from "../core/mentor";
@@ -15,7 +16,7 @@ import { createSessionReflection } from "../core/sessionReflection";
 import ErrorActionPrompt from "./ErrorActionPrompt";
 import ClinicalTaskPanel from "./ClinicalTaskPanel";
 import { getReviewTaskForStep } from "../core/reviewTaskPlanner";
-import { CASOS_CLINICOS } from "../constants/casosClinicos";
+import { CLINICAL_CASES_INDEX } from "../constants/clinicalCasesIndex";
 import { buildReviewPreview } from "../core/reviewOutcome";
 import { buildInterleavingPlan } from "../core/interleavingPlanner";
 import RetrievabilitySpark from "./RetrievabilitySpark";
@@ -54,8 +55,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   // 1. SELECT TARGET THEME & STEP
   const intelligentQueue = useFilaInteligente(temas);
   const updateTema = useStore((s) => s.updateTema);
-  const validarDominio = useStore((s) => s.validarDominio);
-  const iniciarValidacaoDominioPrevio = useStore((s) => s.iniciarValidacaoDominioPrevio);
+  const aplicarDomainTestResultado = useStore((s) => s.aplicarDomainTestResultado);
   const showToast = useStore((s) => s.showToast);
   const updateGamifStreak = useStore((s) => s.updateGamifStreak);
   const learningEvents = useStore((s) => s.learningEvents || []);
@@ -154,7 +154,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
     return getReviewTaskForStep({
       tema,
       stepKey,
-      casos: CASOS_CLINICOS,
+      casos: CLINICAL_CASES_INDEX,
       progresso: casosProgresso,
       plat,
       modulos: meta?.modulos,
@@ -1923,19 +1923,19 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
         />
       )}
       {temaValidando && (
-        <ModalValidarDominio
+        <DomainTestModal
+          open
           tema={temaValidando}
-          onConfirm={({ questoes, acertos }) => {
-            const resultado = validarDominio(plat, temaValidando.id, { questoes, acertos });
-            showToast(resultado?.observacao || "Validação de domínio registrada para este tema.");
+          source="ja_domino"
+          onApply={(domainTestRecord) => {
+            const resultado = aplicarDomainTestResultado(plat, temaValidando.id, domainTestRecord);
+            showToast(resultado?.observacao || domainTestRecord?.recommendation?.message || "Teste de dominio registrado para este tema.");
             setTemaValidando(null);
           }}
-          onStartLater={() => {
-            iniciarValidacaoDominioPrevio(plat, temaValidando.id);
-            showToast("Validação marcada para fazer depois.");
-            setTemaValidando(null);
+          onSaveDraft={() => {
+            showToast("Rascunho do teste de dominio salvo localmente.");
           }}
-          onCancel={() => setTemaValidando(null)}
+          onClose={() => setTemaValidando(null)}
         />
       )}
       <SessionClosureModal

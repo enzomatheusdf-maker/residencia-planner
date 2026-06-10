@@ -8,6 +8,7 @@ import {
   getUserRootPath,
   getUserStatePath,
   isSameUserScope,
+  assertOwnerUidMatchesScope,
 } from "./userScope";
 
 describe("userScope", () => {
@@ -26,7 +27,9 @@ describe("userScope", () => {
   });
 
   test("gera chave anonima com fallback de sessao", () => {
-    expect(getAnonymousStorageKey("", "dev")).toBe("medrev:dev:anonymous:default:store");
+    const key = getAnonymousStorageKey("", "dev");
+    expect(key).toMatch(/^medrev:dev:anonymous:anon-[a-z0-9]+-[a-z0-9]+:store$/);
+    expect(getAnonymousStorageKey("", "dev")).toBe(key);
   });
 
   test("uids diferentes geram escopos diferentes", () => {
@@ -49,6 +52,12 @@ describe("userScope", () => {
     expect(isSameUserScope("abc", "abc")).toBe(true);
     expect(isSameUserScope("abc", "def")).toBe(false);
     expect(isSameUserScope("", "def")).toBe(false);
+  });
+
+  test("valida ownerUid contra escopo ativo", () => {
+    expect(assertOwnerUidMatchesScope("abc", "abc")).toBe("abc");
+    expect(assertOwnerUidMatchesScope("", "abc")).toBe("abc");
+    expect(() => assertOwnerUidMatchesScope("abc", "def", "remote")).toThrow("Owner scope mismatch");
   });
 
   test("ambiente retorna token util", () => {

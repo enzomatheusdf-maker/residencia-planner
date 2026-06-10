@@ -19,7 +19,7 @@ import {
 } from "firebase/auth";
 import { getFirestore, setDoc, getDoc, deleteDoc } from "firebase/firestore";
 import { getAnalytics, isSupported, logEvent } from "firebase/analytics";
-import { assertUid } from "../core/userScope";
+import { assertOwnerUidMatchesScope, assertUid } from "../core/userScope";
 import { assertActiveUserScope } from "../core/authSession";
 import { userStateDoc } from "./userDataPaths";
 
@@ -68,6 +68,24 @@ function assertWriteScope(uid) {
   return normalizedUid;
 }
 
+function assertReadScope(uid) {
+  const normalizedUid = assertUid(uid);
+  const currentUid = auth.currentUser?.uid || null;
+  if (currentUid) {
+    assertActiveUserScope(normalizedUid, currentUid);
+  }
+  return normalizedUid;
+}
+
+function buildScopedPayload(uid, dados = {}) {
+  assertOwnerUidMatchesScope(dados?.ownerUid || dados?.uid, uid, "firebase payload");
+  return {
+    ...dados,
+    uid,
+    ownerUid: uid,
+  };
+}
+
 // ─── AUTHENTICATION OPERATIONS ───────────────────────────────────────────────
 
 export const criarConta = async (email, senha, nome, manterConectado = true) => {
@@ -82,6 +100,7 @@ export const criarConta = async (email, senha, nome, manterConectado = true) => 
     // Create initial user document in Firestore with baseline structures
     await setDoc(userStateDoc(db, user.uid), {
       uid: user.uid,
+      ownerUid: user.uid,
       email: email,
       nome: nome,
       criadoEm: new Date().toISOString(),
@@ -151,7 +170,7 @@ export const monitorarAuth = (callback) => {
 export const salvarDadosUsuario = async (uid, dados) => {
   try {
     const scopedUid = assertWriteScope(uid);
-    await setDoc(userStateDoc(db, scopedUid), dados, { merge: true });
+    await setDoc(userStateDoc(db, scopedUid), buildScopedPayload(scopedUid, dados), { merge: true });
     return { sucesso: true };
   } catch (erro) {
     console.error("Erro ao salvar dados:", erro);
@@ -161,7 +180,7 @@ export const salvarDadosUsuario = async (uid, dados) => {
 
 export const carregarDadosUsuario = async (uid) => {
   try {
-    const scopedUid = assertUid(uid);
+    const scopedUid = assertReadScope(uid);
     const docSnap = await getDoc(userStateDoc(db, scopedUid));
     if (docSnap.exists()) {
       return { sucesso: true, dados: docSnap.data() };
@@ -179,10 +198,7 @@ export const sincronizarComFirebase = async (uid, estadoZustand) => {
     const scopedUid = assertWriteScope(uid);
     await setDoc(
       userStateDoc(db, scopedUid),
-      {
-        uid: scopedUid,
-        ...estadoZustand,
-      },
+      buildScopedPayload(scopedUid, estadoZustand),
       { merge: true }
     );
     return { sucesso: true };

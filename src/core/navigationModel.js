@@ -4,6 +4,13 @@ import { COPY } from "./copy";
 // No build de producao (o que o usuario recebe) eles ficam ocultos.
 const IS_DEV = process.env.NODE_ENV === "development";
 
+const ANKI_NAV_ITEM = {
+  view: "anki",
+  label: "Anki Audit",
+  mobileLabel: "Anki",
+  description: "Auditoria operacional diaria do Anki.",
+};
+
 const PRIMARY_ITEMS = [
   {
     view: "dash",
@@ -40,10 +47,7 @@ const PRIMARY_ITEMS = [
     mobile: true,
   },
   {
-    view: "anki",
-    label: "Anki Audit",
-    mobileLabel: "Anki",
-    description: "Auditoria operacional diaria do Anki.",
+    ...ANKI_NAV_ITEM,
     desktop: true,
     mobile: false,
   },
@@ -59,9 +63,7 @@ const PRIMARY_ITEMS = [
 
 const MORE_ITEMS = [
   {
-    view: "anki",
-    label: "Anki Audit",
-    description: "Auditoria operacional diaria do Anki.",
+    ...ANKI_NAV_ITEM,
     mobileOnly: true,
   },
   {

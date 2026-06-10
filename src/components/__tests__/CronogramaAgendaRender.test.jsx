@@ -23,6 +23,7 @@ jest.mock("../../core/store", () => {
     setMeta: jest.fn(),
     iniciarValidacaoDominioPrevio: jest.fn(),
     validarDominio: jest.fn(),
+    aplicarDomainTestResultado: jest.fn(),
     showToast: jest.fn(),
     res: { temas: [], simulados: [] },
     vest: { temas: [], simulados: [] },

@@ -5,6 +5,8 @@ import { calcTrueRetention, calcTrend } from "../hooks/useMetrics";
 import { getEnamedIntel, calcPreparoEnamed } from "./enamedIntel";
 import { calculateClinicalReasoningScore } from "./clinicalReasoningScoring";
 import { estimateReadinessForecast } from "./forecast";
+import { P3_WHAT_IF_ENABLED } from "./devFlags";
+import { buildP3WhatIfScenarios } from "./p3WhatIf";
 
 export function pickTargetProva(provasAlvo, plat) {
   const list = plat === "res" ? PROVAS_RES : PROVAS_VEST;
@@ -124,6 +126,11 @@ export function getReadinessData({
     operationalMode,
     calibration,
   });
+  const p3WhatIf = buildP3WhatIfScenarios({
+    forecast,
+    meta,
+    enabled: P3_WHAT_IF_ENABLED,
+  });
 
   // 6. Confidence range (e.g. +/- 6 points, bounded by 0-100)
   const rangeMin = score !== null ? Math.max(0, score - 6) : null;
@@ -237,6 +244,7 @@ export function getReadinessData({
     adesaoAnkiNorm,
     raciocinioScore,
     forecast,
+    p3WhatIf: p3WhatIf.enabled ? p3WhatIf : null,
     targetProva,
     examData,
     areaRetention,

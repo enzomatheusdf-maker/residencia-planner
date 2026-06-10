@@ -39,10 +39,50 @@ describe("mentorDecisionPolicy", () => {
     const action = decideMentorAction(baseContext({
       scheduler: {
         relearningCount: 1,
-        relearningItems: [{ temaId: 1, temaNome: "Apendicite", targetStep: "d4" }],
+        relearningItems: [{
+          temaId: 1,
+          temaNome: "Apendicite",
+          targetStep: "d1",
+          domainTestClassification: "fragile_base",
+          domainTestStatus: "fragile_base",
+          domainTestConduta: "revisao_conceitual_curta",
+          domainTestAgendaLabel: "Revisao conceitual",
+        }],
       },
     }));
     expect(action.type).toBe("relearning");
+    expect(action.title).toMatch(/Revisao conceitual curta/);
+    expect(action.cta).toBe("Revisar base");
+    expect(action.target).toMatchObject({
+      temaId: 1,
+      stepKey: "d1",
+      domainTestClassification: "fragile_base",
+      domainTestConduta: "revisao_conceitual_curta",
+    });
+    expect(action.explain.join(" ")).toContain("Classificacao do Teste de Dominio: Revisao conceitual.");
+  });
+
+  test("detail_noise orienta padrao de erro sem explosao de cards", () => {
+    const action = decideMentorAction(baseContext({
+      scheduler: {
+        relearningCount: 1,
+        relearningItems: [{
+          temaId: 2,
+          temaNome: "Sopro cardiaco",
+          targetStep: "d1",
+          domainTestClassification: "detail_noise",
+          domainTestStatus: "detail_noise",
+          domainTestConduta: "registrar_padrao_de_erro",
+          domainTestAgendaLabel: "Padrao de erro",
+        }],
+      },
+    }));
+
+    expect(action.type).toBe("relearning");
+    expect(action.title).toMatch(/Revisar padrao de erro/);
+    expect(action.reason).toMatch(/nao explosao de cards/);
+    expect(action.explain.join(" ")).toMatch(/cards infinitos/);
+    expect(action.cta).toBe("Revisar padrao");
   });
 
   test("revisão vencida ganha de ENAMED", () => {
@@ -142,6 +182,29 @@ describe("mentorDecisionPolicy", () => {
     expect(action.type).toBe("exam_analysis");
   });
 
+  test("simulado recomendado entra como acao quando fila esta segura", () => {
+    const action = decideMentorAction(baseContext({
+      recommendedSimulation: {
+        type: "simulation",
+        recommended: true,
+        temaNome: "Simulado Diagnóstico (Baseline)",
+        date: "2026-06-02",
+        originalDate: "2026-06-02",
+        estimatedMinutes: 120,
+        simRecommendation: {
+          tipo: "Baseline",
+          titulo: "Simulado Diagnóstico (Baseline)",
+          descricao: "Estabeleça seu ponto de partida.",
+          justificativa: "Sem simulado de nivelamento, o algoritmo não calibra prioridade.",
+          frequenciaRecomendada: "1 agora (diagnóstico)",
+        },
+      },
+    }));
+    expect(action.type).toBe("simulation");
+    expect(action.ctaView).toBe("sims");
+    expect(action.target).toMatchObject({ action: "simulation", recommended: true, tipo: "Baseline" });
+  });
+
   test("operationalMode de sobrecarga nunca retorna tema novo", () => {
     const action = decideMentorAction(baseContext({
       scheduler: { overloadLevelToday: "ok", overloadDays: 0, todayMinutes: 20 },
@@ -161,6 +224,20 @@ describe("mentorDecisionPolicy", () => {
     // (20 min, sem fila), o Rebalancear nao deve sequestrar a tela.
     expect(action.type).not.toBe("new_topic");
     expect(action.type).not.toBe("workload_relief");
+  });
+
+  test("sobrecarga veta simulado recomendado como acao primaria", () => {
+    const action = decideMentorAction(baseContext({
+      scheduler: { overloadLevelToday: "high", overloadDays: 3, todayMinutes: 150 },
+      recommendedSimulation: {
+        type: "simulation",
+        recommended: true,
+        temaNome: "Simulado Diagnóstico (Baseline)",
+        date: "2026-06-02",
+        simRecommendation: { tipo: "Baseline", titulo: "Simulado Diagnóstico (Baseline)" },
+      },
+    }));
+    expect(action.type).toBe("workload_relief");
   });
 
   test("sobrecarga de sobrecarga com hoje pesado ainda recomenda rebalancear", () => {

@@ -46,6 +46,58 @@ describe("mentorSignals", () => {
     expect(signals.missingReviewedAtCount).toBeGreaterThan(0);
   });
 
+  test("collectMentorSchedulerSignals expõe classificacao de Teste de Dominio", () => {
+    const today = todayStr();
+    const temas = [
+      {
+        id: 20,
+        nome: "Insuficiencia cardiaca",
+        esp: "Clinica Medica",
+        unstarted: false,
+        dominioPrevio: {
+          status: "rescue_needed",
+          classification: "rescue",
+          conduta: "revisao_dirigida_mais_questoes",
+        },
+        domainTest: { id: "dt-20", classification: { label: "rescue" } },
+        rev: {
+          phase: "relearning",
+          relearning: {
+            targetStep: "d1",
+            startedAt: today,
+            date: today,
+            domainTestClassification: "rescue",
+            domainTestId: "dt-20",
+            recommendationStatus: "rescue_needed",
+            conduta: "revisao_dirigida_mais_questoes",
+          },
+          reviewHistory: [],
+          d1: { done: false, date: today, phase: "relearning", domainTestClassification: "rescue" },
+        },
+      },
+    ];
+
+    const signals = collectMentorSchedulerSignals(temas, { today });
+
+    expect(signals.domainTestCounts.rescue).toBe(1);
+    expect(signals.domainTestItems[0]).toMatchObject({
+      temaId: 20,
+      domainTestClassification: "rescue",
+      domainTestAgendaLabel: "Resgate dirigido",
+      domainTestConduta: "revisao_dirigida_mais_questoes",
+    });
+    expect(signals.relearningItems[0]).toMatchObject({
+      targetStep: "d1",
+      domainTestClassification: "rescue",
+      domainTestStepLabel: "Resgate",
+    });
+    expect(signals.nextDueItem).toMatchObject({
+      stepKey: "d1",
+      domainTestClassification: "rescue",
+      domainTestAgendaLabel: "Resgate dirigido",
+    });
+  });
+
   test("mentor signal labels validated previous domain as D21 and not D1", () => {
     const today = todayStr();
     const temas = [
@@ -172,5 +224,42 @@ describe("mentorSignals", () => {
     expect(context.operationalMode.mode).toBe("normal");
     expect(context.operationalMode.experienceMode).toBe("mentor");
     expect(context.operationalMode.source).toBe("operational-mode-v1");
+  });
+
+  test("buildMentorContext considera erros clinicos em learningEvents no erro dominante", () => {
+    const today = "2026-06-04";
+    const clinicalEvents = Array.from({ length: 5 }, (_, index) => ({
+      id: `clinical-${index}`,
+      source: "clinical_drill",
+      plat: "res",
+      timestamp: `${today}T10:0${index}:00.000Z`,
+      errors: {
+        motivosErro: ["clinical_reasoning_gap"],
+        dominantError: "clinical_reasoning_gap",
+      },
+    }));
+    const state = {
+      plat: "res",
+      meta: { tempoDisponivel: 2, dataProva: "2026-12-01" },
+      calendarProvider: { activeId: "medcof" },
+      res: {
+        temas: [],
+        simulados: [],
+        casosProgresso: {},
+      },
+      learningEvents: clinicalEvents,
+      enamedAnalises: [],
+      actionInbox: [],
+      sessionReflections: [],
+    };
+
+    const context = buildMentorContext(state, "res", { today });
+
+    expect(context.dominantError).toBe("raciocinio");
+    expect(context.dominantErrorIsStrong).toBe(true);
+    expect(context.dominantErrorAction).toMatchObject({
+      preferredTask: "caso",
+      mentorActionType: "clinical_case",
+    });
   });
 });

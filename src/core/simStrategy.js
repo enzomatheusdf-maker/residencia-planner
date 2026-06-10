@@ -143,6 +143,55 @@ export function getNextSimuladoDate(simulados = [], intervaloDias) {
   return base.toISOString().split("T")[0];
 }
 
+export function getRecommendedSimuladoAgendaItem({
+  dataProva,
+  simulados = [],
+  temas = [],
+  plat = "res",
+  today = todayStr(),
+  horizonDate = null,
+} = {}) {
+  const recommendation = getSimRecommendation(dataProva, simulados, temas, plat);
+  const canSchedule = recommendation.intervaloDias != null
+    && !["Configuração Pendente", "Reta final", "Lapidação"].includes(recommendation.tipo);
+  if (!canSchedule) return null;
+
+  const scheduledDate = recommendation.intervaloDias === 0
+    ? today
+    : getNextSimuladoDate(simulados, recommendation.intervaloDias);
+  if (!scheduledDate || (horizonDate && scheduledDate > horizonDate)) return null;
+
+  const hasOpenScheduledSim = simulados.some((sim) => {
+    const simDate = sim?.date || sim?.scheduledDate || null;
+    return simDate && !sim.done && !sim.completedAt && simDate <= (horizonDate || scheduledDate);
+  });
+  if (hasOpenScheduledSim) return null;
+
+  return {
+    id: `sim-recommended-${scheduledDate}`,
+    temaId: null,
+    temaNome: recommendation.titulo || "Simulado recomendado",
+    area: "Simulado",
+    stepKey: null,
+    phase: null,
+    date: scheduledDate < today ? today : scheduledDate,
+    originalDate: scheduledDate,
+    overdue: scheduledDate < today,
+    estimatedMinutes: recommendation.tipo === "Baseline" ? 120 : 180,
+    type: "simulation",
+    priority: recommendation.tipo === "Baseline" ? "ALTA" : "MEDIA",
+    recommended: true,
+    simRecommendation: recommendation,
+    target: {
+      action: "simulation",
+      simuladoId: null,
+      recommended: true,
+      date: scheduledDate,
+      tipo: recommendation.tipo,
+    },
+  };
+}
+
 /**
  * Retorna as ações recomendadas com base nas causas de erros registradas em simulados.
  */

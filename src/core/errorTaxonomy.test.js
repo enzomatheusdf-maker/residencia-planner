@@ -31,5 +31,17 @@ describe("errorTaxonomy", () => {
     ]);
     expect(dominant).toBe(ERROR_TYPE.CONTENT);
   });
-});
 
+  test("normaliza aliases de erro clinico para a taxonomia canonica", () => {
+    const summary = summarizeErrors([
+      { tipoErro: "clinical_reasoning_gap", acertou: false },
+      { tipoErro: "premature_closure", acertou: false },
+      { tipoErro: "overconfidence", acertou: false },
+      { tipoErro: "discrimination_gap", acertou: false },
+    ]);
+
+    expect(summary[ERROR_TYPE.REASONING]).toBe(2);
+    expect(summary[ERROR_TYPE.CONFIDENCE_MISMATCH]).toBe(1);
+    expect(summary[ERROR_TYPE.DIFFERENTIAL]).toBe(1);
+  });
+});

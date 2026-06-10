@@ -1,5 +1,5 @@
 import { todayStr } from "./fsrs";
-import { CASOS_CLINICOS } from "../constants/casosClinicos";
+import { CLINICAL_CASES_INDEX } from "../constants/clinicalCasesIndex";
 import { buildConfusableSets } from "./confusableSets";
 
 function toDateValue(date) {
@@ -84,7 +84,7 @@ function getMatureContrastCandidates(currentTema, temas, today) {
     }));
 }
 
-export function buildInterleavingPlan({ tema, temas = [], stepKey, platKey, today = todayStr(), casos = CASOS_CLINICOS } = {}) {
+export function buildInterleavingPlan({ tema, temas = [], stepKey, platKey, today = todayStr(), casos = CLINICAL_CASES_INDEX } = {}) {
   if (!tema || !stepKey) {
     return { shouldRecommend: false, mode: "none", status: "invalid", candidates: [] };
   }
@@ -205,4 +205,3 @@ export function buildInterleavingPlan({ tema, temas = [], stepKey, platKey, toda
     officialPolicy: "only_current_review_is_official",
   };
 }
-

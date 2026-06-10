@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import AgendaDayDetails from "../AgendaDayDetails";
 import AgendaMonthGrid from "../AgendaMonthGrid";
 import AgendaTaskItem from "../AgendaTaskItem";
@@ -26,6 +26,24 @@ describe("Agenda render smoke", () => {
     expect(screen.getByText("Revisar")).toBeInTheDocument();
   });
 
+  it("renders Domain Test classification labels in AgendaTaskItem", () => {
+    render(
+      <AgendaTaskItem
+        item={{
+          ...task,
+          type: "relearning",
+          phase: "relearning",
+          domainTestClassification: "detail_noise",
+          domainTestAgendaLabel: "Padrao de erro",
+        }}
+      />
+    );
+
+    expect(screen.getByText("Padrao de erro")).toBeInTheDocument();
+    expect(screen.getByText("Padrao")).toBeInTheDocument();
+    expect(screen.getByText("Revisar padrao")).toBeInTheDocument();
+  });
+
   it("renders AgendaDayDetails with minimal summary", () => {
     render(
       <AgendaDayDetails
@@ -41,6 +59,44 @@ describe("Agenda render smoke", () => {
     );
     expect(screen.getByText(/Agenda/)).toBeInTheDocument();
     expect(screen.getByText("Apendicite")).toBeInTheDocument();
+  });
+
+  it("renders Domain Test guidance inside AgendaDayDetails modal", () => {
+    const domainTask = {
+      ...task,
+      type: "relearning",
+      phase: "relearning",
+      domainTestClassification: "rescue",
+      domainTestAgendaLabel: "Resgate dirigido",
+      domainTestConduta: "revisao_dirigida_mais_questoes",
+    };
+
+    render(
+      <AgendaDayDetails
+        daySummary={{
+          date: TODAY,
+          items: [domainTask],
+          totalMinutes: 25,
+          overdueCount: 0,
+          newCount: 0,
+          isEmpty: false,
+        }}
+        temas={[{
+          id: "tema-1",
+          nome: "Apendicite",
+          esp: "Cirurgia",
+          rev: {
+            d1: { done: false, date: TODAY, phase: "relearning", domainTestClassification: "rescue" },
+          },
+        }]}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText("Detalhes da tarefa"));
+
+    expect(screen.getAllByText(/Revisao dirigida/).length).toBeGreaterThan(1);
+    expect(screen.getByText(/Teste de Dominio: Resgate dirigido/)).toBeInTheDocument();
+    expect(screen.getByText(/revisao_dirigida_mais_questoes/)).toBeInTheDocument();
   });
 
   it("renders AgendaMonthGrid with minimal props", () => {

@@ -8,7 +8,7 @@ import { getMentorDiagnosis } from "../core/mentor";
 import { isPlanSetupComplete } from "../core/onboardingGate";
 import { getReadinessData } from "../core/readiness";
 import { TourBalloon, Modal, Btn, ConfettiOverlay, ProgressiveTooltip, InfoTooltip } from "./Primitives";
-import { ModalValidarDominio } from "./Modals";
+import DomainTestModal from "./DomainTestModal";
 import {
   DOMINIO_META,
   isTemaNaoIniciado,
@@ -34,7 +34,7 @@ import { getEnamedBottleneckExplanation, getEnamedIntel } from "../core/enamedIn
 import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
 import { computeGrowth } from "../core/growthMetrics";
 import { summarizeClinicalCompetence } from "../core/clinicalReasoningScoring";
-import { CASOS_CLINICOS } from "../constants/casosClinicos";
+import { CLINICAL_CASES_INDEX } from "../constants/clinicalCasesIndex";
 import ActionInbox from "./ActionInbox";
 import WeeklyReview from "./WeeklyReview";
 import EmptyState from "./EmptyState";
@@ -663,8 +663,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const { plat, sprint, tourStep, setTourStep, setOnboardingDone, onboardingDone } = useStore();
   const showToastGlobal = useStore((s) => s.showToast);
   const openConfirm = useStore((s) => s.openConfirm);
-  const validarDominio  = useStore((s) => s.validarDominio);
-  const iniciarValidacaoDominioPrevio = useStore((s) => s.iniciarValidacaoDominioPrevio);
+  const aplicarDomainTestResultado = useStore((s) => s.aplicarDomainTestResultado);
   const addTema = useStore((s) => s.addTema);
   const gamif           = useStore((s) => s.gamif);
   const temas           = useStore((s) => s[plat]?.temas || []);
@@ -886,8 +885,6 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     return getMentorDiagnosis(userName, temasFiltrados, done, temaStats, plat, meta);
   }, [userName, temasFiltrados, done, temaStats, plat, meta]);
 
-  const totalRevisoesFeitas = useMemo(() => done.length, [done]);
-
   const prontidao = useMemo(() => {
     const state = useStore.getState();
     const simulados = state[plat]?.simulados || [];
@@ -1060,7 +1057,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const clinicalCompetence = useMemo(() => {
     const customCases = Array.isArray(meta?.clinicalCustomCases) ? meta.clinicalCustomCases : [];
     return summarizeClinicalCompetence({
-      casos: [...CASOS_CLINICOS, ...customCases],
+      casos: [...CLINICAL_CASES_INDEX, ...customCases],
       casosProgresso,
       learningEvents,
     });
@@ -2634,28 +2631,28 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       )}
 
       {temaValidando && (
-        <ModalValidarDominio
+        <DomainTestModal
+          open
           tema={temaValidando}
-          onConfirm={({ questoes, acertos }) => {
-            const resultado = validarDominio(plat, temaValidando.id, { questoes, acertos });
-            (showToast || showToastGlobal)(resultado?.observacao || "Validação de domínio registrada para este tema.");
+          source="ja_domino"
+          onApply={(domainTestRecord) => {
+            const resultado = aplicarDomainTestResultado(plat, temaValidando.id, domainTestRecord);
+            (showToast || showToastGlobal)(resultado?.observacao || domainTestRecord?.recommendation?.message || "Teste de dominio registrado para este tema.");
               safeTrackEvent(
                 "dominio_previo_avaliado",
                 {
                   plat,
-                  percentual: resultado?.percentual,
-                  status: resultado?.status,
+                  percentual: resultado?.percentual ?? domainTestRecord?.questionBlock?.percent,
+                  status: resultado?.status ?? domainTestRecord?.classification?.label,
                 },
                 { state: { meta: telemetryMeta } }
               );
             setTemaValidando(null);
           }}
-          onStartLater={() => {
-            iniciarValidacaoDominioPrevio(plat, temaValidando.id);
-            (showToast || showToastGlobal)("Validação marcada como pendente para este tema.");
-            setTemaValidando(null);
+          onSaveDraft={() => {
+            (showToast || showToastGlobal)("Rascunho do teste de dominio salvo localmente.");
           }}
-          onCancel={() => setTemaValidando(null)}
+          onClose={() => setTemaValidando(null)}
         />
       )}
 

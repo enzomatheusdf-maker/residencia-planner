@@ -334,6 +334,94 @@ describe("learningEvent integration with store markStep", () => {
     expect(ev.errors).toMatchObject({ motivosErro: ["distracao"], dominantError: "distracao" });
   });
 
+  test("registrarCaso preserva taxonomia de erro clinico no evento e no progresso", () => {
+    useStore.getState().resetStore({ touchUpdatedAt: false });
+    useStore.setState({
+      learningEvents: [],
+      res: {
+        temas: [],
+        simulados: [],
+        ankiLog: [],
+        cronogramas: [],
+        casosProgresso: {},
+      },
+    });
+
+    useStore.getState().registrarCaso("res", "apendicite-classica", {
+      fase2Acerto: 55,
+      confianca: 4,
+      acertou: false,
+      motivosErro: ["premature_closure"],
+      dominantError: "premature_closure",
+      meta: { drillType: "B" },
+    });
+
+    const state = useStore.getState();
+    const ev = state.learningEvents[0];
+    expect(ev.source).toBe("clinical_drill");
+    expect(ev.scriptId).toBe("apendicite-classica");
+    expect(ev.acerto).toBe(0.55);
+    expect(ev.motivosErro).toEqual(["premature_closure"]);
+    expect(ev.dominantError).toBe("premature_closure");
+    expect(ev.errors).toMatchObject({
+      motivosErro: ["premature_closure"],
+      dominantError: "premature_closure",
+    });
+    expect(state.res.casosProgresso["apendicite-classica"]).toMatchObject({
+      motivosErro: ["premature_closure"],
+      dominantError: "premature_closure",
+      errors: {
+        motivosErro: ["premature_closure"],
+        dominantError: "premature_closure",
+      },
+    });
+  });
+
+  test("addSim registra backtest persistido do forecast anterior", () => {
+    useStore.getState().resetStore({ touchUpdatedAt: false });
+    useStore.setState({
+      meta: {
+        ...useStore.getState().meta,
+        forecastBacktests: [],
+        dataProva: "2026-09-13",
+      },
+      res: {
+        temas: [
+          {
+            id: "cardio",
+            nome: "Cardiologia",
+            esp: "Clinica Medica",
+            unstarted: false,
+            d0: "2026-01-01",
+            rev: {
+              d0: { done: true, acerto: 0.8, questoes: 40, date: "2026-01-01" },
+            },
+          },
+        ],
+        simulados: [{ id: "sim-prev", pct: 70, data: "2026-05-01", totalQuestions: 100 }],
+        ankiLog: [],
+        cronogramas: [],
+        casosProgresso: {},
+      },
+    });
+
+    useStore.getState().addSim("res", {
+      nome: "Simulado novo",
+      acertos: 68,
+      total: 100,
+      data: "2026-06-10",
+    });
+
+    const state = useStore.getState();
+    expect(state.meta.forecastBacktests).toHaveLength(1);
+    expect(state.meta.forecastBacktests[0]).toMatchObject({
+      plat: "res",
+      actual: 68,
+      forecastVersion: "forecast_v1",
+    });
+    expect(state.meta.forecastBacktests[0].absoluteError).toEqual(expect.any(Number));
+  });
+
   test("addSessionReflection registra evento observacional sem impacto oficial", () => {
     useStore.getState().resetStore({ touchUpdatedAt: false });
     useStore.setState({ learningEvents: [], sessionReflections: [] });
