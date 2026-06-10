@@ -1,19 +1,19 @@
 {
   "files": {
-    "main.css": "/residencia-planner/static/css/main.2fc9cf36.css",
-    "main.js": "/residencia-planner/static/js/main.bb7d3aa6.js",
-    "static/js/40.5e6fa841.chunk.js": "/residencia-planner/static/js/40.5e6fa841.chunk.js",
+    "main.css": "/residencia-planner/static/css/main.7eceb69c.css",
+    "main.js": "/residencia-planner/static/js/main.46a5d4f1.js",
+    "static/js/533.e480eeac.chunk.js": "/residencia-planner/static/js/533.e480eeac.chunk.js",
     "static/js/242.60638c7a.chunk.js": "/residencia-planner/static/js/242.60638c7a.chunk.js",
     "static/js/74.7b01e484.chunk.js": "/residencia-planner/static/js/74.7b01e484.chunk.js",
     "index.html": "/residencia-planner/index.html",
-    "main.2fc9cf36.css.map": "/residencia-planner/static/css/main.2fc9cf36.css.map",
-    "main.bb7d3aa6.js.map": "/residencia-planner/static/js/main.bb7d3aa6.js.map",
-    "40.5e6fa841.chunk.js.map": "/residencia-planner/static/js/40.5e6fa841.chunk.js.map",
+    "main.7eceb69c.css.map": "/residencia-planner/static/css/main.7eceb69c.css.map",
+    "main.46a5d4f1.js.map": "/residencia-planner/static/js/main.46a5d4f1.js.map",
+    "533.e480eeac.chunk.js.map": "/residencia-planner/static/js/533.e480eeac.chunk.js.map",
     "242.60638c7a.chunk.js.map": "/residencia-planner/static/js/242.60638c7a.chunk.js.map",
     "74.7b01e484.chunk.js.map": "/residencia-planner/static/js/74.7b01e484.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.2fc9cf36.css",
-    "static/js/main.bb7d3aa6.js"
+    "static/css/main.7eceb69c.css",
+    "static/js/main.46a5d4f1.js"
   ]
 }
