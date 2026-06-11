@@ -129,27 +129,27 @@ function buildTargetForAction(action = {}) {
 function expectedBenefitFor(type) {
   switch (type) {
     case "continue_session":
-      return "Fecha o ciclo de execucao e evita perder contexto da sessao.";
+      return "Fecha o ciclo de execução e evita perder contexto da sessão.";
     case "overdue_review":
-      return "Reduz atraso e protege retencao antes de abrir novas frentes.";
+      return "Reduz atraso e protege retenção antes de abrir novas frentes.";
     case "today_review":
-      return "Mantem a curva diaria previsivel.";
+      return "Mantém a curva diária previsível.";
     case "simulation_audit":
-      return "Transforma resultado de prova em plano tatico.";
+      return "Transforma resultado de prova em plano tático.";
     case "simulation":
       return "Calibra desempenho e revela gargalos.";
     case "anki":
-      return "Mantem reforco leve de memoria com baixo custo.";
+      return "Mantém reforço leve de memória com baixo custo.";
     case "clinical_reasoning":
-      return "Consolida aplicacao clinica apos a base teorica.";
+      return "Consolida aplicação clínica após a base teórica.";
     case "adjust_plan":
       return "Recoloca o plano dentro da capacidade atual.";
     case "new_topic":
-      return "Aumenta cobertura quando a fila esta segura.";
+      return "Aumenta cobertura quando a fila está segura.";
     case "plan_setup":
-      return "Libera uma primeira acao real para o dia.";
+      return "Libera uma primeira ação real para o dia.";
     default:
-      return "Mantem consistencia sem criar sobrecarga.";
+      return "Mantém consistência sem criar sobrecarga.";
   }
 }
 
@@ -158,19 +158,19 @@ function riskFor(type) {
     case "continue_session":
       return "Sem fechamento, o Mentor perde sinal de ajuste e fadiga.";
     case "overdue_review":
-      return "Atrasos acumulados aumentam custo de recuperacao.";
+      return "Atrasos acumulados aumentam custo de recuperação.";
     case "today_review":
-      return "A fila pode virar atraso amanha.";
+      return "A fila pode virar atraso amanhã.";
     case "simulation_audit":
-      return "Erros de prova ficam sem conversao para plano.";
+      return "Erros de prova ficam sem conversão para plano.";
     case "anki":
       return "Cards e erros leves podem sair da rotina.";
     case "adjust_plan":
       return "O plano pode seguir inviavel e gerar rebalanceamentos repetidos.";
     case "new_topic":
-      return "Cobertura fica parada apesar de capacidade disponivel.";
+      return "Cobertura fica parada apesar de capacidade disponível.";
     case "plan_setup":
-      return "Sem plano, o Dashboard fica sem proxima acao confiavel.";
+      return "Sem plano, o Dashboard fica sem próxima ação confiável.";
     default:
       return "Perder o ritmo hoje pode dificultar a retomada.";
   }
@@ -198,7 +198,7 @@ function sourceSignalsFor(action = {}, context = {}) {
 export function legacyActionToDailyCommand(action = {}, context = {}) {
   const type = TYPE_MAP[action.type] || action.type || "rest_or_light_day";
   const target = buildTargetForAction(action);
-  const reason = action.reason || action.subtitle || "Sem urgencia critica detectada.";
+  const reason = action.reason || action.subtitle || "Sem urgência crítica detectada.";
   const explain = Array.isArray(action.explain) && action.explain.length > 0
     ? action.explain
     : compact([reason]);
@@ -206,7 +206,7 @@ export function legacyActionToDailyCommand(action = {}, context = {}) {
   return {
     id: action.id || `daily_${type}_${context.plat || "root"}`,
     type,
-    title: action.title || "Manter consistencia leve",
+    title: action.title || "Manter consistência leve",
     reason,
     subtitle: action.subtitle || reason,
     expectedBenefit: action.expectedBenefit || expectedBenefitFor(type),
@@ -216,7 +216,7 @@ export function legacyActionToDailyCommand(action = {}, context = {}) {
     target,
     sourceSignals: sourceSignalsFor(action, context),
     blockedReason: action.blockedReason || null,
-    primaryLabel: action.cta || "Executar acao",
+    primaryLabel: action.cta || "Executar ação",
     secondaryLabel: "Ver por que",
     tone: toneFor(action, type),
     explain,
@@ -230,9 +230,9 @@ export function buildPendingClosureCommand(pendingClosure = {}, context = {}) {
   return {
     id: `daily_continue_session_${theme.id || context.plat || "root"}`,
     type: "continue_session",
-    title: "Sessao sem fechamento",
-    reason: "Uma sessao de estudos foi interrompida sem registro adequado de fechamento.",
-    subtitle: "Uma sessao de estudos foi interrompida no meio sem o registro adequado e/ou finalizacao com reflexao.",
+    title: "Sessão sem fechamento",
+    reason: "Uma sessão de estudos foi interrompida sem registro adequado de fechamento.",
+    subtitle: "Uma sessão de estudos foi interrompida no meio sem o registro adequado e/ou finalização com reflexão.",
     expectedBenefit: expectedBenefitFor("continue_session"),
     riskIfIgnored: riskFor("continue_session"),
     estimatedMinutes: 5,
@@ -249,7 +249,7 @@ export function buildPendingClosureCommand(pendingClosure = {}, context = {}) {
     primaryLabel: "Registrar fechamento",
     secondaryLabel: "Dispensar alerta",
     tone: "amber",
-    explain: ["Fechar a sessao atualiza o ciclo de feedback do Mentor."],
+    explain: ["Fechar a sessão atualiza o ciclo de feedback do Mentor."],
     source: "session-closure",
   };
 }
@@ -259,8 +259,8 @@ export function buildPlanSetupCommand(context = {}) {
     id: `daily_plan_setup_${context.plat || "root"}`,
     type: "plan_setup",
     title: "Configurar plano inicial",
-    reason: "Sem plano completo, o Comando do Dia nao consegue escolher uma acao segura.",
-    subtitle: "Defina prova, calendario e preferencias para liberar a primeira acao real.",
+    reason: "Sem plano completo, o Comando do Dia não consegue escolher uma ação segura.",
+    subtitle: "Defina prova, calendário e preferências para liberar a primeira ação real.",
     expectedBenefit: expectedBenefitFor("plan_setup"),
     riskIfIgnored: riskFor("plan_setup"),
     estimatedMinutes: 5,
@@ -271,7 +271,7 @@ export function buildPlanSetupCommand(context = {}) {
     primaryLabel: "Configurar agora",
     secondaryLabel: "Ver por que",
     tone: "blue",
-    explain: ["Sem plano, a UI so consegue oferecer atalhos genericos."],
+    explain: ["Sem plano, a interface só consegue oferecer atalhos genéricos."],
     source: "daily-command-engine",
   };
 }
@@ -281,8 +281,8 @@ export function buildFallbackCommand(context = {}) {
     id: `daily_rest_${context.plat || "root"}`,
     type: "rest_or_light_day",
     title: "Bloco leve ou descanso ativo",
-    reason: "Sem urgencias detectadas, uma acao leve preserva consistencia.",
-    subtitle: "Sem urgencia critica detectada. Siga o plano com ritmo sustentavel.",
+    reason: "Sem urgências detectadas, uma ação leve preserva consistência.",
+    subtitle: "Sem urgência crítica detectada. Siga o plano com ritmo sustentável.",
     expectedBenefit: expectedBenefitFor("rest_or_light_day"),
     riskIfIgnored: riskFor("rest_or_light_day"),
     estimatedMinutes: 20,
@@ -290,7 +290,7 @@ export function buildFallbackCommand(context = {}) {
     target: { route: "stats", params: { action: "light_block_or_rest" } },
     sourceSignals: compact(["fallback", context.plat ? `track:${context.plat}` : null]),
     blockedReason: null,
-    primaryLabel: "Ver estatisticas",
+    primaryLabel: "Ver estatísticas",
     secondaryLabel: "Ver por que",
     tone: "emerald",
     explain: ["Use o bloco leve se quiser manter contato sem gerar sobrecarga."],

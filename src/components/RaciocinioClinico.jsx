@@ -29,7 +29,7 @@ const FASES = [
 const EMPTY_ANAMNESE = { queixa: "", roteiro: [], redFlags: [] };
 const EMPTY_CLINICAL_CASE = {
   id: "",
-  tema: "Caso clinico",
+  tema: "Caso clínico",
   diagnosticoFinal: "",
   area: "Geral",
   subarea: "",
@@ -73,14 +73,14 @@ function normalizeClinicalCase(caseItem = {}) {
 
 // Campos da fase de conduta simulada
 const CONDUTA_FIELDS = [
-  { key: "estabilizacao", label: "Estabilizacao inicial", placeholder: "Vias aereas, acesso venoso, monitoracao, posicao, O2..." },
+  { key: "estabilizacao", label: "Estabilização inicial", placeholder: "Vias aéreas, acesso venoso, monitorização, posição, O2..." },
   { key: "examesIniciais", label: "Exames iniciais", placeholder: "Laboratoriais, imagem, ECG, culturas..." },
-  { key: "tratamento", label: "Tratamento definitivo", placeholder: "Cirurgia, clinico, procedimento, internacao..." },
-  { key: "medicacoes", label: "Medicacoes e doses", placeholder: "Nome, dose, via, frequencia (uso educacional)" },
-  { key: "internacao", label: "Internacao ou ambulatorio", placeholder: "Criterios de internacao / ambulatorio / UTI" },
-  { key: "redFlags", label: "Red flags para reavaliacao", placeholder: "Sinais de alarme que exigem reavaliacao imediata" },
-  { key: "contraindicacoes", label: "Contraindicacoes relevantes", placeholder: "O que NAO fazer neste caso especifico" },
-  { key: "seguimento", label: "Seguimento e retorno", placeholder: "Consulta de retorno, exames de controle, orientacoes de alta" },
+  { key: "tratamento", label: "Tratamento definitivo", placeholder: "Cirurgia, clínico, procedimento, internação..." },
+  { key: "medicacoes", label: "Medicações e doses", placeholder: "Nome, dose, via, frequência (uso educacional)" },
+  { key: "internacao", label: "Internação ou ambulatório", placeholder: "Critérios de internação / ambulatório / UTI" },
+  { key: "redFlags", label: "Red flags para reavaliação", placeholder: "Sinais de alarme que exigem reavaliação imediata" },
+  { key: "contraindicacoes", label: "Contraindicações relevantes", placeholder: "O que NÃO fazer neste caso específico" },
+  { key: "seguimento", label: "Seguimento e retorno", placeholder: "Consulta de retorno, exames de controle, orientações de alta" },
 ];
 
 function dificuldadeClass(dificuldade) {
@@ -190,7 +190,7 @@ function findDiscriminatorFeature(targetCase, currentCase, currentScript) {
 // Removido: calcRaciocinioScore local substituida por calculateClinicalReasoningScore
 // de clinicalReasoningScoring.js (fonte canonica unica — P4-A)
 
-export default function RaciocinioClinico() {
+export default function RaciocinioClinico({ navigationTarget = null, onNavigationTargetConsumed }) {
   const plat = useStore((s) => s.plat);
   const registrarCaso = useStore((s) => s.registrarCasoClinico || s.registrarCaso);
   const casosProgresso = useStore((s) => s[plat]?.casosProgresso || {});
@@ -535,6 +535,24 @@ export default function RaciocinioClinico() {
     learningEvents,
     today: todayStr(),
   }), [allCases, casosProgresso, learningEvents]);
+
+  React.useEffect(() => {
+    const targetCaseId = navigationTarget?.caseId;
+    if (!targetCaseId) return;
+    const targetCase = allCases.find((item) => item.id === targetCaseId);
+    if (!targetCase) {
+      if (onNavigationTargetConsumed) onNavigationTargetConsumed();
+      return;
+    }
+    setActiveCasoId(targetCase.id);
+    setActiveFase(navigationTarget.phase || "caso");
+    setRecommendedDrillApplied(true);
+    setCaseSearch("");
+    setCaseAreaFilter("all");
+    setCaseDifficultyFilter("all");
+    setCaseStatusFilter("all");
+    if (onNavigationTargetConsumed) onNavigationTargetConsumed();
+  }, [allCases, navigationTarget, onNavigationTargetConsumed]);
 
   React.useEffect(() => {
     if (recommendedDrillApplied || !recommendedDrill?.scriptId) return;
@@ -896,11 +914,11 @@ export default function RaciocinioClinico() {
       reviewStatus: caseDraft.fonte === "rc_g_assisted_generation" ? "human_reviewed" : "manual",
       generatedDraft: caseDraft.fonte === "rc_g_assisted_generation" ? generatedCaseDraft : null,
       vinheta: caseDraft.vinheta.trim(),
-      diagnosticoFinal: caseDraft.diagnostico.trim() || "Diagnostico a completar",
+      diagnosticoFinal: caseDraft.diagnostico.trim() || "Diagnóstico a completar",
       justificativa: "Caso criado manualmente para treino vinculado ao cronograma.",
       workup: ["Definir exames iniciais", "Listar dados discriminantes"],
       diferenciais: [
-        { dx: caseDraft.diagnostico.trim() || "Hipotese principal", plausibilidade: "principal", pista: "Compare com sinais discriminantes do caso." },
+        { dx: caseDraft.diagnostico.trim() || "Hipótese principal", plausibilidade: "principal", pista: "Compare com sinais discriminantes do caso." },
       ],
       script: {
         predisponentes: "Definir contexto e fatores de risco.",
@@ -910,8 +928,8 @@ export default function RaciocinioClinico() {
       },
       sct: [
         {
-          hipotese: caseDraft.diagnostico.trim() || "Hipotese principal",
-          novaInfo: "Nova informacao discriminante",
+          hipotese: caseDraft.diagnostico.trim() || "Hipótese principal",
+          novaInfo: "Nova informação discriminante",
           efeitoPainel: 0,
           racional: "Edite o caso no futuro para detalhar o racional.",
         },
@@ -936,7 +954,7 @@ export default function RaciocinioClinico() {
     setGeneratedCaseDraft(null);
     setGeneratedDraftReviewed(false);
     setTemaQuery("");
-    if (showToast) showToast("Caso clinico criado e vinculado ao treino.");
+    if (showToast) showToast("Caso clínico criado e vinculado ao treino.");
   };
 
   const abrirFechamento = (payload) => {
@@ -2594,21 +2612,21 @@ export default function RaciocinioClinico() {
           {/* P4-D: Conduta / Prescricao simulada */}
           {activeFase === "conduta" && (
             <div className="space-y-4">
-              {/* Aviso educacional obrigatorio — deve ser aceito antes de prosseguir */}
+              {/* Aviso educacional obrigatório — deve ser aceito antes de prosseguir */}
               {!conductaAvisoAceito ? (
                 <div className="bg-amber-950/30 border border-amber-500/30 rounded-2xl p-5 space-y-4">
                   <div className="flex items-start gap-3">
                     <AlertTriangle size={18} className="text-amber-400 mt-0.5 shrink-0" />
                     <div className="space-y-2">
-                      <p className="text-[13px] font-bold text-amber-300">Aviso obrigatorio antes de continuar</p>
+                      <p className="text-[13px] font-bold text-amber-300">Aviso obrigatório antes de continuar</p>
                       <p className="text-[12px] text-gray-300 leading-relaxed">
-                        Esta fase simula a elaboracao de conduta e prescricao para fins exclusivamente educacionais.
+                        Esta fase simula a elaboração de conduta e prescrição para fins exclusivamente educacionais.
                       </p>
                       <ul className="space-y-1.5 mt-2">
                         {[
-                          "Nao aplicar qualquer decisao terapeutica em pacientes reais com base neste exercicio.",
-                          "Doses e medicamentos sugeridos sao hipoteticos e nao substituem diretrizes clinicas vigentes.",
-                          "Utilize esta fase apenas para treinar raciocinio de conduta, nao para prescricao real.",
+                          "Não aplicar qualquer decisão terapêutica em pacientes reais com base neste exercício.",
+                          "Doses e medicamentos sugeridos são hipotéticos e não substituem diretrizes clínicas vigentes.",
+                          "Utilize esta fase apenas para treinar raciocínio de conduta, não para prescrição real.",
                         ].map((item, i) => (
                           <li key={i} className="flex items-start gap-2 text-[11.5px] text-gray-400">
                             <span className="text-amber-500 mt-0.5 shrink-0">•</span>
@@ -2623,14 +2641,14 @@ export default function RaciocinioClinico() {
                     onClick={() => setConductaAvisoAceito(true)}
                     className="w-full py-3 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 text-amber-300 font-bold text-[12px] rounded-xl transition-colors"
                   >
-                    Entendi — iniciar simulacao educacional
+                    Entendi — iniciar simulação educacional
                   </button>
                 </div>
               ) : (
                 <>
                   <p className="text-[12px] text-gray-400 leading-relaxed">
                     Simule a conduta completa para <strong className="text-gray-200">{caso.tema}</strong>.
-                    Preencha o maximo que conseguir antes de revelar o gabarito.
+                    Preencha o máximo que conseguir antes de revelar o gabarito.
                   </p>
 
                   {/* Lembrete compacto pos-aceite */}
@@ -2693,7 +2711,7 @@ export default function RaciocinioClinico() {
                           <div>
                             <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Conduta base</p>
                             <p className="text-[12px] text-gray-200 leading-relaxed">
-                              {caso.script?.management || "Conduta especifica nao descrita neste caso."}
+                              {caso.script?.management || "Conduta específica não descrita neste caso."}
                             </p>
                           </div>
                           {caso.workup?.length > 0 && (

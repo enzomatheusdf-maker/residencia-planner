@@ -242,6 +242,7 @@ export default function App() {
   const [view, setView] = useState("login");
   const [planNavigationTarget, setPlanNavigationTarget] = useState(null);
   const [vestCronoSubViewTarget, setVestCronoSubViewTarget] = useState(null);
+  const [clinicalNavigationTarget, setClinicalNavigationTarget] = useState(null);
   const [helpModal, setHelpModal] = useState(false);
 
   const [temaEdit, setTemaEdit] = useState(null);
@@ -298,6 +299,13 @@ export default function App() {
     setPlanNavigationTarget(plat === "res" ? buildPlanAgendaTarget({ date }) : null);
     setView(NAV_VIEW.PLAN);
   }, [plat]);
+  const openClinicalCase = useCallback((target = {}) => {
+    setClinicalNavigationTarget({
+      caseId: target.caseId || null,
+      phase: target.phase || "caso",
+    });
+    setView("raciocinio");
+  }, []);
   const openVestWeeklyPlan = useCallback(() => {
     setVestCronoSubViewTarget("semanal");
     setView(NAV_VIEW.PLAN);
@@ -1261,6 +1269,7 @@ export default function App() {
                 showToast={showToast}
                 onOpenAjustes={openAjustes}
                 onOpenAgenda={openPlanAgenda}
+                onOpenClinicalCase={openClinicalCase}
                 onOpenVestWeeklyPlan={openVestWeeklyPlan}
               />
             </ErrorBoundary>
@@ -1364,7 +1373,12 @@ export default function App() {
           {view === "raciocinio" && featureEnabled(plat, "raciocinioClinico") && meta.modulos?.raciocinioClinico === true && (
             <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
               <Suspense fallback={<div className="p-4 text-xs text-gray-500">Carregando módulo...</div>}>
-                <RaciocinioClinico onStudy={handleStudyTrigger} setView={setView} />
+                <RaciocinioClinico
+                  onStudy={handleStudyTrigger}
+                  setView={setView}
+                  navigationTarget={clinicalNavigationTarget}
+                  onNavigationTargetConsumed={() => setClinicalNavigationTarget(null)}
+                />
               </Suspense>
             </ErrorBoundary>
           )}

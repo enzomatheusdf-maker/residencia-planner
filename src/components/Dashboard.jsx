@@ -630,6 +630,211 @@ function DailyProgressRing({ value, goal }) {
   );
 }
 
+function pluralize(count, singular, plural) {
+  return count === 1 ? singular : plural;
+}
+
+function formatTaskMinutes(minutes) {
+  const value = Math.max(0, Math.round(Number(minutes) || 0));
+  if (value < 60) return `${value} min`;
+  const hours = Math.floor(value / 60);
+  const remainder = value % 60;
+  return remainder > 0 ? `${hours}h${String(remainder).padStart(2, "0")}` : `${hours}h`;
+}
+
+function getCommandBadge(command = {}) {
+  const type = command.type || command.legacyAction?.type || "";
+  if (type.includes("clinical")) return "Caso";
+  if (type.includes("simulation")) return "Simulado";
+  if (type.includes("anki")) return "Anki";
+  if (type.includes("adjust")) return "Plano";
+  if (type.includes("overdue")) return "Vencida";
+  if (type.includes("review")) return "Revisão";
+  return "Agora";
+}
+
+function getInboxBadge(action = {}) {
+  const type = action.type || "";
+  if (type.includes("clinical")) return "Caso";
+  if (type.includes("exam") || type.includes("simulation")) return "Simulado";
+  if (type.includes("anki")) return "Anki";
+  if (type.includes("rest")) return "Pausa";
+  if (type.includes("review") || type.includes("revisao") || type.includes("fila")) return "Revisão";
+  return "Ação";
+}
+
+function getAgendaTaskTitle(item = {}) {
+  const temaNome = item.temaNome || item.title || item.nome || "tarefa";
+  if (item.type === "simulation") return `Registrar ${temaNome}`;
+  if (item.type === "new_topic" || item.type === "d0_critical") return `Estudar ${temaNome}`;
+  if (item.type === "relearning") return `Reaprender ${temaNome}`;
+  return `Revisar ${temaNome}`;
+}
+
+function normalizeTaskKey(task = {}) {
+  return [
+    task.kind || "",
+    task.targetId || "",
+    task.title || "",
+    task.badge || "",
+  ].join("|").toLowerCase();
+}
+
+function buildOrderedDailyTasks({ command, queueItems = [], actionInbox = [], agendaItems = [] } = {}) {
+  const tasks = [];
+  const pushTask = (task) => {
+    if (!task?.title) return;
+    const key = normalizeTaskKey(task);
+    if (tasks.some((item) => normalizeTaskKey(item) === key)) return;
+    tasks.push({ ...task, id: task.id || key });
+  };
+
+  if (command?.title) {
+    pushTask({
+      kind: "command",
+      title: command.title,
+      detail: command.subtitle || command.reason || "Próxima ação recomendada pelo Mentor.",
+      badge: getCommandBadge(command),
+      minutes: command.estimatedMinutes || null,
+      targetId: command.id || command.type || "command",
+      tone: command.tone || "blue",
+    });
+  }
+
+  queueItems.forEach((item) => {
+    const stepKey = item.step?.key || item.stepKey || "";
+    pushTask({
+      kind: "review",
+      title: `Revisar ${item.temaNome || "tema"}`,
+      detail: item.overdue ? "Revisão vencida" : "Revisão programada para hoje",
+      badge: stepKey ? stepKey.toUpperCase() : "Revisão",
+      minutes: item.estimatedMinutes || null,
+      targetId: `${item.temaId || ""}:${stepKey}`,
+      tone: item.overdue ? "amber" : "blue",
+    });
+  });
+
+  actionInbox
+    .filter((action) => action.status !== "done" && action.status !== "dismissed")
+    .forEach((action) => {
+      pushTask({
+        kind: "inbox",
+        title: action.title,
+        detail: action.reason || action.subtitle || "Ação aberta do plano.",
+        badge: getInboxBadge(action),
+        minutes: action.estimatedMinutes || null,
+        targetId: action.id || action.legacyId || action.title,
+        tone: action.priority >= 95 ? "amber" : "blue",
+      });
+    });
+
+  agendaItems.forEach((item) => {
+    const stepKey = item.stepKey || "";
+    pushTask({
+      kind: "agenda",
+      title: getAgendaTaskTitle(item),
+      detail: item.overdue ? "Atrasada na agenda" : item.area || "Agenda de hoje",
+      badge: stepKey ? stepKey.toUpperCase() : item.type === "simulation" ? "Simulado" : "Agenda",
+      minutes: item.estimatedMinutes || null,
+      targetId: item.id || `${item.temaId || ""}:${stepKey}`,
+      tone: item.overdue ? "amber" : "blue",
+    });
+  });
+
+  return tasks.slice(0, 8);
+}
+
+function DailyCommandModal({ open, onClose, tasks, completedCount, totalMinutes, onRunPrimary, primaryLabel }) {
+  if (!open) return null;
+  const safeTasks = tasks.length > 0 ? tasks : [{
+    id: "empty",
+    title: "Manter consistência leve",
+    detail: "Sem tarefas críticas abertas agora.",
+    badge: "Hoje",
+    tone: "emerald",
+  }];
+  const total = safeTasks.length;
+  const done = Math.min(completedCount || 0, total);
+  const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+  const badgeClass = {
+    amber: "border-amber-400/25 bg-amber-400/10 text-amber-200",
+    emerald: "border-emerald-400/25 bg-emerald-400/10 text-emerald-200",
+    blue: "border-blue-400/25 bg-blue-400/12 text-blue-200",
+  };
+
+  return (
+    <div className="fixed inset-0 z-[650] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Comando do dia">
+      <div className="w-full max-w-xl overflow-hidden rounded-[26px] border border-blue-400/20 bg-[#0b1220] p-5 shadow-[0_40px_120px_rgba(0,0,0,.62)]">
+        <div className="rounded-2xl border border-white/10 bg-white/[.03] p-5">
+          <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-300">Comando do dia</p>
+              <h3 className="mt-1 text-xl font-black text-white">
+                Hoje: {total} {pluralize(total, "tarefa", "tarefas")} · {formatTaskMinutes(totalMinutes)}
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white"
+              aria-label="Fechar Comando do dia"
+            >
+              <X size={17} />
+            </button>
+          </div>
+
+          <div className="my-4">
+            <div className="mb-1.5 flex items-center justify-between text-[10px] font-bold text-slate-500">
+              <span>Progresso do dia</span>
+              <span>{done} / {total}</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[.06]">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="max-h-[48vh] space-y-2.5 overflow-y-auto pr-1">
+            {safeTasks.map((task, index) => (
+              <div
+                key={task.id || `${task.title}-${index}`}
+                className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3"
+              >
+                <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-cyan-300/10 text-[10px] font-black text-cyan-200">
+                  {index + 1}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-[13px] font-black text-white">{task.title}</span>
+                  <span className="block truncate text-[11px] text-slate-400">{task.detail}</span>
+                </span>
+                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-black ${badgeClass[task.tone] || badgeClass.blue}`}>
+                  {task.badge}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-blue-400/25 bg-blue-500/12 p-3.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-300">Próxima ação</p>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onRunPrimary();
+              }}
+              className="mt-2 inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 px-4 text-[12px] font-black leading-none text-white shadow-lg shadow-blue-950/25 hover:from-blue-500 hover:to-sky-400"
+            >
+              {primaryLabel || "Executar ação"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ClinicalCompetenceDashboardCard({ competence, setView }) {
   const topArea = competence?.scriptsMadurosPorArea?.find((row) => row.maduros > 0);
   const resolvedError = competence?.errosQueSumiram?.[0];
@@ -661,7 +866,7 @@ function ClinicalCompetenceDashboardCard({ competence, setView }) {
   );
 }
 
-export default function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, setView, showToast, onOpenAjustes, onOpenAgenda, onOpenVestWeeklyPlan }) {
+export default function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, setView, showToast, onOpenAjustes, onOpenAgenda, onOpenClinicalCase, onOpenVestWeeklyPlan }) {
   const currentUid = auth.currentUser?.uid || null;
   const { plat, sprint, tourStep, setTourStep, setOnboardingDone, onboardingDone } = useStore();
   const showToastGlobal = useStore((s) => s.showToast);
@@ -685,6 +890,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const addSessionReflection = useStore((s) => s.addSessionReflection);
   const ankiAdesaoDatas = useStore((s) => s.meta?.ankiAdesao?.datas || []);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
+  const actionInbox = useStore((s) => s.actionInbox || []);
   const rebalanceTodayWorkload = useStore((s) => s.rebalanceTodayWorkload);
   const decisionSnapshot = useStore((s) => s.decisionSnapshot);
   const telemetryMeta = useStore((s) => s.meta);
@@ -788,6 +994,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
   const [showWelcome, setShowWelcome] = useState(false);
   const [showCompleto, setShowCompleto] = useState(!modoSimples);
   const [showSetupFlow, setShowSetupFlow] = useState(false);
+  const [showDailyCommandModal, setShowDailyCommandModal] = useState(false);
   const [temaValidando, setTemaValidando] = useState(null);
   const lastMentorSeenRef = useRef("");
 
@@ -1196,7 +1403,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       type: "fila_do_dia",
       priority: 88,
       title: "Fechar fila de hoje",
-      subtitle: `${pending} revisão(ões) para hoje.`,
+      subtitle: `${pending} ${pluralize(pending, "revisão", "revisões")} para hoje.`,
       reason: "Fechar a fila diária mantém ritmo e evita acúmulo amanhã.",
       explain: [
         `Carga estimada hoje: ${exibidosHojeMinutes || 0} minutos.`,
@@ -1281,6 +1488,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       setView,
       onOpenAjustes,
       onOpenAgenda,
+      onOpenClinicalCase,
       openSessionClosure: () => setShowSessionClosureModal(true),
       rebalanceTodayWorkload,
       plat,
@@ -1288,7 +1496,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       queueItem: topFilaItem,
     });
     safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
-  }, [comandoDoDia.action, onOpenAgenda, onOpenAjustes, onStudy, plat, rebalanceTodayWorkload, setView, showToast, showToastGlobal, telemetryMeta, topFilaItem]);
+  }, [comandoDoDia.action, onOpenAgenda, onOpenAjustes, onOpenClinicalCase, onStudy, plat, rebalanceTodayWorkload, setView, showToast, showToastGlobal, telemetryMeta, topFilaItem]);
 
   const days = Array.from({ length: 35 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - 34 + i);
@@ -1354,6 +1562,33 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       : "";
     return `${todayLoadSignals.dueTodayCount} revisões · ${todayLoadSignals.todayMinutes} min · carga ${loadLabel}${relearningText}`;
     }, [todayLoadSignals]);
+  const dailyCommandTasks = useMemo(() => {
+    const queueItems = exibidosHoje.map((item) => {
+      const tema = temasFiltrados.find((t) => t.id === item.temaId);
+      const review = tema?.rev?.[item.stepKey] || {};
+      return {
+        ...item,
+        estimatedMinutes: getEstimatedMinutesForStep(item.stepKey, review),
+      };
+    });
+    const openActions = actionInbox.filter((action) => {
+      const actionPlat = action.plat || action.target?.plat || "";
+      return action.status !== "done"
+        && action.status !== "dismissed"
+        && (!actionPlat || actionPlat === plat);
+    });
+    return buildOrderedDailyTasks({
+      command: comandoDoDia.action,
+      queueItems,
+      actionInbox: openActions,
+      agendaItems: agendaTodaySummary?.items || [],
+    });
+  }, [actionInbox, agendaTodaySummary?.items, comandoDoDia.action, exibidosHoje, plat, temasFiltrados]);
+  const dailyCommandTotalMinutes = useMemo(() => {
+    const taskMinutes = dailyCommandTasks.reduce((sum, task) => sum + (Number(task.minutes) || 0), 0);
+    return taskMinutes || agendaTodaySummary?.totalMinutes || exibidosHojeMinutes || Number(comandoDoDia.action?.estimatedMinutes || 0);
+  }, [agendaTodaySummary?.totalMinutes, comandoDoDia.action?.estimatedMinutes, dailyCommandTasks, exibidosHojeMinutes]);
+  const dailyCommandCompletedCount = Math.min(concluidosHoje, dailyCommandTasks.length);
   const dailyBriefing = useMemo(() => buildDailyBriefing({
     state: { plat, meta, onboardingDone, tourStep, userName },
     context: {
@@ -1571,9 +1806,14 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             )}
 
             <div className="space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-blue-300 flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setShowDailyCommandModal(true)}
+                className="inline-flex w-fit items-center gap-2 rounded-lg border border-transparent bg-transparent p-0 text-[10px] font-bold uppercase tracking-wide text-blue-300 transition-colors hover:text-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+                title="Ver tarefas do Comando do dia"
+              >
                 {comandoDoDia.eyebrow}
-              </p>
+              </button>
               <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white">
                 {comandoDoDia.title}
               </h1>
@@ -1589,7 +1829,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               <button
                 type="button"
                 onClick={runMentorPrimaryAction}
-                className={`medrev-cta-primary min-h-[44px] rounded-xl px-5 py-3 text-sm font-extrabold shadow-lg border-none cursor-pointer ${
+                className={`medrev-cta-primary inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-extrabold leading-none shadow-lg border-none cursor-pointer whitespace-nowrap ${
                   comandoDoDia.tone === "red"
                     ? "bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-red-950/25 hover:from-red-500 hover:to-orange-400"
                     : comandoDoDia.tone === "amber"
@@ -1615,7 +1855,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                     setShowMentorWhy((prev) => !prev);
                   }
                 }}
-                className="min-h-[44px] rounded-xl px-4 py-3 text-sm font-bold text-gray-200 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer"
+                className="inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-bold leading-none text-gray-200 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors cursor-pointer whitespace-nowrap"
               >
                 {comandoDoDia.secondaryLabel}
               </button>
@@ -1638,6 +1878,15 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           <DailyProgressRing value={dailyProgress} goal={dailyGoal} />
         </div>
       </section>
+      <DailyCommandModal
+        open={showDailyCommandModal}
+        onClose={() => setShowDailyCommandModal(false)}
+        tasks={dailyCommandTasks}
+        completedCount={dailyCommandCompletedCount}
+        totalMinutes={dailyCommandTotalMinutes}
+        onRunPrimary={runMentorPrimaryAction}
+        primaryLabel={comandoDoDia.primaryLabel}
+      />
 
       {/* Cards de execução do dia — questões, anki, saldo de ritmo, qualidade */}
       <MotionSection as="section" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -1680,7 +1929,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
               <h2 className="mt-1 text-sm font-black text-white leading-tight">Anki hoje</h2>
               <p className="mt-0.5 text-[11px] text-gray-400">
                 {ankiSessaoHoje.revisados > 0
-                  ? `${ankiSessaoHoje.revisados} rev · +${ankiSessaoHoje.novos} novos · ${ankiSessaoHoje.again} again${ankiTempoEstimadoHoje > 0 ? ` · ${ankiTempoEstimadoHoje}min` : ""}`
+                  ? `${ankiSessaoHoje.revisados} rev · +${ankiSessaoHoje.novos} novos · ${ankiSessaoHoje.again} erros${ankiTempoEstimadoHoje > 0 ? ` · ${ankiTempoEstimadoHoje}min` : ""}`
                   : "Nenhuma sessão registrada"}
               </p>
             </div>
@@ -1773,7 +2022,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
                 {acertoMedio != null ? `${acertoCountUp}%` : "--"}
               </h2>
               <p className="mt-1 text-[11px] text-gray-400">
-                {trueRet != null ? `Retencao real ${trueRet}%` : "Aguardando historico suficiente"}
+                {trueRet != null ? `Retenção real ${trueRet}%` : "Aguardando histórico suficiente"}
               </p>
             </div>
             <CheckCircle size={24} className={acertoMedio != null && acertoMedio >= 70 ? "text-emerald-300" : "text-gray-500"} />
@@ -1813,7 +2062,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         <VestibularStartTrail setView={setView} onOpenAjustes={onOpenAjustes} />
       )}
 
-      <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} onOpenAjustes={onOpenAjustes} onOpenAgenda={onOpenAgenda} />
+      <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} onOpenAjustes={onOpenAjustes} onOpenAgenda={onOpenAgenda} onOpenClinicalCase={onOpenClinicalCase} />
 
       {!modoSimples && (
         <>
@@ -2616,7 +2865,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
           source="ja_domino"
           onApply={(domainTestRecord) => {
             const resultado = aplicarDomainTestResultado(plat, temaValidando.id, domainTestRecord);
-            (showToast || showToastGlobal)(resultado?.observacao || domainTestRecord?.recommendation?.message || "Teste de dominio registrado para este tema.");
+            (showToast || showToastGlobal)(resultado?.observacao || domainTestRecord?.recommendation?.message || "Teste de domínio registrado para este tema.");
               safeTrackEvent(
                 "dominio_previo_avaliado",
                 {
@@ -2629,7 +2878,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             setTemaValidando(null);
           }}
           onSaveDraft={() => {
-            (showToast || showToastGlobal)("Rascunho do teste de dominio salvo localmente.");
+            (showToast || showToastGlobal)("Rascunho do teste de domínio salvo localmente.");
           }}
           onClose={() => setTemaValidando(null)}
         />

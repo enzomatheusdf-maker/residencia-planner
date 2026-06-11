@@ -8,10 +8,11 @@ function normalizeCommand(input = {}, context = {}) {
 function showRebalanceToast(result, toast) {
   if (!toast) return;
   if (result?.movedCount > 0) {
-    toast(`Rebalanceamento aplicado: ${result.movedCount} revisao(oes) movida(s); carga hoje ${result.beforeTodayMinutes} -> ${result.afterTodayMinutes} min.`);
+    const movedLabel = result.movedCount === 1 ? "1 revisão movida" : `${result.movedCount} revisões movidas`;
+    toast(`Rebalanceamento aplicado: ${movedLabel}; carga hoje ${result.beforeTodayMinutes} -> ${result.afterTodayMinutes} min.`);
     return;
   }
-  toast("Nenhuma revisao elegivel para mover agora.");
+  toast("Nenhuma revisão elegível para mover agora.");
 }
 
 export function executeDailyCommandTarget(input, handlers = {}) {
@@ -64,13 +65,24 @@ export function executeDailyCommandTarget(input, handlers = {}) {
     return true;
   }
 
+  if (target.route === "clinical") {
+    if (handlers.onOpenClinicalCase) {
+      handlers.onOpenClinicalCase({
+        caseId: params.casoId || null,
+        phase: params.phase || "caso",
+      });
+      return true;
+    }
+    if (handlers.setView) handlers.setView("raciocinio");
+    return true;
+  }
+
   const viewByRoute = {
     dashboard: "dash",
     plan: "crono",
     simulations: "sims",
     stats: "stats",
     anki: "anki",
-    clinical: "raciocinio",
   };
   const nextView = viewByRoute[target.route];
   if (nextView && handlers.setView) {
