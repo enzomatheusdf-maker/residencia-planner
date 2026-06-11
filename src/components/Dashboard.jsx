@@ -1889,9 +1889,9 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       />
 
       {/* Cards de execução do dia — questões, anki, saldo de ritmo, qualidade */}
-      <MotionSection as="section" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <MotionSection as="section" className="grid grid-cols-2 items-stretch gap-3 xl:grid-cols-4">
         {/* Card 1: Questões de hoje */}
-        <Card variant="elevated" style={{ display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
+        <Card variant="elevated" className="h-full" style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 180, padding: 16 }}>
           <MetricRing
             value={questoesHoje}
             max={meta?.metaQuestoesDia || 50}
@@ -1912,7 +1912,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </Card>
 
         {/* Card 2: Anki/Flashcards de hoje */}
-        <Card variant="elevated" style={{ display: "flex", flexDirection: "column", gap: 10, padding: 16 }}>
+        <Card variant="elevated" className="h-full" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 10, minHeight: 180, padding: 16 }}>
           <div className="flex items-center gap-3">
             <MetricRing
               value={ankiSessaoHoje.revisados}
@@ -1955,7 +1955,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </Card>
 
         {/* Card 3: Sinal de prontidão */}
-        <Card variant="elevated" className="flex flex-col justify-between gap-2" style={{ padding: 16 }}>
+        <Card variant="elevated" className="flex h-full flex-col justify-between gap-2" style={{ minHeight: 180, padding: 16 }}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <Badge tone={
@@ -2012,7 +2012,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </Card>
 
         {/* Card 4: Qualidade geral */}
-        <Card variant="elevated" className="flex flex-col justify-between gap-2" style={{ padding: 16 }}>
+        <Card variant="elevated" className="flex h-full flex-col justify-between gap-2" style={{ minHeight: 180, padding: 16 }}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <Badge tone={acertoMedio == null ? "neutral" : acertoMedio >= 70 ? "green" : "red"}>
