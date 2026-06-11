@@ -1,8 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { CheckCircle2, Inbox, Play, XCircle } from "lucide-react";
 import { useStore } from "../core/store";
 import { useFilaInteligente } from "../hooks/useMetrics";
+import { executeDailyCommandTarget } from "../core/dailyCommandTargetExecutor";
 import EmptyState from "./EmptyState";
+
+const EASE = [0.22, 1, 0.36, 1];
 
 function isQueueAction(action) {
   const target = action?.target || {};
@@ -22,48 +26,15 @@ function pickQueueItem(action, filaInteligente = []) {
   return filaInteligente[0] || null;
 }
 
-function resolveActionCTA(action, onStudy, setView, rebalanceTodayWorkload, plat, showToast, filaInteligente) {
-  const temaId = action?.target?.temaId;
-  const stepKey = action?.target?.stepKey || "d0";
-  const view = action?.ctaView || action?.target?.view;
-
-  if (temaId && onStudy) {
-    return { label: "Iniciar", onClick: () => onStudy(temaId, stepKey) };
-  }
-  if (isQueueAction(action)) {
-    const queueItem = pickQueueItem(action, filaInteligente);
-    if (queueItem && onStudy) {
-      return {
-        label: action?.cta || "Executar fila",
-        onClick: () => onStudy(queueItem.temaId, queueItem.stepKey),
-      };
-    }
-    if (setView) {
-      return { label: action?.cta || "Abrir plano", onClick: () => setView("crono") };
-    }
-  }
-  if (action?.target?.action === "rebalance_workload" && rebalanceTodayWorkload) {
-    return {
-      label: action.cta || "Rebalancear",
-      onClick: () => {
-        const result = rebalanceTodayWorkload(plat);
-        if (showToast) {
-          if (result?.movedCount > 0) {
-            showToast(`Rebalanceamento aplicado: ${result.movedCount} revisao(oes) movida(s).`);
-          } else {
-            showToast("Nenhuma revisao elegivel para mover agora.");
-          }
-        }
-      },
-    };
-  }
-  if (view && setView) {
-    return { label: action?.cta || "Abrir", onClick: () => setView(view) };
-  }
-  return null;
+function resolveActionCTA(action, handlers, filaInteligente) {
+  const queueItem = isQueueAction(action) ? pickQueueItem(action, filaInteligente) : null;
+  return {
+    label: action?.cta || "Executar",
+    onClick: () => executeDailyCommandTarget(action, { ...handlers, queueItem }),
+  };
 }
 
-export default function ActionInbox({ mode = "mentor", onStudy, setView }) {
+export default function ActionInbox({ mode = "mentor", onStudy, setView, onOpenAjustes, onOpenAgenda }) {
   const actionInbox = useStore((s) => s.actionInbox || []);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
   const acceptAction = useStore((s) => s.acceptAction);
@@ -101,7 +72,11 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView }) {
 
   const primary = openActions[0];
   const rest = mode === "manual" || expanded ? openActions.slice(1) : openActions.slice(1, 3);
-  const primaryCTA = resolveActionCTA(primary, onStudy, setView, rebalanceTodayWorkload, plat, showToast, filaInteligente);
+  const primaryCTA = resolveActionCTA(
+    primary,
+    { onStudy, setView, rebalanceTodayWorkload, plat, showToast, onOpenAjustes, onOpenAgenda },
+    filaInteligente
+  );
 
   return (
     <section className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4 space-y-3">
@@ -121,7 +96,12 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView }) {
         )}
       </div>
 
-      <article className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3 space-y-2">
+      <motion.article
+        className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3 space-y-2"
+        initial={{ opacity: 0, scale: 0.97, y: 6 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: EASE }}
+      >
         <p className="text-[10px] uppercase tracking-wider font-black text-blue-300">Próximo passo do comando</p>
         <p className="text-sm font-black text-white">{primary.title}</p>
         <p className="text-[11px] text-gray-300">{primary.reason}</p>
@@ -158,12 +138,22 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView }) {
             <XCircle size={12} /> Dispensar
           </button>
         </div>
-      </article>
+      </motion.article>
 
       {rest.length > 0 && (
-        <div className="space-y-2">
+        <motion.div
+          className="space-y-2"
+          initial="hidden"
+          animate="visible"
+          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.07, delayChildren: 0.18 } } }}
+        >
           {rest.map((action) => (
-            <article key={action.id} className="rounded-xl border border-white/5 bg-black/20 p-3">
+            <motion.article
+              key={action.id}
+              className="rounded-xl border border-white/5 bg-black/20 p-3"
+              variants={{ hidden: { opacity: 0, y: 8 }, visible: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.28, ease: EASE }}
+            >
               <p className="text-[12px] font-bold text-white">{action.title}</p>
               <p className="text-[11px] text-gray-400 mt-1">{action.reason}</p>
               <div className="flex gap-2 pt-2">
@@ -187,9 +177,9 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView }) {
                   Dispensar
                 </button>
               </div>
-            </article>
+            </motion.article>
           ))}
-        </div>
+        </motion.div>
       )}
     </section>
   );

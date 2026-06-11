@@ -5,6 +5,7 @@ import React from "react";
 import { AlertTriangle, ChevronRight, X } from "lucide-react";
 import { getCorrectiveAction } from "../core/errorActionMap";
 import { ERROR_TYPE_LABEL } from "../core/errorTaxonomy";
+import { MotionCard } from "./motion";
 
 /**
  * ErrorActionPrompt
@@ -39,7 +40,7 @@ export default function ErrorActionPrompt({
   };
 
   return (
-    <div className={`bg-amber-950/20 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3 ${className}`}>
+    <MotionCard interactive={false} className={`bg-amber-950/20 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3 ${className}`}>
       <AlertTriangle size={16} className="text-amber-400 mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-[11px] text-amber-300 font-bold">
@@ -67,6 +68,6 @@ export default function ErrorActionPrompt({
           <X size={14} />
         </button>
       )}
-    </div>
+    </MotionCard>
   );
 }

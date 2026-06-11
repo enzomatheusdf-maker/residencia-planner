@@ -327,7 +327,10 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
   const weakSubject = extras.weakSubject
     || meta?.areaPuxouBaixo
     || inferWeakSubjectFromSimulados(simulados);
-  const clinical = collectClinicalCaseSignals(platState.casosProgresso || {}, today);
+  const clinicalEnabled = plat === "res" && meta?.modulos?.raciocinioClinico === true;
+  const clinical = clinicalEnabled
+    ? collectClinicalCaseSignals(platState.casosProgresso || {}, today)
+    : { dueCount: 0, dueItems: [] };
   const userAvailableMinutes = Number(meta?.tempoDisponivel || 0) > 0
     ? Number(meta.tempoDisponivel) * 60
     : null;
@@ -355,7 +358,12 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     temaStats,
     context: { plat, operationalMode },
   });
-  const pendingExamAnalysis = Boolean(simulados.length > 0 && !latestEnamed);
+  const pendingExamAnalysis = (simulados || []).some((sim) => {
+    if (!sim) return false;
+    if (sim.statusCorrecao && sim.statusCorrecao !== "concluida") return true;
+    if (Array.isArray(sim.questoesErradas) && sim.questoesErradas.some((q) => q.corrigidaD7 == null)) return true;
+    return Boolean(sim.done && !sim.analisado && !sim.analysisCompletedAt && !latestEnamed);
+  });
   const errorSignal = collectDominantErrorSignal(temas, simulados, plat, state.learningEvents || []);
   const consolidatedCorpus = countConsolidatedCorpusAreas(temas);
 
@@ -397,8 +405,10 @@ export function buildMentorContext(state = {}, platArg, extras = {}) {
     pendingExamAnalysis,
     recommendedSimulation,
     clinical,
+    clinicalEnabled,
     readinessData: extras.readinessData || null,
     userAvailableMinutes,
+    ankiEnabled: plat === "res" && String(meta?.ferramentas?.flashcards || "Anki").toLowerCase() === "anki",
     ankiDoneToday: (meta?.ankiAdesao?.datas || []).includes(today),
     lastWorkloadRebalance: meta?.lastWorkloadRebalance || null,
     rebalanceTargetMinutes,

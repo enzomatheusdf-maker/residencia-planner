@@ -1,6 +1,7 @@
 import { buildMentorContext } from "./mentorSignals";
 import { decideMentorAction, buildMentorTodayPlan } from "./mentorDecisionPolicy";
 import { buildActionInbox, createAction } from "./actionInbox";
+import { buildDailyCommand } from "./dailyCommandEngine";
 import { reflectionToAction } from "./sessionReflection";
 import { todayStr, addDays } from "./fsrs";
 
@@ -57,6 +58,10 @@ export function buildDecisionCoreSnapshot(state = {}, options = {}) {
   const primaryAction = decideMentorAction(context);
   const mentorAction = primaryAction;
   const todayPlan = buildMentorTodayPlan(context);
+  const dailyCommand = buildDailyCommand({
+    snapshot: { today, plat, context, primaryAction, mentorAction, todayPlan },
+    context,
+  });
   const primaryInboxAction = mentorActionToInboxAction(primaryAction, { today, plat });
   const reflectionActions = (state.sessionReflections || [])
     .filter((reflection) => reflection?.date && reflection.date >= addDays(today, -7))
@@ -69,6 +74,7 @@ export function buildDecisionCoreSnapshot(state = {}, options = {}) {
     today,
     plat,
     context,
+    dailyCommand,
     primaryAction,
     mentorAction,
     todayPlan,

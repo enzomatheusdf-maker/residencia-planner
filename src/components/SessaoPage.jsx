@@ -1,5 +1,6 @@
 // src/components/SessaoPage.jsx
 import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getStepDefinitions } from '../constants/stepDefinitions';
 import { useStore } from '../core/store';
 import { 
@@ -53,7 +54,12 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
   // ─── TELA 1: PREPARAÇÃO DA ÂNCORA MENTAL (PICO) ───────────────────────────
   if (!started) {
     return (
-      <div className="max-w-2xl mx-auto p-6 space-y-6 animate-fade-up text-left">
+      <motion.div
+        className="max-w-2xl mx-auto p-6 space-y-6 text-left"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="flex justify-between items-center border-b border-white/5 pb-4">
           <div>
             <span className="text-[10px] uppercase tracking-[0.3em] font-bold" style={{ color: espColor }}>
@@ -103,7 +109,7 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
             <Play size={15} /> Confirmar e Iniciar D0
           </button>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
@@ -111,7 +117,12 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
   const StepIconComponent = STEP_ICONS[currentStep?.id] || FileText;
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6 animate-fade-up text-left">
+    <motion.div
+      className="max-w-2xl mx-auto p-6 space-y-6 text-left"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className="flex justify-between items-center border-b border-white/5 pb-3">
         <div className="min-w-0">
           <span className="text-[10px] uppercase font-bold tracking-wider" style={{ color: espColor }}>Foco D0 Ativo</span>
@@ -135,7 +146,15 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
         </div>
       </div>
 
-      <div className="bg-[#111113] border border-white/5 p-6 rounded-2xl space-y-5 shadow-2xl relative overflow-hidden">
+      <AnimatePresence mode="wait">
+      <motion.div
+        key={currentStepIndex}
+        className="bg-[#111113] border border-white/5 p-6 rounded-2xl space-y-5 shadow-2xl relative overflow-hidden"
+        initial={{ opacity: 0, scale: 0.97, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97, y: -8 }}
+        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="absolute top-0 left-0 w-1.5 h-full" style={{ backgroundColor: espColor }} />
         
         <div className="flex items-start gap-4">
@@ -164,14 +183,21 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
             Análise de Evidência Científica
           </button>
           {expandedJustification === currentStep?.id && (
-            <div className="bg-blue-500/[0.02] border-l-2 border-blue-500/30 p-4 rounded-r-xl mt-2 w-full animate-fade-up">
+            <motion.div
+              className="bg-blue-500/[0.02] border-l-2 border-blue-500/30 p-4 rounded-r-xl mt-2 w-full"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
               <p className="text-[11.5px] leading-relaxed whitespace-pre-line text-gray-500 italic">
                 {formatText(currentStep?.justification)}
               </p>
-            </div>
+            </motion.div>
           )}
         </div>
-      </div>
+      </motion.div>
+      </AnimatePresence>
 
       <div className="flex gap-2.5">
         <button
@@ -191,6 +217,6 @@ export default function SessaoPage({ temaInicial, onComplete, onCancel }) {
           {isLastStep ? 'Fiz todos os passos → Finalizar D0' : `Concluir ${currentStep?.title}`} <ChevronRight size={16} />
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertTriangle,
   Brain,
@@ -753,10 +754,20 @@ export default function DomainTestModal({
           ))}
         </div>
 
-        {activeStep === "brain" ? renderBrainStep() : null}
-        {activeStep === "checklist" ? renderChecklistStep() : null}
-        {activeStep === "questions" ? renderQuestionsStep() : null}
-        {activeStep === "result" ? renderResultStep() : null}
+        <AnimatePresence>
+          <motion.div
+            key={activeStep}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8, position: "absolute", width: "100%" }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {activeStep === "brain" ? renderBrainStep() : null}
+            {activeStep === "checklist" ? renderChecklistStep() : null}
+            {activeStep === "questions" ? renderQuestionsStep() : null}
+            {activeStep === "result" ? renderResultStep() : null}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </Dialog>
   );

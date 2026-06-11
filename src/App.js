@@ -61,6 +61,7 @@ import Conquistas from "./components/Conquistas";
 import PomodoroWidget from "./components/PomodoroWidget";
 import FocusMode from "./components/FocusMode";
 import AuthModal from "./components/AuthModal";
+import LandingPage from "./components/LandingPage";
 import OnboardingWizard from "./components/OnboardingWizard";
 import OnboardingWizardV2 from "./components/OnboardingWizardV2";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -232,6 +233,8 @@ export default function App() {
   // ─── AUTENTICAÇÃO FIREBASE ────────────────────────────────────────────────
   const [usuarioLogado, setUsuarioLogado] = useState(null);
   const [carregandoAuth, setCarregandoAuth] = useState(true);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState("login");
   const [authSession, setAuthSession] = useState(getInitialAuthSession());
   const authTransitionRef = useRef(0);
   const defaultAnonymousScopeRef = useRef(getAnonymousStorageKey(getOrCreateAnonymousSessionId()));
@@ -298,6 +301,11 @@ export default function App() {
   const openVestWeeklyPlan = useCallback(() => {
     setVestCronoSubViewTarget("semanal");
     setView(NAV_VIEW.PLAN);
+  }, []);
+
+  const openAuthModal = useCallback((mode = "login") => {
+    setAuthModalMode(mode === "signup" ? "signup" : "login");
+    setAuthModalOpen(true);
   }, []);
 
   const exportBackupNow = useCallback(() => {
@@ -1058,12 +1066,23 @@ export default function App() {
   // ─── NÃO AUTENTICADO ───────────────────────────────────────────────────────
   if (!usuarioLogado) {
     return (
-      <AuthModal
-        onSuccess={() => {
-          setCarregandoAuth(true);
-          setSyncStatus("saving");
-        }}
-      />
+      <>
+        <LandingPage
+          onLogin={() => openAuthModal("login")}
+          onSignup={() => openAuthModal("signup")}
+        />
+        {authModalOpen && (
+          <AuthModal
+            key={authModalMode}
+            initialMode={authModalMode}
+            onClose={() => setAuthModalOpen(false)}
+            onSuccess={() => {
+              setCarregandoAuth(true);
+              setSyncStatus("saving");
+            }}
+          />
+        )}
+      </>
     );
   }
 

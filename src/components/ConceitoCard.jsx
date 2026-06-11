@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, BookOpen, Lightbulb, GraduationCap } from "lucide-react";
+import { MotionCard, MotionPresence, MotionStep } from "./motion";
 
 export default function ConceitoCard({ conceito }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -8,7 +9,8 @@ export default function ConceitoCard({ conceito }) {
   const { titulo, icone, l1, l2, l3 } = conceito;
 
   return (
-    <div 
+    <MotionCard
+      interactive={!isOpen}
       className={`border rounded-2xl transition-all duration-300 ${
         isOpen 
           ? "bg-[#111113]/90 border-blue-500/30 shadow-lg shadow-slate-950/20" 
@@ -40,8 +42,9 @@ export default function ConceitoCard({ conceito }) {
       </button>
 
       {/* Expanded Accordion Body */}
-      {isOpen && (
-        <div className="px-4 pb-5 pt-1 border-t border-white/5 space-y-4 animate-fade-in text-left">
+      <MotionPresence>
+        {isOpen && (
+        <MotionStep stepKey={`${titulo}-open`} className="px-4 pb-5 pt-1 border-t border-white/5 space-y-4 text-left">
           {/* Navigation/Progress tabs for Layers */}
           <div className="flex bg-black/40 border border-white/5 rounded-xl p-1 gap-1">
             {[
@@ -71,7 +74,8 @@ export default function ConceitoCard({ conceito }) {
           </div>
 
           {/* Layer Contents */}
-          <div className="min-h-[120px] transition-all duration-300">
+          <MotionPresence>
+          <MotionStep stepKey={activeLayer} className="min-h-[120px] transition-all duration-300">
             {activeLayer === "L1" && (
               <div className="space-y-2.5 animate-fade-in">
                 <div className="flex items-start gap-2.5 bg-amber-500/5 border border-amber-500/10 p-3.5 rounded-xl">
@@ -125,9 +129,11 @@ export default function ConceitoCard({ conceito }) {
                 </p>
               </div>
             )}
-          </div>
-        </div>
-      )}
-    </div>
+          </MotionStep>
+          </MotionPresence>
+        </MotionStep>
+        )}
+      </MotionPresence>
+    </MotionCard>
   );
 }

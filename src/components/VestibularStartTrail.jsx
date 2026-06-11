@@ -6,6 +6,7 @@ import {
   updateVestibularStart,
   recommendVestibularFirstAction,
 } from "../core/vestibularOnboarding";
+import { MotionPresence, MotionProgressBar, MotionStep } from "./motion";
 
 const EXAM_OPTIONS = ["ENEM", "Fuvest", "Unicamp", "Outra"];
 
@@ -59,10 +60,10 @@ export default function VestibularStartTrail({ setView, onOpenAjustes }) {
         <p className="text-[11px] text-gray-400">Leva 2 minutos e libera a primeira ação útil do Mentor.</p>
       </div>
 
-      <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-blue-600 to-sky-500 transition-all" style={{ width: `${((step + 1) / 5) * 100}%` }} />
-      </div>
+      <MotionProgressBar value={((step + 1) / 5) * 100} className="h-1.5 rounded-full bg-white/5 overflow-hidden" />
 
+      <MotionPresence>
+      <MotionStep stepKey={step} className="min-h-[145px]">
       {step === 0 && (
         <div className="space-y-2">
           <p className="text-[11px] font-bold text-gray-200">1. Qual prova você quer priorizar?</p>
@@ -167,6 +168,8 @@ export default function VestibularStartTrail({ setView, onOpenAjustes }) {
           </button>
         </div>
       )}
+      </MotionStep>
+      </MotionPresence>
 
       <div className="flex items-center justify-between gap-2">
         <button

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Brain, CalendarDays, Compass, SkipForward } from "lucide-react";
 import { getRecommendedDefaultsForGoal } from "../core/onboarding";
+import { MotionPresence, MotionProgressBar, MotionStep } from "./motion";
 
 const GOAL_OPTIONS = [
   { id: "enamed", label: "ENAMED", hint: "Prioriza trilha ENAMED e recomendações por área." },
@@ -69,10 +70,10 @@ export default function OnboardingWizard({ onComplete, onSkip, onOpenImport }) {
             <span className="text-[11px] text-gray-400 font-bold">{step + 1}/3</span>
           </div>
 
-          <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-600 to-sky-500 transition-all" style={{ width: `${((step + 1) / 3) * 100}%` }} />
-          </div>
+          <MotionProgressBar value={((step + 1) / 3) * 100} className="h-1.5 rounded-full bg-white/5 overflow-hidden" />
 
+          <MotionPresence>
+          <MotionStep stepKey={step} className="min-h-[190px]">
           {step === 0 && (
             <section className="space-y-3">
               <div className="flex items-center gap-2">
@@ -147,6 +148,8 @@ export default function OnboardingWizard({ onComplete, onSkip, onOpenImport }) {
               </div>
             </section>
           )}
+          </MotionStep>
+          </MotionPresence>
 
           {showSkipWarn && (
             <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3">

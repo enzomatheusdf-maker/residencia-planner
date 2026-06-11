@@ -6,6 +6,7 @@ import { Btn, Input } from "./Primitives";
 import { ERROR_TYPE } from "../core/errorTaxonomy";
 import SessionClosureModal from "./SessionClosureModal";
 import EmptyState from "./EmptyState";
+import { MotionCard, MotionPresence, MotionProgressBar, MotionSection, MotionStep } from "./motion";
 
 const AREAS = ["Clínica Médica", "Cirurgia", "GO", "Pediatria", "Preventiva"];
 
@@ -81,7 +82,7 @@ export default function EnamedProvaAnalyzer() {
   };
 
   return (
-    <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 space-y-3 text-left">
+    <MotionSection as="div" className="bg-[#111113] border border-white/5 rounded-2xl p-4 space-y-3 text-left">
       <div className="flex items-center gap-2">
         <ClipboardCheck size={16} className="text-blue-400" />
         <h3 className="text-xs font-black uppercase tracking-wider text-gray-200">Analisador ENAMED</h3>
@@ -127,7 +128,7 @@ export default function EnamedProvaAnalyzer() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {areas.map((item, idx) => (
-          <div key={item.area} className="border border-white/5 rounded-xl p-2.5 bg-black/20">
+          <MotionCard key={item.area} interactive={false} className="border border-white/5 rounded-xl p-2.5 bg-black/20">
             <p className="text-[11px] font-semibold text-gray-300 mb-1">{item.area}</p>
             <div className="grid grid-cols-2 gap-2">
               <Input
@@ -146,7 +147,7 @@ export default function EnamedProvaAnalyzer() {
                 placeholder="Acertos"
               />
             </div>
-          </div>
+          </MotionCard>
         ))}
       </div>
 
@@ -154,11 +155,13 @@ export default function EnamedProvaAnalyzer() {
         <Send size={14} /> Enviar para o Mentor
       </Btn>
 
+      <MotionPresence>
       {resultado && (
-        <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 space-y-2">
+        <MotionStep stepKey="resultado-enamed" className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 space-y-2">
           <p className="text-xs text-gray-200 font-semibold">
             Acerto geral: <span className="text-blue-300">{resultado.pctGeral}%</span>
           </p>
+          <MotionProgressBar value={resultado.pctGeral} className="h-1.5 rounded-full bg-white/5 overflow-hidden" />
           <p className="text-[11px] text-gray-400">{resultado.resumo.recomendacao}</p>
           {resultado?.errors?.dominante && (
             <p className="text-[11px] text-gray-300">
@@ -174,8 +177,9 @@ export default function EnamedProvaAnalyzer() {
               ))}
             </ul>
           )}
-        </div>
+        </MotionStep>
       )}
+      </MotionPresence>
       <SessionClosureModal
         open={showClosure}
         source={closureDraft?.source || "prova"}
@@ -191,6 +195,6 @@ export default function EnamedProvaAnalyzer() {
         onSkip={() => setShowClosure(false)}
         onClose={() => setShowClosure(false)}
       />
-    </div>
+    </MotionSection>
   );
 }

@@ -33,6 +33,7 @@ import MetricCard from "./MetricCard";
 import ErrorActionCenter from "./ErrorActionCenter";
 import { computeGrowth } from "../core/growthMetrics";
 import { Badge, Card, SegmentedControl } from "./ui";
+import { MotionPresence, MotionProgressBar, MotionStep } from "./motion";
 
 const EnamedProvaAnalyzer = lazy(() => import("./EnamedProvaAnalyzer"));
 
@@ -693,6 +694,8 @@ export default function StatsPanel({ setView = null }) {
         onChange={setActiveSection}
       />
 
+      <MotionPresence>
+      <MotionStep stepKey={currentSection} className="space-y-4">
       {/* ── SECAO 7: VALIDACAO DO PREPARO ─────────────────────────────────── */}
       {currentSection === "validacao" && (
         <div className="space-y-4">
@@ -936,12 +939,7 @@ export default function StatsPanel({ setView = null }) {
                   <div className="sm:col-span-2 rounded-xl bg-black/20 border border-white/5 px-3 py-2">
                     <p className="text-gray-500 font-bold uppercase text-[9px] mb-1">Progresso total</p>
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-sky-500 rounded-full"
-                          style={{ width: `${metasProgresso.progresso}%` }}
-                        />
-                      </div>
+                      <MotionProgressBar value={metasProgresso.progresso} className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden" />
                       <span className="text-white font-black text-[12px]">{metasProgresso.progresso}%</span>
                     </div>
                   </div>
@@ -1023,9 +1021,12 @@ export default function StatsPanel({ setView = null }) {
                         <span className={`font-black tabular-nums ${accColor}`}>{e.acc != null ? `${e.acc}%` : "—"}</span>
                       </div>
                     </div>
-                    <div className="h-2 bg-black rounded-full overflow-hidden border border-white/5">
-                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${e.progress}%`, background: espC + "cc" }} />
-                    </div>
+                    <MotionProgressBar
+                      value={e.progress}
+                      className="h-2 bg-black rounded-full overflow-hidden border border-white/5"
+                      barClassName="h-full rounded-full"
+                      barStyle={{ background: espC + "cc" }}
+                    />
                     <p className="text-[10px] text-gray-600">{e.doneSteps}/{e.total} etapas · {e.progress}% do ciclo</p>
                   </div>
                 );
@@ -1059,9 +1060,11 @@ export default function StatsPanel({ setView = null }) {
                     ? `Coletando dados — faltam ${Math.max(0, (calibrationData.minPreview || 5) - calibrationData.n)} sessoes para o primeiro sinal.`
                     : `Sinal inicial — faltam ${Math.max(0, (calibrationData.minRequired || 10) - calibrationData.n)} sessoes para analise confiavel.`}
                 </p>
-                <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-blue-600 h-full transition-all" style={{ width: `${Math.min(100, ((calibrationData?.n || 0) / (calibrationData?.minRequired || 10)) * 100)}%` }} />
-                </div>
+                <MotionProgressBar
+                  value={Math.min(100, ((calibrationData?.n || 0) / (calibrationData?.minRequired || 10)) * 100)}
+                  className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden"
+                  barClassName="bg-blue-600 h-full"
+                />
                 <p className="text-[10px] text-blue-300/80 leading-relaxed">{calibrationMentorPhrase}</p>
               </div>
             ) : (
@@ -1115,12 +1118,10 @@ export default function StatsPanel({ setView = null }) {
                       Dados insuficientes para análise completa. Conclua mais sessões para liberar as métricas avançadas.
                     </p>
                     <div className="space-y-1">
-                      <div className="bg-white/5 rounded-full h-2 overflow-hidden border border-white/5">
-                        <div
-                          className="bg-gradient-to-r from-blue-500 to-sky-500 h-full transition-all duration-500"
-                          style={{ width: `${Math.min(100, (totalSessions / 7) * 100)}%` }}
-                        />
-                      </div>
+                      <MotionProgressBar
+                        value={Math.min(100, (totalSessions / 7) * 100)}
+                        className="bg-white/5 rounded-full h-2 overflow-hidden border border-white/5"
+                      />
                       <div className="flex justify-between text-[9px] font-black text-gray-500 uppercase tracking-wider font-mono">
                         <span>Progresso de Calibração</span>
                         <span>{totalSessions} de 7 sessões concluídas</span>
@@ -1383,9 +1384,7 @@ export default function StatsPanel({ setView = null }) {
                       return (
                         <div key={tipo} className="flex items-center gap-2">
                           <div className="w-20 shrink-0 text-[9.5px] text-gray-400 truncate">{lbs[tipo] || tipo}</div>
-                          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-                            <div className="bg-red-500/70 h-full" style={{ width: `${pct}%` }} />
-                          </div>
+                          <MotionProgressBar value={pct} className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden" barClassName="bg-red-500/70 h-full" />
                           <span className="text-[9px] text-gray-500 w-7 text-right tabular-nums">{pct}%</span>
                         </div>
                       );
@@ -1402,9 +1401,7 @@ export default function StatsPanel({ setView = null }) {
                       return (
                         <div key={area} className="flex items-center gap-2">
                           <div className="w-20 shrink-0 text-[9.5px] text-gray-400 truncate">{area}</div>
-                          <div className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden">
-                            <div className="bg-amber-500/60 h-full" style={{ width: `${pct}%` }} />
-                          </div>
+                          <MotionProgressBar value={pct} className="flex-1 bg-white/5 rounded-full h-1.5 overflow-hidden" barClassName="bg-amber-500/60 h-full" />
                           <span className="text-[9px] text-gray-500 w-7 text-right tabular-nums">{pct}%</span>
                         </div>
                       );
@@ -1466,9 +1463,7 @@ export default function StatsPanel({ setView = null }) {
                         <div className="flex justify-between text-[9px] text-gray-600 uppercase font-mono mb-0.5">
                           <span>Gap</span><span>{item.gap}%</span>
                         </div>
-                        <div className="bg-white/5 rounded-full h-1.5 overflow-hidden">
-                          <div className={`h-full rounded-full ${sc.bar}`} style={{ width: `${item.gap}%` }} />
-                        </div>
+                        <MotionProgressBar value={item.gap} className="bg-white/5 rounded-full h-1.5 overflow-hidden" barClassName={`h-full rounded-full ${sc.bar}`} />
                         <p className="text-[9px] text-gray-600 italic mt-0.5">{item.motivo}</p>
                       </div>
                       {item.hotTopicsPendentes.length > 0 && (
@@ -1632,9 +1627,7 @@ export default function StatsPanel({ setView = null }) {
                         <span className="text-[11px] font-bold text-gray-300 truncate">{row.area}</span>
                         <span className="text-[10px] font-black text-emerald-300 tabular-nums">{row.maduros}/{row.total}</span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${row.pct}%` }} />
-                      </div>
+                      <MotionProgressBar value={row.pct} className="h-1.5 rounded-full bg-white/5 overflow-hidden" barClassName="h-full rounded-full bg-emerald-500" />
                     </div>
                   ))}
                 </div>
@@ -1712,6 +1705,8 @@ export default function StatsPanel({ setView = null }) {
           <Heatmap heatmapDays={heatmapDays} doneDays={doneDays} monthLabels={monthLabels} />
         </div>
       )}
+      </MotionStep>
+      </MotionPresence>
 
       {/* ── SECAO 7: SISTEMA ─────────────────────────────────────────────────── */}
     </div>

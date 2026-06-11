@@ -41,9 +41,12 @@ import EmptyState from "./EmptyState";
 import VestibularStartTrail from "./VestibularStartTrail";
 import { isVestibularStartComplete } from "../core/vestibularOnboarding";
 import { Badge, Card, MetricRing } from "./ui";
+import { MotionSection } from "./motion";
 import SessionClosureModal from "./SessionClosureModal";
 import { createSessionReflection } from "../core/sessionReflection";
 import { getPendingSessionClosure } from "../core/sessionClosure";
+import { buildPendingClosureCommand, legacyActionToDailyCommand } from "../core/dailyCommandEngine";
+import { executeDailyCommandTarget } from "../core/dailyCommandTargetExecutor";
 
 
 
@@ -1209,6 +1212,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     };
   }, [exibidosHojeMinutes, pending, plat]);
   const activeMentorAction = activeDecisionSnapshot?.primaryAction || null;
+  const activeDailyCommand = activeDecisionSnapshot?.dailyCommand || null;
   const mentorNextAction = queueFallbackAction && (!activeMentorAction || activeMentorAction.type === "rest")
     ? queueFallbackAction
     : activeMentorAction;
@@ -1221,95 +1225,70 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
 
   const comandoDoDia = useMemo(() => {
     if (hasPendingClosure) {
+      const command = buildPendingClosureCommand(pendingClosure, decisionContext || { plat });
       return {
         eyebrow: "Alerta do Mentor",
-        title: "Sessão sem fechamento",
-        subtitle: "Uma sessão de estudos foi interrompida no meio sem o registro adequado e/ou finalização com reflexão.",
-        primaryLabel: "Registrar fechamento",
-        secondaryLabel: "Dispensar alerta",
-        tone: "amber",
-        action: { type: "pending_closure" },
+        title: command.title,
+        subtitle: command.subtitle,
+        primaryLabel: command.primaryLabel,
+        secondaryLabel: command.secondaryLabel,
+        tone: command.tone,
+        action: command,
       };
     }
-    const action = mentorNextAction || {};
-    const tone = action.safety === "critical"
-      ? "red"
-      : action.safety === "caution"
-      ? "amber"
-      : action.type === "new_topic" || action.type === "rest" || action.type === "anki_check"
-      ? "emerald"
-      : "blue";
-    const subtitle = action.subtitle
-      || action.reason
-      || mentorTodayPlan.slice(1).join(" ");
+    const fallbackCommand = mentorNextAction
+      ? legacyActionToDailyCommand(mentorNextAction, decisionContext || { plat })
+      : null;
+    const command = queueFallbackAction && (!activeDailyCommand || activeDailyCommand.type === "rest_or_light_day")
+      ? legacyActionToDailyCommand(queueFallbackAction, decisionContext || { plat })
+      : activeDailyCommand || fallbackCommand;
     const shouldResumeSession =
       resumeFocusTarget &&
-      (action.type === "fila_do_dia" || action.target?.action === "close_today_queue" || action.ctaView === "focus");
+      command?.target?.route === "focus" &&
+      (command?.target?.params?.mode === "queue" || command?.legacyAction?.ctaView === "focus");
+    const resolvedCommand = shouldResumeSession
+      ? {
+        ...command,
+        subtitle: `Retomar ${resumeFocusTarget.temaNome} na etapa ${String(resumeFocusTarget.stepKey).toUpperCase()}.`,
+        primaryLabel: "Retomar sessão",
+        target: {
+          route: "focus",
+          params: { temaId: resumeFocusTarget.temaId, stepKey: resumeFocusTarget.stepKey },
+        },
+      }
+      : command;
     return {
       eyebrow: "Comando do dia",
-      title: action.title || "Manter consistência leve",
-      subtitle: shouldResumeSession
-        ? `Retomar ${resumeFocusTarget.temaNome} na etapa ${String(resumeFocusTarget.stepKey).toUpperCase()}.`
-        : subtitle || "Sem urgência crítica detectada. Siga o plano com ritmo sustentável.",
-      primaryLabel: shouldResumeSession ? "Retomar sessão" : action.cta || "Executar ação",
-      secondaryLabel: "Ver por quê",
-      tone,
-      action,
+      title: resolvedCommand?.title || "Manter consistência leve",
+      subtitle: resolvedCommand?.subtitle || resolvedCommand?.reason || mentorTodayPlan.slice(1).join(" ") || "Sem urgência crítica detectada. Siga o plano com ritmo sustentável.",
+      primaryLabel: resolvedCommand?.primaryLabel || "Executar ação",
+      secondaryLabel: resolvedCommand?.secondaryLabel || "Ver por quê",
+      tone: resolvedCommand?.tone || "blue",
+      action: resolvedCommand,
     };
-  }, [hasPendingClosure, mentorNextAction, mentorTodayPlan, resumeFocusTarget]);
+  }, [activeDailyCommand, decisionContext, hasPendingClosure, mentorNextAction, mentorTodayPlan, pendingClosure, plat, queueFallbackAction, resumeFocusTarget]);
 
   const runMentorPrimaryAction = useCallback(() => {
-    if (hasPendingClosure) {
-      setShowSessionClosureModal(true);
-      return;
-    }
-    const action = mentorNextAction || {};
-    const target = action.target || {};
-    const actionType = action.type || target.view || action.ctaView || "mentor";
+    const action = comandoDoDia.action || {};
+    const actionType = action.type || action.target?.route || "mentor";
     safeTrackEvent(
       "mentor_action_started",
       { plat, action_type: actionType, source: action.source || "mentor" },
       { state: { meta: telemetryMeta } }
     );
-    // 1. Alvo explícito de revisão (tema + etapa): inicia o Modo Foco direto.
-    if (target.temaId && target.stepKey && onStudy) {
-      onStudy(target.temaId, target.stepKey);
-      safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
-      return;
-    }
-    // 2. Comandos de fila/revisão sem alvo explícito (ex.: "Fechar fila de hoje").
-    //    O Mentor planeja, o aluno executa: abrimos a próxima revisão da fila.
-    const view = action.ctaView || target.view || "dash";
-    const isQueueCommand =
-      ["fila_do_dia", "revisao_vencida", "relearning"].includes(action.type) || view === "focus";
-    if (isQueueCommand) {
-      if (topFilaItem && onStudy) {
-        onStudy(topFilaItem.temaId, topFilaItem.stepKey);
-      } else if (setView) {
-        setView("crono");
-      }
-      safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
-      return;
-    }
-    if (target.action === "rebalance_workload") {
-      const result = typeof rebalanceTodayWorkload === "function"
-        ? rebalanceTodayWorkload(plat)
-        : null;
-      const toast = showToast || showToastGlobal;
-      if (toast) {
-        if (result?.movedCount > 0) {
-          toast(`Rebalanceamento aplicado: ${result.movedCount} revisao(oes) movida(s); carga hoje ${result.beforeTodayMinutes} -> ${result.afterTodayMinutes} min.`);
-        } else {
-          toast("Nenhuma revisao elegivel para mover agora.");
-        }
-      }
-      safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
-      return;
-    }
-    // 3. Demais comandos: navega para a tela correspondente.
-    if (setView) setView(view);
+    executeDailyCommandTarget(action, {
+      onStudy,
+      setView,
+      onOpenAjustes,
+      onOpenAgenda,
+      openSessionClosure: () => setShowSessionClosureModal(true),
+      rebalanceTodayWorkload,
+      plat,
+      showToast: showToast || showToastGlobal,
+      queueItem: topFilaItem,
+    });
     safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
-  }, [hasPendingClosure, mentorNextAction, onStudy, plat, rebalanceTodayWorkload, setView, showToast, showToastGlobal, telemetryMeta, topFilaItem]);
+  }, [comandoDoDia.action, onOpenAgenda, onOpenAjustes, onStudy, plat, rebalanceTodayWorkload, setView, showToast, showToastGlobal, telemetryMeta, topFilaItem]);
 
   const days = Array.from({ length: 35 }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() - 34 + i);
@@ -1661,9 +1640,9 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
       </section>
 
       {/* Cards de execução do dia — questões, anki, saldo de ritmo, qualidade */}
-      <section className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <MotionSection as="section" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {/* Card 1: Questões de hoje */}
-        <Card variant="elevated" className="med-animate-in" style={{ display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
+        <Card variant="elevated" style={{ display: "flex", alignItems: "center", gap: 12, padding: 16 }}>
           <MetricRing
             value={questoesHoje}
             max={meta?.metaQuestoesDia || 50}
@@ -1684,7 +1663,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </Card>
 
         {/* Card 2: Anki/Flashcards de hoje */}
-        <Card variant="elevated" className="med-animate-in" style={{ display: "flex", flexDirection: "column", gap: 10, padding: 16 }}>
+        <Card variant="elevated" style={{ display: "flex", flexDirection: "column", gap: 10, padding: 16 }}>
           <div className="flex items-center gap-3">
             <MetricRing
               value={ankiSessaoHoje.revisados}
@@ -1727,7 +1706,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </Card>
 
         {/* Card 3: Sinal de prontidão */}
-        <Card variant="elevated" className="med-animate-in flex flex-col justify-between gap-2" style={{ padding: 16 }}>
+        <Card variant="elevated" className="flex flex-col justify-between gap-2" style={{ padding: 16 }}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <Badge tone={
@@ -1784,7 +1763,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         </Card>
 
         {/* Card 4: Qualidade geral */}
-        <Card variant="elevated" className="med-animate-in flex flex-col justify-between gap-2" style={{ padding: 16 }}>
+        <Card variant="elevated" className="flex flex-col justify-between gap-2" style={{ padding: 16 }}>
           <div className="flex items-start justify-between gap-3">
             <div>
               <Badge tone={acertoMedio == null ? "neutral" : acertoMedio >= 70 ? "green" : "red"}>
@@ -1828,13 +1807,13 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
             </button>
           )}
         </Card>
-      </section>
+      </MotionSection>
 
       {plat === "vest" && !vestibularStartComplete && meta?.onboarding?.version !== 2 && (
         <VestibularStartTrail setView={setView} onOpenAjustes={onOpenAjustes} />
       )}
 
-      <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} />
+      <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} onOpenAjustes={onOpenAjustes} onOpenAgenda={onOpenAgenda} />
 
       {!modoSimples && (
         <>

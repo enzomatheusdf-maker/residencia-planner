@@ -1,5 +1,6 @@
 // src/components/Sidebar.jsx
 import React, { useState, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
   LayoutDashboard, Calendar, BarChart3, FileText, Target, Zap,
   ChevronRight, Info, Settings, LogOut, Flame, Stethoscope, GraduationCap, MoreHorizontal
@@ -98,21 +99,35 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
             : normalizedView === n.view;
           const showStreakWarning = n.view === NAV_VIEW.TODAY && streakEmRisco;
           return (
-            <button key={n.view} onClick={() => setView(n.view)}
-              className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl transition-all text-left group ${isActive ? "bg-gradient-to-r from-blue-600/20 to-sky-500/10 text-white border border-blue-500/20" : "text-gray-500 hover:text-gray-300 hover:bg-white/5 border border-transparent"}`}>
-              <Icon size={18} className={`shrink-0 transition-colors ${isActive ? "text-indigo-400" : "group-hover:text-gray-300"}`} />
-              {!collapsed && <span className="text-[12.5px] font-medium truncate flex-1">{n.label}</span>}
+            <motion.button
+              key={n.view}
+              onClick={() => setView(n.view)}
+              className={`relative w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left group border border-transparent overflow-hidden ${isActive ? "text-white" : "text-gray-500 hover:text-gray-300"}`}
+              whileHover={!isActive ? { backgroundColor: "rgba(255,255,255,0.04)" } : undefined}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.14 }}
+            >
+              {/* Pill de item ativo animado com layoutId */}
+              {isActive && (
+                <motion.span
+                  layoutId="sidebar-active-pill"
+                  className="absolute inset-0 rounded-xl border border-blue-500/20 bg-gradient-to-r from-blue-600/20 to-sky-500/10"
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                />
+              )}
+              <Icon size={18} className={`relative shrink-0 transition-colors ${isActive ? "text-indigo-400" : "group-hover:text-gray-300"}`} />
+              {!collapsed && <span className="relative text-[12.5px] font-medium truncate flex-1">{n.label}</span>}
               {showStreakWarning && (
-                <span className="flex h-2.5 w-2.5 relative" title="Ofensiva em risco!">
+                <span className="relative flex h-2.5 w-2.5" title="Ofensiva em risco!">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
                 </span>
               )}
               {!collapsed && n.view === NAV_VIEW.MORE && (
-                <span className="text-[9px] font-black text-gray-500 tabular-nums">{moreNav.length}</span>
+                <span className="relative text-[9px] font-black text-gray-500 tabular-nums">{moreNav.length}</span>
               )}
-              {!collapsed && isActive && !showStreakWarning && <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />}
-            </button>
+              {!collapsed && isActive && !showStreakWarning && <div className="relative w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />}
+            </motion.button>
           );
         })}
       </nav>

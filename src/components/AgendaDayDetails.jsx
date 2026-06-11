@@ -3,8 +3,10 @@
 // Recebe um daySummary de getAgendaDaySummary (agendaEngine.js).
 
 import React, { useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { Activity, BarChart3, CalendarDays, Clock, Target } from "lucide-react";
 import AgendaTaskItem from "./AgendaTaskItem";
+import { MotionSection } from "./motion";
 import { estimateTaskMinutes } from "../core/agendaEngine";
 import { getDomainTestAgendaMeta } from "../core/domainTest";
 import { getEnamedContextBadge } from "../core/enamedIntel";
@@ -208,6 +210,12 @@ export default function AgendaDayDetails({ daySummary, temas = [], temaStats = {
   const dateLabel = date ? `${d}/${m}` : "";
 
   return (
+    <motion.div
+      key={date}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+    >
     <Card className="space-y-3" style={{ padding: 16, background: "linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.025)), var(--med-surface-solid)" }}>
       {/* Cabeçalho do dia */}
       <div className="flex items-center justify-between">
@@ -227,7 +235,7 @@ export default function AgendaDayDetails({ daySummary, temas = [], temaStats = {
       </div>
 
       {/* Lista de itens */}
-      <div className="space-y-2">
+      <MotionSection as="div" className="space-y-2" stagger={0.05}>
         {items.map((item) => (
           <AgendaTaskItem
             key={item.id}
@@ -237,7 +245,7 @@ export default function AgendaDayDetails({ daySummary, temas = [], temaStats = {
             onOpenDetails={setSelectedTask}
           />
         ))}
-      </div>
+      </MotionSection>
 
       <p className="text-[10px] text-gray-600 text-center">
         Use o botão de cada tarefa para abrir o alvo executável ou ver o contexto.
@@ -254,5 +262,6 @@ export default function AgendaDayDetails({ daySummary, temas = [], temaStats = {
         />
       )}
     </Card>
+    </motion.div>
   );
 }

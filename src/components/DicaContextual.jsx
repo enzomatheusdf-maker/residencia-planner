@@ -1,5 +1,6 @@
 // src/components/DicaContextual.jsx
 import React, { useMemo } from "react";
+import { motion } from "framer-motion";
 import { X, Lightbulb, ChevronRight } from "lucide-react";
 import { useStore } from "../core/store";
 import { CONCEITOS_METODO } from "../constants/metodo";
@@ -93,7 +94,12 @@ export default function DicaContextual({ onNavigateToAcademia, onNavigate }) {
   if (!activeTip) return null;
 
   return (
-    <div className="bg-gradient-to-br from-blue-600/10 via-[#111113] to-sky-500/5 border border-blue-500/20 rounded-2xl p-4 flex items-start gap-3.5 relative overflow-hidden select-none text-left animate-fade-in shadow-md">
+    <motion.div
+      className="bg-gradient-to-br from-blue-600/10 via-[#111113] to-sky-500/5 border border-blue-500/20 rounded-2xl p-4 flex items-start gap-3.5 relative overflow-hidden select-none text-left shadow-md"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+    >
       <div className="absolute right-0 top-0 w-20 h-20 bg-blue-600/5 rounded-full blur-2xl pointer-events-none" />
 
       <div className="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0">
@@ -127,6 +133,6 @@ export default function DicaContextual({ onNavigateToAcademia, onNavigate }) {
       >
         <X size={14} />
       </button>
-    </div>
+    </motion.div>
   );
 }

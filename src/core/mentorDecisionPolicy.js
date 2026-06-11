@@ -198,8 +198,12 @@ export function decideMentorAction(context = {}) {
   const rebalanceMaxItems = Number(context.rebalanceMaxItems) > 0
     ? Number(context.rebalanceMaxItems)
     : 30;
-  const todayActuallyRelievable = Number(scheduler.todayMinutes || 0) > rebalanceTargetMinutes
-    || Number(scheduler.dueTodayCount || 0) > rebalanceMaxItems;
+  const dueTodayCount = Number(scheduler.dueTodayCount || 0);
+  const todayMinutes = Number(scheduler.todayMinutes || 0);
+  const reviewCapExceeded = dueTodayCount > rebalanceMaxItems;
+  const hasConfiguredReviewCap = Number(context.rebalanceMaxItems) > 0;
+  const minutesExceededWithoutReviewCap = !hasConfiguredReviewCap && todayMinutes > rebalanceTargetMinutes;
+  const todayActuallyRelievable = reviewCapExceeded || minutesExceededWithoutReviewCap;
   const lastRebalance = context.lastWorkloadRebalance || null;
   const rebalancedTodayNoMove = Boolean(
     lastRebalance
@@ -538,7 +542,7 @@ export function decideMentorAction(context = {}) {
     });
   }
 
-  if (plat === "res" && !context.ankiDoneToday) {
+  if (plat === "res" && context.ankiEnabled !== false && !context.ankiDoneToday) {
     return buildAction({
       type: "anki_check",
       priority: 40,

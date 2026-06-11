@@ -1,5 +1,6 @@
 // src/components/BottomNav.jsx
 import React, { useMemo } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useStore } from "../core/store";
 import { STEPS, todayStr } from "../core/fsrs";
 import { calcStreaks } from "../hooks/useMetrics";
@@ -83,8 +84,16 @@ export default function BottomNav({ view, setView, onOpenAjustes, onOpenHelp }) 
             aria-label={n.label}
             key={n.view}
             onClick={() => (isMoreItem ? setMoreOpen(true) : setView(n.view))}
-            className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1 px-3 py-1 transition-colors relative ${isActive ? "text-indigo-400" : "text-gray-600"}`}
+            className={`min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1 px-3 py-1 relative transition-colors ${isActive ? "text-indigo-400" : "text-gray-600"}`}
           >
+            {/* Indicador ativo — layoutId anima entre itens */}
+            {isActive && (
+              <motion.span
+                layoutId="bottomnav-active-indicator"
+                className="absolute top-1 left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-indigo-400"
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              />
+            )}
             <Icon size={21} />
             <span className="text-[9px] font-semibold">{n.mobileLabel || n.label}</span>
             {showStreakWarning && (
@@ -96,33 +105,51 @@ export default function BottomNav({ view, setView, onOpenAjustes, onOpenHelp }) 
           </button>
         );
       })}
-      {moreOpen && (
-        <div className="fixed inset-0 z-[70] bg-black/65 backdrop-blur-sm flex items-end" onClick={() => setMoreOpen(false)}>
-          <div className="w-full bg-[var(--surface-1)] border-t border-white/10 rounded-t-2xl p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-white">Mais opções</h3>
-              <button aria-label="Fechar" onClick={() => setMoreOpen(false)} className="text-gray-400 hover:text-white border-none bg-transparent"><X size={18} /></button>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {moreNav.map((n) => {
-                const Icon = ICON_BY_VIEW[n.view] || Info;
-                return (
-                  <button
-                    aria-label={n.label}
-                    key={n.view}
-                    onClick={() => handleMoreAction(n.view)}
-                    className={`min-h-[44px] rounded-xl border ${normalizedView === n.view ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : "border-white/10 bg-white/5 text-gray-300"} flex flex-col items-center justify-center gap-1`}
-                  >
-                    <Icon size={18} />
-                    <span className="text-[10px] font-semibold">{n.mobileLabel || n.label}</span>
-                    <span className="text-[9px] text-gray-500">{getMoreActionLabel(n)}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {moreOpen && (
+          <motion.div
+            key="more-overlay"
+            className="fixed inset-0 z-[70] flex items-end"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => setMoreOpen(false)}
+            style={{ backgroundColor: "rgba(0,0,0,0.65)", backdropFilter: "blur(4px)" }}
+          >
+            <motion.div
+              className="w-full bg-[var(--surface-1)] border-t border-white/10 rounded-t-2xl p-4"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-white">Mais opções</h3>
+                <button aria-label="Fechar" onClick={() => setMoreOpen(false)} className="text-gray-400 hover:text-white border-none bg-transparent"><X size={18} /></button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {moreNav.map((n) => {
+                  const Icon = ICON_BY_VIEW[n.view] || Info;
+                  return (
+                    <button
+                      aria-label={n.label}
+                      key={n.view}
+                      onClick={() => handleMoreAction(n.view)}
+                      className={`min-h-[44px] rounded-xl border ${normalizedView === n.view ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : "border-white/10 bg-white/5 text-gray-300"} flex flex-col items-center justify-center gap-1`}
+                    >
+                      <Icon size={18} />
+                      <span className="text-[10px] font-semibold">{n.mobileLabel || n.label}</span>
+                      <span className="text-[9px] text-gray-500">{getMoreActionLabel(n)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }

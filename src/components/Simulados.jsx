@@ -9,6 +9,7 @@ import { pickTargetProva } from "../core/readiness";
 import { getSimRecommendation, getSimuladoProtocolo, getNextSimuladoDate } from "../core/simStrategy";
 import { safeTrackEvent } from "../core/telemetry";
 import { Badge, Button as PremiumButton, Card, SegmentedControl } from "./ui";
+import { MotionCard, MotionPresence, MotionProgressBar, MotionSection, MotionStep } from "./motion";
 
 
 
@@ -110,6 +111,8 @@ export function SimRegistroModal({ onClose, onSave, platKey, temas = [] }) {
         <span className="text-[11px] text-gray-500 font-mono">V6 Analytics</span>
       </div>
 
+      <MotionPresence>
+      <MotionStep stepKey={page} className="min-w-0">
       {page === 1 ? (
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -333,6 +336,8 @@ export function SimRegistroModal({ onClose, onSave, platKey, temas = [] }) {
           </div>
         </div>
       )}
+      </MotionStep>
+      </MotionPresence>
     </Modal>
   );
 }
@@ -405,7 +410,7 @@ export default function Simulados({ onStudy, setView }) {
 
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-up">
+    <MotionSection as="div" className="flex flex-col gap-4">
       <Card variant="elevated" className="med-animate-in" style={{ padding: 18, background: "linear-gradient(180deg, rgba(6,182,212,.1), rgba(59,130,246,.045)), var(--med-surface-0)" }}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
@@ -441,6 +446,8 @@ export default function Simulados({ onStudy, setView }) {
         />
       </div>
 
+      <MotionPresence>
+      <MotionStep stepKey={activeTab} className="min-w-0">
       {/* Conteúdo Aba 1: Estratégia */}
       {activeTab === "painel" && (
         <div className="flex flex-col gap-5">
@@ -580,7 +587,7 @@ export default function Simulados({ onStudy, setView }) {
                     const bgCol = hitsMeta ? "bg-blue-800/30 border border-blue-500/30" : s.pct >= 80 ? "bg-emerald-500/10" : s.pct >= 65 ? "bg-blue-500/10" : "bg-red-500/10";
                     const errosPend = (s.questoesErradas || []).filter(q => q.corrigidaD7 == null).length;
                     return (
-                      <div key={s.id} className="bg-black/40 border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-white/10 transition-all">
+                      <MotionCard key={s.id} className="bg-black/40 border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-white/10 transition-all">
                         <div className="flex items-center gap-4">
                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black ${bgCol} tabular-nums shrink-0`}>
                             <span className={`${col} text-[15px]`}>{s.pct}%</span>
@@ -608,7 +615,7 @@ export default function Simulados({ onStudy, setView }) {
                             <Trash2 size={15}/>
                           </button>
                         </div>
-                      </div>
+                      </MotionCard>
                     );
                   })}
                 </div>
@@ -633,7 +640,7 @@ export default function Simulados({ onStudy, setView }) {
               simulados.flatMap(s => (s.questoesErradas || []).map(q => ({...q, simId: s.id, simData: s.data})))
                 .filter(q => q.corrigidaD7 == null)
                 .map(q => (
-                  <div key={q.id} className="p-3 bg-[var(--surface-1)] border border-white/5 rounded-xl flex items-center justify-between animate-fade-up">
+                  <MotionCard key={q.id} className="p-3 bg-[var(--surface-1)] border border-white/5 rounded-xl flex items-center justify-between">
                     <div>
                       <span className="text-[11px] font-mono bg-red-500/10 text-red-400 px-2 py-0.5 rounded font-bold">Questão {q.num}</span>
                       <p className="text-[13px] font-semibold text-gray-200 mt-1">{q.esp}</p>
@@ -643,7 +650,7 @@ export default function Simulados({ onStudy, setView }) {
                       <button onClick={() => marcarD7(plat, q.simId, q.id, true)} className="p-2 bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-[11px] font-bold hover:bg-emerald-600/30 transition-all cursor-pointer">✓ Convertida</button>
                       <button onClick={() => marcarD7(plat, q.simId, q.id, false)} className="p-2 bg-red-600/20 text-red-400 border border-red-500/20 rounded-xl text-[11px] font-bold hover:bg-red-600/30 transition-all cursor-pointer">✕ Mantém Erro</button>
                     </div>
-                  </div>
+                  </MotionCard>
                 )
             ))}
           </div>
@@ -659,7 +666,7 @@ export default function Simulados({ onStudy, setView }) {
           ) : (
             <div className="flex flex-col gap-3">
               {analytics.diagnostico.map(d => (
-                <div key={d.esp} className="p-3 bg-white/[0.02] border border-white/5 rounded-xl">
+                <MotionCard key={d.esp} interactive={false} className="p-3 bg-white/[0.02] border border-white/5 rounded-xl">
                   <div className="flex justify-between items-baseline mb-1">
                     <span className="text-[13px] font-bold text-gray-200">{d.esp}</span>
                     <span className="text-[11px] text-red-400 font-bold">{d.total} erros mapeados</span>
@@ -668,7 +675,7 @@ export default function Simulados({ onStudy, setView }) {
                     <span>Erro Dominante: <strong className="text-yellow-500 uppercase">{d.dominante}</strong></span>
                     <span>Erros por Descuido: {d.pctDescuido}%</span>
                   </div>
-                </div>
+                </MotionCard>
               ))}
             </div>
           )}
@@ -686,10 +693,10 @@ export default function Simulados({ onStudy, setView }) {
               { l: "Viraram Card", v: statsErros.cards, c: "text-blue-400" },
               { l: "Desc./Atenção", v: analytics.indiceDescuido != null ? `${analytics.indiceDescuido}%` : "—", c: "text-yellow-400" },
             ].map(kpi => (
-              <div key={kpi.l} className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4">
+              <MotionCard key={kpi.l} interactive={false} className="bg-[var(--surface-1)] border border-white/5 rounded-2xl p-4">
                 <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{kpi.l}</p>
                 <p className={`text-3xl font-black tabular-nums mt-2 ${kpi.c}`}>{kpi.v}</p>
-              </div>
+              </MotionCard>
             ))}
           </div>
 
@@ -708,9 +715,7 @@ export default function Simulados({ onStudy, setView }) {
                           <span className="text-gray-300">{label}</span>
                           <span className="text-gray-500 font-mono">{count} ({pct}%)</span>
                         </div>
-                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-500/50 rounded-full" style={{ width: `${pct}%` }} />
-                        </div>
+                        <MotionProgressBar value={pct} className="h-1.5 bg-white/5 rounded-full overflow-hidden" barClassName="h-full bg-blue-500/50 rounded-full" />
                       </div>
                     );
                   })}
@@ -729,9 +734,7 @@ export default function Simulados({ onStudy, setView }) {
                           <span className="text-gray-300">{area}</span>
                           <span className="text-gray-500 font-mono">{count} ({pct}%)</span>
                         </div>
-                        <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full bg-amber-500/50 rounded-full" style={{ width: `${pct}%` }} />
-                        </div>
+                        <MotionProgressBar value={pct} className="h-1.5 bg-white/5 rounded-full overflow-hidden" barClassName="h-full bg-amber-500/50 rounded-full" />
                       </div>
                     );
                   })}
@@ -774,6 +777,8 @@ export default function Simulados({ onStudy, setView }) {
           )}
         </div>
       )}
+      </MotionStep>
+      </MotionPresence>
 
       {howToOpen && (
         <Modal onClose={() => setHowToOpen(false)} wide>
@@ -802,25 +807,13 @@ export default function Simulados({ onStudy, setView }) {
         </Modal>
       )}
 
-      {showSimConfetti && (
-        <div className="fixed inset-0 z-[200] pointer-events-none overflow-hidden">
-          {Array.from({ length: 30 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute top-0 rounded-full animate-bounce"
-              style={{
-                left: `${Math.random() * 100}%`,
-                width: `${6 + Math.random() * 8}px`,
-                height: `${6 + Math.random() * 8}px`,
-                backgroundColor: ["#3b82f6", "#06b6d4", "#10b981", "#f59e0b", "#a78bfa"][i % 5],
-                animationDelay: `${Math.random() * 1}s`,
-                animationDuration: `${1 + Math.random()}s`,
-                transform: `translateY(${Math.random() * -80}vh)`,
-              }}
-            />
-          ))}
-        </div>
-      )}
+      <MotionPresence>
+        {showSimConfetti && (
+          <MotionStep stepKey="simulado-meta" className="fixed right-5 top-20 z-[200] pointer-events-none rounded-2xl border border-emerald-500/25 bg-emerald-500/15 px-4 py-3 text-[12px] font-black text-emerald-100 shadow-2xl shadow-emerald-950/30">
+            Meta do simulado batida
+          </MotionStep>
+        )}
+      </MotionPresence>
 
       {modalOpen && (
         <SimRegistroModal
@@ -838,6 +831,6 @@ export default function Simulados({ onStudy, setView }) {
           }}
         />
       )}
-    </div>
+    </MotionSection>
   );
 }

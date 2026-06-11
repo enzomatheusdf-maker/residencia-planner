@@ -12,6 +12,7 @@ import {
   ERROR_TYPE_LABEL, dominantErrorType, summarizeErrors,
 } from "../core/errorTaxonomy";
 import { getCorrectiveAction, getActionsForPlatform, recommendRemediationFromError } from "../core/errorActionMap";
+import { MotionCard, MotionPresence, MotionStep } from "./motion";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -54,7 +55,7 @@ function ErrorTypeRow({ tipo, count, max, action, expanded, onToggle, onNavigate
   const color = severityColor(count, max);
 
   return (
-    <div className="border border-white/5 rounded-xl overflow-hidden">
+    <MotionCard interactive={false} className="border border-white/5 rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
@@ -70,39 +71,43 @@ function ErrorTypeRow({ tipo, count, max, action, expanded, onToggle, onNavigate
         </div>
       </button>
 
-      {expanded && action && count > 0 && (
-        <div className="bg-black/30 border-t border-white/5 p-4 space-y-3">
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">O que e</p>
-            <p className="text-[12px] text-gray-300 leading-relaxed">{action.definition}</p>
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1.5">Acoes corretivas</p>
-            <ul className="space-y-1.5">
-              {action.correctiveActions.map((a, i) => (
-                <li key={i} className="flex items-start gap-2 text-[12px] text-gray-400 leading-relaxed">
-                  <CheckCircle size={12} className="text-emerald-500 mt-0.5 shrink-0" />
-                  {a}
-                </li>
-              ))}
-            </ul>
-          </div>
-          {action.fsrsEffect && (
-            <div className="bg-indigo-950/20 border border-indigo-500/10 rounded-xl p-3">
-              <p className="text-[10px] uppercase tracking-wider text-indigo-400 font-bold mb-0.5">Efeito no FSRS</p>
-              <p className="text-[11px] text-gray-400">{action.fsrsEffect}</p>
+      <MotionPresence>
+        {expanded && action && count > 0 && (
+          <MotionStep stepKey={`${tipo}-acao`} className="bg-black/30 border-t border-white/5 p-4 space-y-3">
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">O que e</p>
+              <p className="text-[12px] text-gray-300 leading-relaxed">{action.definition}</p>
             </div>
-          )}
-          <RemediationCta tipo={tipo} onNavigate={onNavigate} />
-        </div>
-      )}
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1.5">Acoes corretivas</p>
+              <ul className="space-y-1.5">
+                {action.correctiveActions.map((a, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[12px] text-gray-400 leading-relaxed">
+                    <CheckCircle size={12} className="text-emerald-500 mt-0.5 shrink-0" />
+                    {a}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {action.fsrsEffect && (
+              <div className="bg-indigo-950/20 border border-indigo-500/10 rounded-xl p-3">
+                <p className="text-[10px] uppercase tracking-wider text-indigo-400 font-bold mb-0.5">Efeito no FSRS</p>
+                <p className="text-[11px] text-gray-400">{action.fsrsEffect}</p>
+              </div>
+            )}
+            <RemediationCta tipo={tipo} onNavigate={onNavigate} />
+          </MotionStep>
+        )}
+      </MotionPresence>
 
-      {expanded && count === 0 && (
-        <div className="bg-black/20 border-t border-white/5 p-3">
-          <p className="text-[11px] text-gray-600">Nenhuma ocorrencia deste tipo de erro ainda.</p>
-        </div>
-      )}
-    </div>
+      <MotionPresence>
+        {expanded && count === 0 && (
+          <MotionStep stepKey={`${tipo}-vazio`} className="bg-black/20 border-t border-white/5 p-3">
+            <p className="text-[11px] text-gray-600">Nenhuma ocorrencia deste tipo de erro ainda.</p>
+          </MotionStep>
+        )}
+      </MotionPresence>
+    </MotionCard>
   );
 }
 
@@ -169,7 +174,7 @@ export default function ErrorActionCenter({ compact = false, onNavigate = null }
 
   if (total === 0) {
     return (
-      <div className="bg-[#111113] border border-white/5 rounded-2xl p-6 text-center space-y-2">
+      <MotionCard interactive={false} className="bg-[#111113] border border-white/5 rounded-2xl p-6 text-center space-y-2">
         <Info size={24} className="text-gray-700 mx-auto" />
         <p className="text-[12px] text-gray-500">
           Sem erros suficientes para padrao dominante.
@@ -177,7 +182,7 @@ export default function ErrorActionCenter({ compact = false, onNavigate = null }
         <p className="text-[11px] text-gray-600">
           Complete mais sessoes e simulados para ver o painel de acoes corretivas.
         </p>
-      </div>
+      </MotionCard>
     );
   }
 

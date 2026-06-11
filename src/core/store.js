@@ -282,6 +282,15 @@ function buildDecisionSnapshotOptions(state = {}, today = todayStr()) {
   };
 }
 
+function buildDecisionOutputs(state = {}, today = todayStr()) {
+  const decisionOptions = buildDecisionSnapshotOptions(state, today);
+  const decisionSnapshot = buildDecisionCoreSnapshot(state, decisionOptions);
+  return {
+    decisionSnapshot,
+    actionInbox: buildActionInboxFromDecisionCore(state, { ...decisionOptions, snapshot: decisionSnapshot }),
+  };
+}
+
 function normalizeClinicalErrorPayload(payload = {}) {
   const nestedErrors = payload.errors && typeof payload.errors === "object" ? payload.errors : {};
   const candidateLists = [
@@ -378,7 +387,14 @@ export const useStore = create(
         })),
       setUserName: (name) => set({ userName: name }),
       setUserEmail: (email) => set({ userEmail: email }),
-      setMeta: (meta) => set({ meta }),
+      setMeta: (meta) =>
+        set((s) => {
+          const nextState = { ...s, meta };
+          return {
+            meta,
+            ...buildDecisionOutputs(nextState),
+          };
+        }),
       setStudyPlanIntention: (intention) =>
         set((s) => {
           const updatedMeta = {
@@ -399,15 +415,21 @@ export const useStore = create(
           }
           return { meta: updatedMeta };
         }),
-      toggleModulo: (nome, valor) => set((s) => ({
-        meta: {
-          ...s.meta,
-          modulos: {
-            ...(s.meta?.modulos || {}),
-            [nome]: valor,
-          },
-        },
-      })),
+      toggleModulo: (nome, valor) =>
+        set((s) => {
+          const meta = {
+            ...s.meta,
+            modulos: {
+              ...(s.meta?.modulos || {}),
+              [nome]: valor,
+            },
+          };
+          const nextState = { ...s, meta };
+          return {
+            meta,
+            ...buildDecisionOutputs(nextState),
+          };
+        }),
       setModoProva: (modoProva) => set({ modoProva }),
       setOnboardingDone: () =>
         set((state) => ({
@@ -1535,13 +1557,16 @@ export const useStore = create(
           const hoje = todayStr();
           const datas = s.meta?.ankiAdesao?.datas || [];
           const exists = datas.includes(hoje);
-          return {
-            meta: {
-              ...s.meta,
-              ankiAdesao: {
-                datas: exists ? datas.filter((d) => d !== hoje) : [...datas, hoje],
-              },
+          const meta = {
+            ...s.meta,
+            ankiAdesao: {
+              datas: exists ? datas.filter((d) => d !== hoje) : [...datas, hoje],
             },
+          };
+          const nextState = { ...s, meta };
+          return {
+            meta,
+            ...buildDecisionOutputs(nextState, hoje),
           };
         }),
 

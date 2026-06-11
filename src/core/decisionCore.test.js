@@ -51,6 +51,10 @@ describe("decisionCore", () => {
     expect(snapshot.plat).toBe("res");
     expect(snapshot.primaryAction).toBe(snapshot.mentorAction);
     expect(snapshot.mentorAction.type).toBe("revisao_vencida");
+    expect(snapshot.dailyCommand).toMatchObject({
+      type: "overdue_review",
+      target: { route: "focus" },
+    });
     expect(snapshot.inboxActions[0].type).toBe("revisao_vencida");
 
     const inbox = buildActionInboxFromDecisionCore(state, { today });
@@ -62,6 +66,7 @@ describe("decisionCore", () => {
     // Para gerar sobrecarga alta, precisamos de > 120 minutos estimativos hoje
     // Vamos criar 3 temas com d0 agendado para hoje (3 * 45 = 135 minutos)
     const state = baseState({
+      meta: { maxRevisoesDia: 2 },
       res: {
         temas: [
           {
@@ -102,6 +107,10 @@ describe("decisionCore", () => {
       confidence: 0.9
     });
     expect(snapshot.warnings).toEqual([]);
+    expect(snapshot.dailyCommand).toMatchObject({
+      type: "adjust_plan",
+      target: { route: "dashboard" },
+    });
 
     const inbox = buildActionInboxFromDecisionCore(state, { today });
     expect(inbox.length).toBeGreaterThan(0);

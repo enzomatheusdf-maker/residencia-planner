@@ -13,6 +13,7 @@ import { useStore } from "../core/store";
 import { todayStr } from "../core/fsrs";
 import { buildInitialPlanSetup, completePlanSetupPayload } from "../core/onboardingEngine";
 import { calculateFeasibility } from "../core/scheduleWizard";
+import { MotionPresence, MotionProgressBar, MotionStep } from "./motion";
 
 const TOTAL_STEPS = 7;
 
@@ -196,13 +197,10 @@ export default function OnboardingWizardV2({ onComplete, onSkip }) {
           </div>
 
           {/* Barra de progresso */}
-          <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-blue-600 to-sky-500 transition-all"
-              style={{ width: `${((step + 1) / TOTAL_STEPS) * 100}%` }}
-            />
-          </div>
+          <MotionProgressBar value={((step + 1) / TOTAL_STEPS) * 100} className="h-1.5 rounded-full bg-white/5 overflow-hidden" />
 
+          <MotionPresence>
+          <MotionStep stepKey={step} className="min-h-[260px]">
           {/* ── Passo 0: Objetivo ─────────────────────────────── */}
           {step === 0 && (
             <section className="space-y-3">
@@ -559,6 +557,8 @@ export default function OnboardingWizardV2({ onComplete, onSkip }) {
               </div>
             </section>
           )}
+          </MotionStep>
+          </MotionPresence>
 
           {/* Aviso de skip */}
           {showSkipWarn && (

@@ -1,9 +1,13 @@
 import React from "react";
+import { motion } from "framer-motion";
 import { Info, Play } from "lucide-react";
 import { estimateTaskMinutes } from "../core/agendaEngine";
 import { getDomainTestAgendaMeta } from "../core/domainTest";
 import { getAgendaTaskLabel, getAgendaTaskTarget } from "../core/planExecution";
 import { Badge, Button, Card } from "./ui";
+import useReducedMotion from "../hooks/useReducedMotion";
+
+const EASE = [0.22, 1, 0.36, 1];
 
 const TYPE_LABELS = {
   relearning: "Releitura",
@@ -38,6 +42,7 @@ export default function AgendaTaskItem({ item, onStartTask, onOpenPlan, onOpenDe
   const mins = estimateTaskMinutes(item);
   const target = getAgendaTaskTarget(item);
   const label = getAgendaTaskLabel(item);
+  const isReduced = useReducedMotion();
 
   function handleStart() {
     if (onStartTask) {
@@ -48,7 +53,16 @@ export default function AgendaTaskItem({ item, onStartTask, onOpenPlan, onOpenDe
   }
 
   return (
-    <Card variant={item.overdue || item.type === "overdue" ? "critical" : "interactive"} interactive className="space-y-3" style={{ padding: 12 }}>
+    <Card
+      as={motion.div}
+      variant={item.overdue || item.type === "overdue" ? "critical" : "interactive"}
+      interactive
+      className="space-y-3"
+      style={{ padding: 12 }}
+      whileHover={!isReduced ? { y: -2, scale: 1.005 } : undefined}
+      whileTap={!isReduced ? { scale: 0.98 } : undefined}
+      transition={{ duration: 0.2, ease: EASE }}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <p className="text-[12px] font-black leading-snug text-white truncate">{item.temaNome || "Topico"}</p>

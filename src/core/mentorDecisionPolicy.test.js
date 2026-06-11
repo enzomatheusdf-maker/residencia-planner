@@ -28,11 +28,13 @@ function baseContext(overrides = {}) {
 }
 
 describe("mentorDecisionPolicy", () => {
-  test("sobrecarga alta bloqueia tema novo", () => {
+  test("sobrecarga alta bloqueia tema novo sem oferecer rebalancear quando o teto comporta a fila", () => {
     const action = decideMentorAction(baseContext({
-      scheduler: { overloadLevelToday: "high", overloadDays: 3, todayMinutes: 150 },
+      scheduler: { overloadLevelToday: "high", overloadDays: 3, todayMinutes: 150, dueTodayCount: 3 },
+      rebalanceMaxItems: 10,
     }));
-    expect(action.type).toBe("workload_relief");
+    expect(action.type).not.toBe("workload_relief");
+    expect(action.type).toBe("fila_do_dia");
   });
 
   test("relearning ganha de tema novo", () => {
@@ -228,7 +230,8 @@ describe("mentorDecisionPolicy", () => {
 
   test("sobrecarga veta simulado recomendado como acao primaria", () => {
     const action = decideMentorAction(baseContext({
-      scheduler: { overloadLevelToday: "high", overloadDays: 3, todayMinutes: 150 },
+      scheduler: { overloadLevelToday: "high", overloadDays: 3, todayMinutes: 150, dueTodayCount: 12 },
+      rebalanceMaxItems: 5,
       recommendedSimulation: {
         type: "simulation",
         recommended: true,
@@ -242,7 +245,8 @@ describe("mentorDecisionPolicy", () => {
 
   test("sobrecarga de sobrecarga com hoje pesado ainda recomenda rebalancear", () => {
     const action = decideMentorAction(baseContext({
-      scheduler: { overloadLevelToday: "high", overloadDays: 3, todayMinutes: 150 },
+      scheduler: { overloadLevelToday: "high", overloadDays: 3, todayMinutes: 150, dueTodayCount: 12 },
+      rebalanceMaxItems: 5,
       operationalMode: {
         mode: "sobrecarga",
         flags: { canStartNewTopic: false, shouldReduceVolume: true },
@@ -325,6 +329,16 @@ describe("mentorDecisionPolicy", () => {
   test("anki_check aparece quando anki nao foi feito hoje e new_topic bloqueado", () => {
     const action = decideMentorAction(baseContext({ ...ctxAnkiBase, ankiDoneToday: false }));
     expect(action.type).toBe("anki_check");
+  });
+
+  test("anki_check nao aparece quando ferramenta de flashcards nao e Anki", () => {
+    const action = decideMentorAction(baseContext({
+      ...ctxAnkiBase,
+      ankiDoneToday: false,
+      ankiEnabled: false,
+    }));
+    expect(action.type).not.toBe("anki_check");
+    expect(action.type).toBe("rest");
   });
 
   test("clinical_case vira acao recomendada com titulo especifico se temaName existe", () => {

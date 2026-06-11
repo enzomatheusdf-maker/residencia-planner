@@ -1,11 +1,11 @@
 // AuthModal.jsx - Modal de Login/Signup
 import React, { useState } from "react";
-import { Mail, Lock, User, Eye, EyeOff, Loader } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Loader, X } from "lucide-react";
 import { criarConta, fazerLogin, resetarSenha } from "../services/firebase";
 import { MedRevLogo } from "./Primitives";
 
-export default function AuthModal({ onSuccess }) {
-  const [modo, setModo] = useState("login"); // login, signup ou reset
+export default function AuthModal({ onSuccess, initialMode = "login", onClose }) {
+  const [modo, setModo] = useState(initialMode === "signup" ? "signup" : "login"); // login, signup ou reset
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [nome, setNome] = useState("");
@@ -52,7 +52,18 @@ export default function AuthModal({ onSuccess }) {
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[#111113] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+      <div className="relative bg-[#111113] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-4 top-4 p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+            aria-label="Fechar login"
+          >
+            <X size={16} />
+          </button>
+        )}
+
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="inline-flex">

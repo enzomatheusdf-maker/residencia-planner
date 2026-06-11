@@ -1,8 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { X } from "lucide-react";
 import { Button } from "./Button";
 import { cx } from "./utils";
+
+const EASE_STANDARD = [0.22, 1, 0.36, 1];
 
 function getFocusable(container) {
   if (!container) return [];
@@ -49,49 +52,63 @@ export function Dialog({ open, title, description, children, footer, onClose, mo
     };
   }, [formDirty, onClose, open]);
 
-  if (!open) return null;
-
   return createPortal(
-    <div
-      className="fixed inset-0 z-[var(--med-z-modal)] flex items-end justify-center bg-black/72 p-3 backdrop-blur-sm md:items-center md:p-6"
-      onMouseDown={() => {
-        if (!formDirty) onClose?.();
-      }}
-    >
-      <div
-        aria-describedby={description ? "med-dialog-description" : undefined}
-        aria-labelledby={title ? "med-dialog-title" : undefined}
-        aria-modal="true"
-        className={cx(
-          "med-card med-animate-scale relative flex max-h-[92dvh] w-full flex-col overflow-hidden outline-none",
-          wide ? "max-w-2xl" : "max-w-lg",
-          mobileSheet ? "rounded-t-[var(--med-radius-xl)] md:rounded-[var(--med-radius-lg)]" : "",
-          className
-        )}
-        onMouseDown={(event) => event.stopPropagation()}
-        ref={panelRef}
-        role="dialog"
-        tabIndex={-1}
-        style={{ background: "var(--med-surface-solid)", padding: 0 }}
-      >
-        <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
-          <div className="min-w-0">
-            {title ? <h2 id="med-dialog-title" className="text-base font-black text-white">{title}</h2> : null}
-            {description ? <p id="med-dialog-description" className="mt-1 text-[12px] leading-relaxed text-gray-400">{description}</p> : null}
-          </div>
-          <button
-            aria-label="Fechar"
-            className="med-button-reset med-pressable med-focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"
-            onClick={onClose}
-            type="button"
+    <MotionConfig reducedMotion="user">
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="med-dialog-backdrop"
+            className="fixed inset-0 z-[var(--med-z-modal)] flex items-end justify-center bg-black/72 p-3 backdrop-blur-sm md:items-center md:p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onMouseDown={() => {
+              if (!formDirty) onClose?.();
+            }}
           >
-            <X size={17} />
-          </button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
-        {footer ? <div className="sticky bottom-0 border-t border-white/10 bg-[#111827]/95 px-5 py-4 backdrop-blur">{footer}</div> : null}
-      </div>
-    </div>,
+            <motion.div
+              key="med-dialog-panel"
+              aria-describedby={description ? "med-dialog-description" : undefined}
+              aria-labelledby={title ? "med-dialog-title" : undefined}
+              aria-modal="true"
+              className={cx(
+                "med-card relative flex max-h-[92dvh] w-full flex-col overflow-hidden outline-none",
+                wide ? "max-w-2xl" : "max-w-lg",
+                mobileSheet ? "rounded-t-[var(--med-radius-xl)] md:rounded-[var(--med-radius-lg)]" : "",
+                className
+              )}
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.22, ease: EASE_STANDARD }}
+              onMouseDown={(event) => event.stopPropagation()}
+              ref={panelRef}
+              role="dialog"
+              tabIndex={-1}
+              style={{ background: "var(--med-surface-solid)", padding: 0 }}
+            >
+              <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
+                <div className="min-w-0">
+                  {title ? <h2 id="med-dialog-title" className="text-base font-black text-white">{title}</h2> : null}
+                  {description ? <p id="med-dialog-description" className="mt-1 text-[12px] leading-relaxed text-gray-400">{description}</p> : null}
+                </div>
+                <button
+                  aria-label="Fechar"
+                  className="med-button-reset med-pressable med-focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"
+                  onClick={onClose}
+                  type="button"
+                >
+                  <X size={17} />
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
+              {footer ? <div className="sticky bottom-0 border-t border-white/10 bg-[#111827]/95 px-5 py-4 backdrop-blur">{footer}</div> : null}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </MotionConfig>,
     document.body
   );
 }

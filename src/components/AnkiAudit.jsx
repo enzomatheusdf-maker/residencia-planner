@@ -4,6 +4,7 @@ import { Zap, Plus, AlertTriangle, CheckCircle } from "lucide-react";
 import { useStore } from "../core/store";
 import { todayStr, fmtFull, diffDays, fmtDate, fmtRelativo, addDays } from "../core/fsrs";
 import { Btn, Input, Field, Modal, InfoTooltip } from "./Primitives";
+import { MotionCard, MotionPresence, MotionSection, MotionStep } from "./motion";
 
 export default function AnkiAudit() {
   const { plat, addAnki, marcarAnkiHoje } = useStore();
@@ -124,7 +125,7 @@ export default function AnkiAudit() {
   }, [cardsFromErrors]);
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-up text-left">
+    <MotionSection as="div" className="flex flex-col gap-4 text-left">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Zap size={20} className="text-gray-400" />
@@ -134,7 +135,7 @@ export default function AnkiAudit() {
         <Btn onClick={() => setOpen(true)} className="gap-2"><Plus size={16} /> Registrar Sessão</Btn>
       </div>
 
-      <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <MotionCard interactive={false} className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="space-y-1">
           <p className="text-[10.5px] uppercase tracking-wider font-semibold text-gray-500">Adesão diária</p>
           <p className="text-[12px] text-gray-300">
@@ -153,10 +154,17 @@ export default function AnkiAudit() {
           <CheckCircle size={16} />
           {ankiFeitoHoje ? "Revisão de hoje registrada" : "Revisei meus cards hoje"}
         </Btn>
-      </div>
+      </MotionCard>
+
+      {ankiFeitoHoje && (
+        <MotionCard interactive={false} className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-[12px] font-bold text-emerald-300 flex items-center gap-2">
+          <CheckCircle size={14} />
+          Anki zerado hoje. O bloco leve ja entrou na sua aderencia.
+        </MotionCard>
+      )}
 
       {isOverloaded && (
-        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-200 p-4 rounded-2xl flex items-start gap-3 animate-fade-up">
+        <MotionCard interactive={false} className="bg-amber-500/10 border border-amber-500/20 text-amber-200 p-4 rounded-2xl flex items-start gap-3">
           <AlertTriangle className="text-amber-400 shrink-0 mt-0.5" size={18} />
           <div className="space-y-1">
             <h4 className="text-xs font-black uppercase tracking-wider">Alerta de Sobrecarga do Deck (Over-load)</h4>
@@ -164,7 +172,7 @@ export default function AnkiAudit() {
               Você adicionou <strong className="text-white">{newCardsThisWeek} cards</strong> nos últimos 7 dias. Criar cards em excesso gera ansiedade e inviabiliza revisões futuras.
             </p>
           </div>
-        </div>
+        </MotionCard>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -194,13 +202,13 @@ export default function AnkiAudit() {
             tooltip: "Tempo total de revisão de Anki registrado hoje.",
           },
         ].map((kpi) => (
-          <div key={kpi.l} className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col justify-between">
+          <MotionCard key={kpi.l} interactive={false} className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col justify-between">
             <div className="flex items-center justify-between text-gray-500 mb-2">
               <span className="text-[10.5px] uppercase tracking-wider font-semibold">{kpi.l}</span>
               <InfoTooltip texto={kpi.tooltip} />
             </div>
             <p className={`text-3xl font-black tabular-nums ${kpi.c}`}>{kpi.v}</p>
-          </div>
+          </MotionCard>
         ))}
       </div>
 
@@ -225,21 +233,23 @@ export default function AnkiAudit() {
         </button>
       </div>
 
+      <MotionPresence>
+      <MotionStep stepKey={activeTab} className="min-w-0">
       {activeTab === "logs" && (
         <div className="flex flex-col gap-2">
-          <div className="bg-black/20 rounded-2xl border border-white/5 p-4 text-[12px] text-gray-400">
+          <MotionCard interactive={false} className="bg-black/20 rounded-2xl border border-white/5 p-4 text-[12px] text-gray-400">
             O log manual continua disponível para quem já usa, mas ficou como trilha secundária. O foco principal agora são cards gerados por erros reais.
-          </div>
+          </MotionCard>
           {ankiLog.length === 0 && (
-            <div className="text-center py-16 text-gray-600 text-[13px] italic bg-black/20 rounded-2xl border border-white/5">
+            <MotionCard interactive={false} className="text-center py-16 text-gray-600 text-[13px] italic bg-black/20 rounded-2xl border border-white/5">
               Nenhuma auditoria de Anki gravada.
-            </div>
+            </MotionCard>
           )}
           {[...ankiLog].reverse().map((l) => {
             const pct = l.revisados ? Math.round((l.again / l.revisados) * 100) : 0;
             const col = pct < 15 ? "text-emerald-400" : pct < 30 ? "text-yellow-400" : "text-red-400";
             return (
-              <div
+              <MotionCard
                 key={l.id}
                 className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex items-center justify-between hover:border-white/10 transition-colors gap-4"
               >
@@ -256,7 +266,7 @@ export default function AnkiAudit() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </MotionCard>
             );
           })}
         </div>
@@ -265,9 +275,9 @@ export default function AnkiAudit() {
       {activeTab === "errors" && (
         <div className="flex flex-col gap-2">
           {cardsFromErrors.length === 0 && (
-            <div className="text-center py-16 text-gray-600 text-[13px] italic bg-black/20 rounded-2xl border border-white/5">
+            <MotionCard interactive={false} className="text-center py-16 text-gray-600 text-[13px] italic bg-black/20 rounded-2xl border border-white/5">
               Nenhum card foi gerado a partir de erros de simulados ou estudos até o momento.
-            </div>
+            </MotionCard>
           )}
           {cardsFromErrors.map((card) => {
             const text = card.anotacao || "";
@@ -278,7 +288,7 @@ export default function AnkiAudit() {
             const isComplex = hasMinText && (hasBulletPoints || hasNumberedList || commaCount >= 3);
 
             return (
-              <div
+              <MotionCard
                 key={card.id}
                 className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:border-white/10 transition-all gap-3 text-left"
               >
@@ -309,11 +319,13 @@ export default function AnkiAudit() {
                     </span>
                   )}
                 </div>
-              </div>
+              </MotionCard>
             );
           })}
         </div>
       )}
+      </MotionStep>
+      </MotionPresence>
 
       {open && (
         <Modal onClose={() => setOpen(false)}>
@@ -353,6 +365,6 @@ export default function AnkiAudit() {
           </div>
         </Modal>
       )}
-    </div>
+    </MotionSection>
   );
 }

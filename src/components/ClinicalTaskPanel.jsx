@@ -12,6 +12,7 @@
 import React, { useState } from "react";
 import { Brain, ChevronDown, ChevronUp, BookOpen, Stethoscope, FlaskConical } from "lucide-react";
 import { TASK_TYPE } from "../core/reviewTaskPlanner";
+import { MotionCard, MotionPresence, MotionProgressBar, MotionStep } from "./motion";
 
 // ─── Icone por tipo ───────────────────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ export default function ClinicalTaskPanel({ task, className = "", onSelfScore = 
   const isSctOrManagement = taskType === TASK_TYPE.SCT;
 
   return (
-    <div className={`${bg} border ${border} rounded-2xl overflow-hidden ${className}`}>
+    <MotionCard interactive={false} className={`${bg} border ${border} rounded-2xl overflow-hidden ${className}`}>
       {/* Header colapsavel */}
       <button
         type="button"
@@ -128,8 +129,9 @@ export default function ClinicalTaskPanel({ task, className = "", onSelfScore = 
       </button>
 
       {/* Conteudo */}
-      {open && (
-        <div className="p-4 pt-0 space-y-4">
+      <MotionPresence>
+        {open && (
+        <MotionStep stepKey={`${taskType}-open`} className="p-4 pt-0 space-y-4">
           {/* Instrucao */}
           <div className="border-t border-white/5 pt-4">
             <p className="text-[11px] text-gray-400 leading-relaxed">{description.instruction}</p>
@@ -192,18 +194,16 @@ export default function ClinicalTaskPanel({ task, className = "", onSelfScore = 
             <p className="text-[10px] text-gray-600">
               {filledCount}/{totalFields} campos preenchidos
             </p>
-            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden flex-1 mx-3">
-              <div
-                className={`h-full rounded-full transition-all duration-300 ${
-                  filledCount === totalFields ? "bg-emerald-500" : `bg-gradient-to-r from-blue-600 to-sky-400`
-                }`}
-                style={{ width: `${(filledCount / totalFields) * 100}%` }}
-              />
-            </div>
+            <MotionProgressBar
+              value={(filledCount / totalFields) * 100}
+              className="h-1.5 bg-white/5 rounded-full overflow-hidden flex-1 mx-3"
+              barClassName={`h-full rounded-full ${filledCount === totalFields ? "bg-emerald-500" : "bg-gradient-to-r from-blue-600 to-sky-400"}`}
+            />
             <p className="text-[10px] text-gray-600">{description.durationMin} min</p>
           </div>
-        </div>
-      )}
-    </div>
+        </MotionStep>
+        )}
+      </MotionPresence>
+    </MotionCard>
   );
 }
