@@ -78,6 +78,12 @@ describe("parseCalendarCsv", () => {
     expect(errors[0].line).toBe(0);
   });
 
+  it("blocks non-text input before parsing", () => {
+    const { topics, errors } = parseCalendarCsv({ raw: true });
+    expect(topics).toHaveLength(0);
+    expect(errors[0].message).toMatch(/root/i);
+  });
+
   it("handles quoted fields with commas inside", () => {
     const csv = `${HEADER_COMMA}\nSemana 1,Segunda,2026-06-02,CARDIOLOGIA,"Hipertensão, Crise",,1,50,ALTA,`;
     const { topics } = parseCalendarCsv(csv);

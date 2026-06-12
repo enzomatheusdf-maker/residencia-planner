@@ -1,6 +1,7 @@
 import { ENAMED_HOTNESS } from "../constants/enamedIncidencia";
 import { CALENDAR_PROVIDER_IDS, DEV_ESTRATEGIA_SAMPLE } from "../constants/calendarProviders";
 import { MEDREV_SAMPLE_CALENDAR } from "../constants/sampleCalendars";
+import { validateCalendarImportJson } from "./schemas/boundarySchemas";
 
 function normalizeText(value) {
   return String(value || "")
@@ -236,8 +237,11 @@ export function parseEstrategiaText(input = "") {
 export function parseCalendarImport(raw = "", formatHint = "text") {
   if (formatHint === "json") {
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map((item) => normalizeCalendarTopic(item, CALENDAR_PROVIDER_IDS.USER_IMPORTED));
+    const validation = validateCalendarImportJson(parsed);
+    if (!validation.valid) {
+      throw new Error(validation.errors.join(" "));
+    }
+    return validation.data.map((item) => normalizeCalendarTopic(item, CALENDAR_PROVIDER_IDS.USER_IMPORTED));
   }
   return parseEstrategiaText(raw);
 }

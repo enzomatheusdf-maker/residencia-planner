@@ -1,4 +1,4 @@
-import { buildDecisionCoreSnapshot, buildActionInboxFromDecisionCore } from "./decisionCore";
+import { buildDecisionCoreSnapshot, buildActionInboxFromDecisionCore, DECISION_CORE_ENGINE_VERSION } from "./decisionCore";
 import { useStore } from "./store";
 
 function baseState(overrides = {}) {
@@ -48,6 +48,9 @@ describe("decisionCore", () => {
 
     const snapshot = buildDecisionCoreSnapshot(state, { today });
     expect(snapshot.today).toBe(today);
+    expect(snapshot.forDate).toBe(today);
+    expect(snapshot.engineVersion).toBe(DECISION_CORE_ENGINE_VERSION);
+    expect(Date.parse(snapshot.generatedAt)).not.toBeNaN();
     expect(snapshot.plat).toBe("res");
     expect(snapshot.primaryAction).toBe(snapshot.mentorAction);
     expect(snapshot.mentorAction.type).toBe("revisao_vencida");

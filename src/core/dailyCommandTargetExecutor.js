@@ -1,8 +1,38 @@
 import { legacyActionToDailyCommand } from "./dailyCommandEngine";
 
+const KNOWN_ROUTES = new Set([
+  "dashboard",
+  "focus",
+  "agenda",
+  "plan",
+  "settings",
+  "simulations",
+  "stats",
+  "anki",
+  "clinical",
+  "session_closure",
+]);
+
+const viewByRoute = {
+  dashboard: "dash",
+  plan: "crono",
+  simulations: "sims",
+  stats: "stats",
+  anki: "anki",
+};
+
 function normalizeCommand(input = {}, context = {}) {
   if (input?.target?.route) return input;
   return legacyActionToDailyCommand(input, context);
+}
+
+function buildResult(outcome, route, params) {
+  return {
+    ok: outcome === "handled" || outcome === "fallback_view",
+    outcome,
+    route: route || "unknown",
+    params: params || {},
+  };
 }
 
 function showRebalanceToast(result, toast) {
@@ -16,80 +46,82 @@ function showRebalanceToast(result, toast) {
 }
 
 export function executeDailyCommandTarget(input, handlers = {}) {
+  const hadExplicitRoute = Boolean(input?.target?.route);
   const command = normalizeCommand(input, { plat: handlers.plat });
   const target = command.target || {};
   const params = target.params || {};
+  const route = target.route || "dashboard";
 
-  if (target.route === "session_closure") {
-    if (handlers.openSessionClosure) handlers.openSessionClosure();
-    return true;
+  const missingHandler = (fallbackView) => {
+    if (fallbackView && handlers.setView) handlers.setView(fallbackView);
+    return buildResult("missing_handler", route, params);
+  };
+
+  if (!KNOWN_ROUTES.has(route)) {
+    if (handlers.setView) handlers.setView("dash");
+    return buildResult("unknown_route", route, params);
   }
 
-  if (target.route === "focus") {
+  if (route === "session_closure") {
+    if (!handlers.openSessionClosure) return buildResult("missing_handler", route, params);
+    handlers.openSessionClosure();
+    return buildResult("handled", route, params);
+  }
+
+  if (route === "focus") {
     if (params.temaId && params.stepKey && handlers.onStudy) {
       handlers.onStudy(params.temaId, params.stepKey);
-      return true;
+      return buildResult("handled", route, params);
     }
     const queueItem = handlers.queueItem || null;
     if (queueItem && handlers.onStudy) {
       handlers.onStudy(queueItem.temaId, queueItem.stepKey);
-      return true;
+      return buildResult("handled", route, params);
     }
-    if (handlers.setView) handlers.setView("crono");
-    return true;
+    return missingHandler("crono");
   }
 
   if (params.action === "rebalance_workload") {
+    if (!handlers.rebalanceTodayWorkload) return missingHandler("dash");
     const result = handlers.rebalanceTodayWorkload
       ? handlers.rebalanceTodayWorkload(handlers.plat)
       : null;
     showRebalanceToast(result, handlers.showToast);
-    return true;
+    return buildResult("handled", route, params);
   }
 
-  if (target.route === "settings") {
+  if (route === "settings") {
     if (handlers.onOpenAjustes) {
       handlers.onOpenAjustes({ initialTab: params.tab || "ajustes" });
-      return true;
+      return buildResult("handled", route, params);
     }
-    if (handlers.setView) handlers.setView("crono");
-    return true;
+    return missingHandler("crono");
   }
 
-  if (target.route === "agenda") {
+  if (route === "agenda") {
     if (handlers.onOpenAgenda) {
       handlers.onOpenAgenda(params.date);
-      return true;
+      return buildResult("handled", route, params);
     }
-    if (handlers.setView) handlers.setView("crono");
-    return true;
+    return missingHandler("crono");
   }
 
-  if (target.route === "clinical") {
+  if (route === "clinical") {
     if (handlers.onOpenClinicalCase) {
       handlers.onOpenClinicalCase({
         caseId: params.casoId || null,
         phase: params.phase || "caso",
       });
-      return true;
+      return buildResult("handled", route, params);
     }
-    if (handlers.setView) handlers.setView("raciocinio");
-    return true;
+    return missingHandler("raciocinio");
   }
 
-  const viewByRoute = {
-    dashboard: "dash",
-    plan: "crono",
-    simulations: "sims",
-    stats: "stats",
-    anki: "anki",
-  };
-  const nextView = viewByRoute[target.route];
+  const nextView = viewByRoute[route];
   if (nextView && handlers.setView) {
     handlers.setView(nextView);
-    return true;
+    return buildResult(!hadExplicitRoute && route === "dashboard" ? "fallback_view" : "handled", route, params);
   }
 
-  if (handlers.setView) handlers.setView("dash");
-  return false;
+  return buildResult("missing_handler", route, params);
 }

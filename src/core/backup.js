@@ -1,4 +1,5 @@
 import { validateStateIntegrity } from "./dataIntegrity";
+import { validateBackupFileShape } from "./schemas/boundarySchemas";
 
 export const MEDREV_BACKUP_VERSION = "reviewflow-v6-backup";
 export const MEDREV_BACKUP_SCHEMA = "medrev-backup-v1";
@@ -52,6 +53,11 @@ export function validateMedrevBackup(backup) {
 
   if (!isObject(backup)) {
     return { valid: false, errors: ["Estrutura de backup invalida."], warnings, summary: null };
+  }
+
+  const shape = validateBackupFileShape(backup);
+  if (!shape.valid) {
+    errors.push(...shape.errors);
   }
 
   if (!backup.version || typeof backup.version !== "string") {

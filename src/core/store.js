@@ -8,7 +8,7 @@ import { computeStreakOnStudy, recoverStreak } from "./gamif";
 import { createAction, sortActions } from "./actionInbox";
 import { createSessionReflection } from "./sessionReflection";
 import { getPeakPhase } from "./peakMode";
-import { buildActionInboxFromDecisionCore, buildDecisionCoreSnapshot } from "./decisionCore";
+import { buildActionInboxFromDecisionCore, buildDecisionCoreSnapshot, DECISION_CORE_ENGINE_VERSION } from "./decisionCore";
 import { appendLearningEvent, createLearningEvent, getTemaStatsFromLearningEvents } from "./learningEvent";
 import { dominantErrorType } from "./errorTaxonomy";
 import { getReadinessData } from "./readiness";
@@ -27,6 +27,8 @@ import { agendarReencontro, clinicalCaseMatch } from "./illnessScript";
 import { CLINICAL_CASES_INDEX } from "../constants/clinicalCasesIndex";
 import { updateBayesianMastery } from "./mastery";
 import { rebalanceWorkloadForToday } from "./workloadRebalance";
+import { safeTrackEvent } from "./telemetry";
+import { isDevOnlyEnabled } from "./devFlags";
 
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
@@ -201,6 +203,7 @@ const timestampMiddleware = (config) => (set, get, api) => {
         "weeklyReviews",
         "sprint",
         "learningEvents",
+        "mentorEvents",
       ].includes(key)
     );
 
@@ -291,6 +294,50 @@ function buildDecisionOutputs(state = {}, today = todayStr()) {
   };
 }
 
+function assertDecisionRebuildInvariant(outputs = {}, reason = "unknown") {
+  if (!isDevOnlyEnabled()) return;
+  const hasSnapshot = Object.prototype.hasOwnProperty.call(outputs, "decisionSnapshot");
+  const hasInbox = Object.prototype.hasOwnProperty.call(outputs, "actionInbox");
+  if (hasSnapshot !== hasInbox) {
+    throw new Error(`decision rebuild invariant failed: snapshot/actionInbox mismatch (${reason})`);
+  }
+}
+
+function rebuildDecision(state = {}, reason = "manual", today = todayStr()) {
+  const outputs = buildDecisionOutputs(state, today);
+  assertDecisionRebuildInvariant(outputs, reason);
+  safeTrackEvent(
+    "decision_rebuilt",
+    { plat: state.plat || "res", reason },
+    { state: { ...state, ...outputs } }
+  );
+  return outputs;
+}
+
+export function isDecisionSnapshotFresh(snapshot, state = {}, today = todayStr()) {
+  const plat = state.plat || "res";
+  return Boolean(
+    snapshot
+      && snapshot.plat === plat
+      && snapshot.forDate === today
+      && snapshot.engineVersion === DECISION_CORE_ENGINE_VERSION
+  );
+}
+
+let decisionSnapshotVisibilityListenerInstalled = false;
+
+function installDecisionSnapshotVisibilityListener() {
+  if (decisionSnapshotVisibilityListenerInstalled) return;
+  if (typeof document === "undefined" || typeof document.addEventListener !== "function") return;
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      useStore.getState().ensureFreshDecisionSnapshot?.("day_rollover");
+    }
+  });
+  decisionSnapshotVisibilityListenerInstalled = true;
+}
+
 function normalizeClinicalErrorPayload(payload = {}) {
   const nestedErrors = payload.errors && typeof payload.errors === "object" ? payload.errors : {};
   const candidateLists = [
@@ -358,11 +405,19 @@ export const useStore = create(
       sessionReflections: [],
       weeklyReviews: [],
       learningEvents: [],
+      mentorEvents: [],
       brainDumpD1Data: {},
       temaStats: {},
       vistos: [],
       tourStep: null,
       setPlat: (p) => set({ plat: p, actionInbox: [], decisionSnapshot: null }),
+      // CC-7: appenda evento de qualidade do Mentor (visto/started/ignored) e poda > 30 dias
+      recordMentorEvent: (event) =>
+        set((s) => {
+          const cutoffStr = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+          const pruned = (s.mentorEvents || []).filter((e) => (e.date || "") >= cutoffStr);
+          return { mentorEvents: [...pruned, event] };
+        }),
       setCronogramaSel: (platKey, id) => set((s) => ({ cronogramaSel: { ...s.cronogramaSel, [platKey]: id } })),
       setCalendarProvider: (providerId) =>
         set((s) => ({
@@ -392,7 +447,7 @@ export const useStore = create(
           const nextState = { ...s, meta };
           return {
             meta,
-            ...buildDecisionOutputs(nextState),
+            ...rebuildDecision(nextState, "set_meta"),
           };
         }),
       setStudyPlanIntention: (intention) =>
@@ -427,7 +482,7 @@ export const useStore = create(
           const nextState = { ...s, meta };
           return {
             meta,
-            ...buildDecisionOutputs(nextState),
+            ...rebuildDecision(nextState, "set_meta"),
           };
         }),
       setModoProva: (modoProva) => set({ modoProva }),
@@ -576,15 +631,12 @@ export const useStore = create(
             sessionReflections: nextReflections,
             learningEvents: nextEvents,
           };
-          const decisionOptions = buildDecisionSnapshotOptions(decisionState, today);
-          const decisionSnapshot = buildDecisionCoreSnapshot(decisionState, decisionOptions);
-          const nextInbox = buildActionInboxFromDecisionCore(decisionState, { ...decisionOptions, snapshot: decisionSnapshot });
+          const decisionOutputs = rebuildDecision(decisionState, "session_closed", today);
 
           return {
             sessionReflections: nextReflections,
             learningEvents: nextEvents,
-            actionInbox: nextInbox,
-            decisionSnapshot,
+            ...decisionOutputs,
             meta: {
               ...s.meta,
               lastReflectionAt: new Date().toISOString(),
@@ -601,30 +653,42 @@ export const useStore = create(
           const weeklyReviews = [...(s.weeklyReviews || []).filter((item) => item.id !== normalized.id), normalized].slice(-52);
           return { weeklyReviews };
         }),
-      rebuildActionInboxForToday: () =>
+      rebuildActionInboxForToday: (reason = "inbox_rebuild") =>
         set((s) => {
           const today = todayStr();
-          const decisionOptions = buildDecisionSnapshotOptions(s, today);
-          const decisionSnapshot = buildDecisionCoreSnapshot(s, decisionOptions);
-          const nextInbox = buildActionInboxFromDecisionCore(s, { ...decisionOptions, snapshot: decisionSnapshot });
           const phase = getPeakPhase({ examDate: s.meta?.dataProva, today });
 
           return {
-            actionInbox: nextInbox,
-            decisionSnapshot,
             meta: {
               ...s.meta,
               peakModePhase: phase,
             },
+            ...rebuildDecision(s, reason, today),
           };
         }),
+      ensureFreshDecisionSnapshot: (reason = "manual") => {
+        const state = get();
+        const today = todayStr();
+        if (isDecisionSnapshotFresh(state.decisionSnapshot, state, today)) {
+          return false;
+        }
+
+        const phase = getPeakPhase({ examDate: state.meta?.dataProva, today });
+        const nextState = {
+          meta: {
+            ...state.meta,
+            peakModePhase: phase,
+          },
+        };
+        const outputs = rebuildDecision(state, reason, today);
+
+        set({ ...nextState, ...outputs });
+        return true;
+      },
       rebuildDecisionSnapshot: () =>
         set((s) => {
           const today = todayStr();
-          const decisionOptions = buildDecisionSnapshotOptions(s, today);
-          return {
-            decisionSnapshot: buildDecisionCoreSnapshot(s, decisionOptions),
-          };
+          return rebuildDecision(s, "inbox_rebuild", today);
         }),
       rebalanceTodayWorkload: (platKeyArg, options = {}) => {
         let result = null;
@@ -669,9 +733,7 @@ export const useStore = create(
               temas: result.temas,
             },
           };
-          const decisionOptions = buildDecisionSnapshotOptions(nextState, today);
-          const decisionSnapshot = buildDecisionCoreSnapshot(nextState, decisionOptions);
-          const nextInbox = buildActionInboxFromDecisionCore(nextState, { ...decisionOptions, snapshot: decisionSnapshot });
+          const decisionOutputs = rebuildDecision(nextState, "rebalance", today);
 
           return {
             [platKey]: {
@@ -679,8 +741,7 @@ export const useStore = create(
               temas: result.temas,
             },
             meta,
-            decisionSnapshot,
-            actionInbox: nextInbox,
+            ...decisionOutputs,
           };
         });
         return result;
@@ -1095,7 +1156,7 @@ export const useStore = create(
           };
         });
         const rebuild = get().rebuildActionInboxForToday;
-        if (typeof rebuild === "function") rebuild();
+        if (typeof rebuild === "function") rebuild("domain_test");
         return result;
       },
 
@@ -1144,7 +1205,7 @@ export const useStore = create(
           };
         });
         const rebuild = get().rebuildActionInboxForToday;
-        if (typeof rebuild === "function") rebuild();
+        if (typeof rebuild === "function") rebuild("domain_test");
         return result;
       },
 
@@ -1300,6 +1361,15 @@ export const useStore = create(
               ...(motivosErro || []).map((tipoErro) => ({ tipoErro, acertou: false }))
             ])
           }, 1000);
+          const nextState = {
+            ...s,
+            [platKey]: {
+              ...s[platKey],
+              temas: temasAtualizados,
+              casosProgresso,
+            },
+            learningEvents: nextEvents,
+          };
 
           return {
             [platKey]: {
@@ -1308,6 +1378,7 @@ export const useStore = create(
               casosProgresso,
             },
             learningEvents: nextEvents,
+            ...rebuildDecision(nextState, "mark_review", reviewedAt),
           };
         }),
 
@@ -1566,7 +1637,7 @@ export const useStore = create(
           const nextState = { ...s, meta };
           return {
             meta,
-            ...buildDecisionOutputs(nextState, hoje),
+            ...rebuildDecision(nextState, "mark_review", hoje),
           };
         }),
 
@@ -1797,7 +1868,9 @@ export const useStore = create(
         mentorMode: s.mentorMode,
         modoProva: s.modoProva,
         enamedAnalises: s.enamedAnalises,
+        actionInbox: s.actionInbox,
         actionInboxState: s.actionInboxState,
+        decisionSnapshot: s.decisionSnapshot,
         sessionReflections: s.sessionReflections,
         weeklyReviews: s.weeklyReviews,
         learningEvents: s.learningEvents,
@@ -1872,7 +1945,9 @@ export const useStore = create(
           mentorMode: persisted.mentorMode ?? initial.mentorMode,
           modoProva: persisted.modoProva ?? initial.modoProva,
           enamedAnalises: persisted.enamedAnalises ?? initial.enamedAnalises,
+          actionInbox: Array.isArray(persisted.actionInbox) ? persisted.actionInbox : initial.actionInbox,
           actionInboxState: persisted.actionInboxState ?? initial.actionInboxState,
+          decisionSnapshot: persisted.decisionSnapshot ?? initial.decisionSnapshot,
           sessionReflections: persisted.sessionReflections ?? initial.sessionReflections,
           weeklyReviews: persisted.weeklyReviews ?? initial.weeklyReviews,
           learningEvents: migratedState.learningEvents ?? initial.learningEvents,
@@ -1885,6 +1960,12 @@ export const useStore = create(
           gamif: persisted.gamif ? { ...initial.gamif, ...persisted.gamif } : initial.gamif,
         };
       },
+      onRehydrateStorage: () => (state) => {
+        installDecisionSnapshotVisibilityListener();
+        state?.ensureFreshDecisionSnapshot?.("persist_hydrated");
+      },
     }
   )
 );
+
+installDecisionSnapshotVisibilityListener();

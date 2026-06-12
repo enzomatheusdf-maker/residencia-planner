@@ -214,6 +214,21 @@ const DEFINITIONS = [
     unit: "dias",
     platforms: ["res", "vest"],
   },
+  {
+    id: "mentorQuality",
+    label: "Qualidade do Mentor",
+    shortLabel: "Mentor",
+    section: "mentor",
+    description: "Taxa de execucao das recomendacoes do Mentor nos ultimos 14 dias (comandos iniciados / comandos vistos).",
+    emptyState: "Coletando dados — interaja com o Comando do Dia por mais alguns dias.",
+    confidenceRule: ({ total = 0 }) => total >= 5,
+    actionWhenLow: "Revise o Comando do Dia antes de estudar — seguir o Mentor acelera o preparo.",
+    warningThreshold: 40,
+    criticalThreshold: 20,
+    higherIsBetter: true,
+    unit: "%",
+    platforms: ["res", "vest"],
+  },
 ];
 
 // Indice para lookup O(1)
@@ -358,4 +373,51 @@ export function formatMetricValue(id, value, context = {}) {
  */
 export function getAllSections() {
   return [...new Set(DEFINITIONS.map((d) => d.section))];
+}
+
+// ─── CC-7: Agregado de qualidade do Mentor ────────────────────────────────────
+
+export const MENTOR_QUALITY_MIN_SAMPLE = 5;
+
+/**
+ * Computa o agregado de qualidade do Mentor a partir dos eventos locais persistidos.
+ * Puro: sem side-effects, sem React.
+ *
+ * @param {Array}  mentorEvents  - array de eventos do store (eventType, date, plat, action_type, source, seenAt?)
+ * @param {string} plat          - plataforma atual ("res"|"vest")
+ * @param {number} [windowDays]  - janela em dias (default 14)
+ * @returns {{
+ *   status: "collecting"|"ok",
+ *   started: number,
+ *   ignored: number,
+ *   total: number,
+ *   executionRate: number|null,
+ *   byType: Record<string, {started: number, ignored: number}>,
+ * }}
+ */
+export function getMentorQualityAggregate(mentorEvents = [], plat = "res", windowDays = 14) {
+  const cutoffStr = new Date(Date.now() - windowDays * 24 * 3600 * 1000).toISOString().slice(0, 10);
+
+  const relevant = mentorEvents.filter(
+    (e) => e.plat === plat && (e.date || "") >= cutoffStr
+  );
+
+  const started = relevant.filter((e) => e.eventType === "started").length;
+  const ignored = relevant.filter((e) => e.eventType === "ignored").length;
+  const total = started + ignored;
+
+  const byType = {};
+  relevant.forEach((e) => {
+    if (e.eventType !== "started" && e.eventType !== "ignored") return;
+    const key = e.action_type || "unknown";
+    if (!byType[key]) byType[key] = { started: 0, ignored: 0 };
+    byType[key][e.eventType]++;
+  });
+
+  if (total < MENTOR_QUALITY_MIN_SAMPLE) {
+    return { status: "collecting", started, ignored, total, executionRate: null, byType };
+  }
+
+  const executionRate = Math.round((started / total) * 100);
+  return { status: "ok", started, ignored, total, executionRate, byType };
 }

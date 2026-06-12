@@ -16,6 +16,7 @@
     "react-scripts": "5.0.1",
     "ts-fsrs": "^5.4.1",
     "web-vitals": "^2.1.4",
+    "zod": "^4.4.3",
     "zustand": "^5.0.13"
   },
   "scripts": {
@@ -25,9 +26,9 @@
     "audit:full": "node scripts/audit.mjs",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
-    "start": "react-scripts start",
-    "build": "node scripts/check-mojibake.mjs && react-scripts build",
-    "test": "react-scripts test",
+    "start": "craco start",
+    "build": "node scripts/check-mojibake.mjs && craco build",
+    "test": "craco test",
     "eject": "react-scripts eject",
     "audit": "node scripts/audit.mjs",
     "prepare": "git config core.hooksPath .githooks || exit 0"
@@ -51,6 +52,10 @@
     ]
   },
   "devDependencies": {
-    "gh-pages": "^6.3.0"
+    "@craco/craco": "^7.1.0",
+    "autoprefixer": "^10.5.0",
+    "gh-pages": "^6.3.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3.4.17"
   }
 }

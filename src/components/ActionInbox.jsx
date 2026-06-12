@@ -4,6 +4,7 @@ import { CheckCircle2, Inbox, Play, XCircle } from "lucide-react";
 import { useStore } from "../core/store";
 import { useFilaInteligente } from "../hooks/useMetrics";
 import { executeDailyCommandTarget } from "../core/dailyCommandTargetExecutor";
+import { safeTrackEvent } from "../core/telemetry";
 import EmptyState from "./EmptyState";
 
 const EASE = [0.22, 1, 0.36, 1];
@@ -30,7 +31,22 @@ function resolveActionCTA(action, handlers, filaInteligente) {
   const queueItem = isQueueAction(action) ? pickQueueItem(action, filaInteligente) : null;
   return {
     label: action?.cta || "Executar",
-    onClick: () => executeDailyCommandTarget(action, { ...handlers, queueItem }),
+    onClick: () => {
+      const result = executeDailyCommandTarget(action, { ...handlers, queueItem });
+      if (result?.outcome !== "handled") {
+        safeTrackEvent(
+          "mentor_action_target_missing",
+          {
+            plat: handlers.plat,
+            route: result?.route || action?.target?.route || "unknown",
+            outcome: result?.outcome || "unknown_route",
+            source: action?.source || "action-inbox",
+          },
+          { state: { meta: handlers.telemetryMeta } }
+        );
+      }
+      return result;
+    },
   };
 }
 
@@ -42,6 +58,7 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView, onOpenA
   const markActionDone = useStore((s) => s.markActionDone);
   const rebalanceTodayWorkload = useStore((s) => s.rebalanceTodayWorkload);
   const plat = useStore((s) => s.plat);
+  const telemetryMeta = useStore((s) => s.meta);
   const showToast = useStore((s) => s.showToast);
   const filaInteligente = useFilaInteligente();
   const [expanded, setExpanded] = useState(false);
@@ -74,7 +91,7 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView, onOpenA
   const rest = mode === "manual" || expanded ? openActions.slice(1) : openActions.slice(1, 3);
   const primaryCTA = resolveActionCTA(
     primary,
-    { onStudy, setView, rebalanceTodayWorkload, plat, showToast, onOpenAjustes, onOpenAgenda, onOpenClinicalCase },
+    { onStudy, setView, rebalanceTodayWorkload, plat, showToast, telemetryMeta, onOpenAjustes, onOpenAgenda, onOpenClinicalCase },
     filaInteligente
   );
 

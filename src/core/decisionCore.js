@@ -6,6 +6,7 @@ import { reflectionToAction } from "./sessionReflection";
 import { todayStr, addDays } from "./fsrs";
 
 const EMPTY_INBOX_STATE = { dismissed: {}, accepted: {}, done: {} };
+export const DECISION_CORE_ENGINE_VERSION = "decision-core-v2";
 
 function normalizeText(value = "") {
   return String(value)
@@ -54,6 +55,7 @@ function reflectionMatchesPlat(reflection = {}, state = {}, plat = "res") {
 export function buildDecisionCoreSnapshot(state = {}, options = {}) {
   const today = options.today || todayStr();
   const plat = options.plat || state.plat || "res";
+  const generatedAt = options.generatedAt || new Date().toISOString();
   const context = buildMentorContext(state, plat, { ...options, today });
   const primaryAction = decideMentorAction(context);
   const mentorAction = primaryAction;
@@ -72,7 +74,10 @@ export function buildDecisionCoreSnapshot(state = {}, options = {}) {
 
   return {
     today,
+    generatedAt,
+    forDate: today,
     plat,
+    engineVersion: DECISION_CORE_ENGINE_VERSION,
     context,
     dailyCommand,
     primaryAction,

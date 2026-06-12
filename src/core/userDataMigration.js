@@ -1,4 +1,5 @@
 import { assertUid, getLegacyGlobalStoreKeys, getUserScopedStorageKey } from "./userScope";
+import { validatePersistedStateShape } from "./schemas/boundarySchemas";
 
 function resolveStorage(storage) {
   if (storage) return storage;
@@ -67,6 +68,16 @@ export function migrateLegacyStoreToUserScope(uid, options = {}) {
     return { ok: false, error: "legacy_store_not_found", migrated: false };
   }
 
+  const validation = validatePersistedStateShape(legacy.parsed);
+  if (!validation.valid) {
+    return {
+      ok: false,
+      error: "invalid_legacy_store",
+      migrated: false,
+      details: validation.errors,
+    };
+  }
+
   const targetKey = getUserScopedStorageKey(normalizedUid, options.env);
   const alreadyScoped = storage.getItem(targetKey);
   if (alreadyScoped && !options.overwrite) {
@@ -110,4 +121,3 @@ export function clearLegacyGlobalStoreAfterConfirm(options = {}) {
 
   return { ok: true, error: null, clearedKeys };
 }
-

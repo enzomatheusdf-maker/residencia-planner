@@ -1,4 +1,5 @@
 import { STEPS } from "./fsrs";
+import { validateAppStateShape } from "./schemas/boundarySchemas";
 
 function isObject(value) {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -74,6 +75,13 @@ export function validateTemaIntegrity(tema = {}, path = "tema") {
 
 export function validateStateIntegrity(state = {}) {
   const issues = { criticals: [], warnings: [] };
+  const shape = validateAppStateShape(state);
+  if (!shape.valid) {
+    shape.errors.forEach((message) => {
+      pushIssue(issues, "criticals", "state", message);
+    });
+  }
+
   const sections = [
     ["res.temas", state.res?.temas],
     ["vest.temas", state.vest?.temas],

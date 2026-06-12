@@ -40,6 +40,14 @@ describe("userDataMigration", () => {
     expect(localStorage.getItem(result.to)).toContain("\"state\"");
   });
 
+  test("bloqueia migracao de payload legado invalido", () => {
+    localStorage.setItem("reviewflow-v6", "not-json");
+    const result = migrateLegacyStoreToUserScope("uid-a", { confirm: true, env: "prod" });
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("invalid_legacy_store");
+    expect(result.migrated).toBe(false);
+  });
+
   test("nao sobrescreve escopo destino existente sem overwrite", () => {
     localStorage.setItem("reviewflow-v6", "{\"state\":{\"res\":{\"temas\":[1]}}}");
     localStorage.setItem("medrev:prod:user:uid-a:store", "{\"state\":{\"res\":{\"temas\":[2]}}}");

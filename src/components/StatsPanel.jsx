@@ -16,7 +16,7 @@ import {
   ERROR_TYPE_LABEL, dominantErrorType, summarizeErrors,
 } from "../core/errorTaxonomy";
 import {
-  evaluateMetric, formatMetricValue, METRIC_STATUS,
+  evaluateMetric, formatMetricValue, METRIC_STATUS, getMentorQualityAggregate, MENTOR_QUALITY_MIN_SAMPLE,
 } from "../core/metricsRegistry";
 import { compareReadinessToSimulado, createReadinessSnapshot, summarizeForecastBacktests } from "../core/readinessValidation";
 import { calcPrevisaoDesempenho, CONFIDENCE_LABEL } from "../core/forecast";
@@ -47,6 +47,8 @@ const SECTIONS = [
   { id: "raciocinio",  label: "Raciocinio", icon: Brain,         forPlat: ["res"] },
   { id: "atividade",   label: "Atividade",  icon: Activity,      forPlat: ["res", "vest"] },
   { id: "validacao",   label: "Validacao",  icon: BarChart3,     forPlat: ["res", "vest"] },
+  // CC-7: qualidade do Mentor
+  { id: "mentor",      label: "Mentor",     icon: Brain,         forPlat: ["res", "vest"] },
 ];
 
 // ─── Navegacao entre secoes ──────────────────────────────────────────────────
@@ -185,6 +187,8 @@ export default function StatsPanel({ setView = null }) {
     () => getTemaStatsFromLearningEvents(learningEvents, { plat, fallbackTemaStats: legacyTemaStats }),
     [learningEvents, plat, legacyTemaStats]
   );
+
+  const mentorEvents = useStore((s) => s.mentorEvents || []);
 
   const [activeSection, setActiveSection] = useState("aprendizagem");
   const lastReadinessTelemetryRef = useRef("");
@@ -635,6 +639,13 @@ export default function StatsPanel({ setView = null }) {
     for (let i = 0; i < 7; i++) if (datas.includes(addDays(todayStr(), -i))) hits++;
     return Math.round((hits / 7) * 100);
   }, [meta]);
+
+  // ─── CC-7: Agregado de qualidade do Mentor ──────────────────────────────────
+  // Ação justificada: taxa de execução baixa → revisitar a explicabilidade do Comando (CC-8)
+  const mentorQualityAggregate = useMemo(
+    () => getMentorQualityAggregate(mentorEvents, plat, 14),
+    [mentorEvents, plat]
+  );
 
   // ─── Metricas avaliadas via registry ────────────────────────────────────────
 
@@ -1681,30 +1692,164 @@ export default function StatsPanel({ setView = null }) {
         <div className="space-y-4">
           <p className="text-[11px] text-gray-500">Consistencia de estudos e historico recente.</p>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <MetricCard
-              label="Consistencia semanal"
-              value={formatMetricValue("weeklyConsistency", activeLastWeek)}
-              status={metricsEvaluated.weeklyConsistency.status}
-              description="Dias ativos nos ultimos 7."
-              emptyState={metricsEvaluated.weeklyConsistency.emptyState}
-              action={metricsEvaluated.weeklyConsistency.action}
-            />
-            <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 min-h-[100px]">
-              <p className="text-[10px] text-gray-500 uppercase font-semibold">Sessoes registradas</p>
-              <p className="text-2xl font-black text-purple-300 tabular-nums">{sessionReflections.length}</p>
-              <p className="text-[10px] text-gray-600">Fechamentos de sessao acumulados.</p>
-            </div>
-            <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 min-h-[100px]">
-              <p className="text-[10px] text-gray-500 uppercase font-semibold">Revisoes executivas</p>
-              <p className="text-2xl font-black text-emerald-400 tabular-nums">{weeklyReviews.length}</p>
-              <p className="text-[10px] text-gray-600">Revisoes semanais registradas.</p>
-            </div>
-          </div>
+          {/* Acao: dias < 5 → "Estude pelo menos 5 dias por semana" */}
+          <MetricCard
+            label="Consistencia semanal"
+            value={formatMetricValue("weeklyConsistency", activeLastWeek)}
+            status={metricsEvaluated.weeklyConsistency.status}
+            description="Dias ativos nos ultimos 7."
+            emptyState={metricsEvaluated.weeklyConsistency.emptyState}
+            action={metricsEvaluated.weeklyConsistency.action}
+          />
 
           <Heatmap heatmapDays={heatmapDays} doneDays={doneDays} monthLabels={monthLabels} />
+
+          {/* Contadores sem acao direta — contexto de uso */}
+          <AdvancedSection title="Avancado — contadores de atividade" defaultOpen={false} storageKey="stats-atividade-advanced">
+            <div className="grid grid-cols-2 gap-3">
+              {/* Acao: nenhuma — apenas contexto de uso da plataforma */}
+              <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 min-h-[80px]">
+                <p className="text-[10px] text-gray-500 uppercase font-semibold">Sessoes registradas</p>
+                <p className="text-2xl font-black text-purple-300 tabular-nums">{sessionReflections.length}</p>
+                <p className="text-[10px] text-gray-600">Fechamentos de sessao acumulados.</p>
+              </div>
+              {/* Acao: nenhuma — proxy de engajamento com revisoes semanais */}
+              <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 min-h-[80px]">
+                <p className="text-[10px] text-gray-500 uppercase font-semibold">Revisoes executivas</p>
+                <p className="text-2xl font-black text-emerald-400 tabular-nums">{weeklyReviews.length}</p>
+                <p className="text-[10px] text-gray-600">Revisoes semanais registradas.</p>
+              </div>
+            </div>
+          </AdvancedSection>
         </div>
       )}
+      {/* ── CC-7: SECAO MENTOR ──────────────────────────────────────────────── */}
+      {currentSection === "mentor" && (
+        <div className="space-y-4">
+          <p className="text-[11px] text-gray-500">
+            Qualidade das recomendacoes do Mentor nos ultimos 14 dias.
+          </p>
+
+          {/* Card principal de taxa de execucao */}
+          <div className="bg-[#111113] border border-white/5 rounded-2xl p-5 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-300">Taxa de execucao</p>
+                {mentorQualityAggregate.status === "collecting" ? (
+                  <p className="mt-1 text-3xl font-black text-gray-500">Coletando dados</p>
+                ) : (
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <p className="text-4xl font-black tabular-nums text-blue-400">{mentorQualityAggregate.executionRate}%</p>
+                    <p className="text-[11px] text-gray-500">dos comandos iniciados</p>
+                  </div>
+                )}
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-[9px] text-gray-500 uppercase font-bold">Amostra</p>
+                <p className="text-[13px] font-black text-gray-300 tabular-nums">{mentorQualityAggregate.total}</p>
+                {mentorQualityAggregate.status === "collecting" && (
+                  <p className="text-[9px] text-gray-600 mt-0.5">min: {MENTOR_QUALITY_MIN_SAMPLE}</p>
+                )}
+              </div>
+            </div>
+
+            {mentorQualityAggregate.status === "collecting" ? (
+              <div className="rounded-xl border border-white/5 bg-white/[.02] p-3 text-[11px] text-gray-400 leading-relaxed">
+                Interaja com o Comando do Dia por {MENTOR_QUALITY_MIN_SAMPLE - mentorQualityAggregate.total} dia{MENTOR_QUALITY_MIN_SAMPLE - mentorQualityAggregate.total !== 1 ? "s" : ""} para liberar as metricas de qualidade.
+              </div>
+            ) : (
+              <>
+                {/* Barra execucao/ignorado */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                    <span>Iniciados</span>
+                    <span>{mentorQualityAggregate.started} / {mentorQualityAggregate.total}</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-white/[.06]">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        mentorQualityAggregate.executionRate >= 60
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                          : mentorQualityAggregate.executionRate >= 40
+                          ? "bg-gradient-to-r from-amber-500 to-orange-400"
+                          : "bg-gradient-to-r from-red-500 to-orange-400"
+                      }`}
+                      style={{ width: `${mentorQualityAggregate.executionRate}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* KPIs */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-white/5 bg-black/20 p-3">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-emerald-400">Iniciados</p>
+                    <p className="text-2xl font-black tabular-nums text-white mt-0.5">{mentorQualityAggregate.started}</p>
+                    <p className="text-[10px] text-gray-500">comandos executados</p>
+                  </div>
+                  <div className="rounded-xl border border-white/5 bg-black/20 p-3">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-amber-400">Ignorados</p>
+                    <p className="text-2xl font-black tabular-nums text-white mt-0.5">{mentorQualityAggregate.ignored}</p>
+                    <p className="text-[10px] text-gray-500">dia virou sem iniciar</p>
+                  </div>
+                </div>
+
+                {/* Por tipo */}
+                {Object.keys(mentorQualityAggregate.byType).length > 0 && (
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-wider text-gray-500 mb-2">Por tipo de acao</p>
+                    <div className="space-y-2">
+                      {Object.entries(mentorQualityAggregate.byType)
+                        .sort((a, b) => (b[1].started + b[1].ignored) - (a[1].started + a[1].ignored))
+                        .slice(0, 5)
+                        .map(([type, counts]) => {
+                          const typeTotal = counts.started + counts.ignored;
+                          const typePct = typeTotal > 0 ? Math.round((counts.started / typeTotal) * 100) : 0;
+                          return (
+                            <div key={type} className="flex items-center gap-2">
+                              <div className="w-24 shrink-0 text-[9px] text-gray-400 truncate font-bold">{type}</div>
+                              <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-white/[.06]">
+                                <div
+                                  className="h-full rounded-full bg-blue-500/70"
+                                  style={{ width: `${typePct}%` }}
+                                />
+                              </div>
+                              <span className="text-[9px] text-gray-500 w-8 text-right tabular-nums">{typePct}%</span>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+
+                {mentorQualityAggregate.executionRate < 40 && (
+                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-[11px] text-amber-300 leading-relaxed">
+                    Taxa baixa — revise o Comando do Dia antes de comecar a sessao de estudos.
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Avancado: contadores sem acao direta */}
+          <AdvancedSection title="Avancado — contadores de atividade" defaultOpen={false} storageKey="stats-mentor-advanced">
+            <div className="grid grid-cols-2 gap-3">
+              {/* Acao: nenhuma direta — apenas contexto de uso da plataforma */}
+              <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 min-h-[80px]">
+                <p className="text-[10px] text-gray-500 uppercase font-semibold">Sessoes registradas</p>
+                <p className="text-2xl font-black text-purple-300 tabular-nums">{sessionReflections.length}</p>
+                <p className="text-[10px] text-gray-600">Fechamentos de sessao acumulados.</p>
+              </div>
+              {/* Acao: nenhuma direta — proxy de engajamento com revisoes semanais */}
+              <div className="bg-[#111113] border border-white/5 rounded-2xl p-4 flex flex-col gap-1 min-h-[80px]">
+                <p className="text-[10px] text-gray-500 uppercase font-semibold">Revisoes executivas</p>
+                <p className="text-2xl font-black text-emerald-400 tabular-nums">{weeklyReviews.length}</p>
+                <p className="text-[10px] text-gray-600">Revisoes semanais registradas.</p>
+              </div>
+            </div>
+          </AdvancedSection>
+        </div>
+      )}
+
       </MotionStep>
       </MotionPresence>
 

@@ -28,10 +28,10 @@ export default function CalendarImportWizard({ onClose, onSave }) {
         };
       }
       return { items: parseCalendarImport(raw, tab), error: "" };
-    } catch (_e) {
+    } catch (e) {
       return {
         items: [],
-        error: "Não foi possível interpretar a importação. Revise o formato.",
+        error: e?.message || "Não foi possível interpretar a importação. Revise o formato.",
       };
     }
   }, [raw, tab]);

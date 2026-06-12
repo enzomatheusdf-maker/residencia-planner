@@ -6,6 +6,11 @@ const EVENT_SCHEMAS = {
   mentor_action_seen: ["plat", "action_type", "source"],
   mentor_action_started: ["plat", "action_type", "source"],
   mentor_action_completed: ["plat", "action_type", "source"],
+  mentor_action_target_missing: ["plat", "route", "outcome", "source"],
+  // CC-7: qualidade do Mentor — ignored quando dia vira sem started; outcome = delta 7d
+  mentor_action_ignored: ["plat", "action_type", "source", "hours_visible"],
+  mentor_action_outcome: ["plat", "action_type", "delta_metric", "window_days"],
+  decision_rebuilt: ["plat", "reason"],
   review_completed: ["plat", "step"],
   simulation_result_recorded: ["plat", "pct", "total"],
   readiness_snapshot: ["plat", "score", "confidence"],

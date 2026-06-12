@@ -6,6 +6,7 @@
 
 import { normalizeCalendarTopic } from "./calendarProvider";
 import { CALENDAR_PROVIDER_IDS } from "../constants/calendarProviders";
+import { validateCalendarCsvRaw } from "./schemas/boundarySchemas";
 
 // ─── Template ─────────────────────────────────────────────────────────────────
 
@@ -74,6 +75,15 @@ export function parseCalendarCsv(raw = "") {
   const errors = [];
   const topics = [];
   let skipped = 0;
+
+  const rawValidation = validateCalendarCsvRaw(raw);
+  if (!rawValidation.valid) {
+    return {
+      topics,
+      errors: rawValidation.errors.map((message) => ({ line: 0, message })),
+      skipped,
+    };
+  }
 
   const lines = String(raw)
     .replace(/\r\n/g, "\n")

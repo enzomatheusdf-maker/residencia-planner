@@ -34,6 +34,11 @@ describe("calendarProvider", () => {
     expect(out[0].areaCanonica).toBe("GO");
   });
 
+  test("parseCalendarImport rejeita JSON sem tema claro", () => {
+    const raw = JSON.stringify([{ areaOriginal: "GINECOLOGIA" }]);
+    expect(() => parseCalendarImport(raw, "json")).toThrow(/calendario sem tema/i);
+  });
+
   test("mapeia área original para canônica", () => {
     expect(mapAreaOriginalToCanonica("CARDIOLOGIA")).toBe("Clínica Médica");
     expect(mapAreaOriginalToCanonica("OBSTETRICIA")).toBe("GO");
