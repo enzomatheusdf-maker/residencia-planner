@@ -65,6 +65,40 @@ describe("dailyCommandTargetExecutor", () => {
     expect(setView).toHaveBeenCalledWith("crono");
   });
 
+  it("handles focus target with groupId through onStudyGroup", () => {
+    const onStudyGroup = jest.fn();
+
+    const result = executeDailyCommandTarget(
+      { target: { route: "focus", params: { groupId: "grupo-1" } } },
+      { onStudyGroup }
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      outcome: "handled",
+      route: "focus",
+      params: { groupId: "grupo-1" },
+    });
+    expect(onStudyGroup).toHaveBeenCalledWith("grupo-1");
+  });
+
+  it("returns missing_handler for groupId without onStudyGroup", () => {
+    const setView = jest.fn();
+
+    const result = executeDailyCommandTarget(
+      { target: { route: "focus", params: { groupId: "grupo-1" } } },
+      { setView }
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      outcome: "missing_handler",
+      route: "focus",
+      params: { groupId: "grupo-1" },
+    });
+    expect(setView).toHaveBeenCalledWith("crono");
+  });
+
   it("returns unknown_route and falls back to dashboard for unknown routes", () => {
     const setView = jest.fn();
 

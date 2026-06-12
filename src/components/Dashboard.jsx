@@ -624,7 +624,7 @@ function ClinicalCompetenceDashboardCard({ competence, setView }) {
   );
 }
 
-export default function Dashboard({ onStudy, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, setView, showToast, onOpenAjustes, onOpenAgenda, onOpenClinicalCase, onOpenVestWeeklyPlan }) {
+export default function Dashboard({ onStudy, onStudyGroup, onDelete, userName, onEditName, focusMode, modoSimples, toggleModoSimples, setView, showToast, onOpenAjustes, onOpenAgenda, onOpenClinicalCase, onOpenVestWeeklyPlan }) {
   const currentUid = auth.currentUser?.uid || null;
   const { plat, sprint, tourStep, setTourStep, setOnboardingDone, onboardingDone } = useStore();
   const showToastGlobal = useStore((s) => s.showToast);
@@ -1172,6 +1172,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
     topFilaItem,
     concluidosHoje,
     onStudy,
+    onStudyGroup: onStudyGroup || ((groupId) => onStudy && onStudy({ groupId })),
     setView,
     onOpenAjustes,
     onOpenAgenda,
@@ -1629,7 +1630,7 @@ export default function Dashboard({ onStudy, onDelete, userName, onEditName, foc
         <VestibularStartTrail setView={setView} onOpenAjustes={onOpenAjustes} />
       )}
 
-      <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} setView={setView} onOpenAjustes={onOpenAjustes} onOpenAgenda={onOpenAgenda} onOpenClinicalCase={onOpenClinicalCase} />
+      <ActionInbox mode={modoSimples ? "mentor" : "manual"} onStudy={onStudy} onStudyGroup={onStudyGroup || ((groupId) => onStudy && onStudy({ groupId }))} setView={setView} onOpenAjustes={onOpenAjustes} onOpenAgenda={onOpenAgenda} onOpenClinicalCase={onOpenClinicalCase} />
 
       {!modoSimples && (
         <>

@@ -5,6 +5,7 @@
 import { STEP_ESTIMATED_MINUTES, todayStr, addDays, diffDays } from "./fsrs";
 import { getDomainTestAgendaMeta, normalizeDomainTestClassificationLabel } from "./domainTest";
 import { getRecommendedSimuladoAgendaItem } from "./simStrategy";
+import { collapseReviewItemsByGroups } from "./reviewGroups";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -84,6 +85,7 @@ function makeReviewItem(tema, stepKey, review, horizonDate, today, options = {})
 export function estimateTaskMinutes(item) {
   if (!item) return 0;
   if (item.estimatedMinutes != null) return item.estimatedMinutes;
+  if (item.type === "group_review") return (item.subItems || []).length * STEP_ESTIMATED_MINUTES.d4;
   if (item.type === "new_topic" || item.type === "d0_critical") return 50;
   const stepKey = item.stepKey;
   if (item.phase === "relearning") return STEP_ESTIMATED_MINUTES.relearning;
@@ -224,6 +226,7 @@ export function sortAgendaItemsForDay(items = []) {
     switch (item.type) {
       case "relearning":  return 0;
       case "overdue":     return 10 + priorityWeight(item.priority);
+      case "group_review": return 18 + priorityWeight(item.priority) * 0.1;
       case "review":      return 20 + stepWeight(item.stepKey) + priorityWeight(item.priority) * 0.1;
       case "d0_critical": return 30;
       case "new_topic":   return 40 + priorityWeight(item.priority);
@@ -264,7 +267,7 @@ export function getAgendaDaySummary(items = [], date) {
     overdueCount: sorted.filter((i) => i.overdue).length,
     newTopicCount: sorted.filter((i) => i.type === "new_topic" || i.type === "d0_critical").length,
     newCount: sorted.filter((i) => i.type === "new_topic" || i.type === "d0_critical").length,
-    reviewCount: sorted.filter((i) => i.type === "review" || i.type === "relearning" || i.type === "overdue").length,
+    reviewCount: sorted.filter((i) => i.type === "review" || i.type === "relearning" || i.type === "overdue" || i.type === "group_review").length,
     overloaded: totalMinutes > 180 || sorted.length > 6,
     isEmpty: sorted.length === 0,
     firstAction: sorted[0] || null,
@@ -281,12 +284,19 @@ export function buildAgendaItems(
   planSetup = {},
   plat = "res",
   horizonDays = 90,
-  _today
+  _today,
+  reviewGroups = []
 ) {
   const today = _today || todayStr();
   const horizonDate = addDays(today, horizonDays);
 
-  const reviewItems = collectReviewItems(temas, horizonDate, today);
+  const reviewItems = collapseReviewItemsByGroups(
+    collectReviewItems(temas, horizonDate, today),
+    reviewGroups,
+    temas,
+    today,
+    horizonDate
+  );
   const d0Items = collectScheduledD0Items(scheduledTopics, temas, horizonDate, today);
   const simItems = collectSimulados(simulados, horizonDate, today);
   const recommendedSim = getRecommendedSimuladoAgendaItem({
@@ -310,7 +320,8 @@ export function buildAgendaMonth(
   planSetup = {},
   plat = "res",
   monthStr,
-  _today
+  _today,
+  reviewGroups = []
 ) {
   const today = _today || todayStr();
   const ref = monthStr || today.slice(0, 7);
@@ -322,7 +333,7 @@ export function buildAgendaMonth(
   const lastDay  = `${year}-${pad(month)}-${pad(daysInMonth)}`;
 
   const horizonDays = Math.max(30, diffDays(today, lastDay) + 1);
-  const allItems = buildAgendaItems(temas, scheduledTopics, simulados, planSetup, plat, horizonDays, today);
+  const allItems = buildAgendaItems(temas, scheduledTopics, simulados, planSetup, plat, horizonDays, today, reviewGroups);
 
   const monthItems = allItems.filter((i) => i.date >= firstDay && i.date <= lastDay);
   const grouped = groupAgendaByDate(monthItems);

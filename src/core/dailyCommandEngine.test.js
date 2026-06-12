@@ -40,6 +40,17 @@ describe("dailyCommandEngine", () => {
     expect(command.target).toEqual({ route: "focus", params: { temaId: "tema-1", stepKey: "d4", phase: null } });
   });
 
+  test("grupo de revisão abre foco com groupId", () => {
+    const command = legacyActionToDailyCommand({
+      type: "fila_do_dia",
+      title: "Revisar grupo",
+      reason: "Grupo co-agendado.",
+      target: { groupId: "grupo-1", plat: "res" },
+    }, { plat: "res" });
+
+    expect(command.target).toEqual({ route: "focus", params: { groupId: "grupo-1", plat: "res" } });
+  });
+
   test("fila do dia sem item especifico abre fila executavel", () => {
     const command = legacyActionToDailyCommand({
       type: "fila_do_dia",

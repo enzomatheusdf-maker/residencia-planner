@@ -609,7 +609,7 @@ export default function App() {
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
-      unsubscribe();
+      if (typeof unsubscribe === "function") unsubscribe();
     };
   }, [buildStateToSync, resetStore, showToastStore]);
 
@@ -1035,6 +1035,11 @@ export default function App() {
   );
 
   const handleStudyTrigger = (temaId, stepKey) => {
+    if (temaId && typeof temaId === "object" && temaId.groupId) {
+      setTargetedFocusItem({ groupId: temaId.groupId });
+      useStore.setState({ focusMode: true });
+      return;
+    }
     setTargetedFocusItem({ temaId, stepKey });
     useStore.setState({ focusMode: true });
   };
@@ -1254,6 +1259,7 @@ export default function App() {
             <ErrorBoundary onBackToDashboard={() => setView("dash")} onExportBackup={exportBackupNow}>
               <Dashboard
                 onStudy={handleStudyTrigger}
+                onStudyGroup={(groupId) => handleStudyTrigger({ groupId })}
                 onDelete={(id) => {
                   deleteTema(plat, id);
                   showToast("🗑 Tema deletado");

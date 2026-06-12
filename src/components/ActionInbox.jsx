@@ -50,7 +50,7 @@ function resolveActionCTA(action, handlers, filaInteligente) {
   };
 }
 
-export default function ActionInbox({ mode = "mentor", onStudy, setView, onOpenAjustes, onOpenAgenda, onOpenClinicalCase }) {
+export default function ActionInbox({ mode = "mentor", onStudy, onStudyGroup, setView, onOpenAjustes, onOpenAgenda, onOpenClinicalCase }) {
   const actionInbox = useStore((s) => s.actionInbox || []);
   const rebuildActionInboxForToday = useStore((s) => s.rebuildActionInboxForToday);
   const acceptAction = useStore((s) => s.acceptAction);
@@ -91,7 +91,7 @@ export default function ActionInbox({ mode = "mentor", onStudy, setView, onOpenA
   const rest = mode === "manual" || expanded ? openActions.slice(1) : openActions.slice(1, 3);
   const primaryCTA = resolveActionCTA(
     primary,
-    { onStudy, setView, rebalanceTodayWorkload, plat, showToast, telemetryMeta, onOpenAjustes, onOpenAgenda, onOpenClinicalCase },
+    { onStudy, onStudyGroup, setView, rebalanceTodayWorkload, plat, showToast, telemetryMeta, onOpenAjustes, onOpenAgenda, onOpenClinicalCase },
     filaInteligente
   );
 

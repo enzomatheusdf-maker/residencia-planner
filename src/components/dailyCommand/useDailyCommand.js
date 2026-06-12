@@ -173,6 +173,7 @@ export function useDailyCommand({
   topFilaItem,
   concluidosHoje,
   onStudy,
+  onStudyGroup,
   setView,
   onOpenAjustes,
   onOpenAgenda,
@@ -310,6 +311,7 @@ export function useDailyCommand({
     });
     const executionResult = executeDailyCommandTarget(action, {
       onStudy,
+      onStudyGroup,
       setView,
       onOpenAjustes,
       onOpenAgenda,
@@ -333,7 +335,7 @@ export function useDailyCommand({
       );
     }
     safeTrackEvent("mentor_action_completed", { plat, action_type: actionType, source: action.source || "mentor" }, { state: { meta: telemetryMeta } });
-  }, [command.action, freshnessDeps.openSessionClosure, onOpenAgenda, onOpenAjustes, onOpenClinicalCase, onStudy, plat, rebalanceTodayWorkload, recordMentorEvent, setView, showToast, showToastGlobal, telemetryMeta, topFilaItem]);
+  }, [command.action, freshnessDeps.openSessionClosure, onOpenAgenda, onOpenAjustes, onOpenClinicalCase, onStudy, onStudyGroup, plat, rebalanceTodayWorkload, recordMentorEvent, setView, showToast, showToastGlobal, telemetryMeta, topFilaItem]);
 
   const todayLoadSignals = useMemo(() => {
     const scheduler = decisionContext?.scheduler || {};

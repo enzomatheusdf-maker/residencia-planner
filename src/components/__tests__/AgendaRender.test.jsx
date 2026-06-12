@@ -26,6 +26,30 @@ describe("Agenda render smoke", () => {
     expect(screen.getByText("Revisar")).toBeInTheDocument();
   });
 
+  it("renders expandable group review sub-items", () => {
+    render(
+      <AgendaTaskItem
+        item={{
+          ...task,
+          id: "group-1",
+          type: "group_review",
+          temaNome: "Grupo de revisão Hipo",
+          groupId: "group-1",
+          stepKey: "group_review",
+          subItems: [
+            { temaId: "a", temaNome: "Hipo I", stepKey: "d21", date: TODAY },
+            { temaId: "b", temaNome: "Hipo II", stepKey: "d21", date: TODAY },
+          ],
+          target: { action: "group_review", route: "focus", params: { groupId: "group-1" } },
+        }}
+      />
+    );
+
+    fireEvent.click(screen.getByText("2 curvas de revisão"));
+    expect(screen.getByText("Hipo I")).toBeInTheDocument();
+    expect(screen.getByText("Hipo II")).toBeInTheDocument();
+  });
+
   it("renders Domain Test classification labels in AgendaTaskItem", () => {
     render(
       <AgendaTaskItem

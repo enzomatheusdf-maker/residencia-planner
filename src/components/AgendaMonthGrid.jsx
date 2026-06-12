@@ -37,6 +37,7 @@ export default function AgendaMonthGrid({
   planSetup = {},
   temaStats = {},
   plat = "res",
+  reviewGroups = [],
   onStartTask,
   onOpenPlan,
 }) {
@@ -45,8 +46,8 @@ export default function AgendaMonthGrid({
   const [selectedDate, setSelectedDate] = useState(today);
 
   const monthData = useMemo(
-    () => buildAgendaMonth(temas, scheduledTopics, simulados, planSetup, plat, currentMonth),
-    [temas, scheduledTopics, simulados, planSetup, plat, currentMonth]
+    () => buildAgendaMonth(temas, scheduledTopics, simulados, planSetup, plat, currentMonth, undefined, reviewGroups),
+    [temas, scheduledTopics, simulados, planSetup, plat, currentMonth, reviewGroups]
   );
 
   const [year, month] = currentMonth.split("-").map(Number);

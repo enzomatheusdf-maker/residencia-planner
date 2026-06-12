@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, Brain, CalendarDays, ChevronDown, ShieldCheck, Stethoscope, Target } from "lucide-react";
+import { Brain, CalendarDays, ChevronDown, ShieldCheck, Stethoscope, Target } from "lucide-react";
 import { SectionIntro } from "./primitives";
 import { fadeUp, stagger } from "./motion";
 import useReducedMotion from "../../hooks/useReducedMotion";

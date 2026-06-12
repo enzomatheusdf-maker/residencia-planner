@@ -69,6 +69,11 @@ export function executeDailyCommandTarget(input, handlers = {}) {
   }
 
   if (route === "focus") {
+    if (params.groupId) {
+      if (!handlers.onStudyGroup) return missingHandler("crono");
+      handlers.onStudyGroup(params.groupId);
+      return buildResult("handled", route, params);
+    }
     if (params.temaId && params.stepKey && handlers.onStudy) {
       handlers.onStudy(params.temaId, params.stepKey);
       return buildResult("handled", route, params);

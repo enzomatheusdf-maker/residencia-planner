@@ -80,6 +80,16 @@ function buildTargetForAction(action = {}) {
     };
   }
 
+  if (target.groupId) {
+    return {
+      route: "focus",
+      params: {
+        groupId: target.groupId,
+        plat: target.plat || action.plat || null,
+      },
+    };
+  }
+
   if (target.action === "close_today_queue") {
     return { route: "focus", params: { mode: "queue", plat: target.plat || action.plat || null } };
   }

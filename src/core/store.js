@@ -29,6 +29,7 @@ import { updateBayesianMastery } from "./mastery";
 import { rebalanceWorkloadForToday } from "./workloadRebalance";
 import { safeTrackEvent } from "./telemetry";
 import { isDevOnlyEnabled } from "./devFlags";
+import { createGroup, propagateRating, validateGroup } from "./reviewGroups";
 
 function prioToImportancia(prio) {
   switch ((prio || "").toLowerCase()) {
@@ -42,6 +43,7 @@ function prioToImportancia(prio) {
 
 const initialPlat = () => ({ temas: [], simulados: [], ankiLog: [], cronogramas: [], casosProgresso: {} });
 const initialActionInboxState = () => ({ dismissed: {}, accepted: {}, done: {} });
+const initialReviewGroupsState = () => ({ res: [], vest: [] });
 const DEFAULT_PERSIST_SCOPE_KEY = getAnonymousStorageKey(getOrCreateAnonymousSessionId());
 
 const initialVestibularPlat = () => {
@@ -204,6 +206,7 @@ const timestampMiddleware = (config) => (set, get, api) => {
         "sprint",
         "learningEvents",
         "mentorEvents",
+        "reviewGroups",
       ].includes(key)
     );
 
@@ -401,6 +404,7 @@ export const useStore = create(
       enamedAnalises: [],
       actionInbox: [],
       actionInboxState: initialActionInboxState(),
+      reviewGroups: initialReviewGroupsState(),
       decisionSnapshot: null,
       sessionReflections: [],
       weeklyReviews: [],
@@ -1209,6 +1213,234 @@ export const useStore = create(
         return result;
       },
 
+      createReviewGroup: (platKey, { nome, temaIds } = {}) => {
+        let result = null;
+        set((s) => {
+          const today = todayStr();
+          const group = createGroup(platKey, { nome, temaIds }, today);
+          const validation = validateGroup(group, s[platKey]?.temas || [], platKey);
+          if (!validation.ok) {
+            result = { ok: false, errors: validation.errors, group: null };
+            return {};
+          }
+
+          const reviewGroups = {
+            ...(s.reviewGroups || initialReviewGroupsState()),
+            [platKey]: [
+              ...((s.reviewGroups || initialReviewGroupsState())[platKey] || []),
+              group,
+            ],
+          };
+          const nextState = { ...s, reviewGroups };
+          result = { ok: true, errors: [], group };
+          return {
+            reviewGroups,
+            ...rebuildDecision(nextState, "review_group_created", today),
+          };
+        });
+        return result;
+      },
+
+      applyJaDominoToGroup: (platKey, groupId, input = {}) => {
+        let result = null;
+        set((s) => {
+          const today = todayStr();
+          const groups = (s.reviewGroups || initialReviewGroupsState())[platKey] || [];
+          const group = groups.find((item) => item.id === groupId);
+          if (!group) {
+            result = { ok: false, errors: ["group_not_found"], groupId };
+            return {};
+          }
+          const validation = validateGroup(group, s[platKey]?.temas || [], platKey);
+          if (!validation.ok) {
+            result = { ok: false, errors: validation.errors, groupId };
+            return {};
+          }
+
+          const questoesPorTema = input.questoesPorTema || {};
+          const acertosPorTema = input.acertosPorTema || {};
+          const touched = new Set(group.temaIds.map(String));
+          const temaResults = [];
+          let casosProgresso = s[platKey].casosProgresso || {};
+          const temasAtualizados = (s[platKey].temas || []).map((tema) => {
+            if (!touched.has(String(tema.id))) return tema;
+            const questoes = questoesPorTema[tema.id] ?? questoesPorTema[String(tema.id)] ?? input.questoesShared ?? input.questoes;
+            const acertos = acertosPorTema[tema.id] ?? acertosPorTema[String(tema.id)] ?? input.acertosShared ?? input.acertos;
+            const validatedTema = applyDominioPrevioToTema({ ...tema, d0: today }, { questoes, acertos });
+            temaResults.push({
+              temaId: tema.id,
+              status: validatedTema?.dominioPrevio?.status || validatedTema?.status || null,
+              primeiraRevisao: validatedTema?.dominioPrevio?.primeiraRevisao || null,
+            });
+
+            if (validatedTema?.status === "validado_previo" && s.meta?.modulos?.raciocinioClinico) {
+              const caso = clinicalCaseMatch(validatedTema, CLINICAL_CASES_INDEX);
+              if (caso?.id && !casosProgresso[caso.id]) {
+                const pct = Number.isFinite(Number(validatedTema.dominioPrevio?.percentual))
+                  ? Number(validatedTema.dominioPrevio.percentual)
+                  : (Number(questoes) > 0 ? Math.round((Number(acertos) / Number(questoes)) * 100) : 0);
+                const seed = agendarReencontro({}, pct);
+                casosProgresso = {
+                  ...casosProgresso,
+                  [caso.id]: {
+                    casoId: caso.id,
+                    temaId: validatedTema.id,
+                    temaNome: validatedTema.nome,
+                    origem: "review_group_domain_test",
+                    S: seed.S,
+                    intervalo: seed.intervalo,
+                    proximaData: seed.proximaData,
+                    vistos: 0,
+                    criadoEm: today,
+                  },
+                };
+              }
+            }
+            return validatedTema;
+          });
+
+          const nextState = {
+            ...s,
+            [platKey]: {
+              ...s[platKey],
+              temas: temasAtualizados,
+              casosProgresso,
+            },
+          };
+          result = { ok: true, errors: [], groupId, temas: temaResults };
+          return {
+            [platKey]: {
+              ...s[platKey],
+              temas: temasAtualizados,
+              casosProgresso,
+            },
+            ...rebuildDecision(nextState, "review_group_domain_test", today),
+          };
+        });
+        return result;
+      },
+
+      markGroupReview: (platKey, groupId, input = {}) => {
+        let result = null;
+        set((s) => {
+          const today = todayStr();
+          const groups = (s.reviewGroups || initialReviewGroupsState())[platKey] || [];
+          const group = groups.find((item) => item.id === groupId);
+          if (!group) {
+            result = { ok: false, errors: ["group_not_found"], groupId };
+            return {};
+          }
+
+          const history = s.learningEvents || [];
+          const propagation = propagateRating(group, s[platKey]?.temas || [], input.acerto, {
+            today,
+            overrides: input.overrides || {},
+            questoes: input.questoes,
+            motivosErro: input.motivosErro || [],
+            erros: input.erros || [],
+            maxInterval: s.meta?.intervaloMaxDias ?? 180,
+            history,
+            getDesiredRetention: (tema) => getRetencaoArea(tema.esp, s.meta?.retencaoFSRS ?? 0.90),
+            getShadowContext: (tema) => ({
+              tema,
+              examPhase: s.meta?.peakModePhase || getPeakPhase({ examDate: s.meta?.dataProva, today }),
+              overload: s.decisionSnapshot?.context?.operationalMode?.mode === "sobrecarga",
+              history,
+            }),
+          });
+          if (!propagation.ok) {
+            result = { ok: false, errors: propagation.errors, groupId };
+            return {};
+          }
+
+          const updatedById = new Map(propagation.results.map((item) => [String(item.temaId), item]));
+          let casosProgresso = s[platKey].casosProgresso || {};
+          let nextEvents = s.learningEvents || [];
+          const temasAtualizados = (s[platKey].temas || []).map((tema) => {
+            const updated = updatedById.get(String(tema.id));
+            if (!updated?.tema) return tema;
+
+            if (updated.tema.rev?.relearning?.protocol?.clinicalCaseNext && s.meta?.modulos?.raciocinioClinico) {
+              const caso = clinicalCaseMatch(updated.tema, CLINICAL_CASES_INDEX);
+              if (caso?.id && !casosProgresso[caso.id]) {
+                const pct = Number.isFinite(Number(updated.acerto))
+                  ? Math.round((Number(updated.acerto) <= 1 ? Number(updated.acerto) * 100 : Number(updated.acerto)))
+                  : 0;
+                const seed = agendarReencontro({}, pct);
+                casosProgresso = {
+                  ...casosProgresso,
+                  [caso.id]: {
+                    casoId: caso.id,
+                    temaId: updated.tema.id,
+                    temaNome: updated.tema.nome,
+                    origem: "review_group_lapse",
+                    S: seed.S,
+                    intervalo: seed.intervalo,
+                    proximaData: seed.proximaData,
+                    vistos: 0,
+                    criadoEm: today,
+                  },
+                };
+              }
+            }
+
+            nextEvents = appendLearningEvent(nextEvents, {
+              source: "review",
+              topicId: updated.temaId,
+              topicName: updated.temaNome,
+              area: updated.area,
+              plat: platKey,
+              stepKey: updated.stepKey,
+              date: today,
+              officialSchedulingImpact: true,
+              acerto: updated.acerto,
+              questoes: input.questoes,
+              rating: updated.rating,
+              confianca: input.confianca,
+              ansiedade: input.ansiedade,
+              cansaco: input.cansaco,
+              foco: input.foco,
+              tempoMin: input.tempoMin,
+              motivosErro: input.motivosErro || [],
+              dominantError: dominantErrorType([
+                ...(input.erros || []),
+                ...(input.motivosErro || []).map((tipoErro) => ({ tipoErro, acertou: false })),
+              ]),
+              tags: ["review_group"],
+              meta: { groupId },
+            }, 1000);
+
+            return updated.tema;
+          });
+
+          const nextState = {
+            ...s,
+            [platKey]: {
+              ...s[platKey],
+              temas: temasAtualizados,
+              casosProgresso,
+            },
+            learningEvents: nextEvents,
+          };
+          result = {
+            ok: true,
+            errors: [],
+            groupId,
+            results: propagation.results.map(({ tema, ...rest }) => rest),
+          };
+          return {
+            [platKey]: {
+              ...s[platKey],
+              temas: temasAtualizados,
+              casosProgresso,
+            },
+            learningEvents: nextEvents,
+            ...rebuildDecision(nextState, "review_group_marked", today),
+          };
+        });
+        return result;
+      },
+
       cancelarValidacaoDominioPrevio: (platKey, temaId) =>
         set((s) => ({
           [platKey]: {
@@ -1822,6 +2054,7 @@ export const useStore = create(
           enamedAnalises: [],
           actionInbox: [],
           actionInboxState: initialActionInboxState(),
+          reviewGroups: initialReviewGroupsState(),
           decisionSnapshot: null,
           sessionReflections: [],
           weeklyReviews: [],
@@ -1870,6 +2103,7 @@ export const useStore = create(
         enamedAnalises: s.enamedAnalises,
         actionInbox: s.actionInbox,
         actionInboxState: s.actionInboxState,
+        reviewGroups: s.reviewGroups,
         decisionSnapshot: s.decisionSnapshot,
         sessionReflections: s.sessionReflections,
         weeklyReviews: s.weeklyReviews,
@@ -1947,6 +2181,12 @@ export const useStore = create(
           enamedAnalises: persisted.enamedAnalises ?? initial.enamedAnalises,
           actionInbox: Array.isArray(persisted.actionInbox) ? persisted.actionInbox : initial.actionInbox,
           actionInboxState: persisted.actionInboxState ?? initial.actionInboxState,
+          reviewGroups: {
+            ...initialReviewGroupsState(),
+            ...(persisted.reviewGroups || {}),
+            res: Array.isArray(persisted.reviewGroups?.res) ? persisted.reviewGroups.res : [],
+            vest: Array.isArray(persisted.reviewGroups?.vest) ? persisted.reviewGroups.vest : [],
+          },
           decisionSnapshot: persisted.decisionSnapshot ?? initial.decisionSnapshot,
           sessionReflections: persisted.sessionReflections ?? initial.sessionReflections,
           weeklyReviews: persisted.weeklyReviews ?? initial.weeklyReviews,

@@ -21,6 +21,7 @@ import { buildReviewPreview } from "../core/reviewOutcome";
 import { buildInterleavingPlan } from "../core/interleavingPlanner";
 import RetrievabilitySpark from "./RetrievabilitySpark";
 import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
+import { deriveGroupReviewTask } from "../core/reviewGroups";
 
 const STEP_ICONS = { pretest: FileText, leitura: BookOpen, esqueleto: Layers, braindump: Brain, questoes: PenTool, anki: Zap };
 
@@ -57,6 +58,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const updateTema = useStore((s) => s.updateTema);
   const aplicarDomainTestResultado = useStore((s) => s.aplicarDomainTestResultado);
   const showToast = useStore((s) => s.showToast);
+  const reviewGroups = useStore((s) => s.reviewGroups?.[plat] || []);
+  const markGroupReview = useStore((s) => s.markGroupReview);
   const updateGamifStreak = useStore((s) => s.updateGamifStreak);
   const learningEvents = useStore((s) => s.learningEvents || []);
   const legacyTemaStats = useStore((s) => s.temaStats || {});
@@ -98,9 +101,19 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
     setCurrentTarget(targetedItem);
   }, [targetedItem]);
 
+  const activeGroupTask = useMemo(() => {
+    if (!currentTarget?.groupId) return null;
+    const group = reviewGroups.find((item) => item.id === currentTarget.groupId);
+    if (!group) return null;
+    return deriveGroupReviewTask(group, temas, todayStr());
+  }, [currentTarget, reviewGroups, temas]);
+
   const activeReviewItem = useMemo(() => {
     if (tourStep === "focus") {
       return getDemoItem(plat, "d0");
+    }
+    if (activeGroupTask) {
+      return { groupTask: activeGroupTask, stepKey: "group_review" };
     }
     if (currentTarget) {
       const t = temas.find(x => x.id === currentTarget.temaId);
@@ -127,7 +140,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
       if (t) return { tema: t, stepKey: top.stepKey };
     }
     return null;
-  }, [currentTarget, intelligentQueue, meta?.activeFocusSession, temas, tourStep, plat]);
+  }, [activeGroupTask, currentTarget, intelligentQueue, meta?.activeFocusSession, temas, tourStep, plat]);
 
   const activeReviewItemThemeId = activeReviewItem?.tema?.id;
   const activeReviewItemStepKey = activeReviewItem?.stepKey;
@@ -147,6 +160,7 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
 
   const tema = activeReviewItem?.tema;
   const stepKey = activeReviewItem?.stepKey;
+  const groupTask = activeReviewItem?.groupTask || null;
 
   // P4-C: tarefa clinica multimodal para o step atual (res only, gated por modulo)
   const clinicalTask = useMemo(() => {
@@ -306,6 +320,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
   const [stepStartTime, setStepStartTime] = useState(Date.now());
   const [showSelfEvalD1, setShowSelfEvalD1] = useState(false);
   const [d1ForgotFields, setD1ForgotFields] = useState({});
+  const [groupOverrideOpen, setGroupOverrideOpen] = useState(false);
+  const [groupOverrides, setGroupOverrides] = useState({});
   const [comoFoi, setComoFoi] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
   const [ansiedade, setAnsiedade] = useState("Normal");
@@ -374,8 +390,8 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
     return accQuestoes != null ? accQuestoes : accClinico;
   }, [clinicalSelfScore, pct, tema?.esp]);
   const schedulerPreview = useMemo(
-    () => buildReviewPreview({ tema, stepKey, acerto: reviewAcertoFinal, meta }),
-    [meta, reviewAcertoFinal, stepKey, tema]
+    () => (groupTask ? null : buildReviewPreview({ tema, stepKey, acerto: reviewAcertoFinal, meta })),
+    [groupTask, meta, reviewAcertoFinal, stepKey, tema]
   );
 
   // TIMER
@@ -510,6 +526,35 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
         foco,
         modoReduzido: modoReduzidoAtivo
       });
+    }
+  };
+
+  const handleCompleteGroupReview = () => {
+    if (!groupTask?.groupId || pct == null) return;
+    const elapsedMin = Math.max(1, Math.round((Date.now() - stepStartTime) / 60000));
+    const overrides = Object.fromEntries(
+      Object.entries(groupOverrides)
+        .map(([temaId, value]) => [temaId, Number(value)])
+        .filter(([, value]) => Number.isFinite(value))
+        .map(([temaId, value]) => [temaId, { acerto: Math.max(0, Math.min(1, value / 100)) }])
+    );
+    const result = markGroupReview(plat, groupTask.groupId, {
+      acerto: reviewAcertoFinal,
+      questoes: totalQuestoes || null,
+      overrides,
+      tempoMin: elapsedMin,
+      ansiedade,
+      cansaco,
+      confianca,
+      foco,
+    });
+    if (showToast) {
+      showToast(result?.ok ? "Grupo de revisão registrado." : "Não foi possível registrar o grupo de revisão.");
+    }
+    if (result?.ok) {
+      setGroupOverrides({});
+      setGroupOverrideOpen(false);
+      onExit();
     }
   };
 
@@ -782,6 +827,120 @@ export default function FocusMode({ onExit, plat, temas, onCompleteStep, targete
             </button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (groupTask) {
+    return (
+      <div className="fixed inset-0 bg-[#07070f] text-white flex flex-col z-[200] overflow-hidden select-none select-text-safe">
+        <header className="h-16 border-b border-white/5 flex items-center justify-between px-4 md:px-6 bg-black/20 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={onExit}
+              className="p-2 rounded-xl hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-blue-300 font-black">grupo de revisão</p>
+              <h1 className="text-sm md:text-base font-black truncate">{groupTask.groupName || "Grupo de revisão"}</h1>
+            </div>
+          </div>
+          <span className="text-[10px] text-gray-400 font-mono">
+            {groupTask.subItems.length} curvas de revisão
+          </span>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="max-w-3xl mx-auto space-y-5">
+            <section className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <Layers size={16} className="text-blue-300" />
+                <h2 className="text-xs font-black uppercase tracking-wider text-gray-200">Sub-temas co-agendados</h2>
+              </div>
+              <div className="divide-y divide-white/5">
+                {groupTask.subItems.map((item) => (
+                  <div key={`${item.temaId}-${item.stepKey}`} className="py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-white truncate">{item.temaNome}</p>
+                      <p className="text-[10px] text-gray-500">
+                        {item.area} · {String(item.stepKey).toUpperCase()} · {item.date}
+                      </p>
+                    </div>
+                    <span className="text-[9px] rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-gray-300 uppercase font-black">
+                      curva de revisão
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-white/5 bg-white/[0.02] p-5 space-y-4">
+              <AcertoInputs
+                questoes={questoes}
+                setQuestoes={setQuestoes}
+                acertos={acertos}
+                setAcertos={setAcertos}
+                pct={pct}
+                schedulerPreview={null}
+              />
+
+              <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={groupOverrideOpen}
+                  onChange={(event) => setGroupOverrideOpen(event.target.checked)}
+                  className="accent-blue-500"
+                />
+                ajustar por tema
+              </label>
+
+              {groupOverrideOpen && (
+                <div className="space-y-2 border-t border-white/5 pt-4">
+                  {groupTask.subItems.map((item) => (
+                    <div key={`override-${item.temaId}`} className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2 items-center">
+                      <label className="text-[11px] text-gray-300 truncate" title={item.temaNome}>
+                        {item.temaNome}
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={groupOverrides[item.temaId] ?? ""}
+                        onChange={(event) => setGroupOverrides((current) => ({
+                          ...current,
+                          [item.temaId]: event.target.value,
+                        }))}
+                        placeholder={pct == null ? "0-100" : `${pct}%`}
+                        className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-2.5 text-xs text-white placeholder-gray-600 outline-none focus:border-blue-500 transition-all"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={onExit}
+                  className="px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-[11px] font-bold"
+                >
+                  Sair
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCompleteGroupReview}
+                  disabled={!hasValidQuestionResult}
+                  className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black disabled:opacity-40"
+                >
+                  Confirmar grupo de revisão
+                </button>
+              </div>
+            </section>
+          </div>
+        </main>
       </div>
     );
   }

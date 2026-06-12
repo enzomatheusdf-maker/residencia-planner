@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { Info, Play } from "lucide-react";
+import { ChevronDown, Info, Play } from "lucide-react";
 import { estimateTaskMinutes } from "../core/agendaEngine";
 import { getDomainTestAgendaMeta } from "../core/domainTest";
 import { getAgendaTaskLabel, getAgendaTaskTarget } from "../core/planExecution";
@@ -13,6 +13,7 @@ const TYPE_LABELS = {
   relearning: "Releitura",
   overdue: "Atrasado",
   review: "Revisao",
+  group_review: "Grupo de revisão",
   d0_critical: "Novo critico",
   new_topic: "Novo topico",
   simulation: "Simulado",
@@ -23,6 +24,7 @@ const TYPE_TONES = {
   relearning: "purple",
   overdue: "red",
   review: "blue",
+  group_review: "purple",
   d0_critical: "amber",
   new_topic: "green",
   simulation: "cyan",
@@ -36,6 +38,7 @@ function StepBadge({ stepKey, phase, domainTestClassification }) {
 }
 
 export default function AgendaTaskItem({ item, onStartTask, onOpenPlan, onOpenDetails }) {
+  const [expanded, setExpanded] = React.useState(false);
   const tone = TYPE_TONES[item.type] || TYPE_TONES.review;
   const domainMeta = getDomainTestAgendaMeta(item.domainTestClassification);
   const typeLabel = item.domainTestAgendaLabel || domainMeta?.agendaLabel || TYPE_LABELS[item.type] || item.type;
@@ -76,6 +79,28 @@ export default function AgendaTaskItem({ item, onStartTask, onOpenPlan, onOpenDe
           <p className="text-[10px] text-gray-500">{mins} min</p>
         </div>
       </div>
+      {item.type === "group_review" && item.subItems?.length > 0 && (
+        <div className="rounded-xl border border-white/5 bg-black/20">
+          <button
+            type="button"
+            onClick={() => setExpanded((value) => !value)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-[10px] font-bold text-gray-300"
+          >
+            <span>{item.subItems.length} curvas de revisão</span>
+            <ChevronDown size={13} className={`transition-transform ${expanded ? "rotate-180" : ""}`} />
+          </button>
+          {expanded && (
+            <div className="border-t border-white/5 px-3 py-2 space-y-1.5">
+              {item.subItems.map((subItem) => (
+                <div key={`${subItem.temaId}-${subItem.stepKey}`} className="flex items-center justify-between gap-2 text-[10px]">
+                  <span className="truncate text-gray-300">{subItem.temaNome}</span>
+                  <span className="font-mono text-gray-500 uppercase">{subItem.stepKey}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <div className="grid grid-cols-[1fr_auto] gap-2">
         <Button
           type="button"

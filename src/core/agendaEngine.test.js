@@ -352,6 +352,31 @@ describe("buildAgendaItems", () => {
     const items = buildAgendaItems([makeTema()], [], [], {}, "vest", 30, TODAY);
     expect(Array.isArray(items)).toBe(true);
   });
+
+  it("collapses review group into one expandable task with groupId target", () => {
+    const temas = [
+      makeTema({ id: "a", nome: "Hipo I" }),
+      makeTema({ id: "b", nome: "Hipo II" }),
+      makeTema({ id: "c", nome: "Hipo III" }),
+    ];
+    const items = buildAgendaItems(
+      temas,
+      [],
+      [],
+      {},
+      "res",
+      30,
+      TODAY,
+      [{ id: "g-hipo", plat: "res", nome: "Grupo de revisão Hipo", temaIds: ["a", "b", "c"], criadoEm: TODAY, anchorStrategy: "same_day" }]
+    );
+
+    expect(items.filter((item) => item.type === "review" && ["a", "b", "c"].includes(item.temaId))).toHaveLength(0);
+    const group = items.find((item) => item.type === "group_review");
+    expect(group).toBeTruthy();
+    expect(group.groupId).toBe("g-hipo");
+    expect(group.subItems).toHaveLength(3);
+    expect(group.target.params.groupId).toBe("g-hipo");
+  });
 });
 
 // ─── groupAgendaByDate ────────────────────────────────────────────────────────

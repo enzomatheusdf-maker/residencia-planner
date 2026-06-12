@@ -15,6 +15,9 @@ function hasTarget(item) {
 
 export function getAgendaTaskTarget(item = {}) {
   if (item.target) return item.target;
+  if (item.type === "group_review" && item.groupId) {
+    return { action: "group_review", route: "focus", params: { groupId: item.groupId, plat: item.plat || null } };
+  }
   if (item.type === "simulation") return { action: "simulation", simuladoId: item.simuladoId || null };
   if (item.type === "new_topic" || item.type === "d0_critical") {
     return { action: "start_topic", temaId: item.temaId || null, stepKey: "d0" };
@@ -28,6 +31,7 @@ export function getAgendaTaskLabel(item = {}) {
   if (domainMeta?.taskLabel) return domainMeta.taskLabel;
   if (item.type === "simulation") return "Registrar simulado";
   if (item.type === "new_topic" || item.type === "d0_critical") return "Estudar tema";
+  if (item.type === "group_review") return "Revisar grupo";
   if (item.type === "review" || item.type === "overdue" || item.type === "relearning") return "Revisar";
   return "Ver plano";
 }

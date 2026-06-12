@@ -1,7 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Check, Play, Sparkles } from "lucide-react";
-import { Badge } from "../ui";
 import { PrimaryButton, SecondaryButton, Blob } from "./primitives";
 import { fadeUp, stagger, scaleIn } from "./motion";
 import useReducedMotion from "../../hooks/useReducedMotion";

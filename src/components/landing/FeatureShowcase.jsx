@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { BarChart3, BookOpen, Brain, CalendarDays, Check, ClipboardCheck, FileSearch, Layers, Stethoscope } from "lucide-react";
+import { BarChart3, Brain, CalendarDays, Check, ClipboardCheck, FileSearch, Layers, Stethoscope } from "lucide-react";
 import { SectionIntro } from "./primitives";
 
 const tabs = [

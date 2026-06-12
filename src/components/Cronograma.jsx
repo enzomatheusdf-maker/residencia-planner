@@ -1,21 +1,27 @@
 // src/components/Cronograma.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Edit2, Plus, Play, ChevronDown, ChevronUp, Calendar, BadgeCheck } from "lucide-react";
+import { Edit2, Plus, Play, ChevronDown, ChevronUp, Calendar, BadgeCheck, Check } from "lucide-react";
 import { useStore } from "../core/store";
 import { ESP_COLORS, STEPS, IMPORTANCIA, DEMO_TEMA_ID, todayStr } from "../core/fsrs";
 import { parseCatalogEntry } from "../constants/catalogos";
 import { getCronogramasByPlat, getDefaultCronogramaId, resolveCatalogo } from "../constants/cronogramas";
 import { stepState, STATE_DOT, STATE_TW, Badge, SBadge, Btn, Input, TourBalloon, InfoTooltip } from "./Primitives";
+import { Button, Card, Dialog } from "./ui";
 import { CALENDAR_PROVIDER_IDS } from "../constants/calendarProviders";
 import { attachCalendarIntelligence, getProviderSeed, matchMedcofTopic } from "../core/calendarProvider";
 import { calculateRedistributionSummary, normalizeWeeklyTopicLimit } from "../core/scheduleWizard";
 import {
+  calcularDominioPrevio,
+  classificarDominio,
+  DOMINIO_META,
+  DOMINIO_PREVIO_MIN_QUESTOES,
   getDominioPrevioStatus,
   getNextReviewForTema,
   getReviewDisplayMeta,
 } from "../core/domainValidation";
 import { getEnamedContextBadge } from "../core/enamedIntel";
 import { getTemaStatsFromLearningEvents } from "../core/learningEvent";
+import { readSanitizedNumber, sanitizeNumericInput } from "../core/numberInput";
 import CalendarProviderSelector from "./CalendarProviderSelector";
 import DomainTestModal from "./DomainTestModal";
 import RetrievabilitySpark from "./RetrievabilitySpark";
@@ -108,6 +114,242 @@ function CourseLocationBadge({ location }) {
       <Calendar size={10} />
       {normalized.label}
     </span>
+  );
+}
+
+function sanitizeCountInput(value) {
+  return sanitizeNumericInput(value, { max: 999 }).text;
+}
+
+function getDomainBatchPreview(totalText, acertosText) {
+  const total = readSanitizedNumber(totalText);
+  const acertos = readSanitizedNumber(acertosText);
+  const invalid = !Number.isFinite(total) || total <= 0 || !Number.isFinite(acertos) || acertos < 0 || acertos > total;
+  if (invalid) {
+    return {
+      total,
+      acertos,
+      pct: null,
+      validInput: false,
+      title: "Dados incompletos",
+      desc: "Informe total de questões e acertos válidos.",
+      tone: "border-red-500/25 bg-red-500/10 text-red-200",
+    };
+  }
+
+  const resultado = calcularDominioPrevio({ total, acertos });
+  const pct = Math.round((acertos / total) * 100);
+  const classificacao = classificarDominio(pct);
+  const meta = DOMINIO_META[classificacao];
+
+  if (total < DOMINIO_PREVIO_MIN_QUESTOES) {
+    return {
+      total,
+      acertos,
+      pct,
+      validInput: true,
+      title: "Amostra insuficiente",
+      desc: resultado.motivo,
+      tone: "border-amber-500/25 bg-amber-500/10 text-amber-100",
+    };
+  }
+
+  if (!resultado.valido) {
+    return {
+      total,
+      acertos,
+      pct,
+      validInput: true,
+      title: "Retomada recomendada",
+      desc: meta?.desc || resultado.motivo,
+      tone: "border-red-500/25 bg-red-500/10 text-red-100",
+    };
+  }
+
+  return {
+    total,
+    acertos,
+    pct,
+    validInput: true,
+    title: resultado.intervaloInicial >= 21 ? "Primeira revisão em D21" : "Primeira revisão em D7",
+    desc: meta?.desc || resultado.motivo,
+    tone: resultado.intervaloInicial >= 21
+      ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-100"
+      : "border-amber-500/25 bg-amber-500/10 text-amber-100",
+  };
+}
+
+function ReviewGroupDomainModal({ open, temas = [], onClose, onConfirm }) {
+  const [mode, setMode] = useState("shared");
+  const [sharedTotal, setSharedTotal] = useState("20");
+  const [sharedAcertos, setSharedAcertos] = useState("18");
+  const [perTema, setPerTema] = useState({});
+
+  useEffect(() => {
+    if (!open) return;
+    setMode("shared");
+    setSharedTotal("20");
+    setSharedAcertos("18");
+    setPerTema(
+      temas.reduce((acc, tema) => {
+        acc[String(tema.id)] = { total: "20", acertos: "18" };
+        return acc;
+      }, {})
+    );
+  }, [open, temas]);
+
+  const sharedPreview = getDomainBatchPreview(sharedTotal, sharedAcertos);
+  const temaPreviews = temas.map((tema) => {
+    const values = perTema[String(tema.id)] || { total: "20", acertos: "18" };
+    return {
+      tema,
+      values,
+      preview: getDomainBatchPreview(values.total, values.acertos),
+    };
+  });
+  const allInputsValid = mode === "shared"
+    ? sharedPreview.validInput
+    : temaPreviews.every((item) => item.preview.validInput);
+
+  function updateTemaValue(temaId, field, value) {
+    setPerTema((current) => ({
+      ...current,
+      [String(temaId)]: {
+        ...(current[String(temaId)] || { total: "20", acertos: "18" }),
+        [field]: sanitizeCountInput(value),
+      },
+    }));
+  }
+
+  function handleConfirm() {
+    if (!allInputsValid) return;
+    if (mode === "shared") {
+      onConfirm?.({
+        questoesShared: sharedPreview.total,
+        acertosShared: sharedPreview.acertos,
+      });
+      return;
+    }
+
+    const questoesPorTema = {};
+    const acertosPorTema = {};
+    temaPreviews.forEach(({ tema, preview }) => {
+      questoesPorTema[tema.id] = preview.total;
+      acertosPorTema[tema.id] = preview.acertos;
+    });
+    onConfirm?.({ questoesPorTema, acertosPorTema });
+  }
+
+  return (
+    <Dialog
+      open={open}
+      title="Já domino no bloco"
+      description="Configure a validação antes de criar o grupo de revisão."
+      onClose={onClose}
+      wide
+      mobileSheet
+      formDirty
+      footer={(
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button variant="success" onClick={handleConfirm} disabled={!allInputsValid}>
+            Aplicar ao grupo de revisão
+          </Button>
+        </div>
+      )}
+    >
+      <div className="space-y-4">
+        <Card className="space-y-3" style={{ padding: 14 }}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">Temas selecionados</p>
+              <p className="mt-1 text-sm text-gray-300">{temas.length} temas no mesmo grupo de revisão.</p>
+            </div>
+            <div className="flex rounded-xl border border-white/10 bg-black/20 p-1">
+              <button
+                type="button"
+                onClick={() => setMode("shared")}
+                className={`rounded-lg px-3 py-1.5 text-[11px] font-black ${mode === "shared" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
+              >
+                Resultado único para todos
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("perTema")}
+                className={`rounded-lg px-3 py-1.5 text-[11px] font-black ${mode === "perTema" ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}
+              >
+                Ajustar por tema
+              </button>
+            </div>
+          </div>
+        </Card>
+
+        {mode === "shared" ? (
+          <Card className="space-y-4" style={{ padding: 14 }}>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-gray-500">Total de questões</label>
+                <Input
+                  aria-label="Total de questões para todos"
+                  type="number"
+                  min="1"
+                  value={sharedTotal}
+                  onChange={(event) => setSharedTotal(sanitizeCountInput(event.target.value))}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-gray-500">Acertos</label>
+                <Input
+                  aria-label="Acertos para todos"
+                  type="number"
+                  min="0"
+                  value={sharedAcertos}
+                  onChange={(event) => setSharedAcertos(sanitizeCountInput(event.target.value))}
+                />
+              </div>
+              <div className={`rounded-xl border p-3 ${sharedPreview.tone}`}>
+                <p className="text-[11px] font-black uppercase tracking-wide">{sharedPreview.pct == null ? "--" : `${sharedPreview.pct}%`}</p>
+                <p className="mt-1 text-[12px] font-black">{sharedPreview.title}</p>
+                <p className="mt-1 text-[11px] leading-relaxed opacity-80">{sharedPreview.desc}</p>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {temaPreviews.map(({ tema, values, preview }) => (
+              <Card key={tema.id} className="space-y-3" style={{ padding: 14 }}>
+                <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-black text-white">{tema.nome}</p>
+                    <p className="text-[11px] text-gray-500">{tema.esp || tema.area || "Área"}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:w-56">
+                    <Input
+                      aria-label={`Total de questões para ${tema.nome}`}
+                      type="number"
+                      min="1"
+                      value={values.total}
+                      onChange={(event) => updateTemaValue(tema.id, "total", event.target.value)}
+                    />
+                    <Input
+                      aria-label={`Acertos para ${tema.nome}`}
+                      type="number"
+                      min="0"
+                      value={values.acertos}
+                      onChange={(event) => updateTemaValue(tema.id, "acertos", event.target.value)}
+                    />
+                  </div>
+                  <div className={`rounded-xl border p-3 md:w-56 ${preview.tone}`}>
+                    <p className="text-[11px] font-black uppercase tracking-wide">{preview.pct == null ? "--" : `${preview.pct}%`}</p>
+                    <p className="mt-1 text-[12px] font-black">{preview.title}</p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </Dialog>
   );
 }
 
@@ -279,8 +521,11 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
   } = useStore();
   const setMeta = useStore((s) => s.setMeta);
   const aplicarDomainTestResultado = useStore((s) => s.aplicarDomainTestResultado);
+  const createReviewGroup = useStore((s) => s.createReviewGroup);
+  const applyJaDominoToGroup = useStore((s) => s.applyJaDominoToGroup);
   const showToast = useStore((s) => s.showToast);
   const temas = useStore((s) => s[plat].temas);
+  const reviewGroups = useStore((s) => s.reviewGroups?.[plat] || []);
   const planos = getCronogramasByPlat(plat);
   const selId = cronogramaSel?.[plat] || getDefaultCronogramaId(plat);
   const activeProvider = calendarProvider?.activeId || CALENDAR_PROVIDER_IDS.MEDCOF;
@@ -351,6 +596,8 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
     return Boolean(meta?.planSetup?.completedAt && !planPriorityUi.initialOpenedAt && meta.planSetup.completedAt >= todayStr());
   });
   const [bankQuery, setBankQuery] = useState("");
+  const [selectedBankTemaIds, setSelectedBankTemaIds] = useState([]);
+  const [reviewGroupDomainOpen, setReviewGroupDomainOpen] = useState(false);
   const [bankAreaFilter, setBankAreaFilter] = useState("TODAS");
   const [bancoAreaExpanded, setBancoAreaExpanded] = useState({});
   const [cronoTab, setCronoTab] = useState(() => getPlanTabFromTarget(navigationTarget, PLAN_TAB.PLAN)); // "plano" | "agenda" | "banco"
@@ -504,6 +751,57 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
     )) || null;
   };
 
+  const selectedBankTemas = useMemo(
+    () => selectedBankTemaIds
+      .map((id) => temas.find((tema) => String(tema.id) === String(id)))
+      .filter(Boolean),
+    [selectedBankTemaIds, temas]
+  );
+  const selectedSameArea = selectedBankTemas.length > 1
+    && new Set(selectedBankTemas.map((tema) => tema.esp || tema.area || "Outro")).size === 1;
+  const selectedUnstarted = selectedSameArea && selectedBankTemas.every((tema) => tema.unstarted);
+  const selectedInReviewCurve = selectedSameArea && selectedBankTemas.every((tema) => !tema.unstarted && tema.rev);
+
+  const toggleSelectedTema = (temaId) => {
+    setSelectedBankTemaIds((current) => (
+      current.map(String).includes(String(temaId))
+        ? current.filter((id) => String(id) !== String(temaId))
+        : [...current, temaId]
+    ));
+  };
+
+  const createGroupFromSelection = (action = "group") => {
+    if (!selectedSameArea) {
+      if (showToast) showToast("Selecione ao menos 2 temas da mesma área para criar um grupo de revisão.");
+      return null;
+    }
+    const area = selectedBankTemas[0]?.esp || selectedBankTemas[0]?.area || "Área";
+    const result = createReviewGroup(plat, {
+      nome: `Grupo de revisão · ${area}`,
+      temaIds: selectedBankTemas.map((tema) => tema.id),
+    });
+    if (!result?.ok) {
+      if (showToast) showToast("Não foi possível criar o grupo de revisão.");
+      return null;
+    }
+    if (action === "group" && showToast) showToast("Grupo de revisão criado.");
+    return result.group;
+  };
+
+  const applySelectedJaDomino = (payload) => {
+    const group = createGroupFromSelection("domain");
+    if (!group) return null;
+    const result = applyJaDominoToGroup(plat, group.id, payload);
+    if (showToast) {
+      showToast(result?.ok ? "Já domino no bloco aplicado ao grupo de revisão." : "Não foi possível aplicar Já domino no bloco.");
+    }
+    if (result?.ok) {
+      setSelectedBankTemaIds([]);
+      setReviewGroupDomainOpen(false);
+    }
+    return result;
+  };
+
   const beginDomainValidation = (payload) => {
     if (!payload) return;
     const existingById = payload.id ? temas.find((t) => t.id === payload.id) : null;
@@ -603,8 +901,13 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
               planSetup={meta?.planSetup || {}}
               temaStats={temaStats}
               plat={plat}
+              reviewGroups={reviewGroups}
               onOpenPlan={() => setCronoTab("plano")}
               onStartTask={(item, target) => {
+                if (target?.params?.groupId) {
+                  onStep({ groupId: target.params.groupId });
+                  return;
+                }
                 if (target?.temaId && target?.stepKey && target.stepKey !== "d0") {
                   onStep(target.temaId, target.stepKey);
                   return;
@@ -658,6 +961,41 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                     </button>
                   ))}
                 </div>
+                {selectedBankTemaIds.length > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-2xl border border-blue-500/15 bg-blue-500/5 p-3">
+                    <p className="text-[10.5px] text-blue-100 font-semibold flex-1">
+                      {selectedBankTemaIds.length} temas selecionados para grupo de revisão.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={!selectedUnstarted}
+                        onClick={() => setReviewGroupDomainOpen(true)}
+                        className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-[10px] font-black text-emerald-200 disabled:opacity-40"
+                      >
+                        Já domino no bloco
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!selectedInReviewCurve}
+                        onClick={() => {
+                          const group = createGroupFromSelection("group");
+                          if (group) setSelectedBankTemaIds([]);
+                        }}
+                        className="rounded-xl border border-blue-400/20 bg-blue-500/10 px-3 py-2 text-[10px] font-black text-blue-200 disabled:opacity-40"
+                      >
+                        Agrupar revisão
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBankTemaIds([])}
+                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black text-gray-300"
+                      >
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Vista hierarquica: Area > Subarea > Temas */}
@@ -691,6 +1029,8 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                           {items.map((item) => {
                             const tema = findTemaForBankItem(item);
                             const started = tema && !tema.unstarted;
+                            const selectable = Boolean(tema?.id);
+                            const selectedForGroup = selectable && selectedBankTemaIds.map(String).includes(String(tema.id));
                             const enamedBadge = plat === "res" ? getEnamedContextBadge(item.esp, item.nome) : null;
                             const imp = IMPORTANCIA[tema?.importancia || item.importancia];
                             const history = tema ? (temaStats?.[tema.id] || tema?.rev?.reviewHistory || []) : [];
@@ -724,6 +1064,20 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                       <p className="mt-0.5 text-[10px] text-gray-500">{attemptsCount} revisão{attemptsCount === 1 ? "" : "ões"}</p>
                                     )}
                                   </div>
+                                  {selectable && (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleSelectedTema(tema.id)}
+                                      className={`w-6 h-6 rounded-lg border flex items-center justify-center shrink-0 ${
+                                        selectedForGroup
+                                          ? "border-blue-400 bg-blue-500/20 text-blue-100"
+                                          : "border-white/10 bg-black/20 text-gray-500 hover:bg-white/10"
+                                      }`}
+                                      title="Selecionar para grupo de revisão"
+                                    >
+                                      {selectedForGroup ? <Check size={12} /> : null}
+                                    </button>
+                                  )}
                                   {tema && (
                                     <button
                                       type="button"
@@ -1245,6 +1599,12 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
           />
         </React.Suspense>
       )}
+      <ReviewGroupDomainModal
+        open={reviewGroupDomainOpen}
+        temas={selectedBankTemas}
+        onClose={() => setReviewGroupDomainOpen(false)}
+        onConfirm={applySelectedJaDomino}
+      />
       {temaValidando && (
         <DomainTestModal
           open
