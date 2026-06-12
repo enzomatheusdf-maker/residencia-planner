@@ -33,10 +33,10 @@ export default function ErrorActionPrompt({
   const firstAction = action.correctiveActions[0] || "";
 
   const CONTEXT_PREFIX = {
-    "pos-sessao": "Sessao concluida.",
+    "pos-sessao": "Sessão concluída.",
     "pos-simulado": "Simulado analisado.",
-    "mentor": "Padrao identificado.",
-    "stats": "Padrao de erros.",
+    "mentor": "Padrão identificado.",
+    "stats": "Padrão de erros.",
   };
 
   return (
@@ -54,7 +54,7 @@ export default function ErrorActionPrompt({
             onClick={onAction}
             className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 hover:text-amber-200 transition-colors"
           >
-            Ver acao corretiva <ChevronRight size={12} />
+            Ver ação corretiva <ChevronRight size={12} />
           </button>
         )}
       </div>

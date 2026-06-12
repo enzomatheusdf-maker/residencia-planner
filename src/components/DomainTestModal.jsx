@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertTriangle,
   Brain,
+  Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  ClipboardCheck,
   ClipboardList,
   FileText,
   Minus,
@@ -17,7 +17,9 @@ import {
 import { Badge, Button, Card, Dialog } from "./ui";
 import {
   DOMAIN_TEST_BRAIN_DUMP_FIELDS,
+  DOMAIN_TEST_CONDUTA_LABELS,
   DOMAIN_TEST_ERROR_TYPES,
+  DOMAIN_TEST_FSRS_ENTRY_LABELS,
   DOMAIN_TEST_LIMITS,
   calculateBrainDumpScore,
   calculateQuestionPercent,
@@ -28,16 +30,16 @@ import {
 } from "../core/domainTest";
 
 const STEPS = [
-  { key: "brain", label: "Brain Dump", icon: Brain },
-  { key: "checklist", label: "Checklist", icon: ClipboardCheck },
-  { key: "questions", label: "Questoes", icon: ClipboardList },
-  { key: "result", label: "Resultado", icon: CheckCircle2 },
+  { key: "brain", label: "Brain Dump" },
+  { key: "checklist", label: "Checklist" },
+  { key: "questions", label: "Questões" },
+  { key: "result", label: "Resultado" },
 ];
 
 const FIELD_LABELS = {
-  definitionDiagnosis: "Definicao / diagnostico",
+  definitionDiagnosis: "Definição / diagnóstico",
   pathophysiology: "Fisiopatologia essencial",
-  clinicalPicture: "Quadro clinico",
+  clinicalPicture: "Quadro clínico",
   redFlags: "Red flags",
   exams: "Exames",
   management: "Conduta",
@@ -46,44 +48,49 @@ const FIELD_LABELS = {
 };
 
 const ERROR_LABELS = {
-  content: "Conteudo",
-  reasoning: "Raciocinio",
-  interpretation: "Interpretacao",
+  content: "Conteúdo",
+  reasoning: "Raciocínio",
+  interpretation: "Interpretação",
   distractor: "Distrator",
   careless: "Descuido",
   time: "Tempo",
-  calibration: "Confianca/calibracao",
-  notSeen: "Tema nao visto",
+  calibration: "Confiança/calibração",
+  notSeen: "Tema não visto",
   irrelevantDetail: "Detalhe irrelevante",
 };
 
 const RESULT_META = {
   consolidated: {
     title: "Tema consolidado",
+    tag: "Sólido",
     tone: "green",
     icon: CheckCircle2,
     border: "rgba(16,185,129,.35)",
   },
   rescue: {
     title: "Tema de resgate",
+    tag: "Resgate",
     tone: "amber",
     icon: ClipboardList,
     border: "rgba(245,158,11,.35)",
   },
   treat_as_new: {
     title: "Tema novo",
+    tag: "Novo",
     tone: "red",
     icon: AlertTriangle,
     border: "rgba(239,68,68,.35)",
   },
   fragile_base: {
-    title: "Base fragil",
+    title: "Base frágil",
+    tag: "Frágil",
     tone: "amber",
     icon: Brain,
     border: "rgba(245,158,11,.35)",
   },
   detail_noise: {
     title: "Detalhe irrelevante",
+    tag: "Detalhe",
     tone: "blue",
     icon: FileText,
     border: "rgba(59,130,246,.35)",
@@ -154,20 +161,33 @@ function normalizeInitialDraft(initialDraft) {
   };
 }
 
-function StepButton({ active, disabled, icon: Icon, label, onClick }) {
+function StepButton({ active, done, disabled, index, label, onClick }) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`med-button-reset med-focus-ring flex min-h-[42px] items-center justify-center gap-2 rounded-lg border px-3 text-[11px] font-black transition-colors ${
+      className={`med-button-reset med-focus-ring flex min-h-[50px] flex-col items-center justify-center gap-1 rounded-lg border px-2 text-[10px] font-black transition-colors sm:min-h-[42px] sm:flex-row sm:gap-2 sm:px-3 sm:text-[11px] ${
         active
           ? "border-blue-400/50 bg-blue-500/15 text-blue-100"
-          : "border-white/10 bg-white/[.035] text-gray-400 hover:bg-white/[.07] hover:text-gray-200"
+          : done
+            ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/15"
+            : "border-white/10 bg-white/[.035] text-gray-400 hover:bg-white/[.07] hover:text-gray-200"
       } ${disabled ? "cursor-not-allowed opacity-45 hover:bg-white/[.035] hover:text-gray-400" : "cursor-pointer"}`}
     >
-      <Icon size={14} />
-      <span className="hidden sm:inline">{label}</span>
+      <span
+        aria-hidden="true"
+        className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border text-[10px] font-black ${
+          active
+            ? "border-blue-300/60 bg-blue-500/30 text-white"
+            : done
+              ? "border-emerald-400/50 bg-emerald-500/25 text-emerald-100"
+              : "border-white/15 bg-white/5 text-gray-500"
+        }`}
+      >
+        {done ? <Check size={11} /> : index}
+      </span>
+      <span className="leading-tight">{label}</span>
     </button>
   );
 }
@@ -296,6 +316,7 @@ export default function DomainTestModal({
   const canOpenChecklist = activeStep !== "brain" || !timerRunning || remainingSeconds <= 0;
   const canOpenQuestions = canOpenChecklist;
   const canOpenResult = Boolean(validation?.valid);
+  const activeStepIndex = STEPS.findIndex((step) => step.key === activeStep);
   const topicName = tema?.nome || tema?.name || tema?.titulo || "Tema antigo";
 
   function updateTextField(field, value) {
@@ -353,7 +374,7 @@ export default function DomainTestModal({
       window.localStorage?.setItem(draftKey, JSON.stringify(draft));
       setDraftStatus("Rascunho salvo localmente.");
     } catch (_error) {
-      setDraftStatus("Nao foi possivel salvar no armazenamento local.");
+      setDraftStatus("Não foi possível salvar no armazenamento local.");
     }
     onSaveDraft?.(draft);
   }
@@ -444,9 +465,9 @@ export default function DomainTestModal({
       <div className="space-y-4">
         <Card className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between" style={{ padding: 16 }}>
           <div>
-            <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">Brain Dump - 8 minutos</p>
+            <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">Brain Dump — 8 minutos</p>
             <p className="mt-1 text-sm leading-relaxed text-gray-300">
-              Escreva sem olhar nada. O objetivo nao e ficar bonito; e revelar o que sua memoria consegue recuperar.
+              Escreva sem olhar nada. O objetivo não é ficar bonito; é revelar o que sua memória consegue recuperar.
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-white">
@@ -464,7 +485,7 @@ export default function DomainTestModal({
                 onChange={(event) => updateTextField(field, event.target.value)}
                 rows={4}
                 className="min-h-[108px] w-full resize-y rounded-xl border border-white/10 bg-black/20 p-3 text-sm leading-relaxed text-white outline-none placeholder:text-gray-600 focus:border-blue-400"
-                placeholder="Escreva de memoria."
+                placeholder="Escreva de memória."
               />
             </div>
           ))}
@@ -477,15 +498,15 @@ export default function DomainTestModal({
     return (
       <div className="space-y-4">
         <Card style={{ padding: 16 }}>
-          <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">Autocorrecao guiada</p>
+          <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">Autocorreção guiada</p>
           <p className="mt-1 text-sm leading-relaxed text-gray-300">
-            Compare seu Brain Dump com uma fonte confiavel e marque cada eixo como ausente, parcial ou bom. Nao ha avaliacao por IA.
+            Compare seu Brain Dump com uma fonte confiável e marque cada eixo como ausente, parcial ou bom. Não há avaliação por IA.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Badge tone={brainDumpScore >= 70 ? "green" : brainDumpScore >= 40 ? "amber" : "red"}>
               Brain Dump {brainDumpScore}%
             </Badge>
-            <span className="text-[11px] text-gray-500">Bom >= 70 | Fragil 40-69 | Vazio/fraco &lt; 40</span>
+            <span className="text-[11px] text-gray-500">Bom ≥ 70 · Frágil 40–69 · Vazio/fraco &lt; 40</span>
           </div>
         </Card>
 
@@ -532,18 +553,18 @@ export default function DomainTestModal({
     return (
       <div className="space-y-4">
         <Card style={{ padding: 16 }}>
-          <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">Bloco diagnostico - 20 a 30 questoes</p>
+          <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">Bloco diagnóstico — 20 a 30 questões</p>
           <p className="mt-1 text-sm leading-relaxed text-gray-300">
-            Nao estude antes. O objetivo e diagnostico, nao performance.
+            Não estude antes. O objetivo é diagnóstico, não performance.
           </p>
         </Card>
 
         <div className="grid gap-3 md:grid-cols-3">
           <Card style={{ padding: 14 }}>
-            <FieldLabel hint="Valido de 20 a 30.">Numero de questoes</FieldLabel>
+            <FieldLabel hint="Válido de 20 a 30.">Número de questões</FieldLabel>
             <div className="mt-3">
               <NumberStepper
-                ariaLabel="Numero de questoes"
+                ariaLabel="Número de questões"
                 min={DOMAIN_TEST_LIMITS.minQuestions}
                 max={DOMAIN_TEST_LIMITS.maxQuestions}
                 value={questionBlock.total}
@@ -553,10 +574,10 @@ export default function DomainTestModal({
           </Card>
 
           <Card style={{ padding: 14 }}>
-            <FieldLabel hint="Nao pode passar do total.">Numero de acertos</FieldLabel>
+            <FieldLabel hint="Não pode passar do total.">Número de acertos</FieldLabel>
             <div className="mt-3">
               <NumberStepper
-                ariaLabel="Numero de acertos"
+                ariaLabel="Número de acertos"
                 min={0}
                 max={Number(questionBlock.total) || DOMAIN_TEST_LIMITS.maxQuestions}
                 value={questionBlock.correct}
@@ -590,7 +611,7 @@ export default function DomainTestModal({
         </Card>
 
         <div className="space-y-2">
-          <FieldLabel>Observacao curta</FieldLabel>
+          <FieldLabel>Observação curta</FieldLabel>
           <textarea
             value={questionBlock.notes}
             onChange={(event) => updateQuestionField("notes", event.target.value)}
@@ -634,12 +655,12 @@ export default function DomainTestModal({
                 <ResultIcon size={20} />
               </div>
               <div>
-                <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">Classificacao automatica</p>
+                <p className="text-[11px] font-black uppercase tracking-wide text-blue-300">Classificação automática</p>
                 <h3 className="mt-1 text-xl font-black text-white">{meta.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-gray-300">{recommendation?.message}</p>
               </div>
             </div>
-            <Badge tone={meta.tone}>{recommendation?.label}</Badge>
+            <Badge tone={meta.tone}>{meta.tag || recommendation?.label}</Badge>
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
@@ -648,21 +669,21 @@ export default function DomainTestModal({
               <p className="mt-1 text-2xl font-black text-white">{brainDumpScore}%</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/15 p-3">
-              <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">Questoes</p>
+              <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">Questões</p>
               <p className="mt-1 text-2xl font-black text-white">{questionPct ?? "--"}%</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/15 p-3">
               <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">Entrada FSRS</p>
-              <p className="mt-1 text-sm font-black text-white">{recommendation?.fsrsEntry}</p>
+              <p className="mt-1 text-sm font-black text-white">{DOMAIN_TEST_FSRS_ENTRY_LABELS[recommendation?.fsrsEntry] || recommendation?.fsrsEntry}</p>
             </div>
           </div>
         </Card>
 
         <Card style={{ padding: 16 }}>
           <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">Conduta</p>
-          <p className="mt-1 text-sm font-black text-white">{recommendation?.conduta}</p>
+          <p className="mt-1 text-sm font-black text-white">{DOMAIN_TEST_CONDUTA_LABELS[recommendation?.conduta] || recommendation?.conduta}</p>
           <p className="mt-2 text-[12px] leading-relaxed text-gray-400">
-            Ao aplicar a conduta, o DT3 vai usar esta classificacao para decidir entre revisao leve, resgate, D0, revisao conceitual ou registro de padrao.
+            Ao aplicar a conduta, o DT3 vai usar esta classificação para decidir entre revisão leve, resgate, D0, revisão conceitual ou registro de padrão.
           </p>
         </Card>
       </div>
@@ -701,7 +722,7 @@ export default function DomainTestModal({
 
           {activeStep === "checklist" ? (
             <Button onClick={() => setActiveStep("questions")}>
-              Ir para questoes
+              Ir para questões
               <ChevronRight size={15} />
             </Button>
           ) : null}
@@ -730,24 +751,25 @@ export default function DomainTestModal({
       wide
       mobileSheet
       formDirty
-      title="Teste de Dominio"
-      description={`Antes de marcar "${topicName}" como dominado, vamos testar se ele esta realmente solido.`}
+      title="Teste de Domínio"
+      description={`Antes de marcar "${topicName}" como dominado, vamos testar se ele está realmente sólido.`}
       onClose={onClose}
       footer={footer}
       className="max-w-5xl"
     >
       <div className="space-y-4">
         <div className="grid grid-cols-4 gap-2">
-          {STEPS.map((step) => (
+          {STEPS.map((step, index) => (
             <StepButton
               key={step.key}
+              index={index + 1}
               active={activeStep === step.key}
+              done={index < activeStepIndex}
               disabled={
                 (step.key === "checklist" && !canOpenChecklist) ||
                 (step.key === "questions" && !canOpenQuestions) ||
                 (step.key === "result" && !canOpenResult)
               }
-              icon={step.icon}
               label={step.label}
               onClick={() => setStep(step.key)}
             />

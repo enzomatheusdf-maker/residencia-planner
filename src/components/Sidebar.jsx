@@ -159,7 +159,8 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
               </span>
               {syncStatus === "saving" && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-yellow-400 border border-[#07070f] animate-pulse" title="Sincronizando..." />}
               {syncStatus === "saved"  && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#07070f]" title="Sincronizado ✓" />}
-              {syncStatus === "offline"&& <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-[#07070f]" title="Offline" />}
+              {syncStatus === "offline"&& <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-gray-500 border border-[#07070f]" title="Offline" />}
+              {syncStatus === "error"  && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-[#07070f]" title="Falha ao salvar na nuvem" />}
             </div>
             {daysLeft != null && <span className={`text-[10px] font-black tabular-nums ${urgency}`}>{daysLeft}d</span>}
             <button onClick={onLogout} title="Sair da conta"
@@ -180,7 +181,8 @@ export default function Sidebar({ view, setView, setAjustes, overdueCount, setHe
                   <p className="text-[12px] font-bold text-gray-100 truncate leading-tight">{displayName}</p>
                   {syncStatus === "saving" && <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse shrink-0" title="Sincronizando..." />}
                   {syncStatus === "saved"  && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Sincronizado ✓" />}
-                  {syncStatus === "offline"&& <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" title="Offline" />}
+                  {syncStatus === "offline"&& <span className="w-1.5 h-1.5 rounded-full bg-gray-500 shrink-0" title="Offline" />}
+                  {syncStatus === "error"  && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" title="Falha ao salvar na nuvem" />}
                 </div>
                 <p className="text-[9.5px] text-gray-500 truncate leading-none mt-0.5 font-mono">
                   {plat === "res" ? "Residência Médica" : "Vestibular"}

@@ -48,12 +48,12 @@ describe("mentorDecisionPolicy", () => {
           domainTestClassification: "fragile_base",
           domainTestStatus: "fragile_base",
           domainTestConduta: "revisao_conceitual_curta",
-          domainTestAgendaLabel: "Revisao conceitual",
+          domainTestAgendaLabel: "Revisão conceitual",
         }],
       },
     }));
     expect(action.type).toBe("relearning");
-    expect(action.title).toMatch(/Revisao conceitual curta/);
+    expect(action.title).toMatch(/Revisão conceitual curta/);
     expect(action.cta).toBe("Revisar base");
     expect(action.target).toMatchObject({
       temaId: 1,
@@ -61,7 +61,7 @@ describe("mentorDecisionPolicy", () => {
       domainTestClassification: "fragile_base",
       domainTestConduta: "revisao_conceitual_curta",
     });
-    expect(action.explain.join(" ")).toContain("Classificacao do Teste de Dominio: Revisao conceitual.");
+    expect(action.explain.join(" ")).toContain("Classificação do Teste de Domínio: Revisão conceitual.");
   });
 
   test("detail_noise orienta padrao de erro sem explosao de cards", () => {
@@ -75,16 +75,16 @@ describe("mentorDecisionPolicy", () => {
           domainTestClassification: "detail_noise",
           domainTestStatus: "detail_noise",
           domainTestConduta: "registrar_padrao_de_erro",
-          domainTestAgendaLabel: "Padrao de erro",
+          domainTestAgendaLabel: "Padrão de erro",
         }],
       },
     }));
 
     expect(action.type).toBe("relearning");
-    expect(action.title).toMatch(/Revisar padrao de erro/);
-    expect(action.reason).toMatch(/nao explosao de cards/);
+    expect(action.title).toMatch(/Revisar padrão de erro/);
+    expect(action.reason).toMatch(/não explosão de cards/);
     expect(action.explain.join(" ")).toMatch(/cards infinitos/);
-    expect(action.cta).toBe("Revisar padrao");
+    expect(action.cta).toBe("Revisar padrão");
   });
 
   test("revisão vencida ganha de ENAMED", () => {
@@ -160,6 +160,8 @@ describe("mentorDecisionPolicy", () => {
 
     expect(action.type).toBe("interleaving_block");
     expect(action.ctaView).toBe("focus");
+    expect(action.subtitle).toBe("Fila vazia; há corpus suficiente para contraste ativo.");
+    expect(action.explain.join(" ")).toContain("áreas já têm corpus consolidado");
     expect(action.target.action).toBe("interleaving_block");
     expect(action.target.area).toBe("Clinica Medica");
   });
@@ -204,6 +206,7 @@ describe("mentorDecisionPolicy", () => {
     }));
     expect(action.type).toBe("simulation");
     expect(action.ctaView).toBe("sims");
+    expect(action.subtitle).toBe("Frequência: 1 agora (diagnóstico).");
     expect(action.target).toMatchObject({ action: "simulation", recommended: true, tipo: "Baseline" });
   });
 

@@ -31,7 +31,7 @@ describe("planExecution", () => {
     const review = { type: "review", temaId: "t1", stepKey: "d4" };
     expect(getAgendaTaskLabel(review)).toBe("Revisar");
     expect(getAgendaTaskTarget(review)).toEqual({ action: "review", temaId: "t1", stepKey: "d4" });
-    expect(getAgendaTaskLabel({ type: "relearning", domainTestClassification: "rescue" })).toBe("Revisao dirigida");
+    expect(getAgendaTaskLabel({ type: "relearning", domainTestClassification: "rescue" })).toBe("Revisão dirigida");
     expect(getAgendaTaskLabel({ type: "new_topic", domainTestClassification: "treat_as_new" })).toBe("Estudar D0");
   });
 });

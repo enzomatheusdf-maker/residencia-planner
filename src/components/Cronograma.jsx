@@ -1476,7 +1476,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                             });
                                           }}
                                           className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-gray-200 text-[10px] font-black transition-all border border-white/10 flex items-center justify-center gap-1 cursor-pointer"
-                                          title="Use se voce ja estudou este tema. O app abre o Teste de Dominio: Brain Dump de 8 minutos + 20-30 questoes."
+                                          title="Use se você já estudou este tema. O app abre o Teste de Domínio: Brain Dump de 8 minutos + 20–30 questões."
                                         >
                                           <BadgeCheck size={11} /> Já domino
                                         </button>
@@ -1553,7 +1553,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                                 beginDomainValidation(tema || basePayload);
                               }}
                               className="flex-1 py-2 rounded-xl bg-black/25 border border-white/10 hover:bg-white/10 text-[12px] font-bold text-gray-200 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                              title="Use se voce ja estudou este tema. O app abre o Teste de Dominio: Brain Dump de 8 minutos + 20-30 questoes."
+                              title="Use se você já estudou este tema. O app abre o Teste de Domínio: Brain Dump de 8 minutos + 20–30 questões."
                             >
                               <BadgeCheck size={13} /> Já domino
                             </button>
@@ -1561,7 +1561,7 @@ export default function Cronograma({ onStep, onEdit, onIniciarTema, catalogo, na
                           <p className="text-[10px] text-gray-500 leading-relaxed">
                             Use se você já estudou este tema.
                             {" "}
-                            <InfoTooltip texto="O app abre o Teste de Dominio: Brain Dump de 8 minutos, autocorrecao e 20-30 questoes antes de decidir a conduta." />
+                            <InfoTooltip texto="O app abre o Teste de Domínio: Brain Dump de 8 minutos, autocorreção e 20–30 questões antes de decidir a conduta." />
                           </p>
                         </div>
                       );

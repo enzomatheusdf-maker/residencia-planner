@@ -174,7 +174,7 @@ export const salvarDadosUsuario = async (uid, dados) => {
     return { sucesso: true };
   } catch (erro) {
     console.error("Erro ao salvar dados:", erro);
-    return { sucesso: false, erro: erro.message };
+    return { sucesso: false, erro: erro.message, codigo: erro.code || "" };
   }
 };
 
@@ -185,11 +185,11 @@ export const carregarDadosUsuario = async (uid) => {
     if (docSnap.exists()) {
       return { sucesso: true, dados: docSnap.data() };
     } else {
-      return { sucesso: false, erro: "Usuário não encontrado" };
+      return { sucesso: false, erro: "Usuário não encontrado", notFound: true };
     }
   } catch (erro) {
     console.error("Erro ao carregar dados:", erro);
-    return { sucesso: false, erro: erro.message };
+    return { sucesso: false, erro: erro.message, codigo: erro.code || "" };
   }
 };
 
@@ -204,7 +204,7 @@ export const sincronizarComFirebase = async (uid, estadoZustand) => {
     return { sucesso: true };
   } catch (erro) {
     console.error("Erro ao sincronizar:", erro);
-    return { sucesso: false, erro: erro.message };
+    return { sucesso: false, erro: erro.message, codigo: erro.code || "" };
   }
 };
 

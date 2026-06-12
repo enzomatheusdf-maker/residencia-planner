@@ -8,7 +8,7 @@ import { Activity, BarChart3, CalendarDays, Clock, Target } from "lucide-react";
 import AgendaTaskItem from "./AgendaTaskItem";
 import { MotionSection } from "./motion";
 import { estimateTaskMinutes } from "../core/agendaEngine";
-import { getDomainTestAgendaMeta } from "../core/domainTest";
+import { DOMAIN_TEST_CONDUTA_LABELS, getDomainTestAgendaMeta } from "../core/domainTest";
 import { getEnamedContextBadge } from "../core/enamedIntel";
 import { getRetrievability } from "../core/fsrs";
 import { getAgendaTaskLabel, getAgendaTaskTarget } from "../core/planExecution";
@@ -176,8 +176,8 @@ function AgendaTaskDetailsModal({ item, tema, temaStats, onClose, onStartTask, o
             <p className="text-[12px] text-gray-200 leading-relaxed">{acaoRecomendada}</p>
             {domainMeta && (
               <p className="mt-2 text-[11px] text-gray-400">
-                Teste de Dominio: {item.domainTestAgendaLabel || domainMeta.agendaLabel}
-                {item.domainTestConduta ? ` · ${item.domainTestConduta}` : ""}
+                Teste de Domínio: {item.domainTestAgendaLabel || domainMeta.agendaLabel}
+                {item.domainTestConduta ? ` · ${DOMAIN_TEST_CONDUTA_LABELS[item.domainTestConduta] || item.domainTestConduta}` : ""}
               </p>
             )}
           </Card>

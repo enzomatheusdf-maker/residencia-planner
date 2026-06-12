@@ -262,6 +262,7 @@ export default function App() {
   const confirmDialog = useStore((s) => s.confirmDialog);
   const closeConfirm = useStore((s) => s.closeConfirm);
   const trackedReturnRef = useRef(false);
+  const syncErrorNotifiedRef = useRef(false);
   const onboardingMeta = useMemo(() => getOnboardingDefaults(meta || {}), [meta]);
   const onboardingCompleted = onboardingDone || isOnboardingComplete({ onboarding: onboardingMeta });
   const shouldShowV2 = shouldShowOnboardingV2({ tourStep, meta, onboardingDone });
@@ -362,9 +363,9 @@ export default function App() {
     temaStats: state.temaStats,
     vistos: state.vistos || [],
     sprint: state.sprint,
-    ownerUid: uidOverride || authSession.uid || null,
-    updatedAt: state.updatedAt || Date.now(),
-  }), [authSession.uid]);
+    ownerUid: uidOverride || null,
+    updatedAt: state.updatedAt || 0,
+  }), []);
 
   useEffect(() => {
     if (!usuarioLogado || trackedReturnRef.current) return;
@@ -457,18 +458,30 @@ export default function App() {
       setSyncStatus(navigator.onLine ? "saving" : "offline");
 
       const uid = user?.uid || null;
+      let cloudLoadFailed = false;
       const scopeKey = uid
         ? getUserScopedStorageKey(uid)
         : defaultAnonymousScopeRef.current;
 
       setAuthSession(buildAuthSession({ user, hydrated: false, scopeKey }));
 
-      resetStore({ touchUpdatedAt: false });
-      if (useStore.persist?.setOptions) {
-        useStore.persist.setOptions({ name: scopeKey });
-      }
-      if (useStore.persist?.rehydrate) {
-        await useStore.persist.rehydrate();
+      const persistApi = useStore.persist;
+      const currentScopeKey = persistApi?.getOptions?.().name || null;
+      if (!persistApi || currentScopeKey !== scopeKey) {
+        // O set() do resetStore é gravado pelo persist na chave ativa; estacionar
+        // numa chave descartável evita sobrescrever dados reais de um escopo.
+        const transitionKey = `${scopeKey}:transition`;
+        persistApi?.setOptions?.({ name: transitionKey });
+        resetStore({ touchUpdatedAt: false });
+        persistApi?.setOptions?.({ name: scopeKey });
+        if (persistApi?.rehydrate) {
+          await persistApi.rehydrate();
+        }
+        try {
+          window.localStorage.removeItem(transitionKey);
+        } catch (_e) {
+          // limpeza best-effort
+        }
       }
 
       if (!isMounted || transitionId !== authTransitionRef.current) return;
@@ -573,11 +586,20 @@ export default function App() {
               console.error("Erro ao sincronizar dados locais mais recentes:", err);
             });
           }
-        } else {
+        } else if (resultado.notFound) {
           const stateToSave = buildStateToSync(useStore.getState(), uid);
           await sincronizarComFirebase(uid, stateToSave).catch((err) => {
             console.error("Erro ao inicializar dados na nuvem:", err);
           });
+        } else {
+          // Falha de leitura (rules/rede): não inicializar a nuvem aqui — um
+          // setDoc merge substituiria res.temas/vest.temas pelos arrays locais,
+          // possivelmente vazios.
+          cloudLoadFailed = true;
+          console.error("Falha ao carregar dados da nuvem:", resultado.codigo || resultado.erro);
+          if (showToastStore) {
+            showToastStore(`Não foi possível carregar seus dados da nuvem (${resultado.codigo || resultado.erro}). Usando dados deste dispositivo.`);
+          }
         }
 
         setView("dash");
@@ -595,7 +617,7 @@ export default function App() {
         lastHydratedAt: Date.now(),
       }));
       setCarregandoAuth(false);
-      setSyncStatus(navigator.onLine ? "saved" : "offline");
+      setSyncStatus(cloudLoadFailed ? "error" : navigator.onLine ? "saved" : "offline");
       clearTimeout(timeoutId);
     });
 
@@ -646,22 +668,31 @@ export default function App() {
 
         lastSavedJSON = currentJSON;
         setSyncStatus("saving");
+        const reportSyncFailure = (erro, codigo) => {
+          setSyncStatus(navigator.onLine ? "error" : "offline");
+          if (navigator.onLine && !syncErrorNotifiedRef.current && showToastStore) {
+            syncErrorNotifiedRef.current = true;
+            showToastStore(`Falha ao salvar na nuvem (${codigo || erro || "erro desconhecido"}). Seu progresso continua salvo neste dispositivo.`);
+          }
+        };
+
         sincronizarComFirebase(activeUid, stateToSave)
           .then((res) => {
             if (res.sucesso) {
               setSyncStatus("saved");
+              syncErrorNotifiedRef.current = false;
               setAuthSession((prev) => (
                 prev.uid === activeUid
                   ? { ...prev, lastSyncAt: Date.now() }
                   : prev
               ));
             } else {
-              setSyncStatus("offline");
+              reportSyncFailure(res.erro, res.codigo);
             }
           })
           .catch((err) => {
             console.error("Erro na sincronização reativa:", err);
-            setSyncStatus("offline");
+            reportSyncFailure(err?.message, err?.code);
           });
       }, 3000);
     });
@@ -670,7 +701,7 @@ export default function App() {
       unsubscribe();
       clearTimeout(timeoutId);
     };
-  }, [authSession.hydrated, authSession.uid, buildStateToSync, usuarioLogado]);
+  }, [authSession.hydrated, authSession.uid, buildStateToSync, showToastStore, usuarioLogado]);
 
   // ─── GARANTIR FLUSH ANTES DE SAIR DA PÁGINA ───────────────────────────────
   useEffect(() => {

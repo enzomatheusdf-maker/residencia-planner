@@ -21,7 +21,7 @@ describe("DomainTestModal", () => {
       />
     );
 
-    expect(screen.getByRole("dialog", { name: "Teste de Dominio" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Teste de Domínio" })).toBeInTheDocument();
     expect(screen.getByText(/Apendicite/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Finalizar Brain Dump/i }));
@@ -30,8 +30,8 @@ describe("DomainTestModal", () => {
       fireEvent.click(button);
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Ir para questoes/i }));
-    fireEvent.change(screen.getByRole("spinbutton", { name: "Numero de acertos" }), {
+    fireEvent.click(screen.getByRole("button", { name: /Ir para questões/i }));
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Número de acertos" }), {
       target: { value: "16" },
     });
     fireEvent.click(screen.getByRole("button", { name: /Classificar tema/i }));

@@ -293,7 +293,7 @@ describe("buildAgendaItems", () => {
     expect(rl).toBeTruthy();
     expect(rl.domainTestClassification).toBe("rescue");
     expect(rl.domainTestAgendaLabel).toBe("Resgate dirigido");
-    expect(rl.domainTestTaskLabel).toBe("Revisao dirigida");
+    expect(rl.domainTestTaskLabel).toBe("Revisão dirigida");
     expect(rl.target.domainTestClassification).toBe("rescue");
   });
 
@@ -314,7 +314,7 @@ describe("buildAgendaItems", () => {
     const d21 = items.find((i) => i.temaId === "tema-1" && i.stepKey === "d21");
     expect(d21).toBeTruthy();
     expect(d21.domainTestClassification).toBe("consolidated");
-    expect(d21.domainTestAgendaLabel).toBe("Dominio consolidado");
+    expect(d21.domainTestAgendaLabel).toBe("Domínio consolidado");
   });
 
   it("includes simulados", () => {

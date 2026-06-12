@@ -58,14 +58,14 @@ describe("Agenda render smoke", () => {
           type: "relearning",
           phase: "relearning",
           domainTestClassification: "detail_noise",
-          domainTestAgendaLabel: "Padrao de erro",
+          domainTestAgendaLabel: "Padrão de erro",
         }}
       />
     );
 
-    expect(screen.getByText("Padrao de erro")).toBeInTheDocument();
-    expect(screen.getByText("Padrao")).toBeInTheDocument();
-    expect(screen.getByText("Revisar padrao")).toBeInTheDocument();
+    expect(screen.getByText("Padrão de erro")).toBeInTheDocument();
+    expect(screen.getByText("Padrão")).toBeInTheDocument();
+    expect(screen.getByText("Revisar padrão")).toBeInTheDocument();
   });
 
   it("renders AgendaDayDetails with minimal summary", () => {
@@ -118,9 +118,9 @@ describe("Agenda render smoke", () => {
 
     fireEvent.click(screen.getByLabelText("Detalhes da tarefa"));
 
-    expect(screen.getAllByText(/Revisao dirigida/).length).toBeGreaterThan(1);
-    expect(screen.getByText(/Teste de Dominio: Resgate dirigido/)).toBeInTheDocument();
-    expect(screen.getByText(/revisao_dirigida_mais_questoes/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Revisão dirigida/).length).toBeGreaterThan(1);
+    expect(screen.getByText(/Teste de Domínio: Resgate dirigido/)).toBeInTheDocument();
+    expect(screen.getByText(/Revisão dirigida \+ novo bloco de questões/)).toBeInTheDocument();
   });
 
   it("renders AgendaMonthGrid with minimal props", () => {
